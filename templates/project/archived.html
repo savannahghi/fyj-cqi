@@ -1,0 +1,178 @@
+{% extends 'project/index.html' %}
+{% load static %}
+{% block content %}
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h2 class="h2">DEEP ANALYSIS OF ONGOING QI PROJECTS</h2>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+            <span data-feather="calendar" class="align-text-bottom"></span>
+            This week
+          </button>
+        </div>
+      </div>
+
+{#      <canvas class="my-4 w-100" id="myChart" width="900" height="280"></canvas>#}
+        <form class="row g-3">
+            <div class="col-md-2">
+
+
+    <label for="inputState" class="form-label">Counties</label>
+    <select id="inputState" class="form-select">
+      <option selected>Choose All</option>
+      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>
+
+    </select>
+    </div>
+            <div class="col-md-2">
+
+
+    <label for="inputState" class="form-label">Sub-counties</label>
+    <select id="inputState" class="form-select">
+      <option selected>Choose All</option>
+      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>
+
+    </select>
+    </div>
+            <div class="col-md-2">
+
+
+    <label for="inputState" class="form-label">Facilities</label>
+    <select id="inputState" class="form-select">
+      <option selected>Choose All</option>
+      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>
+
+    </select>
+    </div>
+            <div class="col-md-2">
+
+
+    <label for="inputState" class="form-label">QI projects</label>
+    <select id="inputState" class="form-select">
+      <option selected>Choose All</option>
+      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>
+
+    </select>
+    </div>
+            <div class="col-md-2">
+
+
+    <label for="inputState" class="form-label">Measurement status</label>
+    <select id="inputState" class="form-select">
+      <option selected>Choose All</option>
+      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>
+
+    </select>
+    </div>
+            <div class="col-md-2">
+
+
+    <label for="inputState" class="form-label">Measurement frequency</label>
+    <select id="inputState" class="form-select">
+      <option selected>Choose All</option>
+      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>
+
+    </select>
+    </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label for="input_from" class="form-label">From</label>
+                <input type="text" class="form-control" id="input_from" placeholder="Start Date">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label for="input_from" class="form-label">To</label>
+                <input type="text" class="form-control" id="input_to" placeholder="End Date">
+              </div>
+            </div>
+            <div class="col-md-2 ">
+
+
+    <label for="inputState" class="form-label">State</label>
+    <select id="inputState" class="form-select">
+      <option selected>Choose All</option>
+      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>
+      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>
+
+    </select>
+    </div>
+            <div class="col-md-2 mt-5">
+            <a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-primary" role="button">Filter</a>
+        </div>
+        </form>
+
+
+        <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
+            <div>
+            </div>
+            <h1 class="d-flex justify-content-evenly">739 Archived Quality Improvement Projects Found</h1>
+            <p class="d-flex justify-content-evenly">No specific criteria is specified, so displaying all archived QI Projects</p>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+{#            <h1 class="col-md-1">1</h1>#}
+  <div class="col-md-8">
+
+    <div class="card h-100">
+{#      <img src="..." class="card-img-top" alt="...">#}
+      <div class="card-body">
+        <h5 class="card-title"> 1. Card title</h5>
+          <ul>
+              <li>This card has supporting text below as a natural lead-in to additional content.</li>
+              <li>This card has supporting text below as a natural lead-in to additional content.</li>
+              <li>This card has supporting text below as a natural lead-in to additional content.</li>
+              <li>This card has supporting text below as a natural lead-in to additional content.</li>
+          </ul>
+          <div class="d-flex justify-content-evenly" >
+          <a href="#" class="btn btn-success">Not started/started/archived</a>
+          <a href="#" class="btn btn-primary">Last updated on </a>
+          <a href="#" class="btn btn-secondary">More details</a>
+      </div>
+      </div>
+      <div class="card-footer">
+        <small class="text-muted">Last updated 3 mins ago</small>
+      </div>
+    </div>
+
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Card title</h5>
+        <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>
+          <div class="d-flex justify-content-evenly" >
+          <a href="#" class="btn btn-primary">Go somewhere</a>
+          <a href="#" class="btn btn-primary">Go somewhere</a>
+      </div>
+      </div>
+      <div class="card-footer">
+        <small class="text-muted">Last updated 3 mins ago</small>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+    </main>
+
+{% endblock %}

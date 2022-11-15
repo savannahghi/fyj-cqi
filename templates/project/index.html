@@ -22,6 +22,15 @@
 
 
     <style>
+           img {
+    transition:transform 0.25s ease;
+}
+
+img:hover {
+    -webkit-transform:scale(1.5); /* or some other value */
+    {#transform:scale(1.5);#}
+    transform:translateX(25%) translateY(-25%) scale(1.5);
+}
       .bd-placeholder-img {
         font-size: 1.125rem;
         text-anchor: middle;
@@ -81,17 +90,51 @@
 
   </head>
   <body>
-    
 <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-  <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="#">FAHARI YA JAMII CQI</a>
+  <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="{% url 'dashboard' %}">FAHARI YA JAMII CQI</a>
   <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
-  <input class="form-control form-control-dark w-100 rounded-0 border-0" type="text" placeholder="Search" aria-label="Search">
+    <form class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center" action="" method="POST">
+        {% csrf_token %}
+{#            <div class="row">#}
+{#        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center ">#}
+            <div class="col-12 mt-1">
+            <input class="form-control form-control-dark w-100 rounded-0 border-0" type="search" placeholder="Search" aria-label="Search" name="searched">
+
+        </div>
+        <div class="col  ps-2 mt-1">
+                <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </div>
+{#        </div>#}
+
+{#    </div>#}
+    </form>
+
+
+
+    <div class="navbar-nav">
+            <a class="nav-link px-3" href="{% url 'facilities_landing_page' %}">You are logged in as {{ user.username|title }}</a>
+
+        </div>
+    {% if user.is_authenticated and user.is_staff %}
+    <div class="navbar-nav">
+        <a class="nav-link px-3" href="{% url 'register' %}">Sign up</a>
+    </div>
+    {% endif %}
   <div class="navbar-nav">
     <div class="nav-item text-nowrap">
-      <a class="nav-link px-3" href="#">Sign out</a>
+      <a class="nav-link px-3" href="{% url 'update_profile' %}">Update My Profile</a>
     </div>
+
+
+  </div>
+  <div class="navbar-nav">
+    <div class="nav-item text-nowrap">
+      <a class="nav-link px-3" href="{% url 'logout' %}">Sign out</a>
+    </div>
+
+
   </div>
 </header>
 

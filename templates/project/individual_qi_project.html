@@ -2,9 +2,15 @@
 {% load static %}
 
 {% block content %}
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <main>
+<div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+{#{% for facility_project in facility_projects %}#}
+
+
+
        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Title of the project</h1>
+        <h1 class="h2">{{ facility_project.project_title}}</h1>
+
            <hr>
 
         <div class="btn-toolbar mb-2 mb-md-0">
@@ -20,8 +26,19 @@
 
 
       </div>
-        <div>
-               <h4>Facility name: </h4>
+        <div class="d-flex justify-content-between">
+               <h4>Facility name: {{ facility_project.facility }}</h4>
+            <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">Facility projects</a>
+            <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+
+            {% if user.is_authenticated %}
+                {% if user.id == facility_project.created_by.id %}
+                    <a href="{% url 'update_project' facility_project.id %}" class="btn btn-warning">Update project</a>
+                    <a href="{% url 'delete_project' facility_project.id %}" class="btn btn-danger">Delete project</a>
+                {% endif %}
+
+            {% endif %}
+
            </div>
 
         <div class="row row-cols-1 row-cols-md-12 g-4 mt-2 col-md-12">
@@ -29,27 +46,35 @@
   <div class="col">
     <div class="card h-100 bg-light mb-3">
       <div class="card-body">
-        <h5 class="card-title">Card title</h5>
+        <h5 class="card-title">{{ facility_project.project_title}}</h5>
           <div class="row">
               <div class="col-md-3">
-              <p class="card-text"><strong>Created by : </strong>Peter</p>
+              <p class="card-text"><strong>Created by : </strong>{{ facility_project.created_by }}</p>
           </div>
               <div class="col-md-3">
-              <p class="card-text"><strong>Start date : </strong>Peter</p>
+              <p class="card-text"><strong>Start date : </strong>{{ facility_project.start_date }}</p>
           </div>
               <div class="col-md-3">
-              <p class="card-text"><strong>Department : </strong>Peter</p>
+              <p class="card-text"><strong>Last updated on : </strong>{{ facility_project.date_updated }}</p>
           </div>
               <div class="col-md-3">
-              <p class="card-text"><strong>Created by : </strong>Peter</p>
+              <p class="card-text"><strong>Phone Number : </strong>{{ user.phone_number }}</p>
+          </div>
+              <div class="col-md-3">
+              <p class="card-text"><strong>Department : </strong>{{ facility_project.department }}</p>
+          </div>
+
+              <div class="col-md-3">
+
+              <p class="card-text"><strong>Settings : </strong>{{ facility_project.settings }}</p>
           </div>
               <div class="col-md-3">
 
-              <p class="card-text"><strong>Settings : </strong>Peter</p>
+              <p class="card-text"><strong>Measurement frequency : </strong>{{ facility_project.measurement_frequency }}</p>
           </div>
               <div class="col-md-3">
 
-              <p class="card-text"><strong>Measurement frequency : </strong>Peter</p>
+              <p class="card-text"><strong>First cycle : </strong>{{ facility_project.first_cycle_date }}</p>
           </div>
           </div>
       </div>
@@ -57,31 +82,55 @@
   </div>
 
 </div>
-    <h6><strong>PROBLEM STATEMENT :</strong></h6>
-    <p>Problem statement for the project</p>
+    <h6 class="mt-2"><strong>PROBLEM STATEMENT :</strong></h6>
+    <p>{{ facility_project.problem_background }}</p>
 
-    <h6><strong>PROCESS ANALYSIS :</strong></h6>
-    <p>Process analysis for the project. Allow image</p>
+    {% if facility_project.process_analysis.url is not null %}
+        <h6><strong>PROCESS ANALYSIS :</strong></h6>
+    <img  src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}">
+    
+    {% endif %} 
+
 
     <h6><strong>OBJECTIVE :</strong></h6>
-    <p>Objective for the project</p>
+    <p>{{ facility_project.objective }}</p>
 
     <h6><strong>Responsible people :</strong></h6>
-    <p>Responsible people for the project</p>
+    <p>{{ facility_project.responsible_people }}</p>
 
     <h6><strong>Participants :</strong></h6>
-    <p>Participants for the project</p>
+    <p>{{ facility_project.participants }}</p>
 
     <h6><strong>Indicator Numerator & Denominator :</strong></h6>
-    <p><strong>Numerator : </strong></p>
-    <p><strong>Denominator : </strong></p>
-
+    <p><strong>Numerator : </strong>{{ facility_project.numerator }}</p>
+    <p><strong>Denominator : </strong>{{ facility_project.denominator }}</p>
+    {% if project_performance %}
     <h6><strong>Project performance :</strong></h6>
-    <canvas class="my-4 w-100" id="myChart" width="900" height="280"></canvas>
+    <div class="container">
+        <div class="col">
+            <div class="row">
+                {{ project_performance|safe }}
+            </div>
+
+        </div>
+
+    </div>
+    {% endif %}
+
+{#{{ project_performance|safe }}#}
+
+{#    <canvas class="my-4 w-100" >{{ project_performance|safe }}</canvas>#}
+{#    <canvas class="my-4 w-100" id="myChart" width="900" height="280"></canvas>#}
 
 
 
+{% if user.is_authenticated %}
+    {% if user.id == facility_project.created_by.id %}
+        <a href="{% url 'tested_change' facility_project.id %}" class="btn btn-warning">Add tested change</a>
+{#        <a href="{% url 'close_project' facility_project.id %}" class="btn btn-danger">Close project</a>#}
+    {% endif %}
 
+{% endif %}
 <div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
@@ -94,7 +143,12 @@
         <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
         <button data-dismiss="modal" class="btn red" id="btnYes">Confirm</button>
     </div>
-   </div><table class="table table-striped table-hover table-users">
+
+
+
+   </div>
+{% if test_of_change %}
+        <table class="table table-striped table-hover table-users">
     			<thead>
     				<tr>
 
@@ -109,19 +163,26 @@
     			</thead>
 
     			<tbody>
+                {% for change in test_of_change %}
     				<tr>
     					<td>1</td>
-    					<td>Nov 2022</td>
-    					<td>john</td>
-    					<td>doe</td>
-    					<td>dsd@gmail.com</td>
-    					<td>078987809876543</td>
-                        <td>90%</td>
+    					<td>{{ change.month_year}}</td>
+    					<td>{{ change.tested_change }}</td>
+    					<td>{{ change.comments }}</td>
+    					<td>{{ change.numerator}}</td>
+    					<td>{{ change.denominator }}</td>
+                        <td>{{ change.achievements}}%</td>
+                    <td>
+                                <a class="btn btn-info btn-sm" href="{% url 'update_test_of_change' change.id %}">Edit</a>
+                                <a class="btn btn-danger btn-sm" href="{% url 'delete_test_of_change' change.id %}">Delete</a>
+                            </td>
                     </tr>
-
+                {% endfor %}
 	               </tbody>
 
     		</table>
+
+{% endif %}
 <p>Do you have any comments regarding the above QI Initiative? Click the button below to send your comment to the QI team members implementing this QI initiative.</p>
 
 <p>
@@ -145,65 +206,110 @@
 </div>
 
 </div>
-
+{#{% endfor %}#}
   <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
             <div>
             </div>
             <h5 class="d-flex justify-content-evenly">Other QI projects in this facility</h5>
-            <p class="d-flex justify-content-evenly">Put a bar chart here</p>
+      <div class="container">
+        <div class="col">
+            <div class="row">
+                {{ facility_proj_performance|safe }}
+            </div>
+
         </div>
 
-        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+    </div>
+        </div>
+
+{#<div class="row">#}
+{#    {% for keys,values in pro_perfomance_.items %}#}
+{#                {% if "year" in values %}#}
+{#  <div class="col-sm-6">#}
+{#    <div class="card">#}
+{#      <div class="card-body">#}
+{#        <h5 class="card-title">{{ values}}</h5>#}
+{#          <div class="container">#}
+{#                            <div class="col">#}
+{#                                <div class="row">#}
+{#                                    {{ values|safe }}#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#        <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>#}
+{#        <a href="#" class="btn btn-primary">Go somewhere</a>#}
+{#      </div>#}
+{#    </div>#}
+{#  </div>#}
+{#  {% endif %}#}
+{#            {% endfor %}#}
+{#</div>#}
+
+{#        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12 d-flex justify-content-evenly" >#}
 {#            <h1 class="col-md-1">1</h1>#}
-  <div class="col">
-    <div class="card h-100">
-      <div class="card-body">
-        <h5 class="card-title">Card title</h5>
-        <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>
-          <div class="d-flex justify-content-evenly" >
-          <a href="#" class="btn btn-secondary disabled" >started on</a>
-          <a href="{% url 'single_project' %}" class="btn btn-primary">View</a>
-      </div>
-      </div>
-      <div class="card-footer">
-        <small class="text-muted">Last updated 3 mins ago</small>
-      </div>
-    </div>
-
-  </div>
-  <div class="col">
-    <div class="card h-100">
-      <div class="card-body">
-        <h5 class="card-title">Card title</h5>
-        <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>
-          <div class="d-flex justify-content-evenly" >
-          <a href="#" class="btn btn-secondary disabled" >started on</a>
-          <a href="{% url 'single_project' %}" class="btn btn-primary">View</a>
-      </div>
-      </div>
-      <div class="card-footer">
-        <small class="text-muted">Last updated 3 mins ago</small>
-      </div>
-    </div>
-
-  </div>
-  <div class="col">
-    <div class="card h-100">
-      <div class="card-body">
-        <h5 class="card-title">Card title</h5>
-        <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>
-          <div class="d-flex justify-content-evenly" >
-          <a href="#" class="btn btn-secondary disabled" >started on</a>
-          <a href="{% url 'single_project' %}" class="btn btn-primary">View</a>
-      </div>
-      </div>
-      <div class="card-footer">
-        <small class="text-muted">Last updated 3 mins ago</small>
-      </div>
-    </div>
-
-  </div>
-
+{#            {% for keys,values in pro_perfomance_.items %}#}
+{#                {% if "year" in values %}#}
+{#                <div class="col">#}
+{#                    <div class="card h-100" style="height: 5rem;">#}
+{#                  <div class="card-body">#}
+{#                    <h5 class="card-title">{}}</h5>#}
+{#                    <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>#}
+{#                      <div class="container">#}
+{#                            <div class="col">#}
+{#                                <div class="row">#}
+{#                                    {{ values|safe }}#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                      <div class="d-flex justify-content-evenly" >#}
+{#                      <a href="#" class="btn btn-secondary disabled" >started on</a>#}
+{#                      <a href="#" class="btn btn-primary">View</a>#}
+{#                  </div>#}
+{#                  </div>#}
+{#                  <div class="card-footer">#}
+{#                    <small class="text-muted">Last updated 3 mins ago</small>#}
+{#                  </div>#}
+{#                </div>#}
+{##}
+{#              </div>#}
+{#                {% endif %}#}
+{#            {% endfor %}#}
+{##}
+{##}
+{#  <div class="col">#}
+{#    <div class="card h-100">#}
+{#      <div class="card-body">#}
+{#        <h5 class="card-title">Card title</h5>#}
+{#        <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>#}
+{#          <div class="d-flex justify-content-evenly" >#}
+{#          <a href="#" class="btn btn-secondary disabled" >started on</a>#}
+{#          <a href="#" class="btn btn-primary">View</a>#}
+{#      </div>#}
+{#      </div>#}
+{#      <div class="card-footer">#}
+{#        <small class="text-muted">Last updated 3 mins ago</small>#}
+{#      </div>#}
+{#    </div>#}
+{##}
+{#  </div>#}
+{#  <div class="col">#}
+{#    <div class="card h-100">#}
+{#      <div class="card-body">#}
+{#        <h5 class="card-title">Card title</h5>#}
+{#        <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>#}
+{#          <div class="d-flex justify-content-evenly" >#}
+{#          <a href="#" class="btn btn-secondary disabled" >started on</a>#}
+{#          <a href="#" class="btn btn-primary">View</a>#}
+{#      </div>#}
+{#      </div>#}
+{#      <div class="card-footer">#}
+{#        <small class="text-muted">Last updated 3 mins ago</small>#}
+{#      </div>#}
+{#    </div>#}
+{##}
+{#  </div>#}
+{##}
+{#</div>#}
 </div>
 
     </main>

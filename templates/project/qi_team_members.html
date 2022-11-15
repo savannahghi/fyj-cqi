@@ -47,9 +47,13 @@
     			</thead>
 
     			<tbody>
+                {% for team_ in team %}
+
+
+
     				<tr>
     					<td>1</td>
-    					<td>johnny</td>
+    					<td>{{ team_.username }}</td>
     					<td>john</td>
     					<td>doe</td>
     					<td>dsd@gmail.com</td>
@@ -62,6 +66,7 @@
                         <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-info" role="button">Edit</a></td>
                         <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-danger" role="button">Delete</a></td>
                     </tr>
+                {% endfor %}
 
 	               </tbody>
 

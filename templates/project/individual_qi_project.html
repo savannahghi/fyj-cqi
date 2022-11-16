@@ -1,5 +1,6 @@
 {% extends 'project/index.html' %}
 {% load static %}
+{% load crispy_forms_tags %}
 
 {% block content %}
     <main>
@@ -87,7 +88,10 @@
 
     {% if facility_project.process_analysis.url is not null %}
         <h6><strong>PROCESS ANALYSIS :</strong></h6>
-    <img  src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}">
+        <div class="bg-image hover-zoom">
+        <img  src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}">
+        </div>
+{#    <img  src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}">#}
     
     {% endif %} 
 
@@ -183,12 +187,22 @@
     		</table>
 
 {% endif %}
+
 <p>Do you have any comments regarding the above QI Initiative? Click the button below to send your comment to the QI team members implementing this QI initiative.</p>
 
 <p>
-  <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+    <div class="d-flex justify-content-evenly">
+    <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
     Yes
   </a>
+{#    {% if all_comments %}#}
+    <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
+{#        {% else %}#}
+{#        <p class="alert alert-warning"><strong>NO COMMENTS SUBMITTED YET</strong></p>#}
+{#    {% endif %}#}
+
+</div>
+
 {#  <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">#}
 {#    Button with data-bs-target#}
 {#  </button>#}
@@ -197,20 +211,25 @@
 {#  <div class="card card-body">#}
 {#    Some placeholder content for the collapse component. This panel is hidden by default but revealed when the user activates the relevant trigger.#}
 {#  </div>#}
-    <div class="form-floating">
-  <textarea class="form-control" placeholder="Leave a brief comment here" id="floatingTextarea"></textarea>
-  <label for="floatingTextarea"></label>
-</div>
-<div class="mt-2">
-    <input type="submit" class="btn btn-success" value="Submit Button">
-</div>
+{#    <div class="form-floating">#}
+        <form action="" method="POST">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <input type="submit" class="btn btn-success">
+        </form>
+{#  <textarea class="form-control" placeholder="Leave a brief comment here" id="floatingTextarea"></textarea>#}
+{#  <label for="floatingTextarea"></label>#}
+{#</div>#}
+{#<div class="mt-2">#}
+{#    <input type="submit" class="btn btn-success" value="Submit Button">#}
+{#</div>#}
 
 </div>
 {#{% endfor %}#}
   <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
             <div>
             </div>
-            <h5 class="d-flex justify-content-evenly">Other QI projects in this facility</h5>
+            <h5 class="d-flex justify-content-evenly">All QI projects for {{ facility_project.facility|lower }}.</h5>
       <div class="container">
         <div class="col">
             <div class="row">
@@ -222,28 +241,30 @@
     </div>
         </div>
 
-{#<div class="row">#}
-{#    {% for keys,values in pro_perfomance_.items %}#}
-{#                {% if "year" in values %}#}
-{#  <div class="col-sm-6">#}
-{#    <div class="card">#}
-{#      <div class="card-body">#}
+<div class="row">
+    {% for key,values in pro_perfomance_trial.items %}
+                {% if facility_project.id != key %}
+  <div class="col-sm-6 mt-3">
+    <div class="card ">
+      <div class="card-body">
 {#        <h5 class="card-title">{{ values}}</h5>#}
-{#          <div class="container">#}
-{#                            <div class="col">#}
-{#                                <div class="row">#}
-{#                                    {{ values|safe }}#}
-{#                                </div>#}
-{#                            </div>#}
-{#                        </div>#}
-{#        <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>#}
-{#        <a href="#" class="btn btn-primary">Go somewhere</a>#}
-{#      </div>#}
-{#    </div>#}
-{#  </div>#}
-{#  {% endif %}#}
-{#            {% endfor %}#}
-{#</div>#}
+          <div class="container">
+                            <div class="col">
+                                <div class="row">
+                                    {{ keys }}
+                                    {{ values|safe }}
+                                </div>
+                            </div>
+                        </div>
+        <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+        <a href="{% url 'single_project' key %}" class="btn btn-primary">Go to the project</a>
+      </div>
+    </div>
+  </div>
+{#        <hr>#}
+  {% endif %}
+            {% endfor %}
+</div>
 
 {#        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12 d-flex justify-content-evenly" >#}
 {#            <h1 class="col-md-1">1</h1>#}

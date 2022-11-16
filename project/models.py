@@ -53,18 +53,10 @@ class QI_Projects(models.Model):
     created_by = models.ForeignKey(NewUser, blank=True, null=True,
                                    default=None, on_delete=models.CASCADE)
     STATUS_CHOICES = (
-        ('HVL', 'HVL'),
-        ('IPT', 'IPT'),
-        ('Index testing', 'Index testing'),
-        ('HTS', 'HTS'),
-        ('TX & RETENTION', 'TX & RETENTION'),
-        ('PMTCT', 'PMTCT'),
-        ('MMD/MMS', 'MMD/MMS'),
-        ('LAB', 'LAB'),
-        ('TB', 'TB'),
-        ('Others', 'Others'),
+        ('Started or Implemented', 'STARTED OR IMPLEMENTED'),
+        ('Completed or Closed', 'COMPLETED OR CLOSED'),
     )
-    measurement_status = models.CharField(max_length=250,choices=STATUS_CHOICES)
+    measurement_status = models.CharField(max_length=250, choices=STATUS_CHOICES)
     measurement_frequency = models.CharField(max_length=250)
     comments = models.TextField(blank=True)
 
@@ -104,7 +96,7 @@ class QI_Projects(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.facility
+        return str(self.facility) + " : " + self.project_title
 
 
 class Close_project(models.Model):
@@ -129,9 +121,28 @@ class TestedChange(models.Model):
     achievements = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        return self.tested_change + " - " + str(self.achievements)+"%"+" - "+str(self.project)
+        return self.tested_change + " - " + str(self.achievements) + "%" + " - " + str(self.project)
         # return self.tested_change
 
     def save(self, *args, **kwargs):
-        self.achievements = round(self.numerator / self.denominator * 100,)
+        self.achievements = round(self.numerator / self.denominator * 100, )
         super().save(*args, **kwargs)
+
+
+class ProjectComments(models.Model):
+    qi_project_title = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
+    commented_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                     default=None, on_delete=models.CASCADE)
+    comment = models.TextField()
+    comment_date = models.DateTimeField(auto_now_add=True, auto_now=False)
+    comment_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+
+    class Meta:
+        verbose_name_plural = "Project comments"
+
+    def __str__(self):
+        return self.comment
+
+    # def save(self,*args,**kwargs):
+    #     self.qi_project=self.qi_project_id.id
+    #     super().save(*args,**kwargs)

@@ -10,7 +10,7 @@ from django.shortcuts import render, redirect
 from account.forms import NewUserForm, UpdateUserForm
 from .models import QI_Projects
 # from .forms import QI_ProjectsForm, Close_projectForm, CreateUserForm, AccountForm
-from .forms import QI_ProjectsForm, Close_projectForm, TestedChangeForm
+from .forms import QI_ProjectsForm, Close_projectForm, TestedChangeForm, ProjectCommentsForm
 from .filters import *
 
 import plotly.express as px
@@ -325,7 +325,24 @@ def audit_trail(request):
 
 @login_required(login_url='login')
 def comments(request):
-    return render(request, "project/comments.html")
+    all_comments = ProjectComments.objects.all().order_by('-comment_updated')
+    # print(all_comments.comment[0])
+
+    context = {
+        "all_comments": all_comments
+    }
+    return render(request, "project/comments.html", context)
+
+
+@login_required(login_url='login')
+def single_project_comments(request, pk):
+    all_comments = ProjectComments.objects.filter(qi_project_title__id=pk).order_by('-comment_updated')
+
+    context = {
+        "all_comments": all_comments,
+
+    }
+    return render(request, "project/comments.html", context)
 
 
 @login_required(login_url='login')
@@ -335,7 +352,8 @@ def resources(request):
 
 def line_chart(df, x_axis, y_axis, title):
     fig = px.line(df, x=x_axis, y=y_axis, text=y_axis,
-                  title=title, hover_name=x_axis, hover_data={
+                  title=title,
+                  hover_name=None, hover_data={
             "tested of change": True,
             "achievements": True, })
     fig.update_traces(textposition='top center')
@@ -375,11 +393,11 @@ def bar_chart(df, x_axis, y_axis, title):
     return fig.to_html()
 
 
-def prepare_trends(df):
+def prepare_trends(df, title=""):
     df['achievements'] = df['achievements'].astype(int)
     df = df.sort_values("month_year")
     df['month_year'] = df['month_year'].astype(str) + "."
-    project_performance = line_chart(df, "month_year", "achievements", "Project performance")
+    project_performance = line_chart(df, "month_year", "achievements", title)
     return project_performance
 
 
@@ -390,40 +408,62 @@ def single_project(request, pk):
     other_projects = QI_Projects.objects.filter(facility=facility_project.facility)
     # Hit db once
     test_of_change_qs = TestedChange.objects.all()
+    # check comments
+    all_comments = ProjectComments.objects.filter(qi_project_title__id=facility_project.id).order_by('-comment_updated')
 
-    other_facility_projects_lst = []
-    for proj in other_projects:
-        # use manager
-        changes_others = test_of_change_qs.filter(project_id=proj.id).order_by('-month_year')
-        try:
-            changes_others = [
-                {'month_year': x.month_year,
-                 'tested of change': x.tested_change,
-                 'achievements': x.achievements,
-                 'facility': x.project,
-                 'project': x.project.project_title,
-                 } for x in changes_others
-            ]
-            # print("changes_others...")
-            # print(changes_others)
-            # convert data from database to a dataframe
-            df_changes_others = pd.DataFrame(changes_others)
-            # print(df_changes_others)
+    if request.method == "POST":
+        form = ProjectCommentsForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            # get project primary key
+            post.qi_project_title = QI_Projects.objects.get(project_title=facility_project.project_title)
+            post.commented_by = NewUser.objects.get(username=request.user)
+            # save
+            post.save()
+            # show empty form
+            form = ProjectCommentsForm()
+    else:
+        form = ProjectCommentsForm()
 
-            other_facility_projects_lst.append(prepare_trends(df_changes_others))
-        except:
-            changes_others = [
-                {'month_year': 0,
-                 'tested of change': 0,
-                 'achievements': 0,
-                 }
-            ]
-            other_facility_projects_lst.append(changes_others[0])
+    # accessing facility qi projects
+    # use two underscore to the field with foreign key
+    list_of_projects = TestedChange.objects.filter(project_id__facility=facility_project.facility).order_by(
+        '-month_year')
+    list_of_projects = [
+        {'month_year': x.month_year,
+         'project_id': x.project_id,
+         'tested of change': x.tested_change,
+         'achievements': x.achievements,
+         'facility': x.project,
+         'project': x.project.project_title,
+         } for x in list_of_projects
+    ]
+    # print("changes_others...")
+    # print(changes_others)
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    if list_of_projects.shape[0] != 0:
+        dicts = {}
+        keys = list_of_projects['project_id'].unique()
+        values = list_of_projects['project'].unique()
+        for i in range(len(keys)):
+            dicts[keys[i]] = values[i]
 
-    pro_perfomance_ = dict(zip(["pro_perfomance_" + str(count) for count, i in enumerate(other_facility_projects_lst)],
-                               other_facility_projects_lst))
-    # print(list(pro_perfomance_.values())[-3])
-    # print(list(pro_perfomance_.values())[0])
+        # print("dicts...")
+        # print(f"keys: {len(keys)}")
+        # print(f"values: {len(values)}")
+        # print(dict(zip(keys, values)))
+        # print(dicts)
+
+        all_other_projects_trend = []
+        for project in list_of_projects['project'].unique():
+            # print(project)
+            all_other_projects_trend.append(
+                prepare_trends(list_of_projects[list_of_projects['project'] == project], project))
+
+        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+    else:
+        pro_perfomance_trial = {}
 
     # print(proj)
     # assign it to a dataframe using list comprehension
@@ -459,9 +499,11 @@ def single_project(request, pk):
         facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "facility projects")
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
-                   "pro_perfomance_": pro_perfomance_}
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form,"all_comments":all_comments}
+
     else:
-        context = {"facility_project": facility_project, "test_of_change": changes, "pro_perfomance_": pro_perfomance_}
+        context = {"facility_project": facility_project, "test_of_change": changes,
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form}
     return render(request, "project/individual_qi_project.html", context)
 
 

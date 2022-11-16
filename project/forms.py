@@ -60,3 +60,7 @@ class UpdateTestedChangeForm(ModelForm):
 #     class Meta:
 #         model = Account
 #         fields ='__all__'
+class ProjectCommentsForm(ModelForm):
+    class Meta:
+        model = ProjectComments
+        fields = ['comment']

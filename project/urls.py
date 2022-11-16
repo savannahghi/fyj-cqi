@@ -14,6 +14,7 @@ urlpatterns = [
     path('archived/', archived, name="archived"),
     path('audit-trail/', audit_trail, name="audit_trail"),
     path('comments/', comments, name="comments"),
+    path('single-project-comments/<int:pk>', single_project_comments, name="single_project_comments"),
     path('resources/', resources, name="resources"),
     path('single-project/<int:pk>', single_project, name="single_project"),
     path('facility-projects/<str:pk>', facility_project, name="facility_project"),

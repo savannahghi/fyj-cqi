@@ -24,28 +24,41 @@
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
             <div>
             </div>
-            <h5 class="d-flex justify-content-evenly">You are viewing comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>
+        {% if all_comments|length == 1 %}
+            {% for all_comment in all_comments %}
+                <h5 class="d-flex justify-content-evenly">You are viewing {{ all_comment.qi_project_title.facility|title }} comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>
+            {% endfor %}
+            {% else %}
+                <h5 class="d-flex justify-content-evenly">You are viewing comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>
+            {% endif %}
+
 {#            <p class="d-flex justify-content-evenly">No specific criteria is specified, so displaying all archived QI Projects</p>#}
         </div>
 
         <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
 
   <div class="col-md-12">
-
-    <div class="card h-100">
+{% for comment in all_comments %}
+<div class="card mt-3">
       <div class="card-body">
-        <h5 class="card-title"> 1. Card title</h5>
+        <h5 class="card-title"> {{ forloop.counter }}. {{ comment.qi_project_title.project_title|title }}</h5>
           <ul>
-              <li>This card has supporting text below as a natural lead-in to additional content.</li>
-              <li>This card has supporting text below as a natural lead-in to additional content.</li>
-              <li>This card has supporting text below as a natural lead-in to additional content.</li>
-              <li>This card has supporting text below as a natural lead-in to additional content.</li>
+              <li><strong>Comment : {{ comment.comment }}</strong></li>
+{#              <li>Date comment made : {{ comment.comment_date }}</li>#}
+              <li>Commented by : <a href="#">{{ comment.commented_by.username|title }}</a></li>
+              <li>Facility :  <a href="#">{{ comment.qi_project_title.facility|title }}</a></li>
+
+              <li>CQI Project created by : <a href="#">{{ comment.qi_project_title.created_by|title }}</a> ({{ comment.commented_by.phone_number }})</li>
+              <li>QI Responsible people : {{ comment.qi_project_title.responsible_people }}</li>
           </ul>
       </div>
       <div class="card-footer">
-        <small class="text-muted">Last updated 3 mins ago</small>
+        <small class="text-muted">Comment done on {{ comment.comment_date }}</small>
       </div>
     </div>
+{% endfor %}
+
+
 
   </div>
 

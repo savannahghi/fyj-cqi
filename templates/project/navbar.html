@@ -8,6 +8,7 @@
 {% url "audit_trail" as audit_trail %}
 {% url "comments" as comments %}
 {% url "resources" as resources %}
+{% url "facilities_landing_page" as facilities_landing_page %}
 
 
 {% block nav %}
@@ -21,6 +22,12 @@
             </a>
           </li>
           <li class="nav-item">
+            <a class="nav-link {% if request.path == facilities_landing_page %} active{% endif %}" href="{% url 'facilities_landing_page' %}">
+              <span data-feather="book-open" class="align-text-bottom"></span>
+              All QI projects
+            </a>
+          </li>
+        <li class="nav-item">
             <a class="nav-link {% if request.path == deep_dive_facilities %} active{% endif %}" href="{% url 'deep_dive_facilities' %}">
               <span data-feather="file" class="align-text-bottom"></span>
               Deep dive-Facilities

@@ -11,11 +11,11 @@ class QiprojectFilter(django_filters.FilterSet):
     project_title = CharFilter(field_name="project_title", lookup_expr="icontains",label='Project Title')
     objective = CharFilter(field_name="objective", lookup_expr="icontains",label='Objective')
     problem_background = CharFilter(field_name="problem_background", lookup_expr="icontains",label='Problem Background')
-    measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
+    # measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
     settings = CharFilter(field_name="settings", lookup_expr="icontains",label='Settings')
 
     class Meta:
         model = QI_Projects
         fields = ['project_title','department', 'problem_background', 'facility', 'settings', 'created_by',
-                  'start_date']
+                  'start_date','measurement_frequency']
         exclude = ['process_analysis']

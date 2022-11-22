@@ -1,4 +1,7 @@
 from datetime import datetime
+
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Field
 from django.forms import ModelForm
 # from django.contrib.auth.forms import UserCreationForm
 
@@ -50,6 +53,7 @@ class UpdateTestedChangeForm(ModelForm):
                                                  'type': 'date', 'max': datetime.now().date}),
         }
 
+
 # class CreateUserForm(UserCreationForm):
 #     class Meta:
 #         model = User
@@ -64,3 +68,9 @@ class ProjectCommentsForm(ModelForm):
     class Meta:
         model = ProjectComments
         fields = ['comment']
+
+
+class ProjectResponsesForm(ModelForm):
+    class Meta:
+        model = ProjectResponses
+        fields = ['response']

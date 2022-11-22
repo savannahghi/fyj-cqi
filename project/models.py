@@ -8,6 +8,11 @@ from crum import get_current_user, get_current_request
 from account.models import NewUser
 from project.utils import image_resize
 
+import os
+
+# This handles django [Errno 2] No such file or directory ERROR
+file_ = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media/files/facilities.txt')
+
 
 # class CustomUser(models.Model):
 #     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -18,26 +23,24 @@ from project.utils import image_resize
 
 
 class QI_Projects(models.Model):
+    # read a local file with facility names
+    data = open(file_, 'r').read()
+    # split at new line
+    facility_list = data.split("\n")
+    # Make a tuple
+    FACILITY_CHOICES = tuple((choice, choice) for choice in facility_list)
     DEPARTMENT_CHOICES = [('Care and Treatment clinic', 'Care and Treatment clinic'), ('TB clinic', 'TB clinic'),
                           ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
-                          ('Community', 'Community'),
-                          ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'), ('OPD', 'OPD'), ('IPD', 'IPD')]
+                          ('Community', 'Community'),('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
+                          ('OPD', 'OPD'), ('IPD', 'IPD')]
     CATEGORY_CHOICES = (
-        ('HVL', 'HVL'),
-        ('IPT', 'IPT'),
-        ('Index testing', 'Index testing'),
-        ('HTS', 'HTS'),
-        ('TX & RETENTION', 'TX & RETENTION'),
-        ('PMTCT', 'PMTCT'),
-        ('MMD/MMS', 'MMD/MMS'),
-        ('LAB', 'LAB'),
-        ('TB', 'TB'),
-        ('Others', 'Others'),
-    )
+        ('HVL', 'HVL'), ('IPT', 'IPT'), ('Index testing', 'Index testing'), ('HTS', 'HTS'),
+        ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
+        ('Others', 'Others'),)
     department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES)
     project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
     project_title = models.CharField(max_length=250)
-    facility = models.CharField(max_length=250)
+    facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
     settings = models.CharField(max_length=250)
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
@@ -53,11 +56,23 @@ class QI_Projects(models.Model):
     created_by = models.ForeignKey(NewUser, blank=True, null=True,
                                    default=None, on_delete=models.CASCADE)
     STATUS_CHOICES = (
-        ('Started or Implemented', 'STARTED OR IMPLEMENTED'),
+        ('Started or Ongoing', 'STARTED OR ONGOING'),
         ('Completed or Closed', 'COMPLETED OR CLOSED'),
+        ('Canceled', 'CANCELED'),
+        ('Not started', 'NOT STARTED'),
+        ('Postponed', 'POSTPONED'),
     )
     measurement_status = models.CharField(max_length=250, choices=STATUS_CHOICES)
-    measurement_frequency = models.CharField(max_length=250)
+    FREQUENCY_CHOICES = (
+        ('Daily', 'Daily'),
+        ('Weekly', 'Weekly'),
+        ('Fortnightly', 'Fortnightly'),
+        ('Monthly', 'Monthly'),
+        ('Quarterly', 'Quarterly'),
+        ('Semi-annually', 'Semi-annually'),
+        ('Annually', 'Annually'),
+    )
+    measurement_frequency = models.CharField(max_length=250, choices=FREQUENCY_CHOICES)
     comments = models.TextField(blank=True)
 
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
@@ -143,6 +158,18 @@ class ProjectComments(models.Model):
     def __str__(self):
         return self.comment
 
-    # def save(self,*args,**kwargs):
-    #     self.qi_project=self.qi_project_id.id
-    #     super().save(*args,**kwargs)
+
+class ProjectResponses(models.Model):
+    response_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                    default=None, on_delete=models.CASCADE)
+    comment = models.ForeignKey(ProjectComments, blank=True, null=True,
+                                default=None, on_delete=models.CASCADE)
+    response = models.TextField()
+    response_date = models.DateTimeField(auto_now_add=True, auto_now=False)
+    response_updated_date = models.DateTimeField(auto_now=True, auto_now_add=False)
+
+    class Meta:
+        verbose_name_plural = "Project responses"
+
+    def __str__(self):
+        return self.response

@@ -1,0 +1,205 @@
+{% extends 'project/index.html' %}
+{% load static %}
+{% block content %}
+{% load crispy_forms_tags %}
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-5">
+    <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
+        {% if all_comments|length >= 1 %}
+            {% for all_comment in all_comments|slice:":1" %}
+                <h5 class="d-flex justify-content-evenly">You are viewing {{ all_comment.qi_project_title.facility|title }}
+                    comments sent to QI Team members regarding QI Initiatives that they are implementing
+                     and their responses.</h5>
+            {% endfor %}
+
+            {% else %}
+                <h5 class="d-flex justify-content-evenly">You are viewing comments sent to QI Team members regarding
+                    QI Initiatives that they are implementing and their responses.</h5>
+        {% endif %}
+    </div>
+{% if all_comments %}
+        {% if user.is_authenticated %}
+            {% if user.id != facility_project.created_by_id %}
+                    <div class="mt-3">
+                        {% for comment in all_comments|slice:":1"  %}
+                            <p>Do you have any comments regarding projected <strong>{{ comment.qi_project_title.project_title }}</strong>
+                                QI initiative created by <strong>{{ comment.qi_project_title.created_by|title  }}</strong>
+                                at <strong>{{ comment.qi_project_title.facility|title  }}</strong>?
+                                Click the button below to send your comment.</p>
+                        {% endfor %}
+                         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+                            Yes
+                          </a>
+                    </div>
+                <div class="collapse" id="collapseExample">
+                        <form action="" method="POST" class="mw-100">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+                            <input type="submit" class="btn btn-success mt-2">
+                        </form>
+                </div>
+            {% endif %}
+        {% endif %}
+
+{% elif  user.id != facility_project.created_by_id %}
+{#    <h1>user id else: {{  user.id }}</h1>#}
+{#    <h1>project owner: {{  facility_project.created_by_id }}</h1>#}
+     <div class="mt-3">
+        <p>Do you have any comments regarding <strong>{{ facility_project.project_title }}</strong>
+            QI initiative created by <strong>{{ facility_project.created_by|title  }}</strong>
+            at <strong>{{ facility_project.facility|title  }}</strong>?
+            Click the button below to send your comment.</p>
+         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+            Yes
+          </a>
+     </div>
+    <div class="collapse" id="collapseExample">
+        <form action="" method="POST" class="mw-100">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <input type="submit" class="btn btn-success mt-2">
+        </form>
+    </div>
+{% endif %}
+
+        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+
+
+<div class="col-md-7">
+<div class="alert alert-warning col-12" role="alert">
+    <h5 class="d-flex justify-content-evenly">COMMENTS</h5>
+
+</div>
+{% if all_comments %}
+  <div class="col-md-12">
+    {% for comment in all_comments %}
+{#<h2>project owner {{ comment.qi_project_title.created_by_id }}</h2>#}
+        <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title"> {{ forloop.counter }}. {{ comment.qi_project_title.project_title|title }}</h5>
+                  <ul>
+                      <li><strong>Comment : {{ comment.comment }}</strong></li>
+                      <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by %}">{{ comment.commented_by.username|title }}</a></li>
+                      <li>Facility :  <a href="{% url 'facility_project' comment.qi_project_title.facility %}">{{ comment.qi_project_title.facility|title }}</a></li>
+
+                      <li>CQI Project created by : <a href="{% url 'qi_creators' comment.qi_project_title.created_by %}">{{ comment.qi_project_title.created_by|title }}</a> ({{ comment.commented_by.phone_number }})</li>
+                      <li>QI Responsible people : {{ comment.qi_project_title.responsible_people }}</li>
+                  </ul>
+{#              <h1>comment id : {{ comment.id }}</h1>#}
+{#              <h1> response commented_ids : {{ all_responses_ids }}</h1>#}
+                  {% if user.is_authenticated %}
+                      {% if user.id == comment.commented_by_id %}
+                          {% if comment.id not in all_responses_ids %}
+                            <a class="btn btn-info btn-sm" href="{% url 'update_comments' comment.id %}">Edit</a>
+                            <a class="btn btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>
+                          {% endif %}
+                      {% endif %}
+                      {% if comment.id not in all_responses_ids %}
+                          {% if user.id == comment.qi_project_title.created_by_id %}
+                              <a class="btn btn-primary btn-sm" href="{% url 'comments_response' comment.id %}">Respond</a>
+                          {% endif %}
+                      {% endif %}
+                  {% endif %}
+              </div>
+              <div class="card-footer">
+                <small class="text-muted">Comment done on {{ comment.comment_date }}</small>
+              </div>
+        </div>
+    {% endfor %}
+  </div>
+    {% else %}
+        {% for comment in all_comments %}
+
+<h2>project owner {{ comment.qi_project_title.created_by_id }}</h2>
+            {% if user.is_authenticated %}
+                {% if user.id != comment.commented_by_id %}
+                    <p>Do you2 have any comments regarding the above QI Initiative? Click the button below to send
+                        your comment to the QI team members implementing this QI initiative.</p>
+                    <p>
+                        <div class="d-flex justify-content-evenly">
+                            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+                            Yes
+                          </a>
+                        </div>
+                    </p>
+                    <div class="collapse" id="collapseExample">
+                        <form action="" method="POST">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+                            <input type="submit" class="btn btn-success">
+                        </form>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+
+{% endif %}
+</div>
+<div class="col-md-5">
+    <div class="alert alert-info col-12" role="alert">
+        <h5 class="d-flex justify-content-evenly">RESPONSES</h5>
+    </div>
+    {% if all_responses %}
+      <div class="col-md-12">
+        {% for response in all_responses %}
+            <div class="card mt-3">
+              <div class="card-body">
+                <h5 class="card-title"> {{ forloop.counter }}. {{ response.comment.qi_project_title|upper }}</h5>
+                  <ul>
+                      <li><strong>Comment : {{ response.comment }}</strong></li>
+                      <li><strong>Response : {{ response }}</strong></li>
+                      <hr>
+                      <li>Comment by : {{ response.comment.commented_by }} on {{ response.comment.comment_updated }}</li>
+                      <li>Response by : <a href="#">{{ response.response_by.username|title }}</a> on {{ response.response_date }}</li>
+                  </ul>
+{#              <h1>user  id : {{ user.id }}</h1>#}
+{#              <h1> response commented_by_id {{ response.response_by_id }}</h1>#}
+                  {% if user.is_authenticated %}
+                      {% if user.id == response.response_by_id %}
+                            {% if comment.id not in all_responses_ids %}
+                                <a class="btn btn-info btn-sm" href="{% url 'update_response' response.id %}">Edit</a>
+                                <a class="btn btn-danger btn-sm" href="{% url 'delete_response' response.id %}">Delete</a>
+                            {% endif %}
+                      {% endif %}
+                      {% if user.id == response.qi_project_title.created_by_id %}
+                          <a class="btn btn-primary btn-sm" href="{% url 'comments_response' response.id %}">Respond</a>
+                      {% endif %}
+                  {% endif %}
+              </div>
+              <div class="card-footer">
+                <small class="text-muted">Response done on {{ response.response_date }}</small>
+              </div>
+            </div>
+        {% endfor %}
+      </div>
+        {% else %}
+            {% for comment in all_comments|slice:":1" %}
+                {% if user.is_authenticated %}
+                    {% if user.id == comment.qi_project_title.created_by_id %}
+                        <p>No response yet! Do you want to respond?</p>
+                        <p>
+                        <div class="d-flex justify-content-evenly">
+                        {% for comment in all_comments %}
+{#                        <a class="btn btn-primary" data-bs-toggle="collapse" href="{% url 'comments_response' comment.id %}" role="button" aria-expanded="false" aria-controls="collapseExample">#}
+                        <a class="btn btn-primary btn-sm" href="{% url 'comments_response' comment.id %}">Yes</a>
+
+                        {% endfor %}
+                    </div>
+                    </p>
+{#                    <div class="collapse" id="collapseExample">#}
+{#                        <form action="" method="POST">#}
+{#                            {% csrf_token %}#}
+{#                            {{ form|crispy }}#}
+{#                            <input type="submit" class="btn btn-success">#}
+{#                        </form>#}
+{#                    </div>#}
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+    {% endif %}
+</div>
+</div>
+
+</main>
+
+{% endblock %}

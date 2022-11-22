@@ -1,0 +1,115 @@
+{% extends 'project/index.html' %}
+{% load static %}
+{% block content %}
+{% load crispy_forms_tags %}
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-5">
+{#      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">#}
+{#        <h2 class="h2">Comments</h2>#}
+{#        <div class="btn-toolbar mb-2 mb-md-0">#}
+{#          <div class="btn-group me-2">#}
+{#            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>#}
+{#            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>#}
+{#          </div>#}
+{#          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">#}
+{#            <span data-feather="calendar" class="align-text-bottom"></span>#}
+{#            This week#}
+{#          </button>#}
+{#        </div>#}
+{#      </div>#}
+        <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
+            <div>
+            </div>
+{#        {% if all_comments|length >= 1 %}#}
+{##}
+{#                <h5 class="d-flex justify-content-evenly">You are viewing {{ all_comment.qi_project_title.facility|title }} comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>#}
+{##}
+{#            {% else %}#}
+{#                <h5 class="d-flex justify-content-evenly">You are viewing comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>#}
+{#            {% endif %}#}
+{##}
+{#        </div>#}
+
+
+{#            <div>#}
+{#                {% for comment in all_comments|slice:":1"  %}#}
+{#                    <p>Do you have any comments regarding the <strong>{{ comment.qi_project_title.project_title }}</strong> QI Initiative? Click the button below to send your comment to the QI team members implementing this QI initiative.</p>#}
+{#                {% endfor %}#}
+{#                 <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
+{#                    Respond?#}
+{#                  </a>#}
+{#            </div>#}
+<div class="container">
+        <form action="" method="POST" class="mw-100">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <input type="submit" class="btn btn-success mt-2">
+        </form>
+</div>
+        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+
+
+
+{% if all_comments %}
+  <div class="col-md-12">
+{% for comment in all_comments %}
+<div class="card mt-3">
+      <div class="card-body">
+        <h5 class="card-title"> {{ forloop.counter }}. {{ comment.qi_project_title.project_title|title }}</h5>
+          <ul>
+              <li><strong>Comment : {{ comment.comment }}</strong></li>
+{#              <li>Date comment made : {{ comment.comment_date }}</li>#}
+              <li>Commented by : <a href="#">{{ comment.commented_by.username|title }}</a></li>
+              <li>Facility :  <a href="#">{{ comment.qi_project_title.facility|title }}</a></li>
+
+              <li>CQI Project created by : <a href="#">{{ comment.qi_project_title.created_by|title }}</a> ({{ comment.commented_by.phone_number }})</li>
+              <li>QI Responsible people : {{ comment.qi_project_title.responsible_people }}</li>
+          </ul>
+          {% if user.is_authenticated %}
+              {% if user.id == comment.commented_by.id %}
+                <a class="btn btn-info btn-sm" href="{% url 'update_comments' comment.id %}">Edit</a>
+                <a class="btn btn-primary btn-sm" href="{% url 'comments_response' comment.id %}">Respond</a>
+          <a class="btn btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>
+          {% endif %}
+          {% endif %}
+
+
+      </div>
+      <div class="card-footer">
+        <small class="text-muted">Comment done on {{ comment.comment_date }}</small>
+      </div>
+    </div>
+{% endfor %}
+
+
+
+  </div>
+{#    {% else %}#}
+{#    <p>Do you have any comments regarding the above QI Initiative? Click the button below to send your comment to the QI team members implementing this QI initiative.</p>#}
+{##}
+{#<p>#}
+{#    <div class="d-flex justify-content-evenly">#}
+{#    <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
+{#    Yes#}
+{#  </a>#}
+</div>
+</p>
+<div class="collapse" id="collapseExample">
+        <form action="" method="POST">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <input type="submit" class="btn btn-success">
+        </form>
+</div>
+{% endif %}
+
+</div>
+
+    </main>
+{#    <script src="{% static 'assets/js/jquery-3.3.1.min.js' %}"></script>#}
+{#    <script src="{% static 'assets/js/popper.min.js' %}"></script>#}
+{#    <script src="{% static 'assets/js/bootstrap.min.js' %}"></script>#}
+{#    <script src="{% static 'assets/js/rome.js' %}"></script>#}
+{##}
+{#    <script src="{% static 'assets/js/main.js' %}"></script>#}
+{% endblock %}

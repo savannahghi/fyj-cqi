@@ -59,6 +59,7 @@
 {% if all_comments %}
   <div class="col-md-12">
 {% for comment in all_comments %}
+    {% if comment.id in all_responses %}
 <div class="card mt-3">
       <div class="card-body">
         <h5 class="card-title"> {{ forloop.counter }}. <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.qi_project_title.project_title|title }}</a></h5>
@@ -101,6 +102,7 @@
         <small class="text-muted">Comment done on {{ comment.comment_date }}</small>
       </div>
     </div>
+    {% endif %}
 {% endfor %}
 
 

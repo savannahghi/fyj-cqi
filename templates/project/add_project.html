@@ -4,27 +4,17 @@
 
 
 {% block content %}
-
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
- <div class="p-5 mb-4 bg-light rounded-3">
+    <div class="p-5 mb-4 bg-light rounded-3">
       <div class="container-fluid py-5">
         <h1 class="display-5 fw-bold">FACILITY NAME</h1>
         <p class="col-md-8 fs-4">COUNTY/SUBCOUNTY</p>
         <form method="POST" class="mt-5" enctype='multipart/form-data'>
-        {% csrf_token %}
-        {{ form|crispy}}
-         <input class="btn btn-success mt-1" type="submit" value="Add QI project">
-    </form>
+            {% csrf_token %}
+            {{ form|crispy}}
+            <input class="btn btn-success mt-1" type="submit" value="Submit">
+        </form>
       </div>
     </div>
-{#<div class="container mt-3">#}
-{#         <form method="post">#}
-{#        {% csrf_token %}#}
-{#        {{ form|crispy}}#}
-{#         <input class="btn btn-success mt-1" type="submit" value="Add QI project">#}
-{#    </form>#}
-{#</div>#}
-
-
-    </main>
+</main>
 {% endblock %}

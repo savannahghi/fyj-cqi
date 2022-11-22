@@ -3,6 +3,7 @@ import numpy as np
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Count
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
@@ -10,7 +11,7 @@ from django.shortcuts import render, redirect
 from account.forms import NewUserForm, UpdateUserForm
 from .models import QI_Projects
 # from .forms import QI_ProjectsForm, Close_projectForm, CreateUserForm, AccountForm
-from .forms import QI_ProjectsForm, Close_projectForm, TestedChangeForm, ProjectCommentsForm
+from .forms import QI_ProjectsForm, Close_projectForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm
 from .filters import *
 
 import plotly.express as px
@@ -20,6 +21,19 @@ import plotly.offline as opy
 
 
 # Create your views here.
+
+def pagination_(request, item_list):
+    page = request.GET.get('page', 1)
+
+    paginator = Paginator(item_list, 5)
+    try:
+        items = paginator.page(page)
+    except PageNotAnInteger:
+        items = paginator.page(1)
+    except EmptyPage:
+        items = paginator.page(paginator.num_pages)
+    return items
+
 @login_required(login_url='login')
 def dashboard(request):
     form = QI_ProjectsForm()
@@ -55,9 +69,6 @@ def update_project(request, pk):
         form = QI_ProjectsForm(request.POST, request.FILES, instance=project)
         if form.is_valid():
             form.save()
-            # form.created_by = request.user
-            # form.modified_by = request.user
-            # form.save()
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
@@ -75,28 +86,13 @@ def deep_dive_facilities(request):
 def facilities_landing_page(request):
     qi_list = QI_Projects.objects.all().order_by('-date_updated')
     num_post = QI_Projects.objects.filter(created_by=request.user).count()
-    # if request.method=="POST":
-    #     search=request.POST['searched']
-    #     search=QI_Projects.objects.filter(facility__contains=search)
-    #     projects = None
-    #     context = {"qi_list": qi_list, "num_post": num_post,"projects":projects,
-    #                "search":search
-    #                }
-    #     return render(request, "project/facility_landing_page.html", context)
-    # else:
-    #     projects = QI_Projects.objects.count()
-    #     print(num_post)
-    #     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
-    #
-    #                }
-    #     return render(request, "project/facility_landing_page.html", context)
-
     projects = QI_Projects.objects.count()
     my_filters = QiprojectFilter(request.GET, queryset=qi_list)
-    qi_list = my_filters.qs
+    qi_lists = my_filters.qs
+    qi_list = pagination_(request, qi_lists)
 
     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
-               "my_filters": my_filters,
+               "my_filters": my_filters,"qi_lists":qi_lists,
                }
     return render(request, "project/facility_landing_page.html", context)
 
@@ -136,6 +132,7 @@ def facility_project(request, pk):
     # qi_list=my_filters.qs
     context = {"projects": projects,
                "facility_name": facility_name,
+               "title": "Ongoing",
                }
     return render(request, "project/facility_projects.html", context)
 
@@ -175,6 +172,86 @@ def department_project(request, pk):
     # qi_list=my_filters.qs
     context = {"projects": projects,
                "facility_name": facility_name,
+               "title": "Ongoing",
+               }
+    return render(request, "project/department_projects.html", context)
+
+
+@login_required(login_url='login')
+def canceled_projects(request, pk):
+    projects = QI_Projects.objects.filter(measurement_status=pk)
+    # print(projects)
+    # print(projects[1])
+    facility_name = pk
+    # for user in NewUser.objects.annotate(post_count=Count('username')):
+    #     print(user,user.post_count)
+    #     print(user[0].post_count)
+    #     print(user[1].post_count)
+    # print(user[2].post_count)
+    # print(projects.created_by)
+
+    # qi_list = QI_Projects.objects.all().order_by('-date_updated')
+    # num_post = QI_Projects.objects.filter(created_by=request.user).count()
+    # if request.method=="POST":
+    #     search=request.POST['searched']
+    #     search=QI_Projects.objects.filter(facility__contains=search)
+    #     projects = None
+    #     context = {"qi_list": qi_list, "num_post": num_post,"projects":projects,
+    #                "search":search
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # else:
+    #     projects = QI_Projects.objects.count()
+    #     print(num_post)
+    #     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
+    #
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # projects = QI_Projects.objects.count()
+    # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
+    # qi_list=my_filters.qs
+    context = {"projects": projects,
+               "facility_name": facility_name,
+               "title":"Canceled"
+               }
+    return render(request, "project/department_projects.html", context)
+
+
+def postponed(request, pk):
+    projects = QI_Projects.objects.filter(measurement_status=pk)
+    # print(projects)
+    # print(projects[1])
+    facility_name = pk
+    # for user in NewUser.objects.annotate(post_count=Count('username')):
+    #     print(user,user.post_count)
+    #     print(user[0].post_count)
+    #     print(user[1].post_count)
+    # print(user[2].post_count)
+    # print(projects.created_by)
+
+    # qi_list = QI_Projects.objects.all().order_by('-date_updated')
+    # num_post = QI_Projects.objects.filter(created_by=request.user).count()
+    # if request.method=="POST":
+    #     search=request.POST['searched']
+    #     search=QI_Projects.objects.filter(facility__contains=search)
+    #     projects = None
+    #     context = {"qi_list": qi_list, "num_post": num_post,"projects":projects,
+    #                "search":search
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # else:
+    #     projects = QI_Projects.objects.count()
+    #     print(num_post)
+    #     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
+    #
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # projects = QI_Projects.objects.count()
+    # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
+    # qi_list=my_filters.qs
+    context = {"projects": projects,
+               "facility_name": facility_name,
+               "title":"Postponed"
                }
     return render(request, "project/department_projects.html", context)
 
@@ -220,6 +297,130 @@ def qi_creator(request, pk):
 
 
 @login_required(login_url='login')
+def completed_closed(request, pk):
+    print(pk)
+    projects = QI_Projects.objects.filter(measurement_status=pk)
+    print(projects)
+    # print(projects[1])
+    facility_name = pk
+    # for user in NewUser.objects.annotate(post_count=Count('username')):
+    #     print(user,user.post_count)
+    #     print(user[0].post_count)
+    #     print(user[1].post_count)
+    # print(user[2].post_count)
+    # print(projects.created_by)
+
+    # qi_list = QI_Projects.objects.all().order_by('-date_updated')
+    # num_post = QI_Projects.objects.filter(created_by=request.user).count()
+    # if request.method=="POST":
+    #     search=request.POST['searched']
+    #     search=QI_Projects.objects.filter(facility__contains=search)
+    #     projects = None
+    #     context = {"qi_list": qi_list, "num_post": num_post,"projects":projects,
+    #                "search":search
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # else:
+    #     projects = QI_Projects.objects.count()
+    #     print(num_post)
+    #     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
+    #
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # projects = QI_Projects.objects.count()
+    # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
+    # qi_list=my_filters.qs
+    context = {"projects": projects,
+               "facility_name": facility_name,
+               "title": "Completed or Closed",
+               }
+    return render(request, "project/department_projects.html", context)
+
+
+@login_required(login_url='login')
+def ongoing(request, pk):
+    print(pk)
+    projects = QI_Projects.objects.filter(measurement_status=pk)
+    print(projects)
+    # print(projects[1])
+    facility_name = pk
+    # for user in NewUser.objects.annotate(post_count=Count('username')):
+    #     print(user,user.post_count)
+    #     print(user[0].post_count)
+    #     print(user[1].post_count)
+    # print(user[2].post_count)
+    # print(projects.created_by)
+
+    # qi_list = QI_Projects.objects.all().order_by('-date_updated')
+    # num_post = QI_Projects.objects.filter(created_by=request.user).count()
+    # if request.method=="POST":
+    #     search=request.POST['searched']
+    #     search=QI_Projects.objects.filter(facility__contains=search)
+    #     projects = None
+    #     context = {"qi_list": qi_list, "num_post": num_post,"projects":projects,
+    #                "search":search
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # else:
+    #     projects = QI_Projects.objects.count()
+    #     print(num_post)
+    #     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
+    #
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # projects = QI_Projects.objects.count()
+    # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
+    # qi_list=my_filters.qs
+    context = {"projects": projects,
+               "facility_name": facility_name,
+               "title": "Completed or Closed",
+               }
+    return render(request, "project/department_projects.html", context)
+
+
+
+@login_required(login_url='login')
+def measurement_frequency(request, pk):
+    print(pk)
+    projects = QI_Projects.objects.filter(measurement_frequency=pk)
+    print(projects)
+    # print(projects[1])
+    facility_name = pk
+    # for user in NewUser.objects.annotate(post_count=Count('username')):
+    #     print(user,user.post_count)
+    #     print(user[0].post_count)
+    #     print(user[1].post_count)
+    # print(user[2].post_count)
+    # print(projects.created_by)
+
+    # qi_list = QI_Projects.objects.all().order_by('-date_updated')
+    # num_post = QI_Projects.objects.filter(created_by=request.user).count()
+    # if request.method=="POST":
+    #     search=request.POST['searched']
+    #     search=QI_Projects.objects.filter(facility__contains=search)
+    #     projects = None
+    #     context = {"qi_list": qi_list, "num_post": num_post,"projects":projects,
+    #                "search":search
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # else:
+    #     projects = QI_Projects.objects.count()
+    #     print(num_post)
+    #     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
+    #
+    #                }
+    #     return render(request, "project/facility_landing_page.html", context)
+    # projects = QI_Projects.objects.count()
+    # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
+    # qi_list=my_filters.qs
+    context = {"projects": projects,
+               "facility_name": facility_name,
+               # "title": "Completed or Closed",
+               }
+    return render(request, "project/department_projects.html", context)
+
+
+@login_required(login_url='login')
 def tested_change(request, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -254,7 +455,8 @@ def update_test_of_change(request, pk):
     else:
         form = TestedChangeForm(instance=item)
     context = {
-        "form": form
+        "form": form,
+        "title": "Update test of change",
     }
     return render(request, 'project/update_test_of_change.html', context)
 
@@ -273,6 +475,23 @@ def delete_test_of_change(request, pk):
         "test_of_changes": item
     }
     return render(request, 'project/delete_test_of_change.html', context)
+
+
+@login_required(login_url='login')
+def delete_response(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = ProjectResponses.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+        "test_of_changes": item
+    }
+    return render(request, 'project/delete_test_of_change.html', context)
+
 
 
 @login_required(login_url='login')
@@ -326,23 +545,162 @@ def audit_trail(request):
 @login_required(login_url='login')
 def comments(request):
     all_comments = ProjectComments.objects.all().order_by('-comment_updated')
-    # print(all_comments.comment[0])
-
+    all_responses = ProjectResponses.objects.values_list('comment_id', flat=True)
     context = {
-        "all_comments": all_comments
+        "all_comments": all_comments,
+        "all_responses":all_responses,
     }
     return render(request, "project/comments.html", context)
 
 
 @login_required(login_url='login')
+def comments_no_response(request):
+    all_comments = ProjectComments.objects.all().order_by('-comment_updated')
+    all_responses = ProjectResponses.objects.values_list('comment_id', flat=True)
+    context = {
+        "all_comments": all_comments,
+        "all_responses":all_responses,
+    }
+    return render(request, "project/comments_no_response.html", context)
+
+@login_required(login_url='login')
+def comments_with_response(request):
+    all_comments = ProjectComments.objects.all().order_by('-comment_updated')
+    all_responses = ProjectResponses.objects.values_list('comment_id', flat=True)
+    context = {
+        "all_comments": all_comments,
+        "all_responses":all_responses,
+    }
+    return render(request, "project/comments_with_response.html", context)
+
+
+@login_required(login_url='login')
 def single_project_comments(request, pk):
     all_comments = ProjectComments.objects.filter(qi_project_title__id=pk).order_by('-comment_updated')
+    all_responses = ProjectResponses.objects.filter(comment__qi_project_title_id=pk).order_by('-response_updated_date')
+
+    all_responses_ids = ProjectResponses.objects.values_list('comment_id', flat=True)
+
+    facility_project = QI_Projects.objects.get(id=pk)
+    pro_owner=facility_project.projectcomments_set.all()
+    print(pro_owner)
+    if request.method == "POST":
+        form = ProjectCommentsForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            # get project primary key
+            post.qi_project_title = QI_Projects.objects.get(project_title=facility_project.project_title)
+            post.commented_by = NewUser.objects.get(username=request.user)
+            # save
+            post.save()
+            # show empty form
+            form = ProjectCommentsForm()
+    else:
+        form = ProjectCommentsForm()
 
     context = {
         "all_comments": all_comments,
+        "form": form,
+        "all_responses":all_responses,
+        "facility_project":facility_project,
+        "all_responses_ids":all_responses_ids,
 
     }
-    return render(request, "project/comments.html", context)
+    return render(request, "project/single_comment.html", context)
+
+
+@login_required(login_url='login')
+def update_comments(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = ProjectComments.objects.get(id=pk)
+    if request.method == "POST":
+        form = ProjectCommentsForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = ProjectCommentsForm(instance=item)
+    context = {
+        "form": form,
+        "title": "Update Comment",
+    }
+    return render(request, 'project/update_test_of_change.html', context)
+
+@login_required(login_url='login')
+def comments_response(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    all_comments = ProjectResponses.objects.filter(id=pk).order_by('-response_updated_date')
+
+    # facility_project = QI_Projects.objects.get(id=pk)
+    # print(all_comments.comment[0])
+    if request.method == "POST":
+        form = ProjectResponsesForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            # get project primary key
+            post.comment = ProjectComments.objects.get(id=pk)
+            post.response_by = NewUser.objects.get(username=request.user)
+            # save
+            post.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = ProjectResponsesForm()
+
+    context = {
+        "all_comments": all_comments,
+        "form": form,
+
+    }
+    return render(request, "project/response.html", context)
+
+
+@login_required(login_url='login')
+def project_responses(request, pk):
+    all_comments = ProjectResponses.objects.filter(qi_project_title__id=pk).order_by('-comment_updated')
+
+    facility_project = QI_Projects.objects.get(id=pk)
+    # print(all_comments.comment[0])
+    if request.method == "POST":
+        form = ProjectCommentsForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            # get project primary key
+            post.qi_project_title = QI_Projects.objects.get(project_title=facility_project.project_title)
+            post.commented_by = NewUser.objects.get(username=request.user)
+            # save
+            post.save()
+            # show empty form
+            form = ProjectCommentsForm()
+    else:
+        form = ProjectCommentsForm()
+
+    context = {
+        "all_comments": all_comments,
+        "form": form,
+
+    }
+    return render(request, "project/single_comment.html", context)
+
+
+@login_required(login_url='login')
+def update_response(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = ProjectResponses.objects.get(id=pk)
+    if request.method == "POST":
+        form = ProjectResponsesForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = ProjectResponsesForm(instance=item)
+    context = {
+        "form": form,
+        "title": "Update Comment",
+    }
+    return render(request, 'project/update.html', context)
 
 
 @login_required(login_url='login')
@@ -410,7 +768,8 @@ def single_project(request, pk):
     test_of_change_qs = TestedChange.objects.all()
     # check comments
     all_comments = ProjectComments.objects.filter(qi_project_title__id=facility_project.id).order_by('-comment_updated')
-
+    print(all_comments)
+    print(len(all_comments))
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
         if form.is_valid():
@@ -438,8 +797,6 @@ def single_project(request, pk):
          'project': x.project.project_title,
          } for x in list_of_projects
     ]
-    # print("changes_others...")
-    # print(changes_others)
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
     if list_of_projects.shape[0] != 0:
@@ -448,12 +805,6 @@ def single_project(request, pk):
         values = list_of_projects['project'].unique()
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
-
-        # print("dicts...")
-        # print(f"keys: {len(keys)}")
-        # print(f"values: {len(values)}")
-        # print(dict(zip(keys, values)))
-        # print(dicts)
 
         all_other_projects_trend = []
         for project in list_of_projects['project'].unique():
@@ -465,7 +816,6 @@ def single_project(request, pk):
     else:
         pro_perfomance_trial = {}
 
-    # print(proj)
     # assign it to a dataframe using list comprehension
     other_projects = [
         {'department(s)': x.department,
@@ -489,21 +839,24 @@ def single_project(request, pk):
     # convert data from database to a dataframe
     df = pd.DataFrame(changes_data)
     if df.shape[0] != 0:
-        # print("pro_perfomance_....")
-        # print(pro_perfomance_)
         df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
         df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
 
         project_performance = prepare_trends(df)
 
         facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "facility projects")
+
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
-                   "pro_perfomance_trial": pro_perfomance_trial, "form": form,"all_comments":all_comments}
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments}
 
     else:
+        project_performance={}
+        facility_proj_performance={}
         context = {"facility_project": facility_project, "test_of_change": changes,
-                   "pro_perfomance_trial": pro_perfomance_trial, "form": form}
+                   "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments}
+
     return render(request, "project/individual_qi_project.html", context)
 
 
@@ -513,6 +866,22 @@ def delete_project(request, pk):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
     item = QI_Projects.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return redirect("facilities_landing_page")
+    context = {
+        "test_of_changes": item
+    }
+    return render(request, 'project/delete_test_of_change.html', context)
+
+
+@login_required(login_url='login')
+def delete_comment(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = ProjectComments.objects.get(id=pk)
     if request.method == "POST":
         item.delete()
 

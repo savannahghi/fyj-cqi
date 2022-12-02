@@ -53,7 +53,6 @@ def dashboard(request):
     # best_performing = TestedChange.objects.filter(achievements__gte=00.0).distinct()
     testedChange = TestedChange.objects.all()
 
-
     # my_filters = TestedChangeFilter(request.GET, queryset=best_performing)
 
     if testedChange:
@@ -74,7 +73,7 @@ def dashboard(request):
         best_performing = pd.concat(dfs)
 
         best_performing = best_performing.sort_values("achievements", ascending=False)
-        best_performing = best_performing[best_performing['achievements'] >= 10]
+        # best_performing = best_performing[best_performing['achievements'] >=10]
 
         best_performing['project'] = best_performing['project'] + " (" + best_performing['achievements'].astype(
             int).astype(str) + "%)"
@@ -119,10 +118,11 @@ def dashboard(request):
     # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
     # list_of_projects = my_filters.qs
     list_of_projects = [
-        {'month_year': x.month_year,
+        {'achievements': x.achievements,
+         'month_year': x.month_year,
          'project_id': x.project_id,
          'tested of change': x.tested_change,
-         'achievements': x.achievements,
+
          'facility': x.project,
          'project': x.project.project_title,
          'department': x.project.departments.department,
@@ -131,10 +131,9 @@ def dashboard(request):
 
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
-    print("df...")
-    keys=sorted(list_of_projects['department'].unique())
-    values=sorted(list_of_projects['department'].unique())
-    testedChange_current=dict(zip(keys, values))
+    keys = sorted(list_of_projects['department'].unique())
+    values = sorted(list_of_projects['department'].unique())
+    testedChange_current = dict(zip(keys, values))
     # keys = list_of_projects['department'].unique()
 
     dfs = []
@@ -148,12 +147,6 @@ def dashboard(request):
     values = dfs
     for i in range(len(keys)):
         dicts[keys[i]] = values[i]
-    print("dicts....")
-
-    for k, v in dicts.items():
-        print(f"K:{k}")
-        print(f"{v}")
-        print(f"++++++++++++")
 
     if list_of_projects.shape[0] != 0:
         dicts = {}
@@ -162,12 +155,28 @@ def dashboard(request):
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
 
+
+
+        lst = []
+
+        for i in list_of_projects['project_id'].unique():
+            # get the first rows of the dfs
+            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
+            # append them in a list
+            lst.append(a.head(1))
+
+        # concat and sort them by project id
+        df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+
         all_other_projects_trend = []
-        for project in list_of_projects['project'].unique():
+        for project in list(df_heads['project_id']):
+            # filter dfs based on the order of the best performing projects
             all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project'] == project], project))
+                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
 
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+
+
     else:
         pro_perfomance_trial = {}
 
@@ -409,12 +418,9 @@ def department_filter_project(request, pk):
 
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
-    print("before filter")
-    print(list_of_projects)
 
     list_of_projects = list_of_projects[list_of_projects['department'] == pk].sort_values("achievements")
-    print("after filter")
-    print(list_of_projects)
+
     # keys = list_of_projects['department'].unique()
 
     dfs = []
@@ -428,18 +434,13 @@ def department_filter_project(request, pk):
     values = dfs
     for i in range(len(keys)):
         dicts[keys[i]] = values[i]
-    print("dicts....")
 
-    for k, v in dicts.items():
-        print(f"K:{k}")
-        print(f"{v}")
-        print(f"++++++++++++")
+
 
     if list_of_projects.shape[0] != 0:
         dicts = {}
         keys = list_of_projects['project_id'].unique()
-        print("kets:::::::::::::::::::")
-        print(keys)
+
         values = list_of_projects['project'].unique()
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
@@ -447,7 +448,7 @@ def department_filter_project(request, pk):
         lst = []
         for i in list_of_projects['project_id'].unique():
             # get the first rows of the dfs
-            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("achievements",ascending=False)
+            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
             # append them in a list
             lst.append(a.head(1))
 
@@ -469,7 +470,7 @@ def department_filter_project(request, pk):
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
-               "pro_perfomance_trial":pro_perfomance_trial,
+               "pro_perfomance_trial": pro_perfomance_trial,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -500,16 +501,10 @@ def facility_filter_project(request, pk):
 
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
-    print("before filter")
-    print(pk)
 
-    print(type(list_of_projects['facility'].unique()))
-
-    print(list_of_projects)
 
     # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
-    print("after filter")
-    print(list_of_projects)
+
     # keys = list_of_projects['department'].unique()
 
     dfs = []
@@ -523,18 +518,12 @@ def facility_filter_project(request, pk):
     values = dfs
     for i in range(len(keys)):
         dicts[keys[i]] = values[i]
-    print("dicts....")
 
-    for k, v in dicts.items():
-        print(f"K:{k}")
-        print(f"{v}")
-        print(f"++++++++++++")
 
     if list_of_projects.shape[0] != 0:
         dicts = {}
         keys = list_of_projects['project_id'].unique()
-        print("kets:::::::::::::::::::")
-        print(keys)
+
         values = list_of_projects['project'].unique()
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
@@ -542,7 +531,7 @@ def facility_filter_project(request, pk):
         lst = []
         for i in list_of_projects['project_id'].unique():
             # get the first rows of the dfs
-            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("achievements",ascending=False)
+            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
             # append them in a list
             lst.append(a.head(1))
 
@@ -564,7 +553,7 @@ def facility_filter_project(request, pk):
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
-               "pro_perfomance_trial":pro_perfomance_trial,
+               "pro_perfomance_trial": pro_perfomance_trial,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -596,16 +585,10 @@ def qicreator_filter_project(request, pk):
 
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
-    print("before filter")
-    print(pk)
 
-    print(type(list_of_projects['facility'].unique()))
-
-    print(list_of_projects)
 
     # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
-    print("after filter")
-    print(list_of_projects)
+
     # keys = list_of_projects['department'].unique()
 
     dfs = []
@@ -619,18 +602,12 @@ def qicreator_filter_project(request, pk):
     values = dfs
     for i in range(len(keys)):
         dicts[keys[i]] = values[i]
-    print("dicts....")
 
-    for k, v in dicts.items():
-        print(f"K:{k}")
-        print(f"{v}")
-        print(f"++++++++++++")
 
     if list_of_projects.shape[0] != 0:
         dicts = {}
         keys = list_of_projects['project_id'].unique()
-        print("kets:::::::::::::::::::")
-        print(keys)
+
         values = list_of_projects['project'].unique()
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
@@ -638,7 +615,7 @@ def qicreator_filter_project(request, pk):
         lst = []
         for i in list_of_projects['project_id'].unique():
             # get the first rows of the dfs
-            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("achievements",ascending=False)
+            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
             # append them in a list
             lst.append(a.head(1))
 
@@ -660,7 +637,7 @@ def qicreator_filter_project(request, pk):
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
-               "pro_perfomance_trial":pro_perfomance_trial,
+               "pro_perfomance_trial": pro_perfomance_trial,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1166,6 +1143,7 @@ def bar_chart(df, x_axis, y_axis, title):
 
 
 def prepare_trends(df, title=""):
+    df=df.copy()
     df['achievements'] = df['achievements'].astype(int)
     df = df.sort_values("month_year")
     df['month_year'] = df['month_year'].astype(str) + "."
@@ -1175,7 +1153,7 @@ def prepare_trends(df, title=""):
 
 @login_required(login_url='login')
 def single_project(request, pk):
-    print(pk)
+
     facility_project = QI_Projects.objects.get(id=pk)
     # get other facility projects
     other_projects = QI_Projects.objects.filter(facility=facility_project.facility)

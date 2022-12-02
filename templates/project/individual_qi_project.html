@@ -49,7 +49,7 @@
                   <p class="card-text"><strong>Phone Number : </strong>{{ user.phone_number }}</p>
               </div>
                   <div class="col-md-3">
-                  <p class="card-text"><strong>Department : </strong>{{ facility_project.department }}</p>
+                  <p class="card-text"><strong>Department : </strong>{{ facility_project.departments.department }}</p>
               </div>
                   <div class="col-md-3">
                   <p class="card-text"><strong>Settings : </strong>{{ facility_project.settings }}</p>
@@ -196,7 +196,7 @@
                                     </div>
                                 </div>
                               </div>
-                            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+{#                            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>#}
                             <a href="{% url 'single_project' key %}" class="btn btn-primary">Go to the project</a>
                           </div>
                         </div>

@@ -12,6 +12,8 @@ import os
 
 # This handles django [Errno 2] No such file or directory ERROR
 file_ = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media/files/facilities.txt')
+sub_county_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media/files/subcounties.txt')
+county_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media/files/counties.txt')
 
 
 # class CustomUser(models.Model):
@@ -22,25 +24,81 @@ file_ = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media/files/fa
 #         return self.user.username
 
 
-class QI_Projects(models.Model):
+def read_txt(file_):
     # read a local file with facility names
     data = open(file_, 'r').read()
     # split at new line
     facility_list = data.split("\n")
     # Make a tuple
     FACILITY_CHOICES = tuple((choice, choice) for choice in facility_list)
-    DEPARTMENT_CHOICES = [('Care and Treatment clinic', 'Care and Treatment clinic'), ('TB clinic', 'TB clinic'),
+    return FACILITY_CHOICES
+
+
+class Facilities(models.Model):
+    FACILITY_CHOICES = read_txt(file_)
+    facilities = models.CharField(max_length=250, choices=FACILITY_CHOICES, unique=True)
+
+    class Meta:
+        verbose_name_plural = 'facilities'
+
+    def __str__(self):
+        return self.facilities
+
+
+class Counties(models.Model):
+    county_name = models.CharField(max_length=250)
+
+    # sub_counties = models.ManyToManyField(Sub_counties)
+
+    class Meta:
+        verbose_name_plural = 'counties'
+
+    def __str__(self):
+        return self.county_name
+
+
+class Sub_counties(models.Model):
+    sub_counties = models.CharField(max_length=250)
+    counties = models.ManyToManyField(Counties)
+    facilities = models.ManyToManyField(Facilities)
+
+    class Meta:
+        verbose_name_plural = 'sub-counties'
+
+    def __str__(self):
+        return self.sub_counties
+
+
+class Department(models.Model):
+    department = models.CharField(max_length=250)
+
+    def __str__(self):
+        return self.department
+
+
+class QI_Projects(models.Model):
+    FACILITY_CHOICES = read_txt(file_)
+    SUB_COUNTY_CHOICES = read_txt(sub_county_file)
+    COUNTY_CHOICES = read_txt(county_file)
+    DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
                           ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
-                          ('Community', 'Community'),('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
+                          ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
                           ('OPD', 'OPD'), ('IPD', 'IPD')]
     CATEGORY_CHOICES = (
         ('HVL', 'HVL'), ('IPT', 'IPT'), ('Index testing', 'Index testing'), ('HTS', 'HTS'),
         ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
         ('Others', 'Others'),)
-    department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES)
+
+    departments = models.ForeignKey(Department,on_delete=models.CASCADE)
+    department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES,blank=True,null=True,default=0)
     project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
     project_title = models.CharField(max_length=250)
     facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+    county = models.ForeignKey(Counties, on_delete=models.CASCADE)
+    sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
+    # sub_county = models.CharField(max_length=250, choices=SUB_COUNTY_CHOICES)
+    # county = models.CharField(max_length=250, choices=COUNTY_CHOICES)
     settings = models.CharField(max_length=250)
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
@@ -111,7 +169,7 @@ class QI_Projects(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.facility) + " : " + self.project_title
+        return str(self.facility) + " : " + str(self.id) + ":" + str(self.project_title)
 
 
 class Close_project(models.Model):
@@ -136,7 +194,7 @@ class TestedChange(models.Model):
     achievements = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        return self.tested_change + " - " + str(self.achievements) + "%" + " - " + str(self.project)
+        return str(self.project)
         # return self.tested_change
 
     def save(self, *args, **kwargs):

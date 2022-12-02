@@ -10,10 +10,49 @@
  <div class="p-5 mb-4 bg-light rounded-3">
       <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
       <div class="container-fluid py-5">
+      <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+          <div class="col-md-6">
+            <div class="card h-100">
+                 {{ facility_proj_performance|safe }}
+            </div>
+          </div>
+{#          <div class="col-md-4">#}
+{#            <div class="card h-100">#}
+{#              <div class="card-body">#}
+{#                  {{ departments_viz|safe }}#}
+{#              </div>#}
+{#              </div>#}
+{#            </div>#}
+          <div class="col-md-6">
+            <div class="card h-100">
+                  {{ status_viz|safe }}
+              </div>
+            </div>
+      </div>
+          <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+{#          <div class="col-md-4">#}
+{#            <div class="card h-100">#}
+{#                 {{ facility_proj_performance|safe }}#}
+{#            </div>#}
+{#          </div>#}
+          <div class="col-md-12">
+            <div class="card h-100">
+{#              <div class="card-body">#}
+                  {{ departments_viz|safe }}
+{#              </div>#}
+              </div>
+            </div>
+{#          <div class="col-md-4">#}
+{#            <div class="card h-100">#}
+{#                  {{ status_viz|safe }}#}
+{#              </div>#}
+{#            </div>#}
+      </div>
 {#        <h1 class="display-5 fw-bold">Filters</h1>#}
-      <form class="row g-3">
+      <div class="mt-3">
+          <form class="row g-3">
             <div class="col-md-2">
-                {{ my_filters.form.department|as_crispy_field }}
+                {{ my_filters.form.departments|as_crispy_field }}
             </div>
             <div class="col-md-2">
     {{ my_filters.form.problem_background|as_crispy_field }}
@@ -39,30 +78,42 @@
             <div class="col-md-2">
     {{ my_filters.form.measurement_frequency|as_crispy_field }}
     </div>
-
-{#            <div class="col-md-2">#}
-{#              <div class="form-group">#}
-{#                <label for="input_from" class="form-label">From</label>#}
-{#                <input type="text" class="form-control" id="input_from" placeholder="Start Date">#}
-{#              </div>#}
-{#            </div>#}
-{#            <div class="col-md-2">#}
-{#              <div class="form-group">#}
-{#                <label for="input_from" class="form-label">To</label>#}
-{#                <input type="text" class="form-control" id="input_to" placeholder="End Date">#}
-{#              </div>#}
-{#            </div>#}
-
-            <div class="col-md-2 mt-4 pt-2">
+          <div class="col-md-2 mt-4 pt-2">
             <button class="btn btn-outline-primary" type="submit">search</button>
 
         </div>
+          <div class="col-md-2 mt-3">
+          {% if qi_list.has_other_pages %}
+                    <ul class="pagination justify-content-end">
+                   {% if qi_list.has_previous %}
+                     <li class="page-item"><a class="page-link" href="?page={{ qi_list.previous_page_number }}">Prev</a></li>
+                   {% else %}
+                     <li class="disabled"><span class="page-link" >Prev</span></li>
+                   {% endif %}
+                   {% for i in qi_list.paginator.page_range %}
+                     {% if qi_list.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>
+                     {% else %}
+                        <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a></li>
+                     {% endif %}
+                   {% endfor %}
+                   {% if qi_list.has_next %}
+                     <li class="page-item"><a class="page-link" href="?page={{ qi_list.next_page_number }}">Next</a></li>
+                   {% else %}
+                     <li class="disabled page-item"><span class="page-link">Next</span></li>
+                   {% endif %}
+                    </ul>
+                {% endif %}
+          </div>
         </form>
+      </div>
+
       <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
       {% if search %}
           <div class="alert alert-primary col-12" role="alert">
                 <h6 >Search returned {{ qi_list|length  }} ongoing QI projects</h6>
             </div>
+
           {% for qi in search %}
                <div class="col-md-12">
                <div class="card h-100">
@@ -73,7 +124,7 @@
                       <li>Problem background : {{ qi.problem_background }}</li>
                       <li>Objective : {{ qi.objective }}</li>
                       <li>Setting : {{ qi.settings }}</li>
-                      <li>Department : {{ qi.department }}</li>
+                      <li>Department : {{ qi.departments.department }}</li>
                       <li>Responsible person : {{ qi.responsible_people }}</li>
                       <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}"></a>{{ qi.measurement_frequency }}</li>
                       <li>Created by : {{ qi.created_by }}</li>
@@ -100,13 +151,105 @@
        </div>
       {% endfor %}
       {% else %}
+      </div>
+</div>
+{#            <div class="container">#}
+{#            <div class="col-1">#}
+{#                    <div class="row">#}
+{#                                <div class="alert alert-success col-4" role="alert">#}
+{#        {% if qi_lists|length > 1%}#}
+{#             <h6 >{{ qi_lists|length }} QI PROJECTS</h6>#}
+{#        {% else %}#}
+{#             <h6 >{{ qi_lists|length }} QI PROJECT</h6>#}
+{#        {% endif %}#}
+{#        </div>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="col-2">#}
+{#                    <div class="row">#}
+{#                        {% if facility_proj_performance %}#}
+{#                            {{ facility_proj_performance|safe }}#}
+{#                        {% endif %}#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="col-3">#}
+{#                    <div class="row">#}
+{#                        {% if qi_list.has_other_pages %}#}
+{#                    <ul class="pagination justify-content-end">#}
+{#                   {% if qi_list.has_previous %}#}
+{#                     <li class="page-item"><a class="page-link" href="?page={{ qi_list.previous_page_number }}">Prev</a></li>#}
+{#                   {% else %}#}
+{#                     <li class="disabled"><span class="page-link" >Prev</span></li>#}
+{#                   {% endif %}#}
+{#                   {% for i in qi_list.paginator.page_range %}#}
+{#                     {% if qi_list.number == i %}#}
+{#                        <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>#}
+{#                     {% else %}#}
+{#                        <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a></li>#}
+{#                     {% endif %}#}
+{#                   {% endfor %}#}
+{#                   {% if qi_list.has_next %}#}
+{#                     <li class="page-item"><a class="page-link" href="?page={{ qi_list.next_page_number }}">Next</a></li>#}
+{#                   {% else %}#}
+{#                     <li class="disabled page-item"><span class="page-link">Next</span></li>#}
+{#                   {% endif %}#}
+{#                    </ul>#}
+{#                {% endif %}#}
+{#                    </div>#}
+{#                </div>#}
+{##}
+{#            </div>#}
+{#        </div>#}
 
-        <div class="alert alert-success col-12" role="alert">
-        {% if qi_lists|length > 1%}
-             <h6 >{{ qi_lists|length }} QI PROJECTS</h6>
-        {% endif %}
-            <h6 >{{ qi_lists|length }} QI PROJECT</h6>
-        </div>
+
+
+          {% for qi in qi_list %}
+              <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+              <div class="col-md-12">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <h5 class="card-title"> {{ qi.project_title}}</h5>
+                      <ul>
+                          <li>Facility : <a href="{% url 'facility_project' qi.facility %}">{{ qi.facility }}</a></li>
+                          <li>Problem background : {{ qi.problem_background }}</li>
+                          <li>Objective : {{ qi.objective }}</li>
+                          <li>Setting : {{ qi.settings }}</li>
+                          <li>Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>
+                          <li>Responsible person : {{ qi.responsible_people }}</li>
+                          <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
+                          <li>Created by : <a href="{% url 'qi_creators' qi.created_by %}">{{ qi.created_by }}</a></li>
+                          {% if qi.comments%}
+                            <li>Comment (s) : {{ qi.comments }}</li>
+                          {% endif %}
+                      </ul>
+                      <div class="d-flex justify-content-evenly" >
+
+                      {% if qi.measurement_status == "Canceled" %}
+                        <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">{{ qi.measurement_status }}</a>
+                          {% elif qi.measurement_status == "Completed or Closed" %}
+                        <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">{{ qi.measurement_status }}</a>
+                          {% elif qi.measurement_status == "Postponed" %}
+                        <a href="{% url 'postponed' qi.measurement_status %}" class="btn btn-info">{{ qi.measurement_status }}</a>
+
+                          {% elif qi.measurement_status == 'Not started' %}
+                        <a href="{% url 'not_started' qi.measurement_status %}" class="btn btn-info">{{ qi.measurement_status }}</a>
+                          {% else %}
+                          <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">{{ qi.measurement_status }}</a>
+                      {% endif %}
+
+
+                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>
+                      <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          {% if user.id == qi.created_by.id %}
+                      <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>
+                          {% endif %}
+                  </div>
+                  </div>
+                </div>
+          </div>
+          </div>
+                  {% endfor %}
+          <div class="mt-3">
           {% if qi_list.has_other_pages %}
                     <ul class="pagination justify-content-end">
                    {% if qi_list.has_previous %}
@@ -128,72 +271,13 @@
                    {% endif %}
                     </ul>
                 {% endif %}
-          {% for qi in qi_list %}
-              <div class="col-md-12">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <h5 class="card-title"> {{ qi.project_title}}</h5>
-                      <ul>
-                          <li>Facility : <a href="{% url 'facility_project' qi.facility %}">{{ qi.facility }}</a></li>
-                          <li>Problem background : {{ qi.problem_background }}</li>
-                          <li>Objective : {{ qi.objective }}</li>
-                          <li>Setting : {{ qi.settings }}</li>
-                          <li>Department : <a href="{% url 'department_project' qi.department %}">{{ qi.department }}</a></li>
-                          <li>Responsible person : {{ qi.responsible_people }}</li>
-                          <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
-                          <li>Created by : <a href="{% url 'qi_creators' qi.created_by %}">{{ qi.created_by }}</a></li>
-                          {% if qi.comments%}
-                            <li>Comment (s) : {{ qi.comments }}</li>
-                          {% endif %}
-                      </ul>
-                      <div class="d-flex justify-content-evenly" >
-
-                      {% if qi.measurement_status == "Canceled" %}
-                        <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">{{ qi.measurement_status }}</a>
-                          {% elif qi.measurement_status == "Completed or Closed" %}
-                        <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">{{ qi.measurement_status }}</a>
-                          {% elif qi.measurement_status == "Postponed" %}
-                        <a href="{% url 'postponed' qi.measurement_status %}" class="btn btn-info">{{ qi.measurement_status }}</a>
-                          {% else %}
-                          <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">{{ qi.measurement_status }}</a>
-                      {% endif %}
-
-
-                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>
-                      <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
-                          {% if user.id == qi.created_by.id %}
-                      <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>
-                          {% endif %}
-                  </div>
-                  </div>
-                </div>
           </div>
-                  {% endfor %}
-                {% if qi_list.has_other_pages %}
-                    <ul class="pagination justify-content-end">
-                   {% if qi_list.has_previous %}
-                     <li class="page-item"><a class="page-link" href="?page={{ qi_list.previous_page_number }}">Prev</a></li>
-                   {% else %}
-                     <li class="disabled"><span class="page-link" >Prev</span></li>
-                   {% endif %}
-                   {% for i in qi_list.paginator.page_range %}
-                     {% if qi_list.number == i %}
-                        <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>
-                     {% else %}
-                        <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a></li>
-                     {% endif %}
-                   {% endfor %}
-                   {% if qi_list.has_next %}
-                     <li class="page-item"><a class="page-link" href="?page={{ qi_list.next_page_number }}">Next</a></li>
-                   {% else %}
-                     <li class="disabled page-item"><span class="page-link">Next</span></li>
-                   {% endif %}
-                    </ul>
-                {% endif %}
+
               {% endif %}
         </div>
-              </div>
-            </div>
+{#              </div>#}
+{#            </div>#}
+
         {#<div class="container mt-3">#}
         {#         <form method="post">#}
         {#        {% csrf_token %}#}

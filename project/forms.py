@@ -14,7 +14,9 @@ class QI_ProjectsForm(ModelForm):
     class Meta:
         model = QI_Projects
         fields = "__all__"
-        exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
+        exclude = ['created_by', 'modified_by', 'remote_addr', 'phone','county','sub_county',
+                   'department'
+                   ]
         widgets = {
             'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
                                                 attrs={'class': 'form-control', 'placeholder': 'Select Date',

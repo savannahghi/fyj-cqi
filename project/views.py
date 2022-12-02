@@ -35,6 +35,58 @@ def pagination_(request, item_list):
     return items
 
 
+def prepare_viz(list_of_projects, pk):
+
+
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+
+    list_of_projects = list_of_projects[list_of_projects['department'] == pk].sort_values("achievements")
+
+    # keys = list_of_projects['department'].unique()
+
+    dfs = []
+    for department in list_of_projects['department'].unique():
+        a = list_of_projects[list_of_projects['department'] == department]
+        a = a.sort_values("month_year", ascending=False)
+        dfs.append(a)
+
+    dicts = {}
+    keys = list_of_projects['department'].unique()
+    values = dfs
+    for i in range(len(keys)):
+        dicts[keys[i]] = values[i]
+
+    if list_of_projects.shape[0] != 0:
+        dicts = {}
+        keys = list_of_projects['project_id'].unique()
+
+        values = list_of_projects['project'].unique()
+        for i in range(len(keys)):
+            dicts[keys[i]] = values[i]
+
+        lst = []
+        for i in list_of_projects['project_id'].unique():
+            # get the first rows of the dfs
+            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
+            # append them in a list
+            lst.append(a.head(1))
+
+        # concat and sort them by project id
+        df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+
+        all_other_projects_trend = []
+        for project in list(df_heads['project_id']):
+            # filter dfs based on the order of the best performing projects
+            all_other_projects_trend.append(
+                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+
+        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+    else:
+        pro_perfomance_trial = {}
+    return pro_perfomance_trial
+
+
 def prepare_bar_chart_from_df(list_of_projects, col, title, projects=None):
     list_of_projects = list_of_projects[col].value_counts().rename_axis(col).reset_index(name='counts')
     list_of_projects = list_of_projects.T
@@ -44,6 +96,18 @@ def prepare_bar_chart_from_df(list_of_projects, col, title, projects=None):
         list_of_projects['All QI projects'] = projects
     list_of_projects = list_of_projects.T.reset_index().sort_values("counts")
     facility_proj_performance = bar_chart(list_of_projects, col, "counts", title)
+    return facility_proj_performance
+
+
+def prepare_bar_chart_horizontal_from_df(list_of_projects, col, title, projects=None):
+    list_of_projects = list_of_projects[col].value_counts().rename_axis(col).reset_index(name='counts')
+    list_of_projects = list_of_projects.T
+    list_of_projects.columns = list_of_projects.iloc[0]
+    list_of_projects = list_of_projects.iloc[1:]
+    if projects is not None:
+        list_of_projects['All QI projects'] = projects
+    list_of_projects = list_of_projects.T.reset_index().sort_values("counts")
+    facility_proj_performance = bar_chart_horizontal(list_of_projects, col, "counts", title)
     return facility_proj_performance
 
 
@@ -155,8 +219,6 @@ def dashboard(request):
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
 
-
-
         lst = []
 
         for i in list_of_projects['project_id'].unique():
@@ -179,6 +241,7 @@ def dashboard(request):
 
     else:
         pro_perfomance_trial = {}
+
 
     form = QI_ProjectsForm()
     context = {"form": form,
@@ -416,54 +479,7 @@ def department_filter_project(request, pk):
          } for x in testedChange
     ]
 
-    # convert data from database to a dataframe
-    list_of_projects = pd.DataFrame(list_of_projects)
-
-    list_of_projects = list_of_projects[list_of_projects['department'] == pk].sort_values("achievements")
-
-    # keys = list_of_projects['department'].unique()
-
-    dfs = []
-    for department in list_of_projects['department'].unique():
-        a = list_of_projects[list_of_projects['department'] == department]
-        a = a.sort_values("month_year", ascending=False)
-        dfs.append(a)
-
-    dicts = {}
-    keys = list_of_projects['department'].unique()
-    values = dfs
-    for i in range(len(keys)):
-        dicts[keys[i]] = values[i]
-
-
-
-    if list_of_projects.shape[0] != 0:
-        dicts = {}
-        keys = list_of_projects['project_id'].unique()
-
-        values = list_of_projects['project'].unique()
-        for i in range(len(keys)):
-            dicts[keys[i]] = values[i]
-
-        lst = []
-        for i in list_of_projects['project_id'].unique():
-            # get the first rows of the dfs
-            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
-            # append them in a list
-            lst.append(a.head(1))
-
-        # concat and sort them by project id
-        df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
-
-        all_other_projects_trend = []
-        for project in list(df_heads['project_id']):
-            # filter dfs based on the order of the best performing projects
-            all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
-
-        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
-    else:
-        pro_perfomance_trial = {}
+    pro_perfomance_trial = prepare_viz(list_of_projects, pk)
 
     facility_name = pk
 
@@ -502,7 +518,6 @@ def facility_filter_project(request, pk):
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
 
-
     # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
 
     # keys = list_of_projects['department'].unique()
@@ -518,7 +533,6 @@ def facility_filter_project(request, pk):
     values = dfs
     for i in range(len(keys)):
         dicts[keys[i]] = values[i]
-
 
     if list_of_projects.shape[0] != 0:
         dicts = {}
@@ -586,7 +600,6 @@ def qicreator_filter_project(request, pk):
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
 
-
     # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
 
     # keys = list_of_projects['department'].unique()
@@ -602,7 +615,6 @@ def qicreator_filter_project(request, pk):
     values = dfs
     for i in range(len(keys)):
         dicts[keys[i]] = values[i]
-
 
     if list_of_projects.shape[0] != 0:
         dicts = {}
@@ -631,6 +643,175 @@ def qicreator_filter_project(request, pk):
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
     else:
         pro_perfomance_trial = {}
+    # pro_perfomance_trial = prepare_viz(list_of_projects, pk)
+
+    facility_name = pk
+
+    context = {"projects": projects,
+               "facility_name": facility_name,
+               "title": "Ongoing",
+               "pro_perfomance_trial": pro_perfomance_trial,
+
+               }
+    return render(request, "project/department_filter_projects.html", context)
+
+
+@login_required(login_url='login')
+def county_filter_project(request, pk):
+    # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
+    projects = QI_Projects.objects.filter(county__county_name=pk)
+    project_id_values = request.session['project_id_values']
+
+    # accessing facility qi projects
+    # use two underscore to the field with foreign key
+    # list_of_projects = TestedChange.objects.filter(project_id__in=project_id_values).order_by('-achievements')
+    testedChange = TestedChange.objects.filter(project__county__county_name=pk)
+    # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
+    # list_of_projects = my_filters.qs
+    list_of_projects = [
+        {'achievements': x.achievements,
+         'month_year': x.month_year,
+         'project_id': x.project_id,
+         'tested of change': x.tested_change,
+
+         'facility': x.project.facility_name,
+         'project': x.project.project_title,
+         'department': x.project.county.county_name,
+         } for x in testedChange
+    ]
+
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    print(list_of_projects)
+
+    # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
+
+    # keys = list_of_projects['department'].unique()
+
+    dfs = []
+    for department in list_of_projects['department'].unique():
+        a = list_of_projects[list_of_projects['department'] == department]
+        a = a.sort_values("month_year", ascending=False)
+        dfs.append(a)
+
+    dicts = {}
+    keys = list_of_projects['department'].unique()
+    values = dfs
+    for i in range(len(keys)):
+        dicts[keys[i]] = values[i]
+
+    if list_of_projects.shape[0] != 0:
+        dicts = {}
+        keys = list_of_projects['project_id'].unique()
+
+        values = list_of_projects['project'].unique()
+        for i in range(len(keys)):
+            dicts[keys[i]] = values[i]
+
+        lst = []
+        for i in list_of_projects['project_id'].unique():
+            # get the first rows of the dfs
+            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
+            # append them in a list
+            lst.append(a.head(1))
+
+        # concat and sort them by project id
+        df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+
+        all_other_projects_trend = []
+        for project in list(df_heads['project_id']):
+            # filter dfs based on the order of the best performing projects
+            all_other_projects_trend.append(
+                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+
+        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+    else:
+        pro_perfomance_trial = {}
+    # pro_perfomance_trial = prepare_viz(list_of_projects, pk)
+
+    facility_name = pk
+
+    context = {"projects": projects,
+               "facility_name": facility_name,
+               "title": "Ongoing",
+               "pro_perfomance_trial": pro_perfomance_trial,
+
+               }
+    return render(request, "project/department_filter_projects.html", context)
+
+
+@login_required(login_url='login')
+def sub_county_filter_project(request, pk):
+    # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
+    projects = QI_Projects.objects.filter(sub_county__sub_counties=pk)
+    project_id_values = request.session['project_id_values']
+
+    # accessing facility qi projects
+    # use two underscore to the field with foreign key
+    # list_of_projects = TestedChange.objects.filter(project_id__in=project_id_values).order_by('-achievements')
+    testedChange = TestedChange.objects.filter(project__sub_county__sub_counties=pk)
+    # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
+    # list_of_projects = my_filters.qs
+    list_of_projects = [
+        {'achievements': x.achievements,
+         'month_year': x.month_year,
+         'project_id': x.project_id,
+         'tested of change': x.tested_change,
+
+         'facility': x.project.facility_name,
+         'project': x.project.project_title,
+         'department': x.project.county.county_name,
+         } for x in testedChange
+    ]
+
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    print(list_of_projects)
+
+    # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
+
+    # keys = list_of_projects['department'].unique()
+
+    dfs = []
+    for department in list_of_projects['department'].unique():
+        a = list_of_projects[list_of_projects['department'] == department]
+        a = a.sort_values("month_year", ascending=False)
+        dfs.append(a)
+
+    dicts = {}
+    keys = list_of_projects['department'].unique()
+    values = dfs
+    for i in range(len(keys)):
+        dicts[keys[i]] = values[i]
+
+    if list_of_projects.shape[0] != 0:
+        dicts = {}
+        keys = list_of_projects['project_id'].unique()
+
+        values = list_of_projects['project'].unique()
+        for i in range(len(keys)):
+            dicts[keys[i]] = values[i]
+
+        lst = []
+        for i in list_of_projects['project_id'].unique():
+            # get the first rows of the dfs
+            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
+            # append them in a list
+            lst.append(a.head(1))
+
+        # concat and sort them by project id
+        df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+
+        all_other_projects_trend = []
+        for project in list(df_heads['project_id']):
+            # filter dfs based on the order of the best performing projects
+            all_other_projects_trend.append(
+                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+
+        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+    else:
+        pro_perfomance_trial = {}
+    # pro_perfomance_trial = prepare_viz(list_of_projects, pk)
 
     facility_name = pk
 
@@ -1119,6 +1300,29 @@ def line_chart(df, x_axis, y_axis, title):
     return fig.to_html()
 
 
+def bar_chart_horizontal(df, x_axis, y_axis, title):
+    # df[x_axis]=df[x_axis].str.split(" ").str[0]
+
+    fig = px.bar(df, x=y_axis, y=x_axis, text=y_axis, title=title, orientation='h'
+                 # hover_name=x_axis,  hover_data={
+                 #                                        "tested of change":True,
+                 #                                        "achievements":True,}
+                 )
+    # fig.update_traces(textposition='top center')
+    # fig.add_trace(go.Line(x=df[x_axis], y=df[y_axis], mode='markers'))
+    # fig.update_xaxes(showgrid=False)
+    # fig.update_yaxes(showgrid=False)
+    # # fig.add_hline(y=90, line_width=1, line_dash="dash", line_color="green")
+    # # fig.add_hline(y=75, line_width=1, line_dash="dash", line_color="red")
+    # fig.update_layout({
+    #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+    #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    # })
+    # fig.update_traces(texttemplate='%{text:.s}')
+
+    return fig.to_html()
+
+
 def bar_chart(df, x_axis, y_axis, title):
     # df[x_axis]=df[x_axis].str.split(" ").str[0]
 
@@ -1143,7 +1347,7 @@ def bar_chart(df, x_axis, y_axis, title):
 
 
 def prepare_trends(df, title=""):
-    df=df.copy()
+    df = df.copy()
     df['achievements'] = df['achievements'].astype(int)
     df = df.sort_values("month_year")
     df['month_year'] = df['month_year'].astype(str) + "."
@@ -1153,7 +1357,6 @@ def prepare_trends(df, title=""):
 
 @login_required(login_url='login')
 def single_project(request, pk):
-
     facility_project = QI_Projects.objects.get(id=pk)
     # get other facility projects
     other_projects = QI_Projects.objects.filter(facility=facility_project.facility)

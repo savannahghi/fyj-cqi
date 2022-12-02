@@ -85,20 +85,23 @@
                           <div class="card-body">
                               <div class="container">
                                 <div class="col">
-                                    <div class="row ">
+{#                                    <div class="row ">#}
                                     {% for qi in projects %}
                                         {% if qi.id == key %}
                                             <a href="{% url 'facility_filter_project' qi.facility %}" class="btn btn-primary text-sm-start">FACILITY: {{ qi.facility }}</a>
-                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-success mt-1 text-sm-start">QI PROJECT: {{ qi.project_title }}</a>
 
+                                            <a href="{% url 'county_filter_project' qi.county.county_name %}" class="btn btn-secondary mt-1">County : {{ qi.county.county_name }}</a>
+                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-success mt-1 text-sm-start">PROJECT: {{ qi.project_title }}</a>
                                         {{ values|safe }}
-                                    </div>
+{#                                    </div>#}
                                 </div>
                               </div>
 {#                            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>#}
                             <a href="{% url 'single_project' qi.id %}" class="btn btn-primary">Go to the project</a>
 
-                            <a href="{% url 'qicreator_filter_project' qi.created_by %}" class="btn btn-secondary">Project by : {{ qi.created_by }}</a>
+                            <a href="{% url 'qicreator_filter_project' qi.created_by %}" class="btn btn-secondary">Project created by : {{ qi.created_by }}</a>
+
+                            <a href="{% url 'sub_county_filter_project' qi.sub_county.sub_counties %}" class="btn btn-secondary">Sub-county : {{ qi.sub_county.sub_counties }}</a>
                                            {% endif %}
                                     {% endfor %}
                           </div>

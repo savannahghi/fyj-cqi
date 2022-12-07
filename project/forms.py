@@ -11,12 +11,64 @@ from django import forms
 
 
 class QI_ProjectsForm(ModelForm):
+    # def __init__(self, *args, **kwargs):
+    # Django Model Forms - Setting a required field (True/False)
+    #     super().__init__(*args, **kwargs)
+    #     self.fields['facility_name'].required = False
     class Meta:
         model = QI_Projects
         fields = "__all__"
-        exclude = ['created_by', 'modified_by', 'remote_addr', 'phone','county','sub_county',
+        exclude = ['created_by', 'modified_by', 'remote_addr', 'phone', 'county', 'sub_county',
                    'department'
                    ]
+        widgets = {
+            'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
+                                                attrs={'class': 'form-control', 'placeholder': 'Select Date',
+                                                       'type': 'date', 'max': datetime.now().date}),
+        }
+
+
+class QI_ProjectsSubcountyForm(ModelForm):
+    class Meta:
+        model = Subcounty_qi_projects
+        fields = "__all__"
+        exclude = ['created_by', 'modified_by', 'remote_addr', 'phone', 'county']
+        widgets = {
+            'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
+                                                attrs={'class': 'form-control', 'placeholder': 'Select Date',
+                                                       'type': 'date', 'max': datetime.now().date}),
+        }
+
+
+class QI_Projects_countyForm(ModelForm):
+    class Meta:
+        model = County_qi_projects
+        fields = "__all__"
+        exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
+        widgets = {
+            'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
+                                                attrs={'class': 'form-control', 'placeholder': 'Select Date',
+                                                       'type': 'date', 'max': datetime.now().date}),
+        }
+
+
+class QI_Projects_hubForm(ModelForm):
+    class Meta:
+        model = Hub_qi_projects
+        fields = "__all__"
+        exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
+        widgets = {
+            'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
+                                                attrs={'class': 'form-control', 'placeholder': 'Select Date',
+                                                       'type': 'date', 'max': datetime.now().date}),
+        }
+
+
+class QI_Projects_programForm(ModelForm):
+    class Meta:
+        model = Program_qi_projects
+        fields = "__all__"
+        exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
         widgets = {
             'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
                                                 attrs={'class': 'form-control', 'placeholder': 'Select Date',

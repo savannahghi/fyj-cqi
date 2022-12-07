@@ -5,6 +5,8 @@ from crum import get_current_user, get_current_request
 # from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
+from multiselectfield import MultiSelectField
+
 from account.models import NewUser
 from project.utils import image_resize
 
@@ -89,8 +91,8 @@ class QI_Projects(models.Model):
         ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
         ('Others', 'Others'),)
 
-    departments = models.ForeignKey(Department,on_delete=models.CASCADE)
-    department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES,blank=True,null=True,default=0)
+    departments = models.ForeignKey(Department, on_delete=models.CASCADE)
+    department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
     project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
     project_title = models.CharField(max_length=250)
     facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
@@ -170,6 +172,390 @@ class QI_Projects(models.Model):
 
     def __str__(self):
         return str(self.facility) + " : " + str(self.id) + ":" + str(self.project_title)
+
+
+class Subcounty_qi_projects(models.Model):
+    # FACILITY_CHOICES = read_txt(file_)
+    SUB_COUNTY_CHOICES = read_txt(sub_county_file)
+    COUNTY_CHOICES = read_txt(county_file)
+    DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
+                          ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
+                          ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
+                          ('OPD', 'OPD'), ('IPD', 'IPD')]
+    CATEGORY_CHOICES = (
+        ('HVL', 'HVL'), ('IPT', 'IPT'), ('Index testing', 'Index testing'), ('HTS', 'HTS'),
+        ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
+        ('Others', 'Others'),)
+
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
+    project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
+    project_title = models.CharField(max_length=250)
+    # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
+    # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+    county = models.ForeignKey(Counties, on_delete=models.CASCADE)
+    sub_county = models.ForeignKey(Sub_counties, on_delete=models.CASCADE)
+    # sub_counties = MultiSelectField(choices=SUB_COUNTY_CHOICES)
+    # county = models.CharField(max_length=250, choices=COUNTY_CHOICES)
+    settings = models.CharField(max_length=250)
+    problem_background = models.TextField()
+    process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
+    objective = models.TextField()
+    participants = models.TextField()
+    responsible_people = models.TextField()
+    numerator = models.CharField(max_length=250)
+    denominator = models.CharField(max_length=250)
+    # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    # created_by = models.ForeignKey('auth.User', blank=True, null=True,
+    #                                   default=None, on_delete=models.CASCADE)
+
+    created_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                   default=None, on_delete=models.CASCADE)
+    STATUS_CHOICES = (
+        ('Started or Ongoing', 'STARTED OR ONGOING'),
+        ('Completed or Closed', 'COMPLETED OR CLOSED'),
+        ('Canceled', 'CANCELED'),
+        ('Not started', 'NOT STARTED'),
+        ('Postponed', 'POSTPONED'),
+    )
+    measurement_status = models.CharField(max_length=250, choices=STATUS_CHOICES)
+    FREQUENCY_CHOICES = (
+        ('Daily', 'Daily'),
+        ('Weekly', 'Weekly'),
+        ('Fortnightly', 'Fortnightly'),
+        ('Monthly', 'Monthly'),
+        ('Quarterly', 'Quarterly'),
+        ('Semi-annually', 'Semi-annually'),
+        ('Annually', 'Annually'),
+    )
+    measurement_frequency = models.CharField(max_length=250, choices=FREQUENCY_CHOICES)
+    comments = models.TextField(blank=True)
+
+    start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
+    date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    # modified_by = models.ForeignKey('auth.User', blank=True, null=True,
+    #                                 default=None, on_delete=models.CASCADE, related_name='+')
+
+    modified_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                    default=None, on_delete=models.CASCADE, related_name='+')
+    remote_addr = models.CharField(blank=True, default='', max_length=250)
+    first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+
+    # Django fix Admin plural
+    class Meta:
+        verbose_name_plural = "QI_Projects_sub_counties"
+
+    # def save(self, *args, **kwargs):
+    #     if not self.sales:
+    #         self.sales = self.sales_name.sales
+    #     return super().save(*args, **kwargs)
+
+    def save(self, commit=True, *args, **kwargs):
+        user = get_current_user()
+        request = get_current_request()
+        if user and not user.pk:
+            user = None
+        if not self.pk:
+            self.created_by = user
+        self.modified_by = user
+
+        if request and not self.remote_addr:
+            self.remote_addr = request.META['REMOTE_ADDR']
+        if commit:
+            image_resize(self.process_analysis, 800, 500)
+            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.project_title)
+
+
+class County_qi_projects(models.Model):
+    # FACILITY_CHOICES = read_txt(file_)
+    # SUB_COUNTY_CHOICES = read_txt(sub_county_file)
+    COUNTY_CHOICES = read_txt(county_file)
+    DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
+                          ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
+                          ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
+                          ('OPD', 'OPD'), ('IPD', 'IPD')]
+    CATEGORY_CHOICES = (
+        ('HVL', 'HVL'), ('IPT', 'IPT'), ('Index testing', 'Index testing'), ('HTS', 'HTS'),
+        ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
+        ('Others', 'Others'),)
+
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
+    project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
+    project_title = models.CharField(max_length=250)
+    # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
+    # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+    county = models.ForeignKey(Counties, on_delete=models.CASCADE)
+    # sub_county = models.ForeignKey(Sub_counties,on_delete=models.CASCADE)
+    # sub_counties = MultiSelectField(choices=SUB_COUNTY_CHOICES)
+    # county = models.CharField(max_length=250, choices=COUNTY_CHOICES)
+    settings = models.CharField(max_length=250)
+    problem_background = models.TextField()
+    process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
+    objective = models.TextField()
+    participants = models.TextField()
+    responsible_people = models.TextField()
+    numerator = models.CharField(max_length=250)
+    denominator = models.CharField(max_length=250)
+    # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    # created_by = models.ForeignKey('auth.User', blank=True, null=True,
+    #                                   default=None, on_delete=models.CASCADE)
+
+    created_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                   default=None, on_delete=models.CASCADE)
+    STATUS_CHOICES = (
+        ('Started or Ongoing', 'STARTED OR ONGOING'),
+        ('Completed or Closed', 'COMPLETED OR CLOSED'),
+        ('Canceled', 'CANCELED'),
+        ('Not started', 'NOT STARTED'),
+        ('Postponed', 'POSTPONED'),
+    )
+    measurement_status = models.CharField(max_length=250, choices=STATUS_CHOICES)
+    FREQUENCY_CHOICES = (
+        ('Daily', 'Daily'),
+        ('Weekly', 'Weekly'),
+        ('Fortnightly', 'Fortnightly'),
+        ('Monthly', 'Monthly'),
+        ('Quarterly', 'Quarterly'),
+        ('Semi-annually', 'Semi-annually'),
+        ('Annually', 'Annually'),
+    )
+    measurement_frequency = models.CharField(max_length=250, choices=FREQUENCY_CHOICES)
+    comments = models.TextField(blank=True)
+
+    start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
+    date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    # modified_by = models.ForeignKey('auth.User', blank=True, null=True,
+    #                                 default=None, on_delete=models.CASCADE, related_name='+')
+
+    modified_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                    default=None, on_delete=models.CASCADE, related_name='+')
+    remote_addr = models.CharField(blank=True, default='', max_length=250)
+    first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+
+    # Django fix Admin plural
+    class Meta:
+        verbose_name_plural = "QI_Projects_sub_counties"
+
+    # def save(self, *args, **kwargs):
+    #     if not self.sales:
+    #         self.sales = self.sales_name.sales
+    #     return super().save(*args, **kwargs)
+
+    def save(self, commit=True, *args, **kwargs):
+        user = get_current_user()
+        request = get_current_request()
+        if user and not user.pk:
+            user = None
+        if not self.pk:
+            self.created_by = user
+        self.modified_by = user
+
+        if request and not self.remote_addr:
+            self.remote_addr = request.META['REMOTE_ADDR']
+        if commit:
+            image_resize(self.process_analysis, 800, 500)
+            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.project_title)
+
+
+class Hub_qi_projects(models.Model):
+    # FACILITY_CHOICES = read_txt(file_)
+    # SUB_COUNTY_CHOICES = read_txt(sub_county_file)
+    # COUNTY_CHOICES = read_txt(county_file)
+    DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
+                          ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
+                          ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
+                          ('OPD', 'OPD'), ('IPD', 'IPD')]
+    CATEGORY_CHOICES = (
+        ('HVL', 'HVL'), ('IPT', 'IPT'), ('Index testing', 'Index testing'), ('HTS', 'HTS'),
+        ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
+        ('Others', 'Others'),)
+
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
+    project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
+    project_title = models.CharField(max_length=250)
+    # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
+    # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+    hub = models.CharField(max_length=250)
+    # sub_county = models.ForeignKey(Sub_counties,on_delete=models.CASCADE)
+    # sub_counties = MultiSelectField(choices=SUB_COUNTY_CHOICES)
+    # county = models.CharField(max_length=250, choices=COUNTY_CHOICES)
+    settings = models.CharField(max_length=250)
+    problem_background = models.TextField()
+    process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
+    objective = models.TextField()
+    participants = models.TextField()
+    responsible_people = models.TextField()
+    numerator = models.CharField(max_length=250)
+    denominator = models.CharField(max_length=250)
+    # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    # created_by = models.ForeignKey('auth.User', blank=True, null=True,
+    #                                   default=None, on_delete=models.CASCADE)
+
+    created_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                   default=None, on_delete=models.CASCADE)
+    STATUS_CHOICES = (
+        ('Started or Ongoing', 'STARTED OR ONGOING'),
+        ('Completed or Closed', 'COMPLETED OR CLOSED'),
+        ('Canceled', 'CANCELED'),
+        ('Not started', 'NOT STARTED'),
+        ('Postponed', 'POSTPONED'),
+    )
+    measurement_status = models.CharField(max_length=250, choices=STATUS_CHOICES)
+    FREQUENCY_CHOICES = (
+        ('Daily', 'Daily'),
+        ('Weekly', 'Weekly'),
+        ('Fortnightly', 'Fortnightly'),
+        ('Monthly', 'Monthly'),
+        ('Quarterly', 'Quarterly'),
+        ('Semi-annually', 'Semi-annually'),
+        ('Annually', 'Annually'),
+    )
+    measurement_frequency = models.CharField(max_length=250, choices=FREQUENCY_CHOICES)
+    comments = models.TextField(blank=True)
+
+    start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
+    date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    # modified_by = models.ForeignKey('auth.User', blank=True, null=True,
+    #                                 default=None, on_delete=models.CASCADE, related_name='+')
+
+    modified_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                    default=None, on_delete=models.CASCADE, related_name='+')
+    remote_addr = models.CharField(blank=True, default='', max_length=250)
+    first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+
+    # Django fix Admin plural
+    class Meta:
+        verbose_name_plural = "QI_Projects_sub_counties"
+
+    # def save(self, *args, **kwargs):
+    #     if not self.sales:
+    #         self.sales = self.sales_name.sales
+    #     return super().save(*args, **kwargs)
+
+    def save(self, commit=True, *args, **kwargs):
+        user = get_current_user()
+        request = get_current_request()
+        if user and not user.pk:
+            user = None
+        if not self.pk:
+            self.created_by = user
+        self.modified_by = user
+
+        if request and not self.remote_addr:
+            self.remote_addr = request.META['REMOTE_ADDR']
+        if commit:
+            image_resize(self.process_analysis, 800, 500)
+            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.project_title)
+
+
+class Program_qi_projects(models.Model):
+    # FACILITY_CHOICES = read_txt(file_)
+    # SUB_COUNTY_CHOICES = read_txt(sub_county_file)
+    # COUNTY_CHOICES = read_txt(county_file)
+    DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
+                          ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
+                          ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
+                          ('OPD', 'OPD'), ('IPD', 'IPD')]
+    CATEGORY_CHOICES = (
+        ('HVL', 'HVL'), ('IPT', 'IPT'), ('Index testing', 'Index testing'), ('HTS', 'HTS'),
+        ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
+        ('Others', 'Others'),)
+
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
+    project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
+    project_title = models.CharField(max_length=250)
+    # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
+    # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+    program = models.CharField(max_length=250)
+    # sub_county = models.ForeignKey(Sub_counties,on_delete=models.CASCADE)
+    # sub_counties = MultiSelectField(choices=SUB_COUNTY_CHOICES)
+    # county = models.CharField(max_length=250, choices=COUNTY_CHOICES)
+    settings = models.CharField(max_length=250)
+    problem_background = models.TextField()
+    process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
+    objective = models.TextField()
+    participants = models.TextField()
+    responsible_people = models.TextField()
+    numerator = models.CharField(max_length=250)
+    denominator = models.CharField(max_length=250)
+    # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    # created_by = models.ForeignKey('auth.User', blank=True, null=True,
+    #                                   default=None, on_delete=models.CASCADE)
+
+    created_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                   default=None, on_delete=models.CASCADE)
+    STATUS_CHOICES = (
+        ('Started or Ongoing', 'STARTED OR ONGOING'),
+        ('Completed or Closed', 'COMPLETED OR CLOSED'),
+        ('Canceled', 'CANCELED'),
+        ('Not started', 'NOT STARTED'),
+        ('Postponed', 'POSTPONED'),
+    )
+    measurement_status = models.CharField(max_length=250, choices=STATUS_CHOICES)
+    FREQUENCY_CHOICES = (
+        ('Daily', 'Daily'),
+        ('Weekly', 'Weekly'),
+        ('Fortnightly', 'Fortnightly'),
+        ('Monthly', 'Monthly'),
+        ('Quarterly', 'Quarterly'),
+        ('Semi-annually', 'Semi-annually'),
+        ('Annually', 'Annually'),
+    )
+    measurement_frequency = models.CharField(max_length=250, choices=FREQUENCY_CHOICES)
+    comments = models.TextField(blank=True)
+
+    start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
+    date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    # modified_by = models.ForeignKey('auth.User', blank=True, null=True,
+    #                                 default=None, on_delete=models.CASCADE, related_name='+')
+
+    modified_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                    default=None, on_delete=models.CASCADE, related_name='+')
+    remote_addr = models.CharField(blank=True, default='', max_length=250)
+    first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+
+    # Django fix Admin plural
+    class Meta:
+        verbose_name_plural = "QI_Projects_sub_counties"
+
+    # def save(self, *args, **kwargs):
+    #     if not self.sales:
+    #         self.sales = self.sales_name.sales
+    #     return super().save(*args, **kwargs)
+
+    def save(self, commit=True, *args, **kwargs):
+        user = get_current_user()
+        request = get_current_request()
+        if user and not user.pk:
+            user = None
+        if not self.pk:
+            self.created_by = user
+        self.modified_by = user
+
+        if request and not self.remote_addr:
+            self.remote_addr = request.META['REMOTE_ADDR']
+        if commit:
+            image_resize(self.process_analysis, 800, 500)
+            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.project_title)
 
 
 class Close_project(models.Model):

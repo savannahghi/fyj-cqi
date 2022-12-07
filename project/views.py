@@ -300,6 +300,201 @@ def add_project(request):
 
 
 @login_required(login_url='login')
+def add_project_facility(request):
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = QI_ProjectsForm(request.POST)
+        if form.is_valid():
+            # form.save()
+            # # do not save first, wait to update foreign key
+            post = form.save(commit=False)
+            # get clean data from the form
+            facility_name = form.cleaned_data['facility_name']
+
+            facility_id = Facilities.objects.get(facilities=facility_name)
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    post.county = Counties.objects.get(id=county.counties_id)
+            # save
+            post.save()
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = QI_ProjectsForm()
+    context = {"form": form}
+    return render(request, "project/add_facility_project.html", context)
+
+
+@login_required(login_url='login')
+def add_project_subcounty(request):
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = QI_ProjectsForm(request.POST)
+        if form.is_valid():
+            # form.save()
+            # # do not save first, wait to update foreign key
+            post = form.save(commit=False)
+            # get clean data from the form
+            facility_name = form.cleaned_data['facility_name']
+
+            facility_id = Facilities.objects.get(facilities=facility_name)
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    post.county = Counties.objects.get(id=county.counties_id)
+            # save
+            post.save()
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = QI_ProjectsForm()
+    context = {"form": form}
+    return render(request, "project/add_subcounty_project.html", context)
+
+
+@login_required(login_url='login')
+def add_project_county(request):
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = QI_ProjectsForm(request.POST)
+        if form.is_valid():
+            # form.save()
+            # # do not save first, wait to update foreign key
+            post = form.save(commit=False)
+            # get clean data from the form
+            facility_name = form.cleaned_data['facility_name']
+
+            facility_id = Facilities.objects.get(facilities=facility_name)
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    post.county = Counties.objects.get(id=county.counties_id)
+            # save
+            post.save()
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = QI_ProjectsForm()
+    context = {"form": form}
+    return render(request, "project/add_county_project.html", context)
+
+
+@login_required(login_url='login')
+def add_project_hub(request):
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = QI_ProjectsForm(request.POST)
+        if form.is_valid():
+            # form.save()
+            # # do not save first, wait to update foreign key
+            post = form.save(commit=False)
+            # get clean data from the form
+            facility_name = form.cleaned_data['facility_name']
+
+            facility_id = Facilities.objects.get(facilities=facility_name)
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    post.county = Counties.objects.get(id=county.counties_id)
+            # save
+            post.save()
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = QI_ProjectsForm()
+    context = {"form": form}
+    return render(request, "project/add_hub_project.html", context)
+
+
+@login_required(login_url='login')
+def add_project_program(request):
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = QI_ProjectsForm(request.POST)
+        if form.is_valid():
+            # form.save()
+            # # do not save first, wait to update foreign key
+            post = form.save(commit=False)
+            # get clean data from the form
+            facility_name = form.cleaned_data['facility_name']
+
+            facility_id = Facilities.objects.get(facilities=facility_name)
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    post.county = Counties.objects.get(id=county.counties_id)
+            # save
+            post.save()
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = QI_ProjectsForm()
+    context = {"form": form}
+    return render(request, "project/add_program_project.html", context)
+
+
+@login_required(login_url='login')
 def update_project(request, pk):
     # check the page user is from
     if request.method == "GET":

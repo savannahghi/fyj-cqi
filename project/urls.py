@@ -50,4 +50,5 @@ urlpatterns = [
     path('delete-project/<int:pk>', delete_project, name="delete_project"),
     path('delete-commment/<int:pk>/', delete_comment, name="delete_comment"),
     path('delete-response/<int:pk>/', delete_response, name="delete_response"),
+
 ]

@@ -128,3 +128,9 @@ class ProjectResponsesForm(ModelForm):
     class Meta:
         model = ProjectResponses
         fields = ['response']
+
+
+class ResourcesForm(ModelForm):
+    class Meta:
+        model = Resources
+        fields = "__all__"

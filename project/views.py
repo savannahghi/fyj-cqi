@@ -1,24 +1,23 @@
+import os.path
+
 import pandas as pd
-import numpy as np
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
+
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Count
-from django.http import HttpResponseRedirect
+
+from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render, redirect
 
-from account.forms import NewUserForm, UpdateUserForm
-from .models import QI_Projects
-# from .forms import QI_ProjectsForm, Close_projectForm, CreateUserForm, AccountForm
-from .forms import QI_ProjectsForm, Close_projectForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
+from account.forms import UpdateUserForm
+from cqi_fyj import settings
+
+from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm
 from .filters import *
 
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.offline import plot
-import plotly.offline as opy
 
 
 # Create your views here.
@@ -37,8 +36,6 @@ def pagination_(request, item_list):
 
 
 def prepare_viz(list_of_projects, pk):
-
-
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
 
@@ -115,8 +112,16 @@ def prepare_bar_chart_horizontal_from_df(list_of_projects, col, title, projects=
 @login_required(login_url='login')
 def dashboard(request):
     qi_list = QI_Projects.objects.all()
+
+    sub_qi_list = Subcounty_qi_projects.objects.all()
+    county_qi_list = County_qi_projects.objects.all()
+
+    # hub_qi_list = Hub_qi_projects.objects.all()
+    # program_qi_list = Program_qi_projects.objects.all()
+
     # best_performing = TestedChange.objects.filter(achievements__gte=00.0).distinct()
     testedChange = TestedChange.objects.all()
+    # testedChange = TestedChange.objects.annotate(total_projects=Count("project"))
 
     # my_filters = TestedChangeFilter(request.GET, queryset=best_performing)
 
@@ -147,19 +152,49 @@ def dashboard(request):
         best_performing_dic = dict(zip(keys, project_id_values))
         request.session['project_id_values'] = project_id_values
 
+    if sub_qi_list:
+        list_of_projects = [
+            {'subcounty': x.sub_county.sub_counties,
+             'county': x.county.county_name,
+             'department': x.department.department,
+             } for x in sub_qi_list
+        ]
+        # convert data from database to a dataframe
+        list_of_projects = pd.DataFrame(list_of_projects)
+        list_of_projects_sub = list_of_projects.copy()
+        list_of_projects_sub['subcounty'] = list_of_projects_sub['subcounty']
+    else:
+        list_of_projects_sub = pd.DataFrame(columns=['subcounty', 'county', 'department'])
+
+    if county_qi_list:
+        list_of_projects = [
+            {'county': x.county.county_name,
+             'department': x.department.department,
+             } for x in county_qi_list
+        ]
+        # convert data from database to a dataframe
+        list_of_projects = pd.DataFrame(list_of_projects)
+        list_of_projects_county = list_of_projects.copy()
+        list_of_projects_county['county'] = list_of_projects_county['county']
+    else:
+        list_of_projects_county = pd.DataFrame(columns=['county', 'department'])
+
     if qi_list:
         list_of_projects = [
             {'facility': x.facility,
              'subcounty': x.sub_county.sub_counties,
              'county': x.county.county_name,
              'department': x.departments.department,
-
              } for x in qi_list
         ]
         # convert data from database to a dataframe
         list_of_projects = pd.DataFrame(list_of_projects)
         list_of_projects_fac = list_of_projects.copy()
         list_of_projects_fac['facility'] = list_of_projects_fac['facility'].str.split(" ").str[0]
+
+        # print(pd.concat([list_of_projects_sub,list_of_projects_county]))
+        list_of_projects = pd.concat([list_of_projects_fac, list_of_projects_sub, list_of_projects_county])
+
         facility_qi_projects = prepare_bar_chart_from_df(list_of_projects_fac, 'facility',
                                                          f"{len(list_of_projects_fac['facility'].unique())} "
                                                          f"Facilities implementing QI initiatives")
@@ -187,7 +222,6 @@ def dashboard(request):
          'month_year': x.month_year,
          'project_id': x.project_id,
          'tested of change': x.tested_change,
-
          'facility': x.project,
          'project': x.project.project_title,
          'department': x.project.departments.department,
@@ -243,7 +277,6 @@ def dashboard(request):
     else:
         pro_perfomance_trial = {}
 
-
     form = QI_ProjectsForm()
     context = {"form": form,
                "facility_qi_projects": facility_qi_projects,
@@ -256,6 +289,7 @@ def dashboard(request):
                "dicts": dicts,
                "qi_list": qi_list,
                "testedChange_current": testedChange_current,
+               "testedChange": testedChange,
 
                }
     return render(request, "project/dashboard.html", context)
@@ -359,15 +393,7 @@ def add_project_subcounty(request):
             sub_county_id = Sub_counties.objects.get(sub_counties=sub_county_name)
 
             # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
-            # all_subcounties = Sub_counties.facilities.through.objects.all()
             all_counties = Sub_counties.counties.through.objects.all()
-            # loop
-            # sub_county_list = []
-            # for sub_county in all_subcounties:
-            #     if facility_id.id == sub_county.facilities_id:
-            #         # assign an instance to sub_county
-            #         post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
-            #         sub_county_list.append(sub_county.sub_counties_id)
 
             for county in all_counties:
                 if sub_county_id.id == county.sub_counties_id:
@@ -392,27 +418,6 @@ def add_project_county(request):
         form = QI_Projects_countyForm(request.POST)
         if form.is_valid():
             form.save()
-            # # # do not save first, wait to update foreign key
-            # post = form.save(commit=False)
-            # # get clean data from the form
-            # facility_name = form.cleaned_data['facility_name']
-            #
-            # facility_id = Facilities.objects.get(facilities=facility_name)
-            # # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
-            # all_subcounties = Sub_counties.facilities.through.objects.all()
-            # all_counties = Sub_counties.counties.through.objects.all()
-            # # loop
-            # sub_county_list = []
-            # for sub_county in all_subcounties:
-            #     if facility_id.id == sub_county.facilities_id:
-            #         # assign an instance to sub_county
-            #         post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
-            #         sub_county_list.append(sub_county.sub_counties_id)
-            # for county in all_counties:
-            #     if sub_county_list[0] == county.sub_counties_id:
-            #         post.county = Counties.objects.get(id=county.counties_id)
-            # # save
-            # post.save()
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
@@ -431,27 +436,6 @@ def add_project_hub(request):
         form = QI_Projects_hubForm(request.POST)
         if form.is_valid():
             form.save()
-            # # # do not save first, wait to update foreign key
-            # post = form.save(commit=False)
-            # # get clean data from the form
-            # facility_name = form.cleaned_data['facility_name']
-            #
-            # facility_id = Facilities.objects.get(facilities=facility_name)
-            # # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
-            # all_subcounties = Sub_counties.facilities.through.objects.all()
-            # all_counties = Sub_counties.counties.through.objects.all()
-            # # loop
-            # sub_county_list = []
-            # for sub_county in all_subcounties:
-            #     if facility_id.id == sub_county.facilities_id:
-            #         # assign an instance to sub_county
-            #         post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
-            #         sub_county_list.append(sub_county.sub_counties_id)
-            # for county in all_counties:
-            #     if sub_county_list[0] == county.sub_counties_id:
-            #         post.county = Counties.objects.get(id=county.counties_id)
-            # # save
-            # post.save()
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
@@ -470,27 +454,7 @@ def add_project_program(request):
         form = QI_Projects_programForm(request.POST)
         if form.is_valid():
             form.save()
-            # # # do not save first, wait to update foreign key
-            # post = form.save(commit=False)
-            # # get clean data from the form
-            # facility_name = form.cleaned_data['facility_name']
-            #
-            # facility_id = Facilities.objects.get(facilities=facility_name)
-            # # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
-            # all_subcounties = Sub_counties.facilities.through.objects.all()
-            # all_counties = Sub_counties.counties.through.objects.all()
-            # # loop
-            # sub_county_list = []
-            # for sub_county in all_subcounties:
-            #     if facility_id.id == sub_county.facilities_id:
-            #         # assign an instance to sub_county
-            #         post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
-            #         sub_county_list.append(sub_county.sub_counties_id)
-            # for county in all_counties:
-            #     if sub_county_list[0] == county.sub_counties_id:
-            #         post.county = Counties.objects.get(id=county.counties_id)
-            # # save
-            # post.save()
+
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
@@ -1469,7 +1433,9 @@ def update_response(request, pk):
 
 @login_required(login_url='login')
 def resources(request):
-    return render(request, "project/resources.html")
+    all_resources = Resources.objects.all()
+    context = {"all_resources": all_resources}
+    return render(request, "project/resources.html", context)
 
 
 def line_chart(df, x_axis, y_axis, title):
@@ -1683,6 +1649,37 @@ def delete_comment(request, pk):
         "test_of_changes": item
     }
     return render(request, 'project/delete_test_of_change.html', context)
+
+
+def download_pdf(request,name):
+
+    # get the file path
+    file_path = settings.MEDIA_ROOT + f'/Kenya_Quality_Model_for_Health_2014.pdf'
+    print("file_path...")
+    print(file_path)
+    # open the file
+    with open(file_path, 'rb') as pdf:
+        response = HttpResponse(pdf.read(), content_type='application/pdf')
+        response['Content-Disposition'] = 'inline;filename=myfile.pdf'
+        return response
+
+# def download(request,path):
+#     # get the file path
+#     # file_path = request.GET.get('file_path')
+#     file_path=os.path.join(settings.MEDIA_ROOT,path)
+#
+#     # open and read the file
+#     if os.path.exists(file_path):
+#         with open(file_path,'rb') as fh:
+#             response=HttpResponse(fh.read(),content_type='application/adminupload')
+#             response['Content-Disposition'] = 'inline;filename=' + os.path.basename(file_path)
+#             return response
+#     raise Http404
+    # # open and read the file
+    # with open(file_path, 'rb') as pdf:
+    #     response = HttpResponse(pdf.read(), content_type='application/pdf')
+    #     response['Content-Disposition'] = 'inline;filename=' + os.path.basename(file_path)
+    #     return response
 
 # @login_required(login_url='login')
 # def close_project(request, pk):

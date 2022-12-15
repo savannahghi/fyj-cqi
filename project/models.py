@@ -5,6 +5,7 @@ from crum import get_current_user, get_current_request
 # from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
+from django.template.defaultfilters import slugify
 from multiselectfield import MultiSelectField
 
 from account.models import NewUser
@@ -73,6 +74,13 @@ class Sub_counties(models.Model):
 
 class Department(models.Model):
     department = models.CharField(max_length=250)
+
+    # slug = models.SlugField(blank=True, null=True)
+    #
+    # def save(self, *args, **kwargs):
+    #     if not self.slug and self.department:
+    #         self.slug = slugify(self.department)
+    #     super(Department, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.department
@@ -339,7 +347,7 @@ class County_qi_projects(models.Model):
 
     # Django fix Admin plural
     class Meta:
-        verbose_name_plural = "QI_Projects_sub_counties"
+        verbose_name_plural = "QI_Projects_counties"
 
     # def save(self, *args, **kwargs):
     #     if not self.sales:
@@ -435,7 +443,7 @@ class Hub_qi_projects(models.Model):
 
     # Django fix Admin plural
     class Meta:
-        verbose_name_plural = "QI_Projects_sub_counties"
+        verbose_name_plural = "QI_Projects_hub"
 
     # def save(self, *args, **kwargs):
     #     if not self.sales:
@@ -531,7 +539,7 @@ class Program_qi_projects(models.Model):
 
     # Django fix Admin plural
     class Meta:
-        verbose_name_plural = "QI_Projects_sub_counties"
+        verbose_name_plural = "QI_Projects_program"
 
     # def save(self, *args, **kwargs):
     #     if not self.sales:
@@ -617,3 +625,14 @@ class ProjectResponses(models.Model):
 
     def __str__(self):
         return self.response
+
+
+class Resources(models.Model):
+    resource_name = models.CharField(max_length=250)
+    resource = models.FileField(upload_to='resources',null=True,blank=True)
+    description=models.CharField(max_length=1000)
+    uploaded_date = models.DateTimeField(auto_now_add=True, auto_now=False)
+    upload_date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+
+    def __str__(self):
+        return self.resource_name

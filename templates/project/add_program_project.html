@@ -8,6 +8,7 @@
     <div class="p-5 mb-4 bg-light rounded-3">
       <div class="container-fluid py-5">
         <h1 class="display-5 fw-bold text-primary">CREATE PROGRAM QI </h1>
+          <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
 
         <form method="POST" class="mt-5" enctype='multipart/form-data'>
             {% csrf_token %}

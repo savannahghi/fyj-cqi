@@ -36,6 +36,7 @@ urlpatterns = [
     path('ongoing-projects/<str:pk>', ongoing, name="ongoing"),
     path('measurement-frequency/<str:pk>', measurement_frequency, name="measurement_frequency"),
     path('postponed/<str:pk>', postponed, name="postponed"),
+    path('add-qi-manager/', add_qi_manager, name="add_qi_manager"),
     path('add-project/', add_project, name="add_project"),
     path('add-project/facility', add_project_facility, name="add_project_facility"),
     path('add-project/subcounty', add_project_subcounty, name="add_project_subcounty"),

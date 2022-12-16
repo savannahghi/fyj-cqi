@@ -88,89 +88,100 @@
 {#                <p>#}
                     <div class="d-flex justify-content-evenly">
                         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
-                        PDSA CYCLE
+                        PDSA TEST CYCLE
                         </a>
 {#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
                     </div>
                 </p>
-                <div class="collapse" id="collapseExample">
+                <div class="collapse bg-light" id="collapseExample">
+                    <p class="text-primary lead">The Plan-Do-Study-Act (PDSA) Test Cycle is an iterative process used to identify, test, and implement solutions to improve quality. It involves planning a change, testing it, analyzing the results, and deciding whether to keep, modify, or discard the change. The PDSA Test Cycle is a powerful tool for driving quality improvement initiatives, as it allows for rapid iteration and experimentation. It is an important part of any quality improvement efforts and can be used to identify and troubleshoot problems quickly and efficiently.</p>
                     <div class="row">
-      <div class="col-sm-6 mt-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">PLAN</h5>
-              <ul>
-                  <li>Problem identification</li>
-                  <li>Goal setting</li>
-                  <li>Root cause analysis</li>
-                  <li>Activity planning</li>
-                  <li>Performance measurement plan</li>
-              </ul>
-{#            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>#}
-            <a href="#" class="btn btn-primary">Go somewhere</a>
-          </div>
-        </div>
-      </div>
-      <div class="col-sm-6 mt-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">DO</h5>
-            <ul>
-              <li>
-                  In this phase the change package/intervention should be implemented
-                  according to the QI project work plan
-              </li>
-              <li>
-                  Data should be collected per the
-                  performance measurement plan.
-              </li>
-              <li>With supporting text below as a natural lead-in to additional content</li>
-                <br>
-            </ul>
-            <a href="#" class="btn btn-primary">Go somewhere</a>
-          </div>
-        </div>
-      </div>
-      <div class="col-sm-6 mt-4 mb-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">ACT</h5>
-              <h6>Your responses derived from the Study stage define the tasks for the Act stage.
-                  There are two possible responses you may have:
-              </h6>
-            <ul>
-              <li>
-                The change was successful and should be adopted – follow the steps
-                outlined under the maintenance phase institutionalize and sustain the
-                change
-              </li>
-              <li>
-                The process has not improved – you should review the change to
-                determine reasons for poor performance, refine the process, and plan another test
-                cycle
-              </li>
-            </ul>
-            <a href="#" class="btn btn-primary">Go somewhere</a>
-          </div>
-        </div>
-      </div>
-      <div class="col-sm-6 mt-4 mb-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">STUDY</h5>
-              <ul>
-                  <li>Did the results match the theory/predictions?</li>
-                  <li>Is there an improvement? If yes, by how much?</li>
-                  <li>Are there trends?</li>
-                  <li>Are there any unintended side effects?</li>
-                  <li>Is the process more difficult using new methods?</li>
-                  <li>Is the change scalable?</li>
-              </ul>
-            <a href="#" class="btn btn-primary">Go somewhere</a>
-          </div>
-        </div>
-      </div>
-    </div>
+                          <div class="col-sm-6 mt-4">
+                            <div class="card rounded-pill text-bg-success p-3">
+                              <div class="card-body ">
+                                      <h5 class="card-title d-flex justify-content-center">PLAN</h5>
+                                  <div class="d-flex justify-content-lg-between ml-auto">
+                                  <ul>
+                                      <li>Problem identification</li>
+                                      <li>Goal setting</li>
+                                      <li>Root cause analysis</li>
+                                      <li>Activity planning</li>
+                                      <li>Performance measurement plan</li>
+                                  </ul>
+                    {#            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>#}
+                    {#            <a href="#" class="btn btn-primary">Go somewhere</a>#}
+                                  </div>
+
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-sm-6 mt-4">
+                            <div class="card rounded-pill text-bg-success p-3">
+                              <div class="card-body ">
+                                      <h5 class="card-title d-flex justify-content-center">DO</h5>
+                                  <div class="d-flex justify-content-lg-between ml-auto">
+                                <ul>
+                                  <li>
+                                      In this phase the change package/intervention should be implemented
+                                      according to the QI project work plan
+                                  </li>
+                                  <li>
+                                      Data should be collected per the
+                                      performance measurement plan.
+                                  </li>
+                                  <li>With supporting text below as a natural lead-in to additional content</li>
+                                    <br>
+                                </ul>
+                    {#            <a href="#" class="btn btn-primary">Go somewhere</a>#}
+                              </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-sm-6 mt-4 mb-4">
+                            <div class="card rounded-pill text-bg-success p-3">
+                              <div class="card-body ">
+                                      <h5 class="card-title d-flex justify-content-center">ACT</h5>
+
+                                  <h6>Your responses derived from the Study stage define the tasks for the Act stage.
+                                      There are two possible responses you may have:
+                                  </h6>
+                                  <div class="d-flex justify-content-lg-between ml-auto">
+                                <ul>
+                                  <li>
+                                    The change was successful and should be adopted – follow the steps
+                                    outlined under the maintenance phase institutionalize and sustain the
+                                    change
+                                  </li>
+                                  <li>
+                                    The process has not improved – you should review the change to
+                                    determine reasons for poor performance, refine the process, and plan another test
+                                    cycle
+                                  </li>
+                                </ul>
+                    {#            <a href="#" class="btn btn-primary">Go somewhere</a>#}
+                              </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-sm-6 mt-4 mb-4">
+                        <div class="card rounded-pill text-bg-success p-3">
+                          <div class="card-body ">
+                                  <h5 class="card-title d-flex justify-content-center">STUDY</h5>
+                              <div class="d-flex justify-content-lg-between ml-auto">
+                              <ul>
+                                  <li>Did the results match the theory/predictions?</li>
+                                  <li>Is there an improvement? If yes, by how much?</li>
+                                  <li>Are there trends?</li>
+                                  <li>Are there any unintended side effects?</li>
+                                  <li>Is the process more difficult using new methods?</li>
+                                  <li>Is the change scalable?</li>
+                              </ul>
+                {#            <a href="#" class="btn btn-primary">Go somewhere</a>#}
+                          </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                 </div>
 
 {#    <h4 class="d-flex justify-content-center">PDSA CYCLE</h4>#}

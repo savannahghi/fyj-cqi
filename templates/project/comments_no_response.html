@@ -72,7 +72,7 @@
               <li>QI Responsible people : {{ comment.qi_project_title.responsible_people }}</li>
           </ul>
       <div class="d-flex justify-content-evenly">
-            {% if comment.id not in all_responses %}
+            {% if comment.id not in all_responses and user.id == comment.qi_project_title.created_by_id %}
                 <a class="btn btn-secondary btn-sm" href="{% url 'comments_response' comment.id %}">NO RESPONSE YET</a>
             {% endif %}
 

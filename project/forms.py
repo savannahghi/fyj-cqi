@@ -27,6 +27,8 @@ class QI_ProjectsForm(ModelForm):
                                                        'type': 'date', 'max': datetime.now().date}),
         }
 
+    field_order = ['qi_manager']
+
 
 class QI_ProjectsSubcountyForm(ModelForm):
     class Meta:
@@ -38,6 +40,8 @@ class QI_ProjectsSubcountyForm(ModelForm):
                                                 attrs={'class': 'form-control', 'placeholder': 'Select Date',
                                                        'type': 'date', 'max': datetime.now().date}),
         }
+
+    field_order = ['qi_manager']
 
 
 class QI_Projects_countyForm(ModelForm):
@@ -51,6 +55,8 @@ class QI_Projects_countyForm(ModelForm):
                                                        'type': 'date', 'max': datetime.now().date}),
         }
 
+    field_order = ['qi_manager']
+
 
 class QI_Projects_hubForm(ModelForm):
     class Meta:
@@ -63,6 +69,8 @@ class QI_Projects_hubForm(ModelForm):
                                                        'type': 'date', 'max': datetime.now().date}),
         }
 
+    field_order = ['qi_manager']
+
 
 class QI_Projects_programForm(ModelForm):
     class Meta:
@@ -74,6 +82,8 @@ class QI_Projects_programForm(ModelForm):
                                                 attrs={'class': 'form-control', 'placeholder': 'Select Date',
                                                        'type': 'date', 'max': datetime.now().date}),
         }
+
+    field_order = ['qi_manager']
 
 
 class Close_projectForm(ModelForm):
@@ -133,4 +143,10 @@ class ProjectResponsesForm(ModelForm):
 class ResourcesForm(ModelForm):
     class Meta:
         model = Resources
+        fields = "__all__"
+
+
+class Qi_managersForm(ModelForm):
+    class Meta:
+        model = Qi_managers
         fields = "__all__"

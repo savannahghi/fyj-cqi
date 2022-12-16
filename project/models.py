@@ -43,6 +43,7 @@ class Facilities(models.Model):
 
     class Meta:
         verbose_name_plural = 'facilities'
+        ordering = ['facilities']
 
     def __str__(self):
         return self.facilities
@@ -55,9 +56,11 @@ class Counties(models.Model):
 
     class Meta:
         verbose_name_plural = 'counties'
+        ordering = ['county_name']
 
     def __str__(self):
         return self.county_name
+
 
 
 class Sub_counties(models.Model):
@@ -67,6 +70,7 @@ class Sub_counties(models.Model):
 
     class Meta:
         verbose_name_plural = 'sub-counties'
+        ordering = ['sub_counties']
 
     def __str__(self):
         return self.sub_counties
@@ -74,6 +78,9 @@ class Sub_counties(models.Model):
 
 class Department(models.Model):
     department = models.CharField(max_length=250)
+
+    class Meta:
+        ordering = ['department']
 
     # slug = models.SlugField(blank=True, null=True)
     #
@@ -117,6 +124,7 @@ class QI_Projects(models.Model):
     responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
+    qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
     # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     # created_by = models.ForeignKey('auth.User', blank=True, null=True,
     #                                   default=None, on_delete=models.CASCADE)
@@ -179,7 +187,7 @@ class QI_Projects(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.facility) + " : " + str(self.id) + ":" + str(self.project_title)
+        return str(self.facility) + " : " + str(self.project_title)
 
 
 class Subcounty_qi_projects(models.Model):
@@ -213,6 +221,7 @@ class Subcounty_qi_projects(models.Model):
     responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
+    qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
     # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     # created_by = models.ForeignKey('auth.User', blank=True, null=True,
     #                                   default=None, on_delete=models.CASCADE)
@@ -309,6 +318,7 @@ class County_qi_projects(models.Model):
     responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
+    qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
     # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     # created_by = models.ForeignKey('auth.User', blank=True, null=True,
     #                                   default=None, on_delete=models.CASCADE)
@@ -405,6 +415,7 @@ class Hub_qi_projects(models.Model):
     responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
+    qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
     # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     # created_by = models.ForeignKey('auth.User', blank=True, null=True,
     #                                   default=None, on_delete=models.CASCADE)
@@ -501,6 +512,7 @@ class Program_qi_projects(models.Model):
     responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
+    qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
     # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     # created_by = models.ForeignKey('auth.User', blank=True, null=True,
     #                                   default=None, on_delete=models.CASCADE)
@@ -629,10 +641,28 @@ class ProjectResponses(models.Model):
 
 class Resources(models.Model):
     resource_name = models.CharField(max_length=250)
-    resource = models.FileField(upload_to='resources',null=True,blank=True)
-    description=models.CharField(max_length=1000)
+    resource = models.FileField(upload_to='resources', null=True, blank=True)
+    description = models.CharField(max_length=1000)
     uploaded_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     upload_date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     def __str__(self):
         return self.resource_name
+
+
+class Qi_managers(models.Model):
+    qi_manager_name = models.CharField(max_length=250)
+    date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
+    date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+
+    class Meta:
+        ordering = ['qi_manager_name']
+        verbose_name_plural="qi managers"
+
+    def __str__(self):
+        return self.qi_manager_name
+
+    def save(self, *args, **kwargs):
+        """Ensure manager name is in title case"""
+        self.qi_manager_name = self.qi_manager_name.title()
+        super(Qi_managers, self).save(*args, **kwargs)

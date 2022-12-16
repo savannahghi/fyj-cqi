@@ -14,7 +14,7 @@ from account.forms import UpdateUserForm
 from cqi_fyj import settings
 
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
-    QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm
+    QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm
 from .filters import *
 
 import plotly.express as px
@@ -341,7 +341,7 @@ def add_project_facility(request):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
     if request.method == "POST":
-        form = QI_ProjectsForm(request.POST)
+        form = QI_ProjectsForm(request.POST, prefix='banned')
         if form.is_valid():
             # form.save()
             # # do not save first, wait to update foreign key
@@ -370,10 +370,28 @@ def add_project_facility(request):
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = QI_ProjectsForm()
+        form = QI_ProjectsForm(prefix='banned')
+
     context = {"form": form}
     return render(request, "project/add_facility_project.html", context)
 
+
+@login_required(login_url='login')
+def add_qi_manager(request):
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        qi_managers_form = Qi_managersForm(request.POST, prefix='expected')
+        if qi_managers_form.is_valid():
+            qi_managers_form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+            # qi_managers_form = Qi_managersForm(prefix='expected')
+    else:
+        qi_managers_form = Qi_managersForm(prefix='expected')
+    context = {"qi_managers_form": qi_managers_form}
+    return render(request, "project/add_qi_manager.html", context)
 
 @login_required(login_url='login')
 def add_project_subcounty(request):

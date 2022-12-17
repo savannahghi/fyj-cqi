@@ -58,7 +58,7 @@
     {{ my_filters.form.problem_background|as_crispy_field }}
     </div>
             <div class="col-md-2">
-    {{ my_filters.form.facility|as_crispy_field }}
+    {{ my_filters.form.facility_name|as_crispy_field }}
     </div>
             <div class="col-md-2">
     {{ my_filters.form.settings|as_crispy_field }}
@@ -120,7 +120,7 @@
                <div class="card-body">
                    <h5 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h5>
                    <ul>
-                      <li>Facility : {{ qi.facility }}</li>
+                      <li>Facility : {{ qi.facility_name }}</li>
                       <li>Problem background : {{ qi.problem_background }}</li>
                       <li>Objective : {{ qi.objective }}</li>
                       <li>Setting : {{ qi.settings }}</li>
@@ -210,7 +210,7 @@
                   <div class="card-body">
                     <h5 class="card-title"> {{ qi.project_title}}</h5>
                       <ul>
-                          <li>Facility : <a href="{% url 'facility_project' qi.facility %}">{{ qi.facility }}</a></li>
+                          <li>Facility : <a href="{% url 'facility_project' qi.facility_name %}">{{ qi.facility_name }}</a></li>
                           <li>Problem background : {{ qi.problem_background }}</li>
                           <li>Objective : {{ qi.objective }}</li>
                           <li>Setting : {{ qi.settings }}</li>

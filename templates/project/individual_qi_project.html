@@ -20,7 +20,7 @@
     </div>
   </div>
     <div class="d-flex justify-content-between">
-       <h4>Facility name: {{ facility_project.facility|upper }}</h4>
+       <h4>Facility name: {{ facility_project.facility_name|upper }}</h4>
         <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">Facility projects</a>
         <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
         {% if user.is_authenticated %}
@@ -37,7 +37,7 @@
             <h5 class="card-title">{{ facility_project.project_title}}</h5>
               <div class="row">
                   <div class="col-md-3">
-                  <p class="card-text"><strong>Created by : </strong>{{ facility_project.created_by }}</p>
+                  <p class="card-text"><strong>Created by : </strong>{{ facility_project.created_by|upper }}</p>
               </div>
                   <div class="col-md-3">
                   <p class="card-text"><strong>Start date : </strong>{{ facility_project.start_date }}</p>
@@ -87,13 +87,13 @@
 {#    <p>Do you have any comments regarding the above QI Initiative? Click the button below to send your comment to the QI team members implementing this QI initiative.</p>#}
 {#                <p>#}
                     <div class="d-flex justify-content-evenly">
-                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExampleOne" role="button" aria-expanded="false" aria-controls="collapseExampleOne">
                         PDSA TEST CYCLE
                         </a>
 {#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
                     </div>
                 </p>
-                <div class="collapse bg-light" id="collapseExample">
+                <div class="collapse bg-light" id="collapseExampleOne">
                     <p class="text-primary lead">The Plan-Do-Study-Act (PDSA) Test Cycle is an iterative process used to identify, test, and implement solutions to improve quality. It involves planning a change, testing it, analyzing the results, and deciding whether to keep, modify, or discard the change. The PDSA Test Cycle is a powerful tool for driving quality improvement initiatives, as it allows for rapid iteration and experimentation. It is an important part of any quality improvement efforts and can be used to identify and troubleshoot problems quickly and efficiently.</p>
                     <div class="row">
                           <div class="col-sm-6 mt-4">
@@ -235,7 +235,12 @@
                             <td>{{ change.month_year}}</td>
                             <td>{{ change.tested_change }}</td>
                             <td>{{ change.comments }}</td>
-                            <td>{{ change.numerator}}</td>
+                            {% if change.numerator > 90 %}
+                                <td class="text-success"><strong>{{ change.numerator}}</strong></td>
+                            {% elif change.numerator < 75 %}
+                                <td class="text-danger"><strong>{{ change.numerator}}</strong></td>
+
+                            {% endif %}
                             <td>{{ change.denominator }}</td>
                             <td>{{ change.achievements}}%</td>
                         <td>
@@ -252,13 +257,13 @@
                 <p>Do you have any comments regarding the above QI Initiative? Click the button below to send your comment to the QI team members implementing this QI initiative.</p>
                 <p>
                     <div class="d-flex justify-content-evenly">
-                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
-                        Yes
+                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
+                        Yes {{ facility_project.id }}
                         </a>
                         <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
                     </div>
                 </p>
-                <div class="collapse" id="collapseExample">
+                <div class="collapse" id="collapseExampleTwo">
                     <form action="" method="POST">
                         {% csrf_token %}
                         {{ form|crispy }}
@@ -275,7 +280,7 @@
             </p>
         {% endif %}
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
-            <h5 class="d-flex justify-content-evenly">QI Thematic areas for {{ facility_project.facility|title }}.</h5>
+            <h5 class="d-flex justify-content-evenly">QI Thematic areas for {{ facility_project.facility_name|title }}.</h5>
             <div class="container">
                 <div class="col">
                     <div class="row">

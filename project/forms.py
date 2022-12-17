@@ -140,13 +140,45 @@ class ProjectResponsesForm(ModelForm):
         fields = ['response']
 
 
-class ResourcesForm(ModelForm):
-    class Meta:
-        model = Resources
-        fields = "__all__"
-
-
 class Qi_managersForm(ModelForm):
     class Meta:
         model = Qi_managers
         fields = "__all__"
+
+
+class DepartmentForm(ModelForm):
+    class Meta:
+        model = Department
+        fields = "__all__"
+
+
+class CategoryForm(ModelForm):
+    class Meta:
+        model = Category
+        fields = "__all__"
+
+
+class Sub_countiesForm(ModelForm):
+    class Meta:
+        model = Sub_counties
+        fields = "__all__"
+
+
+class FacilitiesForm(ModelForm):
+    class Meta:
+        model = Facilities
+        fields = "__all__"
+
+
+class CountiesForm(ModelForm):
+    class Meta:
+        model = Counties
+        fields = "__all__"
+
+
+class ResourcesForm(ModelForm):
+    class Meta:
+        model = Resources
+        fields = "__all__"
+        exclude=['uploaded_by']
+

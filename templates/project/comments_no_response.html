@@ -22,7 +22,7 @@
             </div>
         {% if all_comments|length >= 1 %}
 {#            {% for all_comment in all_comments %}#}
-                <h5 class="d-flex justify-content-evenly">You are viewing {{ all_comment.qi_project_title.facility|title }} comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>
+                <h5 class="d-flex justify-content-evenly">You are viewing {{ all_comment.qi_project_title.facility_name|title }} comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>
 {#            {% endfor %}#}
             {% else %}
                 <h5 class="d-flex justify-content-evenly">You are viewing comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>
@@ -66,7 +66,7 @@
           <ul>
               <li><strong>Comment : <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.comment }}</a></strong></li>
               <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by.username %}">{{ comment.commented_by.username|title }}</a></li>
-              <li>Facility :  {{ comment.qi_project_title.facility|title }}</li>
+              <li>Facility :  {{ comment.qi_project_title.facility_name|title }}</li>
 
               <li>CQI Project created by : <a href="{% url 'qi_creators' comment.qi_project_title.created_by %}">{{ comment.qi_project_title.created_by|title }}</a> ({{ comment.commented_by.phone_number }})</li>
               <li>QI Responsible people : {{ comment.qi_project_title.responsible_people }}</li>

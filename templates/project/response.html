@@ -60,7 +60,7 @@
               <li><strong>Comment : {{ comment.comment }}</strong></li>
 {#              <li>Date comment made : {{ comment.comment_date }}</li>#}
               <li>Commented by : <a href="#">{{ comment.commented_by.username|title }}</a></li>
-              <li>Facility :  <a href="#">{{ comment.qi_project_title.facility|title }}</a></li>
+              <li>Facility :  <a href="#">{{ comment.qi_project_title.facility_name|title }}</a></li>
 
               <li>CQI Project created by : <a href="#">{{ comment.qi_project_title.created_by|title }}</a> ({{ comment.commented_by.phone_number }})</li>
               <li>QI Responsible people : {{ comment.qi_project_title.responsible_people }}</li>

@@ -3,9 +3,12 @@ import os.path
 import pandas as pd
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.core.files.storage import FileSystemStorage
 
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db import IntegrityError
 from django.db.models import Count
+from django.forms import forms
 
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render, redirect
@@ -14,7 +17,8 @@ from account.forms import UpdateUserForm
 from cqi_fyj import settings
 
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
-    QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm
+    QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
+    DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm
 from .filters import *
 
 import plotly.express as px
@@ -35,22 +39,24 @@ def pagination_(request, item_list):
     return items
 
 
-def prepare_viz(list_of_projects, pk):
+def prepare_viz(list_of_projects, pk, col):
+    # TODO: CHECK WHY SORTING IS WRONG!
+
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
 
-    list_of_projects = list_of_projects[list_of_projects['department'] == pk].sort_values("achievements")
+    list_of_projects = list_of_projects[list_of_projects[col] == pk].sort_values("achievements")
 
     # keys = list_of_projects['department'].unique()
 
     dfs = []
-    for department in list_of_projects['department'].unique():
-        a = list_of_projects[list_of_projects['department'] == department]
+    for department in list_of_projects[col].unique():
+        a = list_of_projects[list_of_projects[col] == department]
         a = a.sort_values("month_year", ascending=False)
         dfs.append(a)
 
     dicts = {}
-    keys = list_of_projects['department'].unique()
+    keys = list_of_projects[col].unique()
     values = dfs
     for i in range(len(keys)):
         dicts[keys[i]] = values[i]
@@ -76,8 +82,12 @@ def prepare_viz(list_of_projects, pk):
         all_other_projects_trend = []
         for project in list(df_heads['project_id']):
             # filter dfs based on the order of the best performing projects
-            all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            if isinstance(project, str):
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            else:
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project]))
 
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
     else:
@@ -111,6 +121,15 @@ def prepare_bar_chart_horizontal_from_df(list_of_projects, col, title, projects=
 
 @login_required(login_url='login')
 def dashboard(request):
+    facility_qi_projects = None
+    subcounty_qi_projects = None
+    county_qi_projects = None
+    department_qi_projects = None
+    best_performing_dic = None
+    dicts = None
+    testedChange_current = None
+    qi_mans = None
+
     qi_list = QI_Projects.objects.all()
 
     sub_qi_list = Subcounty_qi_projects.objects.all()
@@ -131,6 +150,9 @@ def dashboard(request):
              'month_year': x.month_year,
              'achievements': x.achievements,
              "project_id": x.project.id,
+             "project_qi_manager": x.project.qi_manager,
+             "department": x.project.departments,
+             "facility": x.project.facility_name.facilities,
              } for x in testedChange
         ]
         # convert data from database to a dataframe
@@ -144,9 +166,21 @@ def dashboard(request):
 
         best_performing = best_performing.sort_values("achievements", ascending=False)
         # best_performing = best_performing[best_performing['achievements'] >=10]
-
+        qi_mans = best_performing.copy()
+        # print(qi_mans)
         best_performing['project'] = best_performing['project'] + " (" + best_performing['achievements'].astype(
             int).astype(str) + "%)"
+
+        qi_mans['achievements'] = qi_mans['achievements'].astype(int).astype(str) + " %"
+        qi_mans['facility'] = qi_mans['facility'].str.replace(" ", "_")
+        qi_mans.reset_index(drop=True, inplace=True)
+        qi_mans.index += 1
+        qi_mans = qi_mans[['project_qi_manager', 'facility', 'project', 'achievements', 'department']]
+        qi_mans = qi_mans.rename(columns={"project_qi_manager": "Project QI Manager",
+                                          "project": "Project", "facility": "Facility",
+                                          "department": "Department", "achievements": "Achievements"})
+        # print(qi_mans)
+
         keys = list(best_performing['project'])
         project_id_values = list(best_performing['project_id'])
         best_performing_dic = dict(zip(keys, project_id_values))
@@ -181,7 +215,7 @@ def dashboard(request):
 
     if qi_list:
         list_of_projects = [
-            {'facility': x.facility,
+            {'facility': x.facility_name,
              'subcounty': x.sub_county.sub_counties,
              'county': x.county.county_name,
              'department': x.departments.department,
@@ -190,9 +224,8 @@ def dashboard(request):
         # convert data from database to a dataframe
         list_of_projects = pd.DataFrame(list_of_projects)
         list_of_projects_fac = list_of_projects.copy()
-        list_of_projects_fac['facility'] = list_of_projects_fac['facility'].str.split(" ").str[0]
+        list_of_projects_fac['facility'] = list_of_projects_fac['facility'].astype(str).str.split(" ").str[0]
 
-        # print(pd.concat([list_of_projects_sub,list_of_projects_county]))
         list_of_projects = pd.concat([list_of_projects_fac, list_of_projects_sub, list_of_projects_county])
 
         facility_qi_projects = prepare_bar_chart_from_df(list_of_projects_fac, 'facility',
@@ -214,70 +247,76 @@ def dashboard(request):
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
-    testedChange_current = TestedChange.objects.filter(project_id__in=project_id_values).order_by('-achievements')
-    # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
-    # list_of_projects = my_filters.qs
-    list_of_projects = [
-        {'achievements': x.achievements,
-         'month_year': x.month_year,
-         'project_id': x.project_id,
-         'tested of change': x.tested_change,
-         'facility': x.project,
-         'project': x.project.project_title,
-         'department': x.project.departments.department,
-         } for x in testedChange_current
-    ]
+    try:
+        testedChange_current = TestedChange.objects.filter(project_id__in=project_id_values).order_by('-achievements')
 
-    # convert data from database to a dataframe
-    list_of_projects = pd.DataFrame(list_of_projects)
-    keys = sorted(list_of_projects['department'].unique())
-    values = sorted(list_of_projects['department'].unique())
-    testedChange_current = dict(zip(keys, values))
-    # keys = list_of_projects['department'].unique()
+        # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
+        # list_of_projects = my_filters.qs
+        list_of_projects = [
+            {'achievements': x.achievements,
+             'month_year': x.month_year,
+             'project_id': x.project_id,
+             'tested of change': x.tested_change,
+             'facility': x.project,
+             'project': x.project.project_title,
+             'department': x.project.departments.department,
+             } for x in testedChange_current
+        ]
 
-    dfs = []
-    for department in list_of_projects['department'].unique():
-        a = list_of_projects[list_of_projects['department'] == department]
-        a = a.sort_values("month_year", ascending=False)
-        dfs.append(a)
+        # convert data from database to a dataframe
+        list_of_projects = pd.DataFrame(list_of_projects)
+        keys = sorted(list_of_projects['department'].unique())
+        values = sorted(list_of_projects['department'].unique())
+        testedChange_current = dict(zip(keys, values))
+        # keys = list_of_projects['department'].unique()
 
-    dicts = {}
-    keys = list_of_projects['department'].unique()
-    values = dfs
-    for i in range(len(keys)):
-        dicts[keys[i]] = values[i]
+        dfs = []
+        for department in list_of_projects['department'].unique():
+            a = list_of_projects[list_of_projects['department'] == department]
+            a = a.sort_values("month_year", ascending=False)
+            dfs.append(a)
 
-    if list_of_projects.shape[0] != 0:
         dicts = {}
-        keys = list_of_projects['project_id'].unique()
-        values = list_of_projects['project'].unique()
+        keys = list_of_projects['department'].unique()
+        values = dfs
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
 
-        lst = []
+        if list_of_projects.shape[0] != 0:
+            dicts = {}
+            keys = list_of_projects['project_id'].unique()
+            values = list_of_projects['project'].unique()
+            for i in range(len(keys)):
+                dicts[keys[i]] = values[i]
 
-        for i in list_of_projects['project_id'].unique():
-            # get the first rows of the dfs
-            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
-            # append them in a list
-            lst.append(a.head(1))
+            lst = []
 
-        # concat and sort them by project id
-        df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+            for i in list_of_projects['project_id'].unique():
+                # get the first rows of the dfs
+                a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
+                # append them in a list
+                lst.append(a.head(1))
 
-        all_other_projects_trend = []
-        for project in list(df_heads['project_id']):
-            # filter dfs based on the order of the best performing projects
-            all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            # concat and sort them by project id
+            df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
 
-        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+            all_other_projects_trend = []
+            for project in list(df_heads['project_id']):
+                # filter dfs based on the order of the best performing projects
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
 
+            pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
 
-    else:
-        pro_perfomance_trial = {}
+        else:
+            pro_perfomance_trial = {}
+    except:
+        pro_perfomance_trial = None
 
     form = QI_ProjectsForm()
+    # QI MANAGERS
+    qi_managers = Qi_managers.objects.all()
+
     context = {"form": form,
                "facility_qi_projects": facility_qi_projects,
                "subcounty_qi_projects": subcounty_qi_projects,
@@ -290,9 +329,31 @@ def dashboard(request):
                "qi_list": qi_list,
                "testedChange_current": testedChange_current,
                "testedChange": testedChange,
+               "qi_managers": qi_managers,
+               "qi_mans": qi_mans,
+               "project_id_values": project_id_values,
 
                }
     return render(request, "project/dashboard.html", context)
+
+
+@login_required(login_url='login')
+def update_qi_managers(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = Qi_managers.objects.get(id=pk)
+    if request.method == "POST":
+        form = Qi_managersForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = Qi_managersForm(instance=item)
+    context = {
+        "form": form,
+        "title": "Update QI manager details",
+    }
+    return render(request, 'project/update.html', context)
 
 
 @login_required(login_url='login')
@@ -361,8 +422,6 @@ def add_project_facility(request):
                     post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
                     sub_county_list.append(sub_county.sub_counties_id)
             for county in all_counties:
-                print(county.sub_counties_id)
-                print(sub_county_list[0])
                 if sub_county_list[0] == county.sub_counties_id:
                     post.county = Counties.objects.get(id=county.counties_id)
             # save
@@ -378,20 +437,161 @@ def add_project_facility(request):
 
 @login_required(login_url='login')
 def add_qi_manager(request):
+    title = "ADD QI MANAGER"
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
     if request.method == "POST":
-        qi_managers_form = Qi_managersForm(request.POST, prefix='expected')
-        if qi_managers_form.is_valid():
-            qi_managers_form.save()
-            return HttpResponseRedirect(request.session['page_from'])
-            # qi_managers_form = Qi_managersForm(prefix='expected')
+        form = Qi_managersForm(request.POST, prefix='expected')
+        try:
+            if form.is_valid():
+                form.save()
+                return HttpResponseRedirect(request.session['page_from'])
+                # form = Qi_managersForm(prefix='expected')
+        except IntegrityError as e:
+            text = """<h1 class="display-5 fw-bold text-primary" >Email already exist!</h1>"""
+            return HttpResponse(text)
     else:
-        qi_managers_form = Qi_managersForm(prefix='expected')
-    context = {"qi_managers_form": qi_managers_form}
+        form = Qi_managersForm(prefix='expected')
+    context = {"form": form, "title": title}
     return render(request, "project/add_qi_manager.html", context)
+
+
+@login_required(login_url='login')
+def add_department(request):
+    title = "ADD DEPARTMENT"
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = DepartmentForm(request.POST)
+        try:
+            if form.is_valid():
+                form.save()
+                return HttpResponseRedirect(request.session['page_from'])
+                # form = Qi_managersForm(prefix='expected')
+        except IntegrityError as e:
+            text = """<h1 class="display-5 fw-bold text-primary" >Department already exist!</h1>"""
+            return HttpResponse(text)
+    else:
+        form = DepartmentForm()
+    context = {"form": form, "title": title}
+    return render(request, "project/add_qi_manager.html", context)
+
+
+@login_required(login_url='login')
+def add_category(request):
+    title = "ADD PROJECT CATEGORY"
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = CategoryForm(request.POST)
+        try:
+            if form.is_valid():
+                form.save()
+                return HttpResponseRedirect(request.session['page_from'])
+                # form = Qi_managersForm(prefix='expected')
+        except IntegrityError as e:
+            text = """<h1 class="display-5 fw-bold text-primary" >Category already exist!</h1>"""
+            return HttpResponse(text)
+    else:
+        form = CategoryForm()
+    context = {"form": form, "title": title}
+    return render(request, "project/add_qi_manager.html", context)
+
+
+@login_required(login_url='login')
+def add_subcounty(request):
+    title = "ADD SUB-COUNTY"
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = Sub_countiesForm(request.POST)
+        try:
+            if form.is_valid():
+                form.save()
+                return HttpResponseRedirect(request.session['page_from'])
+                # form = Qi_managersForm(prefix='expected')
+        except IntegrityError as e:
+            text = """<h1 class="display-5 fw-bold text-primary" >Sub-county already exist!</h1>"""
+            return HttpResponse(text)
+    else:
+        form = Sub_countiesForm()
+    context = {"form": form, "title": title}
+    return render(request, "project/add_qi_manager.html", context)
+
+
+@login_required(login_url='login')
+def add_facility(request):
+    title = "ADD FACILITY"
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = FacilitiesForm(request.POST)
+        try:
+            if form.is_valid():
+                form.save()
+                return HttpResponseRedirect(request.session['page_from'])
+                # form = Qi_managersForm(prefix='expected')
+        except IntegrityError as e:
+            text = """<h1 class="display-5 fw-bold text-primary" >Facility already exist!</h1>"""
+            return HttpResponse(text)
+    else:
+        form = FacilitiesForm()
+    context = {"form": form, "title": title}
+    return render(request, "project/add_qi_manager.html", context)
+
+
+@login_required(login_url='login')
+def add_county(request):
+    title = "ADD COUNTY"
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = CountiesForm(request.POST)
+        try:
+            if form.is_valid():
+                form.save()
+                return HttpResponseRedirect(request.session['page_from'])
+                # form = Qi_managersForm(prefix='expected')
+        except IntegrityError as e:
+            text = """<h1 class="display-5 fw-bold text-primary" >County already exist!</h1>"""
+            return HttpResponse(text)
+
+    else:
+        form = CountiesForm()
+    context = {"form": form, "title": title}
+    return render(request, "project/add_qi_manager.html", context)
+
+
+@login_required(login_url='login')
+def add_resources(request):
+    title = "ADD RESOURCES"
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = ResourcesForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+            # form = Qi_managersForm(prefix='expected')
+    else:
+        form = ResourcesForm()
+    context = {"form": form, "title": title}
+    return render(request, "project/add_qi_manager.html", context)
+
 
 @login_required(login_url='login')
 def add_project_subcounty(request):
@@ -661,7 +861,7 @@ def department_filter_project(request, pk):
          } for x in testedChange
     ]
 
-    pro_perfomance_trial = prepare_viz(list_of_projects, pk)
+    pro_perfomance_trial = prepare_viz(list_of_projects, pk, "department")
 
     facility_name = pk
 
@@ -675,8 +875,75 @@ def department_filter_project(request, pk):
 
 
 @login_required(login_url='login')
+def qi_managers_filter_project(request, pk):
+    print(pk)
+    pro_perfomance_trial = None
+
+    projects = QI_Projects.objects.filter(qi_manager__id=pk)
+    print(projects)
+    if projects:
+        list_of_projects = [
+            {
+                'qi_manager_email': x.qi_manager.email,
+            } for x in projects
+        ]
+        list_of_projects_ = pd.DataFrame(list_of_projects)
+        print("list_of_projects_::::")
+        print(list_of_projects_)
+
+    project_id_values = request.session['project_id_values']
+
+    # accessing facility qi projects
+    # use two underscore to the field with foreign key
+    # list_of_projects = TestedChange.objects.filter(project_id__in=project_id_values).order_by('-achievements')
+    # testedChange = TestedChange.objects.all()
+    testedChange = TestedChange.objects.filter(project__qi_manager__id=pk)
+    # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
+    # list_of_projects = my_filters.qs
+
+    if testedChange:
+        list_of_projects = [
+            {'achievements': x.achievements,
+             'month_year': x.month_year,
+             'project_id': x.project_id,
+             'tested of change': x.tested_change,
+
+             'facility': x.project.facility_name,
+             'project': x.project.project_title,
+             'qi_manager': x.project.qi_manager.first_name,
+             'qi_manager_email': x.project.qi_manager.email,
+             } for x in testedChange
+        ]
+        list_of_projects_ = pd.DataFrame(list_of_projects)
+        print(list_of_projects_)
+        manager_name = list(list_of_projects_['qi_manager'].unique())[0]
+
+        pro_perfomance_trial = prepare_viz(list_of_projects, manager_name, "qi_manager")
+    else:
+        manager = Qi_managers.objects.filter(id=pk)
+        if manager:
+            list_of_projects = [
+                {
+                    'qi_manager': x.first_name,
+                } for x in manager
+            ]
+            list_of_projects_ = pd.DataFrame(list_of_projects)
+            print("list_of_projects_:::: name")
+            manager_name = list(list_of_projects_['qi_manager'].unique())[0]
+            print(list_of_projects_)
+
+    context = {"projects": projects,
+               "facility_name": manager_name,
+               "title": "",
+               "pro_perfomance_trial": pro_perfomance_trial,
+
+               }
+    return render(request, "project/department_filter_projects.html", context)
+
+
+@login_required(login_url='login')
 def facility_filter_project(request, pk):
-    projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
+    projects = QI_Projects.objects.filter(facility_name__facilities=pk).order_by("-date_updated")
     project_id_values = request.session['project_id_values']
 
     # accessing facility qi projects
@@ -825,7 +1092,7 @@ def qicreator_filter_project(request, pk):
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
     else:
         pro_perfomance_trial = {}
-    # pro_perfomance_trial = prepare_viz(list_of_projects, pk)
+    # pro_perfomance_trial = prepare_viz(list_of_projects, pk,col)
 
     facility_name = pk
 
@@ -864,7 +1131,6 @@ def county_filter_project(request, pk):
 
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
-    print(list_of_projects)
 
     # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
 
@@ -909,7 +1175,7 @@ def county_filter_project(request, pk):
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
     else:
         pro_perfomance_trial = {}
-    # pro_perfomance_trial = prepare_viz(list_of_projects, pk)
+    # pro_perfomance_trial = prepare_viz(list_of_projects, pk,col)
 
     facility_name = pk
 
@@ -948,7 +1214,6 @@ def sub_county_filter_project(request, pk):
 
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
-    print(list_of_projects)
 
     # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
 
@@ -993,7 +1258,7 @@ def sub_county_filter_project(request, pk):
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
     else:
         pro_perfomance_trial = {}
-    # pro_perfomance_trial = prepare_viz(list_of_projects, pk)
+    # pro_perfomance_trial = prepare_viz(list_of_projects, pk,col)
 
     facility_name = pk
 
@@ -1243,6 +1508,22 @@ def delete_response(request, pk):
 
 
 @login_required(login_url='login')
+def delete_resource(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = Resources.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+        "test_of_changes": item
+    }
+    return render(request, 'project/delete_test_of_change.html', context)
+
+
+@login_required(login_url='login')
 def update_profile(request):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -1276,7 +1557,66 @@ def qi_team_members(request):
 
 @login_required(login_url='login')
 def qi_managers(request):
-    return render(request, "project/qi_managers.html")
+    qi_managers_list = Qi_managers.objects.all()
+    qi_managers_ = QI_Projects.objects.all()
+
+    # Get df for QI managers with projects
+    list_of_projects = [
+        {
+            # {'project_ids': x.id,
+            'First name': x.qi_manager.first_name,
+            'Second name': x.qi_manager.second_name,
+            'Email': x.qi_manager.email,
+            'Phone Number': x.qi_manager.phone_number,
+            'QI_manager_id': x.qi_manager.id,
+            'Designation': x.qi_manager.designation,
+            'Date created': x.qi_manager.date_created,
+        } for x in qi_managers_
+    ]
+    qi_managers_with_projects = pd.DataFrame(list_of_projects)
+    # print("qi_managers_with_projects")
+    # print(qi_managers_with_projects)
+    # pandas count frequency of column value in another dataframe column
+    qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
+        qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
+    qi_managers_with_projects = qi_managers_with_projects.groupby(
+        ['First name', 'Second name', 'Email', 'Phone Number', 'Designation', 'Date created']).max(
+        "Projects Supervising").reset_index()
+
+    # Get df for QI managers with projects
+    list_of_projects = [
+        {
+            # {'project_ids': x.id,
+            'First name': x.first_name,
+            'Second name': x.second_name,
+            'Email': x.email,
+            'Phone Number': x.phone_number,
+
+            'QI_manager_id': x.id,
+            'Designation': x.designation,
+            'Date created': x.date_created,
+        } for x in qi_managers_list
+    ]
+    # convert data from database to a dataframe
+    qi_managers_without_projects = pd.DataFrame(list_of_projects)
+    qi_managers_without_projects["Projects Supervising"] = 0
+    qi_managers_without_projects = qi_managers_without_projects[
+        ~qi_managers_without_projects['QI_manager_id'].isin(list(qi_managers_with_projects['QI_manager_id']))]
+
+    # Join df for all QI managers with and without
+    qi_managers = pd.concat([qi_managers_with_projects, qi_managers_without_projects])
+    qi_managers = qi_managers.sort_values("Projects Supervising", ascending=False).reset_index()
+    qi_managers.reset_index(drop=True, inplace=True)
+    qi_managers.index += 1
+    # del qi_managers['QI_manager id']
+    del qi_managers['index']
+    # print(qi_managers)
+
+    context = {
+        "qi_managers_list": qi_managers_list,
+        "qi_managers": qi_managers,
+    }
+    return render(request, "project/qi_managers.html", context)
 
 
 @login_required(login_url='login')
@@ -1325,11 +1665,13 @@ def comments_with_response(request):
 @login_required(login_url='login')
 def single_project_comments(request, pk):
     all_comments = ProjectComments.objects.filter(qi_project_title__id=pk).order_by('-comment_updated')
+
     all_responses = ProjectResponses.objects.filter(comment__qi_project_title_id=pk).order_by('-response_updated_date')
 
     all_responses_ids = ProjectResponses.objects.values_list('comment_id', flat=True)
 
     facility_project = QI_Projects.objects.get(id=pk)
+
     pro_owner = facility_project.projectcomments_set.all()
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
@@ -1373,6 +1715,26 @@ def update_comments(request, pk):
         "title": "Update Comment",
     }
     return render(request, 'project/update_test_of_change.html', context)
+
+
+@login_required(login_url='login')
+def update_resource(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = Resources.objects.get(id=pk)
+    form = ResourcesForm(instance=item)
+    if request.method == "POST":
+        form = ResourcesForm(request.POST, request.FILES, instance=item)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    # else:
+    #     form = ResourcesForm(instance=item)
+    context = {
+        "form": form,
+        "title": "Update Resource",
+    }
+    return render(request, 'project/update_resource.html', context)
 
 
 @login_required(login_url='login')
@@ -1543,7 +1905,7 @@ def prepare_trends(df, title=""):
 def single_project(request, pk):
     facility_project = QI_Projects.objects.get(id=pk)
     # get other facility projects
-    other_projects = QI_Projects.objects.filter(facility=facility_project.facility)
+    other_projects = QI_Projects.objects.filter(facility_name=facility_project.facility_name)
     # Hit db once
     test_of_change_qs = TestedChange.objects.all()
     # check comments
@@ -1565,7 +1927,7 @@ def single_project(request, pk):
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
-    list_of_projects = TestedChange.objects.filter(project_id__facility=facility_project.facility).order_by(
+    list_of_projects = TestedChange.objects.filter(project_id__facility_name=facility_project.facility_name).order_by(
         '-month_year')
     list_of_projects = [
         {'month_year': x.month_year,
@@ -1667,37 +2029,6 @@ def delete_comment(request, pk):
         "test_of_changes": item
     }
     return render(request, 'project/delete_test_of_change.html', context)
-
-
-def download_pdf(request,name):
-
-    # get the file path
-    file_path = settings.MEDIA_ROOT + f'/Kenya_Quality_Model_for_Health_2014.pdf'
-    print("file_path...")
-    print(file_path)
-    # open the file
-    with open(file_path, 'rb') as pdf:
-        response = HttpResponse(pdf.read(), content_type='application/pdf')
-        response['Content-Disposition'] = 'inline;filename=myfile.pdf'
-        return response
-
-# def download(request,path):
-#     # get the file path
-#     # file_path = request.GET.get('file_path')
-#     file_path=os.path.join(settings.MEDIA_ROOT,path)
-#
-#     # open and read the file
-#     if os.path.exists(file_path):
-#         with open(file_path,'rb') as fh:
-#             response=HttpResponse(fh.read(),content_type='application/adminupload')
-#             response['Content-Disposition'] = 'inline;filename=' + os.path.basename(file_path)
-#             return response
-#     raise Http404
-    # # open and read the file
-    # with open(file_path, 'rb') as pdf:
-    #     response = HttpResponse(pdf.read(), content_type='application/pdf')
-    #     response['Content-Disposition'] = 'inline;filename=' + os.path.basename(file_path)
-    #     return response
 
 # @login_required(login_url='login')
 # def close_project(request, pk):

@@ -141,7 +141,9 @@
             <p class="d-flex justify-content-evenly">These QI Projects are categorized best based on percentage achieved during their last update</p>
             <div class="d-flex justify-content-evenly" >
 
-            {% for department in testedChange_current %}
+{#            {% for department in testedChange_current %}#}
+            {% for department in qi_mans.Department.unique %}
+                <!-- Loop over unique values in df column -->
                <!-- django template show only distinct value -->
 {#                {% ifchanged %}<a href="{% url 'department_filter_project' department.project.project_category %}" class="btn btn-success" role="button">{{ department.project.project_category }}</a>{% endifchanged %}#}
                 <a href="{% url 'department_filter_project' department %}" class="btn btn-success" role="button">{{ department }}</a>
@@ -196,132 +198,66 @@
 {#        </div>#}
 
       <h2 class="d-flex justify-content-evenly mt-4">QI MANAGERS WITH BEST QI PROJECTS</h2>
-      <div class="table-responsive">
-        <table class="table table-striped table-sm">
-          <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">Header</th>
-              <th scope="col">Header</th>
-              <th scope="col">Header</th>
-              <th scope="col">Header</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1,001</td>
-              <td>random</td>
-              <td>data</td>
-              <td>placeholder</td>
-              <td>text</td>
-            </tr>
-            <tr>
-              <td>1,002</td>
-              <td>placeholder</td>
-              <td>irrelevant</td>
-              <td>visual</td>
-              <td>layout</td>
-            </tr>
-            <tr>
-              <td>1,003</td>
-              <td>data</td>
-              <td>rich</td>
-              <td>dashboard</td>
-              <td>tabular</td>
-            </tr>
-            <tr>
-              <td>1,003</td>
-              <td>information</td>
-              <td>placeholder</td>
-              <td>illustrative</td>
-              <td>data</td>
-            </tr>
-            <tr>
-              <td>1,004</td>
-              <td>text</td>
-              <td>random</td>
-              <td>layout</td>
-              <td>dashboard</td>
-            </tr>
-            <tr>
-              <td>1,005</td>
-              <td>dashboard</td>
-              <td>irrelevant</td>
-              <td>text</td>
-              <td>placeholder</td>
-            </tr>
-            <tr>
-              <td>1,006</td>
-              <td>dashboard</td>
-              <td>illustrative</td>
-              <td>rich</td>
-              <td>data</td>
-            </tr>
-            <tr>
-              <td>1,007</td>
-              <td>placeholder</td>
-              <td>tabular</td>
-              <td>information</td>
-              <td>irrelevant</td>
-            </tr>
-            <tr>
-              <td>1,008</td>
-              <td>random</td>
-              <td>data</td>
-              <td>placeholder</td>
-              <td>text</td>
-            </tr>
-            <tr>
-              <td>1,009</td>
-              <td>placeholder</td>
-              <td>irrelevant</td>
-              <td>visual</td>
-              <td>layout</td>
-            </tr>
-            <tr>
-              <td>1,010</td>
-              <td>data</td>
-              <td>rich</td>
-              <td>dashboard</td>
-              <td>tabular</td>
-            </tr>
-            <tr>
-              <td>1,011</td>
-              <td>information</td>
-              <td>placeholder</td>
-              <td>illustrative</td>
-              <td>data</td>
-            </tr>
-            <tr>
-              <td>1,012</td>
-              <td>text</td>
-              <td>placeholder</td>
-              <td>layout</td>
-              <td>dashboard</td>
-            </tr>
-            <tr>
-              <td>1,013</td>
-              <td>dashboard</td>
-              <td>irrelevant</td>
-              <td>text</td>
-              <td>visual</td>
-            </tr>
-            <tr>
-              <td>1,014</td>
-              <td>dashboard</td>
-              <td>illustrative</td>
-              <td>rich</td>
-              <td>data</td>
-            </tr>
-            <tr>
-              <td>1,015</td>
-              <td>random</td>
-              <td>tabular</td>
-              <td>information</td>
-              <td>text</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+{#      <div class="table-responsive">#}
+{#        <table class="table table-striped table-sm">#}
+{#          <thead>#}
+{##}
+{#            <tr>#}
+{##}
+{##}
+{##}
+{#              <th scope="col">#</th>#}
+{#              <th scope="col">Name</th>#}
+{#              <th scope="col">Phone Number</th>#}
+{#              <th scope="col">Email</th>#}
+{#              <th scope="col">Header</th>#}
+{#            </tr>#}
+{##}
+{##}
+{#          </thead>#}
+{##}
+{#{% for qi_man in testedChange %}#}
+{#        {% ifchanged %}{{ qi_man.project.id }}{% endifchanged %}#}
+{#    {% if qi_man.project.id in project_id_values %}#}
+{#          <tbody>#}
+{#            <tr>#}
+{#              <td>{{ forloop.counter}}</td>#}
+{#              <td>{{ qi_man.project.qi_manager }} </td>#}
+{#              <td>{{ qi_man.project.qi_manager.phone_number }}</td>#}
+{#              <td>{{ qi_man.project.qi_manager.email }}</td>#}
+{#              <td>text</td>#}
+{#          </tbody>#}
+{#    {% endif %}#}
+{#{% endfor %}#}
+{##}
+{#        </table>#}
+{#      </div>#}
+<table class="table table-striped table-hover">
+    <thead class="thead-dark">
+    <th scope="col"></th>
+
+        {% for col in qi_mans.columns %}
+{#            {{ forloop.counter }} {{ col }}#}
+{#            {% if col == " " %}#}
+          <th scope="col">{{ col }}</th>
+{#            {% endif %}#}
+        {% endfor %}
+
+    </thead>
+    <tbody>
+        </tr>
+        {% for index, row in qi_mans.iterrows %}
+              <tr>
+                  <th scope="row">{{ index}}</th>
+                {% for cell in row %}
+                      <td>
+                        {{cell}}
+
+                      </td>
+                {% endfor %}
+              </tr>
+        {% endfor %}
+    </tbody>
+</table>
     </main>
 {% endblock %}

@@ -4,16 +4,9 @@
 {% block content %}
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Current QI Managers on the platform</h1>
+        <h1 class="h2">QI Managers on the platform supervising QI projects</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-          <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
-          </div>
-          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
-            <span data-feather="calendar" class="align-text-bottom"></span>
-            This week
-          </button>
+          <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
         </div>
       </div>
 
@@ -29,42 +22,119 @@
         <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
         <button data-dismiss="modal" class="btn red" id="btnYes">Confirm</button>
     </div>
-   </div><table class="table table-striped table-hover table-users">
-    			<thead>
-    				<tr>
+   </div>
+{#        <table class="table table-striped table-hover table-users">#}
+{#    			<thead>#}
+{#    				<tr>#}
+{##}
+{#    					<th></th>#}
+{#    					<th>First name</th>#}
+{#    					<th>Second name</th>#}
+{#    					<th>Third name</th>#}
+{#    					<th >Email</th>#}
+{#    					<th>Phone Number</th>#}
+{#    					<th>Projects Supervising</th>#}
+{#    					<th>Facility/CHMT</th>#}
+{#    					<th></th>#}
+{#    					<th></th>#}
+{#    				</tr>#}
+{#    			</thead>#}
+{#                {% for qi_manager in qi_managers_list %}#}
+{##}
+{##}
+{##}
+{#    			<tbody>#}
+{#    				<tr>#}
+{#    					<td><strong>{{ forloop.counter }}.</strong></td>#}
+{#    					<td>{{ qi_manager.first_name }}</td>#}
+{#    					<td>{{ qi_manager.second_name }}</td>#}
+{#    					<td>doe</td>#}
+{#    					<td>{{ qi_manager.email}}</td>#}
+{#    					<td>{{ qi_manager.phone_number }}</td>#}
+{#                      <td>{{ qi_manager.phone_number }}</td>#}
+{##}
+{#                    	<td><span class="label label-warning">Not Active</span></td>#}
+{##}
+{##}
+{#                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-info" role="button">Edit</a></td>#}
+{#                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-danger" role="button">Delete</a></td>#}
+{#                    </tr>#}
+{##}
+{#	               </tbody>#}
+{#{% endfor %}#}
+{#    		</table>#}
+    <table class="table table-striped table-hover">
+    <thead class="thead-dark">
+    <th scope="col"></th>
 
-    					<th></th>
-    					<th>First name</th>
-    					<th>Second name</th>
-    					<th>Third name</th>
-    					<th >Email</th>
-    					<th>Phone Number</th>
-    					<th>Projects created</th>
-    					<th>Facility/CHMT</th>
-    					<th></th>
-    					<th></th>
-    				</tr>
-    			</thead>
+        {% for col in qi_managers.columns %}
+{#            {{ forloop.counter }} {{ col }}#}
+{#            {% if col == " " %}#}
+            {% if forloop.counter != 7 %}
+                <th scope="col">{{ col }}</th>
+{#            {% endif %}#}
+{#          {{ forloop.counter }} {{ col }}#}
+            {% endif %}
+        {% endfor %}
 
-    			<tbody>
-    				<tr>
-    					<td>1</td>
-    					<td>johnny</td>
-    					<td>john</td>
-    					<td>doe</td>
-    					<td>dsd@gmail.com</td>
-    					<td>078987809876543</td>
-                      <td>1</td>
+    </thead>
+    <tbody>
+        </tr>
+        {% for index, row in qi_managers.iterrows %}
+              <tr>
+                  <th scope="row">{{ index}}</th>
+{#              {{ forloop.counter }}{{ row }}#}
 
-                    	<td><span class="label label-warning">Not Active</span></td>
+                {% for cell in row %}
+                    {{ forloop.counter }},{{ cell }}
+{#                    {% if "First name" in cell %}#}
+{#                        <td>#}
+{#                        {{cell}}#}
+{#                        <a href="#" >DELETE {{ cell }} </a>#}
+{#                      </td>#}
+{##}
+{#                    {% endif %}#}
 
+                    {% if forloop.counter != 7 %}
+                        {% if forloop.counter == 3 %}
+                              <td>
+    {#                          <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
+{#                              <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
+                                {{cell}}
+                              </td>
+                        {% elif forloop.counter == 6 %}
+                              <td>
+    {#                          <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
+{#                              <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
+                                {{cell|date}}
+                              </td>
+                        {% elif forloop.counter == 8 %}
+                              <td>
+    {#                          <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
+{#                              <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
+                                  {% if cell > 0 %}
+                                    <strong class="text-success">{{cell}}</strong>
+                                  {% else %}
+                                    <strong class="text-danger">{{cell}}</strong>
+                                  {% endif %}
 
-                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-info" role="button">Edit</a></td>
-                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-danger" role="button">Delete</a></td>
-                    </tr>
+                              </td>
+                        {% else %}
+                                <td>
+    {#                          <a href="#" >DELETE {{ cell }} </a>#}
+                                {{cell}}
+                              </td>
+                        {% endif %}
+                    {% endif %}
 
-	               </tbody>
-
-    		</table>
+                {% endfor %}
+              <td>
+                  <a href="{% url 'qi_managers_filter_project' row.QI_manager_id %}" class="btn btn-secondary" role="button">VIEW Projects</a>
+                  <a href="{% url 'update_qi_managers' row.QI_manager_id %}" class="btn btn-info" role="button">Update QI profile</a>
+              </td>
+              </tr>
+        {% endfor %}
+    </tbody>
+</table>
     </main>
 {% endblock %}

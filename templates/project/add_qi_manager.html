@@ -7,12 +7,10 @@
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
     <div class="p-5 mb-4 bg-light rounded-3">
       <div class="container-fluid py-5">
-        <h1 class="display-5 fw-bold text-primary">ADD QI MANAGER </h1>
-          <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
-
+        <h1 class="display-5 fw-bold text-primary">{{ title }} </h1>
         <form method="POST" class="mt-5" enctype='multipart/form-data'>
             {% csrf_token %}
-            {{ qi_managers_form|crispy}}
+            {{ form|crispy}}
             <input class="btn btn-success mt-1" type="submit" value="Submit">
         </form>
       </div>

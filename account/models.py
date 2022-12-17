@@ -15,5 +15,4 @@ class NewUser(AbstractUser):
     def save(self, *args, **kwargs):
         """Ensure username and email are in the right case"""
         self.email = self.email.lower()
-        self.username = self.username.upper()
         super(NewUser, self).save(*args, **kwargs)

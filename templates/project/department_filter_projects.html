@@ -11,7 +11,7 @@
         {% if facility_name == "Fortnightly" %}
             <h3 class="text-success">CQI PROJECTS TRACKED EVERY TWO WEEKS</h3>
             {% else %}
-        <h3 class="text-success">{{ facility_name|upper }} CQI PROJECTS</h3>
+        <h3 class="text-success">{{ facility_name|upper }}'S CQI PROJECTS</h3>
         {% endif %}
 
     </div>
@@ -20,7 +20,13 @@
  <div class="p-5 mb-4 bg-light rounded-3">
     <div class="row mt-5">
     <div class="d-flex justify-content-evenly">
-        <h5 >{{ pro_perfomance_trial|length }} {{ title }} QI projects</h5>
+        {% if pro_perfomance_trial|length == 0  %}
+            <h5 >No QI projects so far</h5>
+            {% else %}
+            <h5 >{{ pro_perfomance_trial|length }} {{ title }} QI projects</h5>
+
+        {% endif %}
+
         <a href="{% url 'dashboard' %}" class="btn btn-primary">Dashboard</a>
         <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">Facility projects</a>
       <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
@@ -88,7 +94,7 @@
 {#                                    <div class="row ">#}
                                     {% for qi in projects %}
                                         {% if qi.id == key %}
-                                            <a href="{% url 'facility_filter_project' qi.facility %}" class="btn btn-primary text-sm-start">FACILITY: {{ qi.facility }}</a>
+                                            <a href="{% url 'facility_filter_project' qi.facility_name %}" class="btn btn-primary text-sm-start">FACILITY: {{ qi.facility_name }}</a>
 
                                             <a href="{% url 'county_filter_project' qi.county.county_name %}" class="btn btn-secondary mt-1">County : {{ qi.county.county_name }}</a>
                                             <a href="{% url 'single_project' qi.id %}" class="btn btn-success mt-1 text-sm-start">PROJECT: {{ qi.project_title }}</a>

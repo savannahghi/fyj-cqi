@@ -7,6 +7,7 @@ from crum import get_current_user, get_current_request
 # Create your models here.
 from django.template.defaultfilters import slugify
 from multiselectfield import MultiSelectField
+from phonenumber_field.modelfields import PhoneNumberField
 
 from account.models import NewUser
 from project.utils import image_resize
@@ -38,8 +39,10 @@ def read_txt(file_):
 
 
 class Facilities(models.Model):
-    FACILITY_CHOICES = read_txt(file_)
-    facilities = models.CharField(max_length=250, choices=FACILITY_CHOICES, unique=True)
+    # FACILITY_CHOICES = read_txt(file_)
+    # facilities = models.CharField(max_length=250, choices=FACILITY_CHOICES, unique=True)
+    facilities = models.CharField(max_length=250, unique=True)
+    mfl_code = models.IntegerField(unique=True)
 
     class Meta:
         verbose_name_plural = 'facilities'
@@ -48,9 +51,14 @@ class Facilities(models.Model):
     def __str__(self):
         return self.facilities
 
+    def save(self, *args, **kwargs):
+        """Ensure manager name is in title case"""
+        self.facilities = self.facilities.upper().strip()
+        super().save(*args, **kwargs)
+
 
 class Counties(models.Model):
-    county_name = models.CharField(max_length=250)
+    county_name = models.CharField(max_length=250,unique=True)
 
     # sub_counties = models.ManyToManyField(Sub_counties)
 
@@ -61,10 +69,14 @@ class Counties(models.Model):
     def __str__(self):
         return self.county_name
 
+    def save(self, *args, **kwargs):
+        """Ensure manager name is in title case"""
+        self.county_name = self.county_name.upper()
+        super().save(*args, **kwargs)
 
 
 class Sub_counties(models.Model):
-    sub_counties = models.CharField(max_length=250)
+    sub_counties = models.CharField(max_length=250,unique=True)
     counties = models.ManyToManyField(Counties)
     facilities = models.ManyToManyField(Facilities)
 
@@ -77,20 +89,23 @@ class Sub_counties(models.Model):
 
 
 class Department(models.Model):
-    department = models.CharField(max_length=250)
+    department = models.CharField(max_length=250,unique=True)
 
     class Meta:
         ordering = ['department']
 
-    # slug = models.SlugField(blank=True, null=True)
-    #
-    # def save(self, *args, **kwargs):
-    #     if not self.slug and self.department:
-    #         self.slug = slugify(self.department)
-    #     super(Department, self).save(*args, **kwargs)
-
     def __str__(self):
         return self.department
+
+
+class Category(models.Model):
+    category = models.CharField(max_length=250,unique=True)
+
+    class Meta:
+        ordering = ['category']
+
+    def __str__(self):
+        return self.category
 
 
 class QI_Projects(models.Model):
@@ -108,9 +123,10 @@ class QI_Projects(models.Model):
 
     departments = models.ForeignKey(Department, on_delete=models.CASCADE)
     department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
-    project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
+    # project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
-    facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
+    # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
     county = models.ForeignKey(Counties, on_delete=models.CASCADE)
     sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
@@ -187,7 +203,7 @@ class QI_Projects(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.facility) + " : " + str(self.project_title)
+        return str(self.facility_name) + " : " + str(self.project_title)
 
 
 class Subcounty_qi_projects(models.Model):
@@ -205,7 +221,7 @@ class Subcounty_qi_projects(models.Model):
 
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
-    project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
+    project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
     # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
     # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
@@ -302,7 +318,7 @@ class County_qi_projects(models.Model):
 
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
-    project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
+    project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
     # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
     # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
@@ -399,7 +415,7 @@ class Hub_qi_projects(models.Model):
 
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
-    project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
+    project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
     # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
     # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
@@ -496,7 +512,7 @@ class Program_qi_projects(models.Model):
 
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
-    project_category = models.CharField(max_length=200, choices=CATEGORY_CHOICES)
+    project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
     # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
     # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
@@ -641,28 +657,49 @@ class ProjectResponses(models.Model):
 
 class Resources(models.Model):
     resource_name = models.CharField(max_length=250)
-    resource = models.FileField(upload_to='resources', null=True, blank=True)
-    description = models.CharField(max_length=1000)
+    resource = models.FileField(upload_to='resources')
+    uploaded_by = models.ForeignKey(NewUser, on_delete=models.CASCADE)
+    description = models.TextField(max_length=1000)
     uploaded_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     upload_date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     def __str__(self):
         return self.resource_name
 
+    def save(self, commit=True, *args, **kwargs):
+        user = get_current_user()
+        # request = get_current_request()
+        if user and not user.pk:
+            user = None
+        if not self.pk:
+            self.uploaded_by = user
+            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
+
+    def delete(self, commit=True, *args, **kwargs):
+        """This ensures file is deleted from the file system"""
+        self.resource.delete()
+        super().delete(*args, **kwargs)
+
 
 class Qi_managers(models.Model):
-    qi_manager_name = models.CharField(max_length=250)
+    first_name = models.CharField(max_length=250)
+    second_name = models.CharField(max_length=250)
+    phone_number = PhoneNumberField(null=True, blank=True)
+    designation = models.CharField(max_length=250)
+    email = models.EmailField(null=True, blank=True,unique=True)
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     class Meta:
-        ordering = ['qi_manager_name']
-        verbose_name_plural="qi managers"
+        ordering = ['first_name']
+        verbose_name_plural = "qi managers"
 
     def __str__(self):
-        return self.qi_manager_name
+        return self.first_name + " " + self.second_name
 
     def save(self, *args, **kwargs):
         """Ensure manager name is in title case"""
-        self.qi_manager_name = self.qi_manager_name.title()
-        super(Qi_managers, self).save(*args, **kwargs)
+        self.first_name = self.first_name.title()
+        self.second_name = self.second_name.title()
+        super().save(*args, **kwargs)

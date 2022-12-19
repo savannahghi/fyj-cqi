@@ -40,8 +40,7 @@ def pagination_(request, item_list):
 
 
 def prepare_viz(list_of_projects, pk, col):
-    # TODO: CHECK WHY SORTING IS WRONG!
-
+    # TODO: CHECK IF THIS FUNCTION CAN BE USED TO OPTIMIZE THE CODE
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
 
@@ -78,6 +77,8 @@ def prepare_viz(list_of_projects, pk, col):
 
         # concat and sort them by project id
         df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+        print("df_heads:::::::::::")
+        print(df_heads)
 
         all_other_projects_trend = []
         for project in list(df_heads['project_id']):
@@ -727,6 +728,11 @@ def deep_dive_facilities(request):
 
 @login_required(login_url='login')
 def facilities_landing_page(request):
+
+    facility_proj_performance = None
+    departments_viz = None
+    status_viz = None
+
     qi_list = QI_Projects.objects.all().order_by('-date_updated')
     num_post = QI_Projects.objects.filter(created_by=request.user).count()
     projects = QI_Projects.objects.count()
@@ -758,10 +764,7 @@ def facilities_landing_page(request):
         ]
         list_of_departments = pd.DataFrame(list_of_departments)
         status_viz = prepare_bar_chart_from_df(list_of_departments, "status", "QI projects status", projects)
-    else:
-        facility_proj_performance = {}
-        departments_viz = {}
-        status_viz = {}
+
 
     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
                "my_filters": my_filters, "qi_lists": qi_lists,
@@ -986,6 +989,7 @@ def facility_filter_project(request, pk):
     if list_of_projects.shape[0] != 0:
         dicts = {}
         keys = list_of_projects['project_id'].unique()
+        print(f"pro_perfomance_trial keys: {keys}")
 
         values = list_of_projects['project'].unique()
         for i in range(len(keys)):
@@ -1000,12 +1004,26 @@ def facility_filter_project(request, pk):
 
         # concat and sort them by project id
         df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
-
+        # print("facility_filter_project::::")
+        # print(df_heads)
+        #
+        # print("list(df_heads['project_id'])::::")
+        # print(list(df_heads['project_id']))
         all_other_projects_trend = []
+        keys=[]
         for project in list(df_heads['project_id']):
+            keys.append(project)
+            print(f"project: {project}")
             # filter dfs based on the order of the best performing projects
-            all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            if isinstance(project, str):
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            else:
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project]))
+
+        # print("all_other_projects_trend:::")
+        # print(all_other_projects_trend)
 
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
     else:
@@ -1167,10 +1185,16 @@ def county_filter_project(request, pk):
         df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
 
         all_other_projects_trend = []
+        keys = []
         for project in list(df_heads['project_id']):
+            keys.append(project)
             # filter dfs based on the order of the best performing projects
-            all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            if isinstance(project, str):
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            else:
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project]))
 
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
     else:
@@ -1250,10 +1274,16 @@ def sub_county_filter_project(request, pk):
         df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
 
         all_other_projects_trend = []
+        keys = []
         for project in list(df_heads['project_id']):
+            keys.append(project)
             # filter dfs based on the order of the best performing projects
-            all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            if isinstance(project, str):
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            else:
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project]))
 
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
     else:
@@ -1947,8 +1977,11 @@ def single_project(request, pk):
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
 
+        print(f"list_of_projects['project'].unique() : {list_of_projects['project'].unique()}")
+
         all_other_projects_trend = []
         for project in list_of_projects['project'].unique():
+
             all_other_projects_trend.append(
                 prepare_trends(list_of_projects[list_of_projects['project'] == project], project))
 

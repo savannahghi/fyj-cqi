@@ -86,32 +86,18 @@
 {#              {{ forloop.counter }}{{ row }}#}
 
                 {% for cell in row %}
-                    {{ forloop.counter }},{{ cell }}
-{#                    {% if "First name" in cell %}#}
-{#                        <td>#}
-{#                        {{cell}}#}
-{#                        <a href="#" >DELETE {{ cell }} </a>#}
-{#                      </td>#}
-{##}
-{#                    {% endif %}#}
-
+{#                    {{ forloop.counter }},{{ cell }}#}
                     {% if forloop.counter != 7 %}
                         {% if forloop.counter == 3 %}
                               <td>
-    {#                          <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
-{#                              <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
                                 {{cell}}
                               </td>
                         {% elif forloop.counter == 6 %}
                               <td>
-    {#                          <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
-{#                              <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
                                 {{cell|date}}
                               </td>
                         {% elif forloop.counter == 8 %}
                               <td>
-    {#                          <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
-{#                              <a href="{% url 'qi_managers_filter_project' cell %}" >{{ cell }} </a>#}
                                   {% if cell > 0 %}
                                     <strong class="text-success">{{cell}}</strong>
                                   {% else %}
@@ -129,8 +115,8 @@
 
                 {% endfor %}
               <td>
-                  <a href="{% url 'qi_managers_filter_project' row.QI_manager_id %}" class="btn btn-secondary" role="button">VIEW Projects</a>
-                  <a href="{% url 'update_qi_managers' row.QI_manager_id %}" class="btn btn-info" role="button">Update QI profile</a>
+                  <a href="{% url 'qi_managers_filter_project' row.QI_manager_id %}" class="btn btn-secondary" role="button">View Projects</a>
+                  <a href="{% url 'update_qi_managers' row.QI_manager_id %}" class="btn btn-info" role="button">Update QI manager's profile</a>
               </td>
               </tr>
         {% endfor %}

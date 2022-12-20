@@ -23,7 +23,7 @@
             {% elif pro_perfomance_trial|length == 0  or pro_perfomance_trial|length < projects.count %}
                  <h5 >{{ pro_perfomance_trial|length }} {{ title }} QI projects</h5>
                 <br>
-                <h5 >{{ difference }} QI Project has no test of change </h5>
+                <h5 >{{ difference }} QI Project not tracked </h5>
                 {% else %}
                 <h5 >{{ pro_perfomance_trial|length }} {{ title }} QI projects</h5>
             {% endif %}
@@ -31,66 +31,74 @@
             <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">Facility projects</a>
             <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
         </div>
-    {% if difference > 0 %}
-        <div class="container">
-        <div class="d-flex justify-content-evenly mt-3">
-                        <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
-                        View projects without test of change
-                        </a>
-
-{#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
-                    </div>
-                </p>
-                <div class="collapse" id="collapseExampleTwo">
-                {% for key,values in pro_perfomance_trial.items %}
-                    {{ key }}
-                    {% for project in projects %}
-                        <div>
-                            <ul>
-                                {% if project.id != key %}
-                                <li><a href="{% url 'single_project' project.id %}">{{ project.project_title }}</a></li>
-{#                                    <a href="{% url 'single_project' qi.id %}" class="btn btn-success mt-1 text-sm-start">PROJECT: {{ qi.project_title }}</a>#}
-                                {% endif %}
-                            </ul>
-                        </div>
-
-                    {% endfor %}
-                {% endfor %}
+    {% if difference %}
+        {% if difference > 0 and pro_perfomance_trial|length > 0 %}
+            <div class="container">
+                <div class="d-flex justify-content-evenly mt-3">
+                    <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
+                        View QI projects not tracked
+                    </a>
                 </div>
-    </div>
+                    </p>
+                    <div class="collapse" id="collapseExampleTwo">
+                    {% for key,values in pro_perfomance_trial.items %}
+                        {% for project in projects %}
+                            <div>
+                                <ul>
+                                    {% if project.id != key %}
+                                        <li><a href="{% url 'single_project' project.id %}">{{ project.project_title }}</a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                    </div>
+            </div>
+        {% else%}
+            <div class="container">
+                <div class="d-flex justify-content-evenly mt-3">
+                    <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
+                    View QI projects not tracked
+                    </a>
+                </div>
+                    </p>
+                    <div class="collapse" id="collapseExampleTwo">
+                        {% for project in projects %}
+                            <div>
+                                <ul>
+                                    <li><a href="{% url 'single_project' project.id %}">{{ project.project_title }}</a></li>
+                                </ul>
+                            </div>
+
+                        {% endfor %}
+                    </div>
+            </div>
+        {% endif %}
     {% endif %}
-
-
       <div class="container-fluid py-5">
         <div class="mt-auto p-3" style="background-color: #f6f6ff;">
             <div class="row" >
                 {% for key,values in pro_perfomance_trial.items %}
-    {#                {% if facility_project.id != key %}#}
                           <div class="col-sm-6 mt-3" >
                             <div class="card " >
-                              <div class="card-body">
-                                  <div class="container">
-                                    <div class="col">
-    {#                                    <div class="row ">#}
-                                        {% for qi in projects %}
-                                            {% if qi.id == key %}
-                                                <a href="{% url 'facility_filter_project' qi.facility_name %}" class="btn btn-primary text-sm-start">FACILITY: {{ qi.facility_name }}</a>
+                                {% for qi in projects %}
+                                      {% if qi.id == key %}
+                                          <div class="card-body">
+                                              <div class="container">
+                                                <div class="col">
+                                                    <a href="{% url 'facility_filter_project' qi.facility_name %}" class="btn btn-primary text-sm-start">FACILITY: {{ qi.facility_name }}</a>
+                                                    <a href="{% url 'county_filter_project' qi.county.county_name %}" class="btn btn-secondary mt-1">County : {{ qi.county.county_name }}</a>
+                                                    <a href="{% url 'single_project' qi.id %}" class="btn btn-success mt-1 text-sm-start">PROJECT: {{ qi.project_title }}</a>
+                                                    {{ values|safe }}
+                                                </div>
+                                              </div>
+                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-primary">Go to the project</a>
+                                            <a href="{% url 'qicreator_filter_project' qi.created_by %}" class="btn btn-secondary">Project created by : {{ qi.created_by }}</a>
 
-                                                <a href="{% url 'county_filter_project' qi.county.county_name %}" class="btn btn-secondary mt-1">County : {{ qi.county.county_name }}</a>
-                                                <a href="{% url 'single_project' qi.id %}" class="btn btn-success mt-1 text-sm-start">PROJECT: {{ qi.project_title }}</a>
-                                                {{ values|safe }}
-    {#                                    </div>#}
-                                    </div>
-                                  </div>
-    {#                            <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>#}
-                                <a href="{% url 'single_project' qi.id %}" class="btn btn-primary">Go to the project</a>
-
-                                <a href="{% url 'qicreator_filter_project' qi.created_by %}" class="btn btn-secondary">Project created by : {{ qi.created_by }}</a>
-
-                                <a href="{% url 'sub_county_filter_project' qi.sub_county.sub_counties %}" class="btn btn-secondary">Sub-county : {{ qi.sub_county.sub_counties }}</a>
-                                               {% endif %}
-                                        {% endfor %}
-                              </div>
+                                            <a href="{% url 'sub_county_filter_project' qi.sub_county.sub_counties %}" class="btn btn-secondary">Sub-county : {{ qi.sub_county.sub_counties }}</a>
+                                          </div>
+                                      {% endif %}
+                                {% endfor %}
                             </div>
                           </div>
                 {% endfor %}

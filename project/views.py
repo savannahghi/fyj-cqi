@@ -939,6 +939,9 @@ def qi_managers_filter_project(request, pk):
     number_of_projects_with_test_of_change = len(pro_perfomance_trial)
     difference = number_of_projects_created - number_of_projects_with_test_of_change
 
+    print("pro_perfomance_trial.....")
+    print(pro_perfomance_trial)
+
     context = {"projects": projects,
                "facility_name": manager_name,
                "title": "",
@@ -1036,10 +1039,16 @@ def facility_filter_project(request, pk):
 
     facility_name = pk
 
+    # difference
+    number_of_projects_created = projects.count()
+    number_of_projects_with_test_of_change = len(pro_perfomance_trial)
+    difference = number_of_projects_created - number_of_projects_with_test_of_change
+
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
+               "difference":difference,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1219,10 +1228,16 @@ def county_filter_project(request, pk):
 
     facility_name = pk
 
+    # difference
+    number_of_projects_created = projects.count()
+    number_of_projects_with_test_of_change = len(pro_perfomance_trial)
+    difference = number_of_projects_created - number_of_projects_with_test_of_change
+
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
+               "difference":difference,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1307,11 +1322,16 @@ def sub_county_filter_project(request, pk):
     # pro_perfomance_trial = prepare_viz(list_of_projects, pk,col)
 
     facility_name = pk
+    # difference
+    number_of_projects_created = projects.count()
+    number_of_projects_with_test_of_change = len(pro_perfomance_trial)
+    difference = number_of_projects_created - number_of_projects_with_test_of_change
 
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
+               "difference":difference,
 
                }
     return render(request, "project/department_filter_projects.html", context)

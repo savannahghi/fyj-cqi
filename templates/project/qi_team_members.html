@@ -5,6 +5,7 @@
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">QI Team Members</h1>
+             <a href="{% url 'add_qi_team_member' %}" class="btn btn-success mt-4">ADD QI TEAM MEMBER</a>
         <div class="btn-toolbar mb-2 mb-md-0">
           <div class="btn-group me-2">
             <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
@@ -29,47 +30,113 @@
         <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
         <button data-dismiss="modal" class="btn red" id="btnYes">Confirm</button>
     </div>
-   </div><table class="table table-striped table-hover table-users">
-    			<thead>
-    				<tr>
+   </div>
+        <table class="table table-striped table-hover">
+    <thead class="thead-dark">
+    <th scope="col"></th>
 
-    					<th></th>
-    					<th>First name</th>
-    					<th>Second name</th>
-    					<th>Third name</th>
-    					<th >Email</th>
-    					<th>Phone Number</th>
-    					<th>Projects created</th>
-    					<th>Facility/CHMT</th>
-    					<th></th>
-    					<th></th>
-    				</tr>
-    			</thead>
+        {% for col in qi_team_members_.columns %}
+            {{ forloop.counter }} {{ col }}
+{#            {% if col == " " %}#}
+            {% if forloop.counter != 8 %}
+                <th scope="col">{{ col }}</th>
+            {% endif %}
+{#          {{ forloop.counter }} {{ col }}#}
+{#            {% endif %}#}
+        {% endfor %}
 
-    			<tbody>
-                {% for team_ in team %}
+    </thead>
+    <tbody>
+        </tr>
+        {% for index, row in qi_team_members_.iterrows %}
+              <tr>
+                  <th scope="row">{{ index}}</th>
+{#              {{ forloop.counter }}{{ row }}#}
 
+                {% for cell in row %}
+{#                    {{ forloop.counter }},{{ cell }}#}
+                    {% if forloop.counter != 8 %}
+                        {% if forloop.counter == 6 %}
+                              <td>
+                                {{cell|date}}
+                              </td>
+{#                        {% elif forloop.counter == 6 %}#}
+{#                              <td>#}
+{#                                {{cell|date}}#}
+{#                              </td>#}
+                        {% elif forloop.counter == 9 %}
+                            {% if cell > 0 %}
+                              <td class="text-center text-white" style="background-color: green">
+                                    <strong>{{cell}}</strong>
+                              </td>
+                            {% else %}
+                                 <td class="text-center text-white" style="background-color: red">
+                                    <strong>{{cell}}</strong>
+                                 </td>
+                            {% endif %}
 
+                        {% else %}
+                                <td>
+{#                              <a href="#" >DELETE {{ cell }} </a>#}
+                                {{cell}}
+                              </td>
+                        {% endif %}
+                    {% endif %}
 
-    				<tr>
-    					<td>1</td>
-    					<td>{{ team_.username }}</td>
-    					<td>john</td>
-    					<td>doe</td>
-    					<td>dsd@gmail.com</td>
-    					<td>078987809876543</td>
-                      <td>1</td>
-
-                    	<td><span class="label label-warning">Not Active</span></td>
-
-
-                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-info" role="button">Edit</a></td>
-                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-danger" role="button">Delete</a></td>
-                    </tr>
                 {% endfor %}
-
-	               </tbody>
-
-    		</table>
+              <td>
+                  <a href="{% url 'update_qi_team_member' row.QI_team_member_id %}" class="btn btn-info" role="button">Update</a>
+                    {% if row.8 > 0 %}
+                        <a href="{% url 'qicreator_filter_project' row.0 %}" class="btn btn-secondary" role="button">View</a>
+                    {% endif %}
+              </td>
+{#              <td>#}
+{#                  <a href="#" class="btn btn-secondary" role="button">View</a>#}
+{#              </td>#}
+              </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{#        <table class="table table-striped table-hover table-users">#}
+{#    			<thead>#}
+{#    				<tr>#}
+{##}
+{#    					<th></th>#}
+{#    					<th>First name</th>#}
+{#    					<th>Last name</th>#}
+{#    					<th >Email</th>#}
+{#    					<th>Phone Number</th>#}
+{#    					<th>Facility</th>#}
+{#    					<th>Projects created</th>#}
+{#    					<th>Facility/CHMT</th>#}
+{#    					<th></th>#}
+{#    					<th></th>#}
+{#    				</tr>#}
+{#    			</thead>#}
+{##}
+{#    			<tbody>#}
+{#                {% for team in qi_teams %}#}
+{##}
+{##}
+{##}
+{#    				<tr>#}
+{#    					<td>{{ forloop.counter }}</td>#}
+{#    					<td>{{ team.first_name }}</td>#}
+{#    					<td>{{ team.last_name }}</td>#}
+{#    					<td>{{ team.email }}</td>#}
+{#    					<td>{{ team.phone_number }}</td>#}
+{#                      <td>{{ team.facility }}</td>#}
+{##}
+{#                    	<td><span class="label label-warning">Not Active</span></td>#}
+{##}
+{##}
+{#                        <td><a href="{% url 'update_qi_team_member' team.id %}" class="btn btn-info" role="button">Edit</a></td>#}
+{#                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-danger" role="button">Delete</a></td>#}
+{#                    </tr>#}
+{#                {% endfor %}#}
+{##}
+{#	               </tbody>#}
+{##}
+{#    		</table>#}
     </main>
 {% endblock %}

@@ -97,14 +97,16 @@
                                 {{cell|date}}
                               </td>
                         {% elif forloop.counter == 8 %}
-                              <td>
-                                  {% if cell > 0 %}
-                                    <strong class="text-success">{{cell}}</strong>
-                                  {% else %}
-                                    <strong class="text-danger">{{cell}}</strong>
-                                  {% endif %}
-
+                            {% if cell > 0 %}
+                              <td class="text-center text-white" style="background-color: green">
+                                    <strong>{{cell}}</strong>
                               </td>
+                            {% else %}
+                                 <td class="text-center text-white" style="background-color: red">
+                                    <strong>{{cell}}</strong>
+                                 </td>
+                            {% endif %}
+
                         {% else %}
                                 <td>
     {#                          <a href="#" >DELETE {{ cell }} </a>#}
@@ -115,7 +117,12 @@
 
                 {% endfor %}
               <td>
+{#                  {{ row.7 }}#}
+                   {% if row.7 > 0 %}
                   <a href="{% url 'qi_managers_filter_project' row.QI_manager_id %}" class="btn btn-secondary" role="button">View Projects</a>
+                  {% endif %}
+              </td>
+              <td>
                   <a href="{% url 'update_qi_managers' row.QI_manager_id %}" class="btn btn-info" role="button">Update QI manager's profile</a>
               </td>
               </tr>

@@ -180,5 +180,11 @@ class ResourcesForm(ModelForm):
     class Meta:
         model = Resources
         fields = "__all__"
-        exclude=['uploaded_by']
+        exclude = ['uploaded_by']
 
+
+class Qi_team_membersForm(ModelForm):
+    class Meta:
+        model = Qi_team_members
+        fields = "__all__"
+    field_order = ['facility']

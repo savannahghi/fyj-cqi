@@ -151,7 +151,8 @@
                           <li>Responsible person : {{ qi.responsible_people }}</li>
                           <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
                           <li>Created by : <a href="{% url 'qi_creators' qi.created_by %}">{{ qi.created_by }}</a></li>
-                          {% if qi.comments%}
+                          <li>QI manager : <a href="{% url 'qi_managers_projects' qi.qi_manager.id %}">{{ qi.qi_manager }}</a></li>
+                          {% if qi.comments %}
                             <li>Comment (s) : {{ qi.comments }}</li>
                           {% endif %}
                       </ul>

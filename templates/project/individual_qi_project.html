@@ -99,7 +99,7 @@
                           <div class="col-sm-6 mt-4">
                             <div class="card rounded-pill text-bg-success p-3">
                               <div class="card-body ">
-                                      <h5 class="card-title d-flex justify-content-center">PLAN</h5>
+                                      <h5 class="card-title d-flex justify-content-center">1. PLAN</h5>
                                   <div class="d-flex justify-content-lg-between ml-auto">
                                   <ul>
                                       <li>Problem identification</li>
@@ -118,7 +118,7 @@
                           <div class="col-sm-6 mt-4">
                             <div class="card rounded-pill text-bg-success p-3">
                               <div class="card-body ">
-                                      <h5 class="card-title d-flex justify-content-center">DO</h5>
+                                      <h5 class="card-title d-flex justify-content-center">2. DO</h5>
                                   <div class="d-flex justify-content-lg-between ml-auto">
                                 <ul>
                                   <li>
@@ -140,7 +140,7 @@
                           <div class="col-sm-6 mt-4 mb-4">
                             <div class="card rounded-pill text-bg-success p-3">
                               <div class="card-body ">
-                                      <h5 class="card-title d-flex justify-content-center">ACT</h5>
+                                      <h5 class="card-title d-flex justify-content-center">4. ACT</h5>
 
                                   <h6>Your responses derived from the Study stage define the tasks for the Act stage.
                                       There are two possible responses you may have:
@@ -166,7 +166,7 @@
                           <div class="col-sm-6 mt-4 mb-4">
                         <div class="card rounded-pill text-bg-success p-3">
                           <div class="card-body ">
-                                  <h5 class="card-title d-flex justify-content-center">STUDY</h5>
+                                  <h5 class="card-title d-flex justify-content-center">3. STUDY</h5>
                               <div class="d-flex justify-content-lg-between ml-auto">
                               <ul>
                                   <li>Did the results match the theory/predictions?</li>
@@ -176,7 +176,7 @@
                                   <li>Is the process more difficult using new methods?</li>
                                   <li>Is the change scalable?</li>
                               </ul>
-                {#            <a href="#" class="btn btn-primary">Go somewhere</a>#}
+
                           </div>
                           </div>
                         </div>
@@ -188,7 +188,7 @@
 
 
     {% if project_performance %}
-        <h6><strong>Project performance (Run chart):</strong></h6>
+        <h6 class="mt-4"><strong>Project performance (Run chart):</strong></h6>
         <div class="container">
             <div class="col">
                 <div class="row">
@@ -199,7 +199,7 @@
     {% endif %}
     {% if user.is_authenticated %}
         {% if user.id == facility_project.created_by.id %}
-            <a href="{% url 'tested_change' facility_project.id %}" class="btn btn-warning">Add tested change</a>
+            <a href="{% url 'tested_change' facility_project.id %}" class="btn btn-warning mt-4">Add tested change</a>
         {% endif %}
     {% endif %}
     <div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -231,18 +231,25 @@
                 <tbody>
                     {% for change in test_of_change %}
                         <tr>
-                            <td>1</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ change.month_year}}</td>
                             <td>{{ change.tested_change }}</td>
                             <td>{{ change.comments }}</td>
-                            {% if change.numerator > 90 %}
-                                <td class="text-success"><strong>{{ change.numerator}}</strong></td>
-                            {% elif change.numerator < 75 %}
-                                <td class="text-danger"><strong>{{ change.numerator}}</strong></td>
-
-                            {% endif %}
+                            <td >{{ change.numerator}}</td>
                             <td>{{ change.denominator }}</td>
-                            <td>{{ change.achievements}}%</td>
+                            {% if change.numerator >= 90 %}
+                                <td class="text-center text-white" style="background-color: green">
+                                    <strong>{{ change.achievements}}%</strong>
+                                </td>
+                            {% elif change.numerator < 75 %}
+                                <td class="text-center text-white" style="background-color: red">
+                                    <strong>{{ change.achievements}}%</strong>
+                                </td>
+                                {% else %}
+                                <td class="text-center text-black" style="background-color: yellow">
+                                    <strong>{{ change.achievements}}%</strong>
+                                </td>
+                        {% endif %}
                         <td>
                             <a class="btn btn-info btn-sm" href="{% url 'update_test_of_change' change.id %}">Edit</a>
                             <a class="btn btn-danger btn-sm" href="{% url 'delete_test_of_change' change.id %}">Delete</a>

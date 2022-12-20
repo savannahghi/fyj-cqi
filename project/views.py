@@ -18,7 +18,7 @@ from cqi_fyj import settings
 
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
-    DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm
+    DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm
 from .filters import *
 
 import plotly.express as px
@@ -728,7 +728,6 @@ def deep_dive_facilities(request):
 
 @login_required(login_url='login')
 def facilities_landing_page(request):
-
     facility_proj_performance = None
     departments_viz = None
     status_viz = None
@@ -764,7 +763,6 @@ def facilities_landing_page(request):
         ]
         list_of_departments = pd.DataFrame(list_of_departments)
         status_viz = prepare_bar_chart_from_df(list_of_departments, "status", "QI projects status", projects)
-
 
     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
                "my_filters": my_filters, "qi_lists": qi_lists,
@@ -844,7 +842,7 @@ def department_project(request, pk):
 @login_required(login_url='login')
 def department_filter_project(request, pk):
     projects = QI_Projects.objects.filter(departments__department=pk)
-    project_id_values = request.session['project_id_values']
+    # project_id_values = request.session['project_id_values']
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
@@ -880,7 +878,8 @@ def department_filter_project(request, pk):
 @login_required(login_url='login')
 def qi_managers_filter_project(request, pk):
     print(pk)
-    pro_perfomance_trial = None
+    pro_perfomance_trial = {}
+    manager_name=[]
 
     projects = QI_Projects.objects.filter(qi_manager__id=pk)
     print(projects)
@@ -894,7 +893,7 @@ def qi_managers_filter_project(request, pk):
         print("list_of_projects_::::")
         print(list_of_projects_)
 
-    project_id_values = request.session['project_id_values']
+    # project_id_values = request.session['project_id_values']
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
@@ -935,10 +934,16 @@ def qi_managers_filter_project(request, pk):
             manager_name = list(list_of_projects_['qi_manager'].unique())[0]
             print(list_of_projects_)
 
+    # difference
+    number_of_projects_created = projects.count()
+    number_of_projects_with_test_of_change = len(pro_perfomance_trial)
+    difference = number_of_projects_created - number_of_projects_with_test_of_change
+
     context = {"projects": projects,
                "facility_name": manager_name,
                "title": "",
                "pro_perfomance_trial": pro_perfomance_trial,
+               "difference": difference
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -947,7 +952,7 @@ def qi_managers_filter_project(request, pk):
 @login_required(login_url='login')
 def facility_filter_project(request, pk):
     projects = QI_Projects.objects.filter(facility_name__facilities=pk).order_by("-date_updated")
-    project_id_values = request.session['project_id_values']
+    # project_id_values = request.session['project_id_values']
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
@@ -1010,7 +1015,7 @@ def facility_filter_project(request, pk):
         # print("list(df_heads['project_id'])::::")
         # print(list(df_heads['project_id']))
         all_other_projects_trend = []
-        keys=[]
+        keys = []
         for project in list(df_heads['project_id']):
             keys.append(project)
             print(f"project: {project}")
@@ -1042,82 +1047,93 @@ def facility_filter_project(request, pk):
 
 @login_required(login_url='login')
 def qicreator_filter_project(request, pk):
+    pro_perfomance_trial = {}
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
+    pk = str(pk).lower()
     projects = QI_Projects.objects.filter(created_by__username=pk)
-    project_id_values = request.session['project_id_values']
+    # print(projects)
+    # project_id_values = request.session['project_id_values']
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
     # list_of_projects = TestedChange.objects.filter(project_id__in=project_id_values).order_by('-achievements')
     testedChange = TestedChange.objects.filter(project__created_by__username=pk)
+    # print(testedChange)
     # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
     # list_of_projects = my_filters.qs
-    list_of_projects = [
-        {'achievements': x.achievements,
-         'month_year': x.month_year,
-         'project_id': x.project_id,
-         'tested of change': x.tested_change,
+    if testedChange:
+        list_of_projects = [
+            {'achievements': x.achievements,
+             'month_year': x.month_year,
+             'project_id': x.project_id,
+             'tested of change': x.tested_change,
 
-         'facility': x.project.facility_name,
-         'project': x.project.project_title,
-         'department': x.project.departments.department,
-         } for x in testedChange
-    ]
+             'facility': x.project.facility_name,
+             'project': x.project.project_title,
+             'department': x.project.departments.department,
+             } for x in testedChange
+        ]
 
-    # convert data from database to a dataframe
-    list_of_projects = pd.DataFrame(list_of_projects)
+        # convert data from database to a dataframe
+        list_of_projects = pd.DataFrame(list_of_projects)
 
-    # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
+        # list_of_projects = list_of_projects[list_of_projects['facility'] == f"{pk}"].sort_values("achievements")
 
-    # keys = list_of_projects['department'].unique()
+        # keys = list_of_projects['department'].unique()
 
-    dfs = []
-    for department in list_of_projects['department'].unique():
-        a = list_of_projects[list_of_projects['department'] == department]
-        a = a.sort_values("month_year", ascending=False)
-        dfs.append(a)
+        dfs = []
+        for department in list_of_projects['department'].unique():
+            a = list_of_projects[list_of_projects['department'] == department]
+            a = a.sort_values("month_year", ascending=False)
+            dfs.append(a)
 
-    dicts = {}
-    keys = list_of_projects['department'].unique()
-    values = dfs
-    for i in range(len(keys)):
-        dicts[keys[i]] = values[i]
-
-    if list_of_projects.shape[0] != 0:
         dicts = {}
-        keys = list_of_projects['project_id'].unique()
-
-        values = list_of_projects['project'].unique()
+        keys = list_of_projects['department'].unique()
+        values = dfs
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
 
-        lst = []
-        for i in list_of_projects['project_id'].unique():
-            # get the first rows of the dfs
-            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
-            # append them in a list
-            lst.append(a.head(1))
+        if list_of_projects.shape[0] != 0:
+            dicts = {}
+            keys = list_of_projects['project_id'].unique()
 
-        # concat and sort them by project id
-        df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+            values = list_of_projects['project'].unique()
+            for i in range(len(keys)):
+                dicts[keys[i]] = values[i]
 
-        all_other_projects_trend = []
-        for project in list(df_heads['project_id']):
-            # filter dfs based on the order of the best performing projects
-            all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+            lst = []
+            for i in list_of_projects['project_id'].unique():
+                # get the first rows of the dfs
+                a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
+                # append them in a list
+                lst.append(a.head(1))
 
-        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
-    else:
-        pro_perfomance_trial = {}
-    # pro_perfomance_trial = prepare_viz(list_of_projects, pk,col)
+            # concat and sort them by project id
+            df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+
+            all_other_projects_trend = []
+            for project in list(df_heads['project_id']):
+                # filter dfs based on the order of the best performing projects
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+
+            pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+        else:
+            pro_perfomance_trial = {}
+        # pro_perfomance_trial = prepare_viz(list_of_projects, pk,col)
 
     facility_name = pk
+
+    # difference
+    number_of_projects_created = projects.count()
+    number_of_projects_with_test_of_change = len(pro_perfomance_trial)
+    difference = number_of_projects_created - number_of_projects_with_test_of_change
 
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
+               "difference": difference
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1127,7 +1143,7 @@ def qicreator_filter_project(request, pk):
 def county_filter_project(request, pk):
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     projects = QI_Projects.objects.filter(county__county_name=pk)
-    project_id_values = request.session['project_id_values']
+    # project_id_values = request.session['project_id_values']
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
@@ -1216,7 +1232,7 @@ def county_filter_project(request, pk):
 def sub_county_filter_project(request, pk):
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     projects = QI_Projects.objects.filter(sub_county__sub_counties=pk)
-    project_id_values = request.session['project_id_values']
+    # project_id_values = request.session['project_id_values']
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
@@ -1359,29 +1375,19 @@ def qi_creator(request, pk):
     projects = QI_Projects.objects.filter(created_by__username=pk)
 
     facility_name = pk
-
-    # qi_list = QI_Projects.objects.all().order_by('-date_updated')
-    # num_post = QI_Projects.objects.filter(created_by=request.user).count()
-    # if request.method=="POST":
-    #     search=request.POST['searched']
-    #     search=QI_Projects.objects.filter(facility__contains=search)
-    #     projects = None
-    #     context = {"qi_list": qi_list, "num_post": num_post,"projects":projects,
-    #                "search":search
-    #                }
-    #     return render(request, "project/facility_landing_page.html", context)
-    # else:
-    #     projects = QI_Projects.objects.count()
-
-    #     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
-    #
-    #                }
-    #     return render(request, "project/facility_landing_page.html", context)
-    # projects = QI_Projects.objects.count()
-    # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
-    # qi_list=my_filters.qs
     context = {"projects": projects,
                "facility_name": facility_name,
+               }
+    return render(request, "project/qi_creators.html", context)
+
+
+@login_required(login_url='login')
+def qi_managers_projects(request, pk):
+    projects = QI_Projects.objects.filter(qi_manager__id=pk)
+    facility_name = [i.qi_manager for i in projects]
+
+    context = {"projects": projects,
+               "facility_name": facility_name[0],
                }
     return render(request, "project/qi_creators.html", context)
 
@@ -1578,10 +1584,157 @@ def deep_dive_chmt(request):
 
 
 @login_required(login_url='login')
+def add_qi_team_member(request):
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = Qi_team_membersForm(request.POST)
+        if form.is_valid():
+            form.save()
+
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = Qi_team_membersForm()
+    context = {"form": form,
+               "title": "add qi team member",
+               }
+    return render(request, "project/add_program_project.html", context)
+
+
+@login_required(login_url='login')
+def update_qi_team_member(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = Qi_team_members.objects.get(id=pk)
+    if request.method == "POST":
+        form = Qi_team_membersForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = Qi_team_membersForm(instance=item)
+    context = {
+        "form": form,
+        "title": "update details of a qi team member",
+    }
+    return render(request, 'project/add_program_project.html', context)
+
+
+@login_required(login_url='login')
 def qi_team_members(request):
-    User = get_user_model()
-    team = User.objects.all()
-    context = {"team": team}
+    # # User = get_user_model()
+    # # team = User.objects.all()
+    # context = {"team": team}
+
+    qi_teams = Qi_team_members.objects.all()
+
+    # qi_managers_list = Qi_managers.objects.all()
+    projects = QI_Projects.objects.all()
+    #
+    # Get df for QI team members with QI projects
+    list_of_projects = [
+        {
+            # {'project_ids': x.id,
+            'First name': x.created_by.first_name,
+            'Last name': x.created_by.last_name,
+            'Email': x.created_by.email,
+            'Phone Number': x.created_by.phone_number,
+            'User_id': x.created_by.id,
+            'QI project id': x.id,
+            'Date created': x.created_by.date_joined,
+            'Facility': x.facility_name,
+        } for x in projects
+    ]
+    qi_team_members_with_projects = pd.DataFrame(list_of_projects)
+    qi_team_members_with_projects['First name'] = qi_team_members_with_projects['First name'].str.title()
+    qi_team_members_with_projects['Last name'] = qi_team_members_with_projects['Last name'].str.title()
+
+    # # pandas count frequency of column value in another dataframe column
+    # qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
+    #     qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
+    # qi_managers_with_projects = qi_managers_with_projects.groupby(
+    #     ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created']).max(
+    #     "Projects Supervising").reset_index()
+
+    # Get df for QI managers with projects
+    list_of_projects = [
+        {
+            # {'project_ids': x.id,
+            'First name': x.first_name,
+            'Last name': x.last_name,
+            'Email': x.email,
+            'Phone Number': x.phone_number,
+
+            'QI_team_member_id': x.id,
+            'Designation': x.designation,
+            'Date created': x.date_created,
+            'Facility': x.facility.facilities,
+        } for x in qi_teams
+    ]
+    # convert data from database to a dataframe
+    qi_team_members_df = pd.DataFrame(list_of_projects)
+
+    merged_df = qi_team_members_with_projects.merge(qi_team_members_df, how='left', on=['Email', 'Phone Number'])
+    # merged_df=qi_team_members_with_projects.merge(qi_team_members_df,how='left')
+
+    # print(merged_df.columns)
+    merged_df = merged_df[['First name_x', 'Last name_x', 'Email', 'Phone Number', 'User_id',
+                           'QI_team_member_id',
+                           'Designation', 'Date created_x', 'Facility_x']]
+    merged_df = merged_df.rename(
+        columns={"First name_x": "First name", "Last name_x": "Last name", "Facility_x": "Facility",
+                 "Date created_x": "Date created"})
+
+    # # pandas count frequency of column value in another dataframe column
+    merged_df["Projects created"] = merged_df["User_id"].map(
+        merged_df["User_id"].value_counts()).fillna(0).astype(int)
+
+    #
+    merged_df['Facility'] = merged_df['Facility'].astype(str)
+    qi_team_members_with_projects = merged_df.groupby(
+        ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created', "Facility"]).max(
+        "Projects created").reset_index()
+
+    # without projects
+    qi_team_members_without_projects = qi_team_members_df.copy()
+    qi_team_members_without_projects["Projects created"] = 0
+    qi_team_members_without_projects = qi_team_members_without_projects[
+        ~qi_team_members_without_projects['QI_team_member_id'].isin(list(merged_df['QI_team_member_id']))]
+
+    qi_team_members_without_projects_ = qi_team_members_df.copy()
+    # qi_team_members_without_projects_["Projects created"] = 0
+    qi_team_members_without_projects_ = qi_team_members_without_projects_[
+        qi_team_members_without_projects_['QI_team_member_id'].isin(list(merged_df['QI_team_member_id']))]
+
+    #
+    # Join df for all QI managers with and without
+
+    del qi_team_members_with_projects['User_id']
+    # del qi_team_members_without_projects['Date created']
+    qi_team_members_ = pd.concat([qi_team_members_with_projects, qi_team_members_without_projects])
+    # print("qi_team_members_")
+    qi_team_members_ = qi_team_members_.sort_values("Facility")
+    qi_team_members_.reset_index(drop=True, inplace=True)
+    qi_team_members_.index += 1
+
+    # qi_managers = qi_managers.sort_values("Projects Supervising", ascending=False).reset_index()
+    # qi_managers.reset_index(drop=True, inplace=True)
+    # qi_managers.index += 1
+    # # del qi_managers['QI_manager id']
+    # del qi_managers['index']
+    # # print(qi_managers)
+    #
+    # context = {
+    #     "qi_managers_list": qi_managers_list,
+    #     "qi_managers": qi_managers,
+    # }
+    context = {
+        "qi_teams": qi_teams,
+        "qi_team_members_": qi_team_members_
+    }
     return render(request, "project/qi_team_members.html", context)
 
 
@@ -1595,7 +1748,7 @@ def qi_managers(request):
         {
             # {'project_ids': x.id,
             'First name': x.qi_manager.first_name,
-            'Second name': x.qi_manager.second_name,
+            'Last name': x.qi_manager.last_name,
             'Email': x.qi_manager.email,
             'Phone Number': x.qi_manager.phone_number,
             'QI_manager_id': x.qi_manager.id,
@@ -1610,7 +1763,7 @@ def qi_managers(request):
     qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
         qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
     qi_managers_with_projects = qi_managers_with_projects.groupby(
-        ['First name', 'Second name', 'Email', 'Phone Number', 'Designation', 'Date created']).max(
+        ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created']).max(
         "Projects Supervising").reset_index()
 
     # Get df for QI managers with projects
@@ -1618,7 +1771,7 @@ def qi_managers(request):
         {
             # {'project_ids': x.id,
             'First name': x.first_name,
-            'Second name': x.second_name,
+            'Last name': x.last_name,
             'Email': x.email,
             'Phone Number': x.phone_number,
 
@@ -1851,7 +2004,8 @@ def resources(request):
 def line_chart(df, x_axis, y_axis, title):
     fig = px.line(df, x=x_axis, y=y_axis, text=y_axis, title=title,
                   hover_name=None, hover_data={"tested of change": True,
-                                               "achievements": True, })
+                                               "achievements (%)": True, }
+                  )
 
     fig.update_traces(textposition='top center')
     # fig.add_trace(go.Line(x=df[x_axis], y=df[y_axis], mode='markers'))
@@ -1927,7 +2081,8 @@ def prepare_trends(df, title=""):
     df['achievements'] = df['achievements'].astype(int)
     df = df.sort_values("month_year")
     df['month_year'] = df['month_year'].astype(str) + "."
-    project_performance = line_chart(df, "month_year", "achievements", title)
+    df = df.rename(columns={"achievements": "achievements (%)"})
+    project_performance = line_chart(df, "month_year", "achievements (%)", title)
     return project_performance
 
 
@@ -1981,7 +2136,6 @@ def single_project(request, pk):
 
         all_other_projects_trend = []
         for project in list_of_projects['project'].unique():
-
             all_other_projects_trend.append(
                 prepare_trends(list_of_projects[list_of_projects['project'] == project], project))
 

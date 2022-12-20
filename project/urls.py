@@ -31,6 +31,7 @@ urlpatterns = [
     path('county-all-projects/<str:pk>', county_filter_project, name="county_filter_project"),
     path('subcounty-all-projects/<str:pk>', sub_county_filter_project, name="sub_county_filter_project"),
     path('qi-creator/<str:pk>', qi_creator, name="qi_creators"),
+    path('qi-managers-projects/<int:pk>', qi_managers_projects, name="qi_managers_projects"),
     path('canceled-projects/<str:pk>', canceled_projects, name="canceled_projects"),
     path('not-started/<str:pk>', not_started, name="not_started"),
     path('completed-closed/<str:pk>', completed_closed, name="completed_closed"),
@@ -50,12 +51,15 @@ urlpatterns = [
     path('add-project/county', add_project_county, name="add_project_county"),
     path('add-project/hub', add_project_hub, name="add_project_hub"),
     path('add-project/program', add_project_program, name="add_project_program"),
+    path('add-qi-team-member', add_qi_team_member, name="add_qi_team_member"),
+
     path('facilities-landing-page/', facilities_landing_page, name="facilities_landing_page"),
     path('update-project/<int:pk>/', update_project, name="update_project"),
     path('tested-change/<int:pk>/', tested_change, name="tested_change"),
     path('update-test-of-change/<int:pk>/', update_test_of_change, name="update_test_of_change"),
     path('update-resource/<int:pk>/', update_resource, name="update_resource"),
     path('update-qi-managers/<int:pk>/', update_qi_managers, name="update_qi_managers"),
+    path('update-qi-team-member/<int:pk>/', update_qi_team_member, name="update_qi_team_member"),
 
     path('delete-test-of-change/<int:pk>/', delete_test_of_change, name="delete_test_of_change"),
     path('delete-project/<int:pk>', delete_project, name="delete_project"),

@@ -7,14 +7,22 @@
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
     <div class="p-5 mb-4 bg-light rounded-3">
       <div class="container-fluid py-5">
+      {% if "qi team" in title %}
+          <h1 class="display-5 fw-bold text-primary">{{ title|upper}} </h1>
+      {% else %}
         <h1 class="display-5 fw-bold text-primary">CREATE PROGRAM QI </h1>
+      {% endif %}
           <div class="d-flex justify-content-between">
-              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
-              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
-              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT CATEGORY</a>
-              <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
-              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>
-              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>
+              {% if "qi team" in title %}
+                  <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
+              {% else %}
+                  <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
+                  <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
+                  <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT CATEGORY</a>
+
+                  <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>
+                  <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>
+              {% endif %}
           </div>
 
 

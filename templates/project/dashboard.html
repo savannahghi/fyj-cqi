@@ -116,6 +116,7 @@
         <th scope="col"></th>
             {% for col in qi_mans.columns %}
               <th scope="col">{{ col }}</th>
+{#                {{ forloop.counter }}:{{ col }}#}
             {% endfor %}
     </thead>
     <tbody>
@@ -123,7 +124,15 @@
           <tr>
               <th scope="row">{{ index}}</th>
                 {% for cell in row %}
-                      <td> {{cell}} </td>
+                    <td>
+                    {% if  forloop.counter == 5 %}
+                        <a href="{% url 'department_filter_project' cell %}" class="btn btn-success" role="button">{{ cell }}</a>
+                    {% else %}
+                        {{ cell }}
+                    {% endif %}
+                    </td>
+
+{#                      <td> {{cell}} </td>#}
                 {% endfor %}
           </tr>
         {% endfor %}

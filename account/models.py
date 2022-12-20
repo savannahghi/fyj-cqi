@@ -13,6 +13,7 @@ class NewUser(AbstractUser):
         return self.username
 
     def save(self, *args, **kwargs):
-        """Ensure username and email are in the right case"""
+        """Ensure email are in the lower case"""
         self.email = self.email.lower()
+        self.username = self.username.lower()
         super(NewUser, self).save(*args, **kwargs)

@@ -1,6 +1,10 @@
 {% load crispy_forms_tags %}
+<p>Enter username in lower case</p>
 <form action="" method="post">
     {% csrf_token %}
+{#    <div>#}
+
+{#    </div>#}
     {% for foo in form %}
         {{ foo.label }}
         {{ foo }}

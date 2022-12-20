@@ -58,7 +58,7 @@ class Facilities(models.Model):
 
 
 class Counties(models.Model):
-    county_name = models.CharField(max_length=250,unique=True)
+    county_name = models.CharField(max_length=250, unique=True)
 
     # sub_counties = models.ManyToManyField(Sub_counties)
 
@@ -76,7 +76,7 @@ class Counties(models.Model):
 
 
 class Sub_counties(models.Model):
-    sub_counties = models.CharField(max_length=250,unique=True)
+    sub_counties = models.CharField(max_length=250, unique=True)
     counties = models.ManyToManyField(Counties)
     facilities = models.ManyToManyField(Facilities)
 
@@ -89,7 +89,7 @@ class Sub_counties(models.Model):
 
 
 class Department(models.Model):
-    department = models.CharField(max_length=250,unique=True)
+    department = models.CharField(max_length=250, unique=True)
 
     class Meta:
         ordering = ['department']
@@ -99,7 +99,7 @@ class Department(models.Model):
 
 
 class Category(models.Model):
-    category = models.CharField(max_length=250,unique=True)
+    category = models.CharField(max_length=250, unique=True)
 
     class Meta:
         ordering = ['category']
@@ -684,10 +684,10 @@ class Resources(models.Model):
 
 class Qi_managers(models.Model):
     first_name = models.CharField(max_length=250)
-    second_name = models.CharField(max_length=250)
+    last_name = models.CharField(max_length=250)
     phone_number = PhoneNumberField(null=True, blank=True)
     designation = models.CharField(max_length=250)
-    email = models.EmailField(null=True, blank=True,unique=True)
+    email = models.EmailField(null=True, blank=True, unique=True)
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
@@ -696,10 +696,43 @@ class Qi_managers(models.Model):
         verbose_name_plural = "qi managers"
 
     def __str__(self):
-        return self.first_name + " " + self.second_name
+        return self.first_name + " " + self.last_name
 
     def save(self, *args, **kwargs):
         """Ensure manager name is in title case"""
         self.first_name = self.first_name.title()
-        self.second_name = self.second_name.title()
+        self.last_name = self.last_name.title()
+        super().save(*args, **kwargs)
+
+
+class Qi_team_members(models.Model):
+    TEAM_MEMBER_LEVEL_CHOICES = [
+        ('Facility QI team member', 'Facility QI team member'),
+        ('Sub-county QI team member', 'Sub-county QI team member'),
+        ('County QI team member', 'County QI team member'), ('Hub QI team member', 'Hub QI team member'),
+        ('Program QI team member', 'Program QI team member'),
+    ]
+    first_name = models.CharField(max_length=250)
+    last_name = models.CharField(max_length=250)
+    phone_number = PhoneNumberField(null=True, blank=True)
+    designation = models.CharField(max_length=250)
+    email = models.EmailField(null=True, blank=True, unique=True)
+    choose_qi_team_member_level = models.CharField(max_length=250, choices=TEAM_MEMBER_LEVEL_CHOICES)
+    facility = models.ForeignKey(Facilities,on_delete=models.CASCADE)
+    # qi_project = models.ForeignKey(QI_Projects,on_delete=models.CASCADE)
+
+    date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
+    date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+
+    class Meta:
+        ordering = ['first_name']
+        verbose_name_plural = "qi team members"
+
+    def __str__(self):
+        return self.first_name + " " + self.last_name
+
+    def save(self, *args, **kwargs):
+        """Ensure manager name is in title case"""
+        self.first_name = self.first_name.title()
+        self.last_name = self.last_name.title()
         super().save(*args, **kwargs)

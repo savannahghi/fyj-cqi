@@ -66,6 +66,7 @@
               <div class="col-md-2 mt-4 pt-2">
                     <button class="btn btn-outline-primary" type="submit">search</button>
               </div>
+{#                  <a href="{% url 'untracked_projects' %}" class="btn btn-danger">UNTRACKED QI PROJECTS</a>#}
               <div class="col-md-2 mt-3">
                   {% if qi_list.has_other_pages %}
                         <ul class="pagination justify-content-end">
@@ -103,7 +104,7 @@
                    <div class="card-body">
                        <h5 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h5>
                        <ul>
-                          <li>Facility : {{ qi.facility_name }}</li>
+                          <li>Facility : <a href="{% url 'facility_project' qi.facility_name %}">{{ qi.facility_name }}</a></li>
                           <li>Problem background : {{ qi.problem_background }}</li>
                           <li>Objective : {{ qi.objective }}</li>
                           <li>Setting : {{ qi.settings }}</li>
@@ -123,10 +124,16 @@
                               {% else %}
                               <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">{{ qi.measurement_status }}</a>
                           {% endif %}
-                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>
+{#                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>#}
+                        <button>Last updated on {{ qi.date_updated}}</button>
                       <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
+{#                      <a href="{% url 'untracked_projects' %}" class="btn btn-danger">UNTRACKED QI PROJECTS</a>#}
                       {% if user.id == qi.created_by.id %}
                             <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>
+                      {% endif %}
+                  {% if qi.id not in tracked_projects%}
+                        <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                          <a href="{% url 'untracked_projects' %}" class="btn btn-danger">UNTRACKED QI PROJECTS</a>
                       {% endif %}
                   </div>
               </div>
@@ -172,11 +179,18 @@
                       {% endif %}
 
 
-                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>
+{#                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>#}
+                      <button class="btn btn-info">Last updated on {{ qi.date_updated|date}}</button>
                       <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
-                          {% if user.id == qi.created_by.id %}
-                      <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>
-                          {% endif %}
+
+
+                      {% if user.id == qi.created_by.id %}
+                            <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>
+                      {% endif %}
+                      {% if qi.id not in tracked_projects%}
+                        <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                          <a href="{% url 'untracked_projects' %}" class="btn btn-danger">UNTRACKED QI PROJECTS</a>
+                      {% endif %}
                   </div>
                   </div>
                 </div>

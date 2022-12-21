@@ -22,71 +22,15 @@
 
       <div class="container-fluid py-5">
 
-{#        <h1 class="display-5 fw-bold">Filters</h1>#}
-{#      <form class="row g-3">#}
-{#            <div class="col-md-2">#}
-{#                {{ my_filters.form.department|as_crispy_field }}#}
-{#            </div>#}
-{#            <div class="col-md-2">#}
-{#    {{ my_filters.form.problem_background|as_crispy_field }}#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{#    {{ my_filters.form.facility|as_crispy_field }}#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{#    {{ my_filters.form.settings|as_crispy_field }}#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{#    {{ my_filters.form.project_title|as_crispy_field }}#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{#    {{ my_filters.form.objective|as_crispy_field }}#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{#    {{ my_filters.form.start_date|as_crispy_field }}#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{#    {{ my_filters.form.end_date|as_crispy_field }}#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{#    {{ my_filters.form.measurement_frequency|as_crispy_field }}#}
-{#    </div>#}
-{##}
-{#            <div class="col-md-2">#}
-{#              <div class="form-group">#}
-{#                <label for="input_from" class="form-label">From</label>#}
-{#                <input type="text" class="form-control" id="input_from" placeholder="Start Date">#}
-{#              </div>#}
-{#            </div>#}
-{#            <div class="col-md-2">#}
-{#              <div class="form-group">#}
-{#                <label for="input_from" class="form-label">To</label>#}
-{#                <input type="text" class="form-control" id="input_to" placeholder="End Date">#}
-{#              </div>#}
-{#            </div>#}
-{##}
-{#            <div class="col-md-2 mt-4 pt-2">#}
-{#            <button class="btn btn-outline-primary" type="submit">search</button>#}
-{##}
-{#        </div>#}
-{#        </form>#}
-
-
-
       <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
-{#      {% if search %}#}
-{#          <div class="alert alert-primary col-12" role="alert">#}
-{#    <h6 >Search returned {{ my_filters.count }} ongoing QI projects</h6>#}
-{#    </div>#}
       {% for qi in search %}
            <div class="col-md-12">
 
     <div class="card h-100">
-{#      <img src="..." class="card-img-top" alt="...">#}
       <div class="card-body">
         <h5 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h5>
           <ul>
-              <li>Facility : {{ qi.facility }}</li>
+              <li>Facility : {{ qi.facility_name }}</li>
               <li>Problem background : {{ qi.problem_background }}</li>
               <li>Objective : {{ qi.objective }}</li>
               <li>Setting : {{ qi.settings }}</li>
@@ -131,7 +75,7 @@
       <div class="card-body">
         <h5 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h5>
           <ul>
-              <li>Facility : {{ qi.facility }}</li>
+              <li>Facility : {{ qi.facility_name }}</li>
 {#              <li>Facility : {{ qi. }}</li>#}
               <li>Problem background : {{ qi.problem_background }}</li>
               <li>Objective : {{ qi.objective }}</li>
@@ -150,11 +94,14 @@
           </ul>
           <div class="d-flex justify-content-evenly" >
           <a href="#" class="btn btn-success">Not started/started/archived</a>
-          <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>
+          <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated|date}} </a>
           <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
               {% if user.id == qi.created_by.id %}
           <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>
               {% endif %}
+          {% if qi.id not in tracked_projects %}
+            <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+          {% endif %}
       </div>
       </div>
 {#      <div class="card-footer">#}

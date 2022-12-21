@@ -20,6 +20,7 @@ urlpatterns = [
     path('update-comments/<int:pk>/', update_comments, name="update_comments"),
     path('comments-response/<int:pk>/', comments_response, name="comments_response"),
     path('update-response/<int:pk>/', update_response, name="update_response"),
+    path('untracked-projects/', untracked_projects, name="untracked_projects"),
     path('resources/', resources, name="resources"),
     path('single-project/<int:pk>', single_project, name="single_project"),
     path('facility-projects/<str:pk>', facility_project, name="facility_project"),

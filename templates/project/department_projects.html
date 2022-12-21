@@ -91,7 +91,7 @@
       <div class="card-body">
         <h5 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h5>
           <ul>
-              <li>Facility : {{ qi.facility }}</li>
+              <li>Facility : {{ qi.facility_name }}</li>
               <li>Problem background : {{ qi.problem_background }}</li>
               <li>Objective : {{ qi.objective }}</li>
               <li>Setting : {{ qi.settings }}</li>
@@ -125,6 +125,9 @@
               {% if user.id == qi.created_by.id %}
           <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>
               {% endif %}
+          {% if qi.id not in tracked_projects %}
+            <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+          {% endif %}
       </div>
       </div>
 {#      <div class="card-footer">#}
@@ -147,7 +150,7 @@
       <div class="card-body">
         <h5 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h5>
           <ul>
-              <li>Facility : {{ qi.facility }}</li>
+              <li>Facility : {{ qi.facility_name }}</li>
 {#              <li>Facility : {{ qi. }}</li>#}
               <li>Problem background : {{ qi.problem_background }}</li>
               <li>Objective : {{ qi.objective }}</li>
@@ -177,6 +180,9 @@
               {% if user.id == qi.created_by.id %}
           <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>
               {% endif %}
+          {% if qi.id not in tracked_projects %}
+            <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+          {% endif %}
       </div>
       </div>
 {#      <div class="card-footer">#}

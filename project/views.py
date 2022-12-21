@@ -764,18 +764,21 @@ def facilities_landing_page(request):
         list_of_departments = pd.DataFrame(list_of_departments)
         status_viz = prepare_bar_chart_from_df(list_of_departments, "status", "QI projects status", projects)
 
+    tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
+
     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
                "my_filters": my_filters, "qi_lists": qi_lists,
                "facility_proj_performance": facility_proj_performance,
                "departments_viz": departments_viz,
                "status_viz": status_viz,
+               "tracked_projects":tracked_projects,
                }
     return render(request, "project/facility_landing_page.html", context)
 
 
 @login_required(login_url='login')
 def facility_project(request, pk):
-    projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
+    projects = QI_Projects.objects.filter(facility_name__facilities=pk).order_by("-date_updated")
 
     facility_name = pk
 
@@ -799,9 +802,11 @@ def facility_project(request, pk):
     # projects = QI_Projects.objects.count()
     # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
     # qi_list=my_filters.qs
+    tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
+               "tracked_projects":tracked_projects,
                }
     return render(request, "project/facility_projects.html", context)
 
@@ -832,9 +837,11 @@ def department_project(request, pk):
     # projects = QI_Projects.objects.count()
     # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
     # qi_list=my_filters.qs
+    tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
+               "tracked_projects":tracked_projects,
                }
     return render(request, "project/department_projects.html", context)
 
@@ -1395,8 +1402,10 @@ def qi_creator(request, pk):
     projects = QI_Projects.objects.filter(created_by__username=pk)
 
     facility_name = pk
+    tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
     context = {"projects": projects,
                "facility_name": facility_name,
+               "tracked_projects":tracked_projects
                }
     return render(request, "project/qi_creators.html", context)
 
@@ -1405,9 +1414,11 @@ def qi_creator(request, pk):
 def qi_managers_projects(request, pk):
     projects = QI_Projects.objects.filter(qi_manager__id=pk)
     facility_name = [i.qi_manager for i in projects]
+    tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
 
     context = {"projects": projects,
                "facility_name": facility_name[0],
+               "tracked_projects":tracked_projects,
                }
     return render(request, "project/qi_creators.html", context)
 
@@ -1483,8 +1494,10 @@ def measurement_frequency(request, pk):
     # projects = QI_Projects.objects.count()
     # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
     # qi_list=my_filters.qs
+    tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
     context = {"projects": projects,
                "facility_name": facility_name,
+               "tracked_projects":tracked_projects,
                # "title": "Completed or Closed",
                }
     return render(request, "project/department_projects.html", context)
@@ -2032,13 +2045,18 @@ def line_chart(df, x_axis, y_axis, title):
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
     fig.add_hline(y=90, line_width=1, line_dash="dash", line_color="green")
-    fig.add_hline(y=75, line_width=1, line_dash="dash", line_color="red")
-    fig.add_annotation(x=0, y=75,
+    fig.add_hline(y=50, line_width=1, line_dash="dash", line_color="red")
+    fig.add_hline(y=75, line_width=1, line_dash="dash", line_color="#bcbd22")
+    fig.add_annotation(x=0.25, y=75,
                        text="75 %",
                        showarrow=True,
                        arrowhead=1)
     fig.add_annotation(x=0.5, y=90,
                        text="90 %",
+                       showarrow=True,
+                       arrowhead=1)
+    fig.add_annotation(x=0, y=50,
+                       text="50 %",
                        showarrow=True,
                        arrowhead=1)
     fig.update_layout({
@@ -2204,6 +2222,17 @@ def single_project(request, pk):
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments}
 
     return render(request, "project/individual_qi_project.html", context)
+
+
+@login_required(login_url='login')
+def untracked_projects(request):
+    all_projects = QI_Projects.objects.all()
+    tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
+    context = {
+         "all_projects": all_projects,
+        "all_responses": tracked_projects,
+    }
+    return render(request, "project/untracked_projects.html", context)
 
 
 @login_required(login_url='login')

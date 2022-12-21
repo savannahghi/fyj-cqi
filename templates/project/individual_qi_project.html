@@ -8,16 +8,7 @@
    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">{{ facility_project.project_title}}</h1>
     <hr>
-    <div class="btn-toolbar mb-2 mb-md-0">
-      <div class="btn-group me-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
-        <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
-      </div>
-      <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
-        <span data-feather="calendar" class="align-text-bottom"></span>
-        This week
-      </button>
-    </div>
+
   </div>
     <div class="d-flex justify-content-between">
        <h4>Facility name: {{ facility_project.facility_name|upper }}</h4>
@@ -188,7 +179,7 @@
 
 
     {% if project_performance %}
-        <h6 class="mt-4"><strong>Project performance (Run chart):</strong></h6>
+        <h6 class="mt-4"><strong>QI Project performance (Run chart):</strong></h6>
         <div class="container">
             <div class="col">
                 <div class="row">
@@ -241,12 +232,16 @@
                                 <td class="text-center text-white" style="background-color: green">
                                     <strong>{{ change.achievements}}%</strong>
                                 </td>
-                            {% elif change.numerator < 75 %}
+                            {% elif change.numerator > 50  and change.numerator < 75 %}
+                                <td class="text-center text-black" style="background-color: yellow">
+                                    <strong>{{ change.achievements}}%</strong>
+                                </td>
+                            {% elif change.numerator < 50 %}
                                 <td class="text-center text-white" style="background-color: red">
                                     <strong>{{ change.achievements}}%</strong>
                                 </td>
-                                {% else %}
-                                <td class="text-center text-black" style="background-color: yellow">
+                            {% else %}
+                                <td class="text-center text-white" style="background-color: #bcbd22">
                                     <strong>{{ change.achievements}}%</strong>
                                 </td>
                         {% endif %}
@@ -265,7 +260,7 @@
                 <p>
                     <div class="d-flex justify-content-evenly">
                         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
-                        Yes {{ facility_project.id }}
+                        Yes
                         </a>
                         <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
                     </div>
@@ -274,7 +269,7 @@
                     <form action="" method="POST">
                         {% csrf_token %}
                         {{ form|crispy }}
-                        <input type="submit" class="btn btn-success">
+                        <input type="submit" class="btn btn-success mt-3">
                     </form>
                 </div>
            {% endif %}

@@ -7,244 +7,145 @@
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h2 class="h2">DEEP ANALYSIS OF ONGOING QI PROJECTS</h2>
       </div>
+    <div class="mt-3">
+      <form class="row g-3">
+            <div class="col-md-2">
+                {{ my_filters.form.county|as_crispy_field }}
+            </div>
+            <div class="col-md-2">
+                {{ my_filters.form.sub_county|as_crispy_field }}
+            </div>
+            <div class="col-md-2">
+                {{ my_filters.form.facility_name|as_crispy_field }}
+            </div>
+            <div class="col-md-2">
+                {{ my_filters.form.measurement_status|as_crispy_field }}
+            </div>
+            <div class="col-md-2">
+                {{ my_filters.form.measurement_frequency|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-4 pt-2">
+                <button class="btn btn-outline-primary" type="submit">search</button>
+            </div>
+      </form>
+      <div class="col-md-2 mt-3">
+          {% if qi_list.has_other_pages %}
+                <ul class="pagination justify-content-end">
+                   {% if qi_list.has_previous %}
+                     <li class="page-item"><a class="page-link" href="?page={{ qi_list.previous_page_number }}">Prev</a></li>
+                   {% else %}
+                     <li class="disabled"><span class="page-link" >Prev</span></li>
+                   {% endif %}
+                   {% for i in qi_list.paginator.page_range %}
+                        {% if qi_list.number == i %}
+                            <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a></li>
+                        {% endif %}
+                   {% endfor %}
+                   {% if qi_list.has_next %}
+                     <li class="page-item"><a class="page-link" href="?page={{ qi_list.next_page_number }}">Next</a></li>
+                   {% else %}
+                     <li class="disabled page-item"><span class="page-link">Next</span></li>
+                   {% endif %}
+                </ul>
+          {% endif %}
+      </div>
 
-{#      <canvas class="my-4 w-100" id="myChart" width="900" height="280"></canvas>#}
-{#        <form class="row g-3">#}
-{#            <div class="col-md-2">#}
-{##}
-{##}
-{#    <label for="inputState" class="form-label">Counties</label>#}
-{#    <select id="inputState" class="form-select">#}
-{#      <option selected>Choose All</option>#}
-{#      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>#}
-{##}
-{#    </select>#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{##}
-{##}
-{#    <label for="inputState" class="form-label">Sub-counties</label>#}
-{#    <select id="inputState" class="form-select">#}
-{#      <option selected>Choose All</option>#}
-{#      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>#}
-{##}
-{#    </select>#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{##}
-{##}
-{#    <label for="inputState" class="form-label">Facilities</label>#}
-{#    <select id="inputState" class="form-select">#}
-{#      <option selected>Choose All</option>#}
-{#      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>#}
-{##}
-{#    </select>#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{##}
-{##}
-{#    <label for="inputState" class="form-label">QI projects</label>#}
-{#    <select id="inputState" class="form-select">#}
-{#      <option selected>Choose All</option>#}
-{#      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>#}
-{##}
-{#    </select>#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{##}
-{##}
-{#    <label for="inputState" class="form-label">Measurement status</label>#}
-{#    <select id="inputState" class="form-select">#}
-{#      <option selected>Choose All</option>#}
-{#      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>#}
-{##}
-{#    </select>#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{##}
-{##}
-{#    <label for="inputState" class="form-label">Measurement frequency</label>#}
-{#    <select id="inputState" class="form-select">#}
-{#      <option selected>Choose All</option>#}
-{#      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>#}
-{##}
-{#    </select>#}
-{#    </div>#}
-{#            <div class="col-md-2">#}
-{#              <div class="form-group">#}
-{#                <label for="input_from" class="form-label">From</label>#}
-{#                <input type="text" class="form-control" id="input_from" placeholder="Start Date">#}
-{#              </div>#}
-{#            </div>#}
-{#            <div class="col-md-2">#}
-{#              <div class="form-group">#}
-{#                <label for="input_from" class="form-label">To</label>#}
-{#                <input type="text" class="form-control" id="input_to" placeholder="End Date">#}
-{#              </div>#}
-{#            </div>#}
-{#            <div class="col-md-2 ">#}
-{##}
-{##}
-{#    <label for="inputState" class="form-label">State</label>#}
-{#    <select id="inputState" class="form-select">#}
-{#      <option selected>Choose All</option>#}
-{#      <option><a class="dropdown-item rounded-2 active" href="#">Action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Another action</a></option>#}
-{#      <option><a class="dropdown-item rounded-2" href="#">Something else here</a></option>#}
-{##}
-{#    </select>#}
-{#    </div>#}
-{#            <div class="col-md-2 mt-5">#}
-{#            <a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-primary" role="button">Filter</a>#}
-{#        </div>#}
-{#        </form>#}
-<div class="mt-3">
-              <form class="row g-3">
-                    <div class="col-md-2">
-                        {{ my_filters.form.county|as_crispy_field }}
-                    </div>
-                    <div class="col-md-2">
-                        {{ my_filters.form.sub_county|as_crispy_field }}
-                    </div>
-                    <div class="col-md-2">
-                        {{ my_filters.form.facility_name|as_crispy_field }}
-                    </div>
-                    <div class="col-md-2">
-                        {{ my_filters.form.measurement_status|as_crispy_field }}
-                    </div>
-                    <div class="col-md-2">
-                        {{ my_filters.form.measurement_frequency|as_crispy_field }}
-                    </div>
-{#                    <div class="col-md-2">#}
-{#                        {{ my_filters.form.objective|as_crispy_field }}#}
-{#                    </div>#}
-{#                    <div class="col-md-2">#}
-{#                        {{ my_filters.form.start_date|as_crispy_field }}#}
-{#                    </div>#}
-{#                    <div class="col-md-2">#}
-{#                        {{ my_filters.form.end_date|as_crispy_field }}#}
-{#                    </div>#}
-{#                    <div class="col-md-2">#}
-{#                        {{ my_filters.form.measurement_frequency|as_crispy_field }}#}
-{#                    </div>#}
-                    <div class="col-md-2 mt-4 pt-2">
-                        <button class="btn btn-outline-primary" type="submit">search</button>
-                    </div>
-              </form>
-{#                  <a href="{% url 'untracked_projects' %}" class="btn btn-danger">UNTRACKED QI PROJECTS</a>#}
-              <div class="col-md-2 mt-3">
-                  {% if qi_list.has_other_pages %}
-                        <ul class="pagination justify-content-end">
-                           {% if qi_list.has_previous %}
-                             <li class="page-item"><a class="page-link" href="?page={{ qi_list.previous_page_number }}">Prev</a></li>
-                           {% else %}
-                             <li class="disabled"><span class="page-link" >Prev</span></li>
-                           {% endif %}
-                           {% for i in qi_list.paginator.page_range %}
-                                {% if qi_list.number == i %}
-                                    <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>
-                                {% else %}
-                                    <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a></li>
-                                {% endif %}
-                           {% endfor %}
-                           {% if qi_list.has_next %}
-                             <li class="page-item"><a class="page-link" href="?page={{ qi_list.next_page_number }}">Next</a></li>
-                           {% else %}
-                             <li class="disabled page-item"><span class="page-link">Next</span></li>
-                           {% endif %}
-                        </ul>
-                  {% endif %}
-              </div>
-
-          </div>
+  </div>
 
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
             <div>
             </div>
-            <h1 class="d-flex justify-content-evenly">{{ archived_projects|length }} Archived Quality Improvement Projects Found</h1>
-            <p class="d-flex justify-content-evenly">No specific criteria is specified, so displaying all archived QI Projects</p>
+            {% if archived_projects|length < qi_lists|length %}
+                <h1 class="d-flex justify-content-evenly">
+                    {{ archived_projects|length }} Archived Quality Improvement Projects Found
+                </h1>
+            {% else %}
+                <h1 class="d-flex justify-content-evenly">
+                    {{ qi_list|length }} Archived Quality Improvement Projects Found
+                </h1>
+            {% endif %}
+{#            <h1 class="d-flex justify-content-evenly">{{ archived_projects|length }} Archived Quality Improvement Projects Found</h1>#}
+{#            <p class="d-flex justify-content-evenly">No specific criteria is specified, so displaying all archived QI Projects</p>#}
         </div>
 
+<div class="container">
         <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
-{#            <h1 class="col-md-1">1</h1>#}
-{#            {% for qi in qi_list %}#}
-{#                <h1>hi!::::</h1>#}
-{#                {{ qi.id }}#}
-{##}
-{#            {% endfor %}#}
+            {% for qi in qi_list %}
+                {% if qi.id in archived_projects %}
+                  <div class="col-md-8">
+                        <div class="card h-100" >
+                          <div class="card-body">
+                            <h6 class="card-title"><a href="{% url 'single_project' qi.id %}">{{ qi.project_title }}</a></h6>
+                              <ul >
+                                  <li>Facility : <a href="{% url 'facility_project' qi.facility_name %}">{{ qi.facility_name }}</a></li>
+                                  <li>Problem background : {{ qi.problem_background }}</li>
+                                  <li>Objective : {{ qi.objective }}</li>
+                                  <li>Setting : {{ qi.settings }}  Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>
+{#                                  <li>Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>#}
+                                  <li>Responsible person : {{ qi.responsible_people }}</li>
+                                  <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
+                                  <li>Created by : {{ qi.created_by }}</li>
+                                   {% if qi.comments%}
+                                       <li>Comment (s) : {{ qi.comments }}</li>
+                                   {% endif %}
+                               </ul>
+{#                                {% if user.id == qi.created_by.id %}#}
+{#                                      <div class="d-flex justify-content-start" >#}
+{#                                          {% for project_archived in qi.archiveproject_set.all %}#}
+{#                                              <a href="{% url 'toggle_archive_project' project_archived.qi_project_id %}" class="btn btn-secondary">Unarchive project</a>#}
+{#                                          {% endfor %}#}
+{#                                      </div>#}
+{#                                {% endif %}#}
+                          </div>
+                          <div class="card-footer justify-content-evenly">
+                              {% for project_archived in qi.archiveproject_set.all %}
+                                <small class="text-muted">Archived on {{ project_archived.date_updated }}</small>
+                              {% endfor %}
+                          {% if user.id == qi.created_by.id %}
+{#                                      <div class="d-flex justify-content-start" >#}
+                                          {% for project_archived in qi.archiveproject_set.all %}
+                                              <a href="{% url 'toggle_archive_project' project_archived.qi_project_id %}" class="btn btn-secondary">Unarchive project</a>
+                                          {% endfor %}
+{#                                      </div>#}
+                                {% endif %}
+                          </div>
+                        </div>
 
-        {% for qi in qi_list %}
-          {% if qi.id in archived_projects %}
-
-              <div class="col-md-8">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <h6 class="card-title"><a href="{% url 'single_project' qi.id %}">{{ qi.project_title }}</a></h6>
-                      <ul>
-                          <li>Facility : <a href="{% url 'facility_project' qi.facility_name %}">{{ qi.facility_name }}</a></li>
-                          <li>Problem background : {{ qi.problem_background }}</li>
-                          <li>Objective : {{ qi.objective }}</li>
-                          <li>Setting : {{ qi.settings }}</li>
-                          <li>Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>
-                          <li>Responsible person : {{ qi.responsible_people }}</li>
-                          <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
-                          <li>Created by : {{ qi.created_by }}</li>
-                           {% if qi.comments%}
-                               <li>Comment (s) : {{ qi.comments }}</li>
-                           {% endif %}
-                       </ul>
-                        {% if user.id == qi.created_by.id %}
-                              <div class="d-flex justify-content-evenly" >
-                                  {% for project_archived in qi.archiveproject_set.all %}
-                                      <a href="{% url 'toggle_archive_project' project_archived.qi_project_id %}" class="btn btn-secondary">Unarchive project</a>
-                                  {% endfor %}
+                      </div>
+                    {% for k,dict in dicts.items %}
+                        {% if qi.id == k %}
+                            <div class="col-md-4" >
+                            <div class="card">
+                              <div class="card-body">
+{#                                  <div class="container">#}
+                                    <div class="col">
+                                        <div class="row ">
+                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
+                                             {{ dict|safe }}
+                                        </div>
+                                    </div>
+{#                                  </div>#}
+{#                                  <div class="d-flex justify-content-evenly">#}
+{#                                      <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">All projects</a>#}
+{#                                      <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>#}
+{#                                  </div>#}
                               </div>
+                                <div class="card-footer">
+                              {% for project_archived in qi.archiveproject_set.all %}
+                                <small class="text-muted">Archived on {{ project_archived.date_updated }}</small>
+                              {% endfor %}
+                          </div>
+                            </div>
+
+                      </div>
                         {% endif %}
-                  </div>
-                  <div class="card-footer">
-                      {% for project_archived in qi.archiveproject_set.all %}
-                        <small class="text-muted">Archived on {{ project_archived.date_updated }}</small>
-                      {% endfor %}
-                  </div>
-                </div>
-
-              </div>
-
-              <div class="col-md-4">
-                <div class="card h-100">
-                  <div class="card-body">
-{#                      {{ pro_perfomance_trial|safe }}#}
-{#                    <h5 class="card-title">Card title</h5>#}
-{#                    <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>#}
-{#                      <div class="d-flex justify-content-evenly" >#}
-{#                      <a href="#" class="btn btn-primary">Go somewhere</a>#}
-{#                      <a href="#" class="btn btn-primary">Go somewhere</a>#}
-                  </div>
-                  </div>
-                  <div class="card-footer">
-                      {% for project_archived in qi.archiveproject_set.all %}
-                        <small class="text-muted">Archived on {{ project_archived.date_updated }}</small>
-                      {% endfor %}
-                  </div>
-                </div>
-
-              </div>
-            {% endif %}
+                    {% endfor %}
+                {% endif %}
             {% endfor %}
-
-</div>
+        </div>
+        </div>
 
 
 {#<div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">#}

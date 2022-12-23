@@ -7,7 +7,7 @@ from django.core.files.storage import FileSystemStorage
 
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db import IntegrityError
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.forms import forms
 
 from django.http import HttpResponseRedirect, HttpResponse, Http404
@@ -735,37 +735,12 @@ def archived(request):
     my_filters = QiprojectFilter(request.GET, queryset=qi_list)
     qi_lists = my_filters.qs
     qi_list = pagination_(request, qi_lists)
-
-    if qi_lists:
-        list_of_projects = [
-            {'measurement_frequency': x.measurement_frequency,
-             } for x in qi_lists
-        ]
-        # convert data from database to a dataframe
-        list_of_projects = pd.DataFrame(list_of_projects)
-
-        facility_proj_performance = prepare_bar_chart_from_df(list_of_projects, 'measurement_frequency',
-                                                              "QI Measurement frequency", projects)
-
-        list_of_departments = [
-            {'department': x.departments.department,
-             } for x in qi_lists
-        ]
-        list_of_departments = pd.DataFrame(list_of_departments)
-        departments_viz = prepare_bar_chart_from_df(list_of_departments, "department", "QI per department", projects)
-
-        list_of_departments = [
-            {'status': x.measurement_status,
-             } for x in qi_lists
-        ]
-        list_of_departments = pd.DataFrame(list_of_departments)
-        status_viz = prepare_bar_chart_from_df(list_of_departments, "status", "QI projects status", projects)
-
+    # Get a list of tracked qi projects
     tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
     # Get a list of archived qi projects
     archived_projects = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id', flat=True)
 
-    # CREATE DF OF ARCHIVED PROJECTS
+    # CREATE DF for ARCHIVED PROJECTS
     archived_projects_qs = ArchiveProject.objects.filter(archive_project=True)
 
     if archived_projects_qs:
@@ -774,93 +749,73 @@ def archived(request):
                 'qi_project': x.qi_project.facility_name.facilities,
                 'qi_project_id': x.qi_project.id,
                 'qi_project_title': x.qi_project.project_title,
-             } for x in archived_projects_qs
+            } for x in archived_projects_qs
         ]
         # convert data from database to a dataframe
         list_of_projects_archived = pd.DataFrame(list_of_projects)
-        project_id_values=list(list_of_projects_archived['qi_project_id'].unique())
-        print(list_of_projects_archived)
+        project_id_values = list(list_of_projects_archived['qi_project_id'].unique())
 
-    # try:
-    testedChange_current = TestedChange.objects.filter(project_id__in=project_id_values).order_by(
-        '-achievements')
+        # try:
+        testedChange_current = TestedChange.objects.filter(project_id__in=project_id_values).order_by(
+            '-achievements')
 
-    # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
-    # list_of_projects = my_filters.qs
-    list_of_projects = [
-        {'achievements': x.achievements,
-         'month_year': x.month_year,
-         'project_id': x.project_id,
-         'tested of change': x.tested_change,
-         'facility': x.project,
-         'project': x.project.project_title,
-         'department': x.project.departments.department,
-         } for x in testedChange_current
-    ]
+        # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
+        # list_of_projects = my_filters.qs
+        list_of_projects = [
+            {'achievements': x.achievements,
+             'month_year': x.month_year,
+             'project_id': x.project_id,
+             'tested of change': x.tested_change,
+             'facility': x.project,
+             'project': x.project.project_title,
+             'department': x.project.departments.department,
+             } for x in testedChange_current
+        ]
 
-    # convert data from database to a dataframe
-    list_of_projects = pd.DataFrame(list_of_projects)
-    print("list_of_projects::::::::::::::::::::::::::::::")
-    print(list_of_projects)
+        # convert data from database to a dataframe
+        list_of_projects = pd.DataFrame(list_of_projects)
 
-    keys = sorted(list_of_projects['department'].unique())
-    values = sorted(list_of_projects['department'].unique())
-    testedChange_current = dict(zip(keys, values))
+        dfs = []
+        for project in list_of_projects['project_id'].unique():
+            a = list_of_projects[list_of_projects['project_id'] == project]
+            a = a.sort_values("project_id", ascending=False)
+            dfs.append(a)
 
-    print("testedChange_current::::::::::::::::::::::::::::::")
-    print(testedChange_current)
+        if list_of_projects.shape[0] != 0:
+            dicts = {}
+            keys = list_of_projects['project_id'].unique()
+            values = dfs
+            for i in range(len(keys)):
+                dicts[keys[i]] = values[i]
 
-    dfs = []
-    for department in list_of_projects['department'].unique():
-        a = list_of_projects[list_of_projects['department'] == department]
-        a = a.sort_values("month_year", ascending=False)
-        dfs.append(a)
+            lst = []
+            for i in list_of_projects['project_id'].unique():
+                # get the first rows of the dfs
+                a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
+                # append them in a list
+                lst.append(a.head(1))
 
-    dicts = {}
-    keys = list_of_projects['department'].unique()
-    values = dfs
-    for i in range(len(keys)):
-        dicts[keys[i]] = values[i]
+            # concat and sort them by project id
+            df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
 
-    if list_of_projects.shape[0] != 0:
-        dicts = {}
-        keys = list_of_projects['project_id'].unique()
-        values = list_of_projects['project'].unique()
-        for i in range(len(keys)):
-            dicts[keys[i]] = values[i]
+            all_other_projects_trend = []
+            keys = []
+            for project in list(df_heads['project_id']):
+                keys.append(project)
+                # filter dfs based on the order of the best performing projects
+                all_other_projects_trend.append(
+                    prepare_trends(list_of_projects[list_of_projects['project_id'] == project]))
 
-        lst = []
+            dicts = {}
+            for i in range(len(keys)):
+                dicts[keys[i]] = all_other_projects_trend[i]
 
-        for i in list_of_projects['project_id'].unique():
-            # get the first rows of the dfs
-            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
-            # append them in a list
-            lst.append(a.head(1))
+            a = list_of_projects[list_of_projects['project_id'] == 4]
+            a = prepare_trends(a)
+            pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
 
-        # concat and sort them by project id
-        df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
-        print("df heads:::::::")
-        print(df_heads)
-
-        all_other_projects_trend = []
-        for project in list(df_heads['project_id']):
-            # filter dfs based on the order of the best performing projects
-            all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
-
-        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
-
-    else:
-        pro_perfomance_trial = {}
-    # except:
-    #     pro_perfomance_trial = None
-
-        # facility_proj_performance = prepare_bar_chart_from_df(list_of_projects, 'measurement_frequency',
-        #                                                       "QI Measurement frequency", projects)
-
-        # pro_perfomance_trial = prepare_viz(list_of_projects, pk, "department")
-
-
+        else:
+            pro_perfomance_trial = {}
 
     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
                "my_filters": my_filters, "qi_lists": qi_lists,
@@ -869,7 +824,9 @@ def archived(request):
                # "status_viz": status_viz,
                "tracked_projects": tracked_projects,
                "archived_projects": archived_projects,
-               "pro_perfomance_trial":pro_perfomance_trial
+               "pro_perfomance_trial": pro_perfomance_trial,
+               "a": a,
+               "dicts": dicts,
                }
     return render(request, "project/archived.html", context)
 
@@ -2165,12 +2122,12 @@ def resources(request):
 
 
 def line_chart(df, x_axis, y_axis, title):
-    fig = px.line(df, x=x_axis, y=y_axis, text=y_axis, title=title,
+    fig = px.line(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=300,
                   hover_name=None, hover_data={"tested of change": True,
                                                "achievements (%)": True, }
                   )
 
-    fig.update_traces(textposition='top center')
+    fig.update_traces(textfont_size=14, textfont_family="Arial", textfont_color='brown', textposition='top center')
     # fig.add_trace(go.Line(x=df[x_axis], y=df[y_axis], mode='markers'))
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
@@ -2193,6 +2150,43 @@ def line_chart(df, x_axis, y_axis, title):
         'plot_bgcolor': 'rgba(0, 0, 0, 0)',
         'paper_bgcolor': 'rgba(0, 0, 0, 0)',
     })
+    fig.update_yaxes(rangemode="tozero")
+
+    # fig.update_traces(textfont_size=14,textfont_color='red',textfont_weight='bold')
+    # fig.update_traces(texttemplate='%{text:.s}')
+
+    return fig.to_html()
+
+
+def line_chart_no_targets(df, x_axis, y_axis, title):
+    fig = px.line(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=300,
+                  hover_name=None, hover_data={"tested of change": True,
+                                               "achievements (%)": True, }
+                  )
+
+    fig.update_traces(textposition='top center')
+    # fig.add_trace(go.Line(x=df[x_axis], y=df[y_axis], mode='markers'))
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+    # fig.add_hline(y=90, line_width=1, line_dash="dash", line_color="green")
+    # fig.add_hline(y=50, line_width=1, line_dash="dash", line_color="red")
+    # fig.add_hline(y=75, line_width=1, line_dash="dash", line_color="#bcbd22")
+    # fig.add_annotation(x=0.25, y=75,
+    #                    text="75 %",
+    #                    showarrow=True,
+    #                    arrowhead=1)
+    # fig.add_annotation(x=0.5, y=90,
+    #                    text="90 %",
+    #                    showarrow=True,
+    #                    arrowhead=1)
+    # fig.add_annotation(x=0, y=50,
+    #                    text="50 %",
+    #                    showarrow=True,
+    #                    arrowhead=1)
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    })
     # fig.update_traces(texttemplate='%{text:.s}')
 
     return fig.to_html()
@@ -2201,7 +2195,7 @@ def line_chart(df, x_axis, y_axis, title):
 def bar_chart_horizontal(df, x_axis, y_axis, title):
     # df[x_axis]=df[x_axis].str.split(" ").str[0]
 
-    fig = px.bar(df, x=y_axis, y=x_axis, text=y_axis, title=title, orientation='h'
+    fig = px.bar(df, x=y_axis, y=x_axis, text=y_axis, title=title, orientation='h', height=300,
                  # hover_name=x_axis,  hover_data={
                  #                                        "tested of change":True,
                  #                                        "achievements":True,}
@@ -2254,10 +2248,20 @@ def prepare_trends(df, title=""):
     return project_performance
 
 
+def prepare_trends_no_targets(df, title=""):
+    df = df.copy()
+    df['achievements'] = df['achievements'].astype(int)
+    df = df.sort_values("month_year")
+    df['month_year'] = df['month_year'].astype(str) + "."
+    df = df.rename(columns={"achievements": "achievements (%)"})
+    project_performance = line_chart_no_targets(df, "month_year", "achievements (%)", title)
+    return project_performance
+
+
 @login_required(login_url='login')
 def single_project(request, pk):
     try:
-        all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id',flat=True)
+        all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id', flat=True)
     except:
         all_archived = []
 

@@ -11,14 +11,15 @@ from django.db.models import Count
 from django.forms import forms
 
 from django.http import HttpResponseRedirect, HttpResponse, Http404
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 
 from account.forms import UpdateUserForm
 from cqi_fyj import settings
 
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
-    DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm
+    DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
+    ArchiveProjectForm
 from .filters import *
 
 import plotly.express as px
@@ -77,8 +78,6 @@ def prepare_viz(list_of_projects, pk, col):
 
         # concat and sort them by project id
         df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
-        print("df_heads:::::::::::")
-        print(df_heads)
 
         all_other_projects_trend = []
         for project in list(df_heads['project_id']):
@@ -168,7 +167,6 @@ def dashboard(request):
         best_performing = best_performing.sort_values("achievements", ascending=False)
         # best_performing = best_performing[best_performing['achievements'] >=10]
         qi_mans = best_performing.copy()
-        # print(qi_mans)
         best_performing['project'] = best_performing['project'] + " (" + best_performing['achievements'].astype(
             int).astype(str) + "%)"
 
@@ -180,7 +178,6 @@ def dashboard(request):
         qi_mans = qi_mans.rename(columns={"project_qi_manager": "Project QI Manager",
                                           "project": "Project", "facility": "Facility",
                                           "department": "Department", "achievements": "Achievements"})
-        # print(qi_mans)
 
         keys = list(best_performing['project'])
         project_id_values = list(best_performing['project_id'])
@@ -727,6 +724,157 @@ def deep_dive_facilities(request):
 
 
 @login_required(login_url='login')
+def archived(request):
+    facility_proj_performance = None
+    departments_viz = None
+    status_viz = None
+
+    qi_list = QI_Projects.objects.all().order_by('-date_updated')
+    num_post = QI_Projects.objects.filter(created_by=request.user).count()
+    projects = QI_Projects.objects.count()
+    my_filters = QiprojectFilter(request.GET, queryset=qi_list)
+    qi_lists = my_filters.qs
+    qi_list = pagination_(request, qi_lists)
+
+    if qi_lists:
+        list_of_projects = [
+            {'measurement_frequency': x.measurement_frequency,
+             } for x in qi_lists
+        ]
+        # convert data from database to a dataframe
+        list_of_projects = pd.DataFrame(list_of_projects)
+
+        facility_proj_performance = prepare_bar_chart_from_df(list_of_projects, 'measurement_frequency',
+                                                              "QI Measurement frequency", projects)
+
+        list_of_departments = [
+            {'department': x.departments.department,
+             } for x in qi_lists
+        ]
+        list_of_departments = pd.DataFrame(list_of_departments)
+        departments_viz = prepare_bar_chart_from_df(list_of_departments, "department", "QI per department", projects)
+
+        list_of_departments = [
+            {'status': x.measurement_status,
+             } for x in qi_lists
+        ]
+        list_of_departments = pd.DataFrame(list_of_departments)
+        status_viz = prepare_bar_chart_from_df(list_of_departments, "status", "QI projects status", projects)
+
+    tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
+    # Get a list of archived qi projects
+    archived_projects = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id', flat=True)
+
+    # CREATE DF OF ARCHIVED PROJECTS
+    archived_projects_qs = ArchiveProject.objects.filter(archive_project=True)
+
+    if archived_projects_qs:
+        list_of_projects = [
+            {
+                'qi_project': x.qi_project.facility_name.facilities,
+                'qi_project_id': x.qi_project.id,
+                'qi_project_title': x.qi_project.project_title,
+             } for x in archived_projects_qs
+        ]
+        # convert data from database to a dataframe
+        list_of_projects_archived = pd.DataFrame(list_of_projects)
+        project_id_values=list(list_of_projects_archived['qi_project_id'].unique())
+        print(list_of_projects_archived)
+
+    # try:
+    testedChange_current = TestedChange.objects.filter(project_id__in=project_id_values).order_by(
+        '-achievements')
+
+    # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
+    # list_of_projects = my_filters.qs
+    list_of_projects = [
+        {'achievements': x.achievements,
+         'month_year': x.month_year,
+         'project_id': x.project_id,
+         'tested of change': x.tested_change,
+         'facility': x.project,
+         'project': x.project.project_title,
+         'department': x.project.departments.department,
+         } for x in testedChange_current
+    ]
+
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    print("list_of_projects::::::::::::::::::::::::::::::")
+    print(list_of_projects)
+
+    keys = sorted(list_of_projects['department'].unique())
+    values = sorted(list_of_projects['department'].unique())
+    testedChange_current = dict(zip(keys, values))
+
+    print("testedChange_current::::::::::::::::::::::::::::::")
+    print(testedChange_current)
+
+    dfs = []
+    for department in list_of_projects['department'].unique():
+        a = list_of_projects[list_of_projects['department'] == department]
+        a = a.sort_values("month_year", ascending=False)
+        dfs.append(a)
+
+    dicts = {}
+    keys = list_of_projects['department'].unique()
+    values = dfs
+    for i in range(len(keys)):
+        dicts[keys[i]] = values[i]
+
+    if list_of_projects.shape[0] != 0:
+        dicts = {}
+        keys = list_of_projects['project_id'].unique()
+        values = list_of_projects['project'].unique()
+        for i in range(len(keys)):
+            dicts[keys[i]] = values[i]
+
+        lst = []
+
+        for i in list_of_projects['project_id'].unique():
+            # get the first rows of the dfs
+            a = list_of_projects[list_of_projects['project_id'] == i].sort_values("month_year", ascending=False)
+            # append them in a list
+            lst.append(a.head(1))
+
+        # concat and sort them by project id
+        df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+        print("df heads:::::::")
+        print(df_heads)
+
+        all_other_projects_trend = []
+        for project in list(df_heads['project_id']):
+            # filter dfs based on the order of the best performing projects
+            all_other_projects_trend.append(
+                prepare_trends(list_of_projects[list_of_projects['project_id'] == project], project))
+
+        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+
+    else:
+        pro_perfomance_trial = {}
+    # except:
+    #     pro_perfomance_trial = None
+
+        # facility_proj_performance = prepare_bar_chart_from_df(list_of_projects, 'measurement_frequency',
+        #                                                       "QI Measurement frequency", projects)
+
+        # pro_perfomance_trial = prepare_viz(list_of_projects, pk, "department")
+
+
+
+    context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
+               "my_filters": my_filters, "qi_lists": qi_lists,
+               # "facility_proj_performance": facility_proj_performance,
+               # "departments_viz": departments_viz,
+               # "status_viz": status_viz,
+               "tracked_projects": tracked_projects,
+               "archived_projects": archived_projects,
+               "pro_perfomance_trial":pro_perfomance_trial
+               }
+    return render(request, "project/archived.html", context)
+
+
+@login_required(login_url='login')
 def facilities_landing_page(request):
     facility_proj_performance = None
     departments_viz = None
@@ -765,13 +913,16 @@ def facilities_landing_page(request):
         status_viz = prepare_bar_chart_from_df(list_of_departments, "status", "QI projects status", projects)
 
     tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
+    # Get a list of archived qi projects
+    archived_projects = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id', flat=True)
 
     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
                "my_filters": my_filters, "qi_lists": qi_lists,
                "facility_proj_performance": facility_proj_performance,
                "departments_viz": departments_viz,
                "status_viz": status_viz,
-               "tracked_projects":tracked_projects,
+               "tracked_projects": tracked_projects,
+               "archived_projects": archived_projects,
                }
     return render(request, "project/facility_landing_page.html", context)
 
@@ -806,7 +957,7 @@ def facility_project(request, pk):
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
-               "tracked_projects":tracked_projects,
+               "tracked_projects": tracked_projects,
                }
     return render(request, "project/facility_projects.html", context)
 
@@ -841,7 +992,7 @@ def department_project(request, pk):
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
-               "tracked_projects":tracked_projects,
+               "tracked_projects": tracked_projects,
                }
     return render(request, "project/department_projects.html", context)
 
@@ -884,12 +1035,10 @@ def department_filter_project(request, pk):
 
 @login_required(login_url='login')
 def qi_managers_filter_project(request, pk):
-    print(pk)
     pro_perfomance_trial = {}
-    manager_name=[]
+    manager_name = []
 
     projects = QI_Projects.objects.filter(qi_manager__id=pk)
-    print(projects)
     if projects:
         list_of_projects = [
             {
@@ -897,8 +1046,6 @@ def qi_managers_filter_project(request, pk):
             } for x in projects
         ]
         list_of_projects_ = pd.DataFrame(list_of_projects)
-        print("list_of_projects_::::")
-        print(list_of_projects_)
 
     # project_id_values = request.session['project_id_values']
 
@@ -924,7 +1071,6 @@ def qi_managers_filter_project(request, pk):
              } for x in testedChange
         ]
         list_of_projects_ = pd.DataFrame(list_of_projects)
-        print(list_of_projects_)
         manager_name = list(list_of_projects_['qi_manager'].unique())[0]
 
         pro_perfomance_trial = prepare_viz(list_of_projects, manager_name, "qi_manager")
@@ -937,17 +1083,12 @@ def qi_managers_filter_project(request, pk):
                 } for x in manager
             ]
             list_of_projects_ = pd.DataFrame(list_of_projects)
-            print("list_of_projects_:::: name")
             manager_name = list(list_of_projects_['qi_manager'].unique())[0]
-            print(list_of_projects_)
 
     # difference
     number_of_projects_created = projects.count()
     number_of_projects_with_test_of_change = len(pro_perfomance_trial)
     difference = number_of_projects_created - number_of_projects_with_test_of_change
-
-    print("pro_perfomance_trial.....")
-    print(pro_perfomance_trial)
 
     context = {"projects": projects,
                "facility_name": manager_name,
@@ -1004,7 +1145,6 @@ def facility_filter_project(request, pk):
     if list_of_projects.shape[0] != 0:
         dicts = {}
         keys = list_of_projects['project_id'].unique()
-        print(f"pro_perfomance_trial keys: {keys}")
 
         values = list_of_projects['project'].unique()
         for i in range(len(keys)):
@@ -1019,16 +1159,10 @@ def facility_filter_project(request, pk):
 
         # concat and sort them by project id
         df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
-        # print("facility_filter_project::::")
-        # print(df_heads)
-        #
-        # print("list(df_heads['project_id'])::::")
-        # print(list(df_heads['project_id']))
         all_other_projects_trend = []
         keys = []
         for project in list(df_heads['project_id']):
             keys.append(project)
-            print(f"project: {project}")
             # filter dfs based on the order of the best performing projects
             if isinstance(project, str):
                 all_other_projects_trend.append(
@@ -1036,9 +1170,6 @@ def facility_filter_project(request, pk):
             else:
                 all_other_projects_trend.append(
                     prepare_trends(list_of_projects[list_of_projects['project_id'] == project]))
-
-        # print("all_other_projects_trend:::")
-        # print(all_other_projects_trend)
 
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
     else:
@@ -1055,7 +1186,7 @@ def facility_filter_project(request, pk):
                "facility_name": facility_name,
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
-               "difference":difference,
+               "difference": difference,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1067,14 +1198,12 @@ def qicreator_filter_project(request, pk):
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     pk = str(pk).lower()
     projects = QI_Projects.objects.filter(created_by__username=pk)
-    # print(projects)
     # project_id_values = request.session['project_id_values']
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
     # list_of_projects = TestedChange.objects.filter(project_id__in=project_id_values).order_by('-achievements')
     testedChange = TestedChange.objects.filter(project__created_by__username=pk)
-    # print(testedChange)
     # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
     # list_of_projects = my_filters.qs
     if testedChange:
@@ -1244,7 +1373,7 @@ def county_filter_project(request, pk):
                "facility_name": facility_name,
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
-               "difference":difference,
+               "difference": difference,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1338,7 +1467,7 @@ def sub_county_filter_project(request, pk):
                "facility_name": facility_name,
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
-               "difference":difference,
+               "difference": difference,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1405,7 +1534,7 @@ def qi_creator(request, pk):
     tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
     context = {"projects": projects,
                "facility_name": facility_name,
-               "tracked_projects":tracked_projects
+               "tracked_projects": tracked_projects
                }
     return render(request, "project/qi_creators.html", context)
 
@@ -1418,7 +1547,7 @@ def qi_managers_projects(request, pk):
 
     context = {"projects": projects,
                "facility_name": facility_name[0],
-               "tracked_projects":tracked_projects,
+               "tracked_projects": tracked_projects,
                }
     return render(request, "project/qi_creators.html", context)
 
@@ -1426,29 +1555,7 @@ def qi_managers_projects(request, pk):
 @login_required(login_url='login')
 def completed_closed(request, pk):
     projects = QI_Projects.objects.filter(measurement_status=pk)
-
     facility_name = pk
-
-    # qi_list = QI_Projects.objects.all().order_by('-date_updated')
-    # num_post = QI_Projects.objects.filter(created_by=request.user).count()
-    # if request.method=="POST":
-    #     search=request.POST['searched']
-    #     search=QI_Projects.objects.filter(facility__contains=search)
-    #     projects = None
-    #     context = {"qi_list": qi_list, "num_post": num_post,"projects":projects,
-    #                "search":search
-    #                }
-    #     return render(request, "project/facility_landing_page.html", context)
-    # else:
-    #     projects = QI_Projects.objects.count()
-
-    #     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
-    #
-    #                }
-    #     return render(request, "project/facility_landing_page.html", context)
-    # projects = QI_Projects.objects.count()
-    # my_filters = QiprojectFilter(request.GET,queryset=qi_list)
-    # qi_list=my_filters.qs
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Completed or Closed",
@@ -1497,10 +1604,45 @@ def measurement_frequency(request, pk):
     tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
     context = {"projects": projects,
                "facility_name": facility_name,
-               "tracked_projects":tracked_projects,
+               "tracked_projects": tracked_projects,
                # "title": "Completed or Closed",
                }
     return render(request, "project/department_projects.html", context)
+
+
+@login_required(login_url='login')
+def toggle_archive_project(request, project_id):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    try:
+        # Get the QI_Projects object from the given qi_project_id
+        qi_project = QI_Projects.objects.get(id=project_id)
+
+        # Get the ArchiveProject object associated with the given qi_project
+        archive_project = ArchiveProject.objects.get(qi_project=qi_project)
+
+        # Toggle the booleanfield archive_project
+        if archive_project.archive_project:
+            archive_project.archive_project = False
+        else:
+            archive_project.archive_project = True
+
+        # Save the changes
+        archive_project.save()
+    except:
+        # create if not in the database
+        form = ArchiveProjectForm(request.POST, request.FILES)
+        if form.is_valid():
+            # do not save first, wait to update foreign key
+            post = form.save(commit=False)
+            # get project primary key
+            post.qi_project = QI_Projects.objects.get(id=project_id)
+            # Archive the project
+            post.archive_project = True
+            # save
+            post.save()
+
+    return HttpResponseRedirect(request.session['page_from'])
 
 
 @login_required(login_url='login')
@@ -1712,8 +1854,6 @@ def qi_team_members(request):
 
     merged_df = qi_team_members_with_projects.merge(qi_team_members_df, how='left', on=['Email', 'Phone Number'])
     # merged_df=qi_team_members_with_projects.merge(qi_team_members_df,how='left')
-
-    # print(merged_df.columns)
     merged_df = merged_df[['First name_x', 'Last name_x', 'Email', 'Phone Number', 'User_id',
                            'QI_team_member_id',
                            'Designation', 'Date created_x', 'Facility_x']]
@@ -1748,7 +1888,6 @@ def qi_team_members(request):
     del qi_team_members_with_projects['User_id']
     # del qi_team_members_without_projects['Date created']
     qi_team_members_ = pd.concat([qi_team_members_with_projects, qi_team_members_without_projects])
-    # print("qi_team_members_")
     qi_team_members_ = qi_team_members_.sort_values("Facility")
     qi_team_members_.reset_index(drop=True, inplace=True)
     qi_team_members_.index += 1
@@ -1758,7 +1897,6 @@ def qi_team_members(request):
     # qi_managers.index += 1
     # # del qi_managers['QI_manager id']
     # del qi_managers['index']
-    # # print(qi_managers)
     #
     # context = {
     #     "qi_managers_list": qi_managers_list,
@@ -1790,8 +1928,6 @@ def qi_managers(request):
         } for x in qi_managers_
     ]
     qi_managers_with_projects = pd.DataFrame(list_of_projects)
-    # print("qi_managers_with_projects")
-    # print(qi_managers_with_projects)
     # pandas count frequency of column value in another dataframe column
     qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
         qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
@@ -1826,18 +1962,12 @@ def qi_managers(request):
     qi_managers.index += 1
     # del qi_managers['QI_manager id']
     del qi_managers['index']
-    # print(qi_managers)
 
     context = {
         "qi_managers_list": qi_managers_list,
         "qi_managers": qi_managers,
     }
     return render(request, "project/qi_managers.html", context)
-
-
-@login_required(login_url='login')
-def archived(request):
-    return render(request, "project/archived.html")
 
 
 @login_required(login_url='login')
@@ -2126,8 +2256,13 @@ def prepare_trends(df, title=""):
 
 @login_required(login_url='login')
 def single_project(request, pk):
+    try:
+        all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id',flat=True)
+    except:
+        all_archived = []
+
     facility_project = QI_Projects.objects.get(id=pk)
-    # get other facility projects
+    # get other All projects
     other_projects = QI_Projects.objects.filter(facility_name=facility_project.facility_name)
     # Hit db once
     test_of_change_qs = TestedChange.objects.all()
@@ -2170,8 +2305,6 @@ def single_project(request, pk):
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
 
-        print(f"list_of_projects['project'].unique() : {list_of_projects['project'].unique()}")
-
         all_other_projects_trend = []
         for project in list_of_projects['project'].unique():
             all_other_projects_trend.append(
@@ -2208,18 +2341,20 @@ def single_project(request, pk):
 
         project_performance = prepare_trends(df)
 
-        facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "facility projects")
+        facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "All projects")
 
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
-                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments}
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
+                   "all_archived": all_archived, }
 
     else:
         project_performance = {}
         facility_proj_performance = {}
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
-                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments}
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
+                   "all_archived": all_archived, }
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -2229,7 +2364,7 @@ def untracked_projects(request):
     all_projects = QI_Projects.objects.all()
     tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
     context = {
-         "all_projects": all_projects,
+        "all_projects": all_projects,
         "all_responses": tracked_projects,
     }
     return render(request, "project/untracked_projects.html", context)

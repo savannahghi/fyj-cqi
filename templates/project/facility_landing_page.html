@@ -36,36 +36,37 @@
           </div>
           <div class="mt-3">
               <form class="row g-3">
-                <div class="col-md-2">
-                    {{ my_filters.form.departments|as_crispy_field }}
-                </div>
-                <div class="col-md-2">
-                    {{ my_filters.form.problem_background|as_crispy_field }}
-                </div>
-                <div class="col-md-2">
-                    {{ my_filters.form.facility_name|as_crispy_field }}
-                </div>
-                <div class="col-md-2">
-                    {{ my_filters.form.settings|as_crispy_field }}
-                </div>
-                <div class="col-md-2">
-                    {{ my_filters.form.project_title|as_crispy_field }}
-                </div>
-                <div class="col-md-2">
-                    {{ my_filters.form.objective|as_crispy_field }}
-                </div>
-                <div class="col-md-2">
-                    {{ my_filters.form.start_date|as_crispy_field }}
-                </div>
-                <div class="col-md-2">
-                    {{ my_filters.form.end_date|as_crispy_field }}
-                </div>
-                <div class="col-md-2">
-                    {{ my_filters.form.measurement_frequency|as_crispy_field }}
-                </div>
-              <div class="col-md-2 mt-4 pt-2">
-                    <button class="btn btn-outline-primary" type="submit">search</button>
-              </div>
+                    <div class="col-md-2">
+                        {{ my_filters.form.departments|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ my_filters.form.problem_background|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ my_filters.form.facility_name|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ my_filters.form.settings|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ my_filters.form.project_title|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ my_filters.form.objective|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ my_filters.form.start_date|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ my_filters.form.end_date|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ my_filters.form.measurement_frequency|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-4 pt-2">
+                        <button class="btn btn-outline-primary" type="submit">search</button>
+                    </div>
+              </form>
 {#                  <a href="{% url 'untracked_projects' %}" class="btn btn-danger">UNTRACKED QI PROJECTS</a>#}
               <div class="col-md-2 mt-3">
                   {% if qi_list.has_other_pages %}
@@ -90,7 +91,7 @@
                         </ul>
                   {% endif %}
               </div>
-            </form>
+
           </div>
 
           <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
@@ -110,7 +111,7 @@
                           <li>Setting : {{ qi.settings }}</li>
                           <li>Department : {{ qi.departments.department }}</li>
                           <li>Responsible person : {{ qi.responsible_people }}</li>
-                          <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}"></a>{{ qi.measurement_frequency }}</li>
+                          <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
                           <li>Created by : {{ qi.created_by }}</li>
                            {% if qi.comments%}
                                <li>Comment (s) : {{ qi.comments }}</li>
@@ -144,11 +145,22 @@
           </div>
           </div>
           {% for qi in qi_list %}
+              {% if qi.id not in archived_projects %}
               <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
                 <div class="col-md-12">
                 <div class="card h-100">
                   <div class="card-body">
                     <h5 class="card-title"> {{ qi.project_title}}</h5>
+
+{#                        {{ archived_project.qi_project.id }}#}
+
+{#                      <a href="#" class="btn btn-success">ARCHIVED PROJECT</a>#}
+
+
+{#                        {{ archived_project.qi_project.project_title }}#}
+
+{#                    {% endfor %}#}
+
                       <ul>
                           <li>Facility : <a href="{% url 'facility_project' qi.facility_name %}">{{ qi.facility_name }}</a></li>
                           <li>Problem background : {{ qi.problem_background }}</li>
@@ -180,7 +192,7 @@
 
 
 {#                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>#}
-                      <button class="btn btn-info">Last updated on {{ qi.date_updated|date}}</button>
+                      <button class="btn btn-info" > Last updated on {{ qi.date_updated|date}} </button>
                       <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
 
 
@@ -196,6 +208,7 @@
                 </div>
           </div>
               </div>
+                  {% endif %}
                   {% endfor %}
           <div class="mt-3">
           {% if qi_list.has_other_pages %}

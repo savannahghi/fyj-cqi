@@ -29,7 +29,7 @@
       </div>
         <div class="d-flex justify-content-between">
                <h4>Facility name: {{ facility_project.facility }}</h4>
-            <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">Facility projects</a>
+            <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">All projects</a>
             <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
 
             {% if user.is_authenticated %}

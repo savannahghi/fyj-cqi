@@ -16,9 +16,14 @@ class QiprojectFilter(django_filters.FilterSet):
 
     class Meta:
         model = QI_Projects
-        fields = ['project_title','departments', 'problem_background', 'facility_name', 'settings', 'created_by',
-                  'start_date','measurement_frequency']
+        fields = ['county','sub_county','project_title','departments', 'problem_background', 'facility_name', 'settings', 'created_by',
+                  'start_date','measurement_frequency','measurement_status']
         exclude = ['process_analysis']
+
+
+
+
+
 
 
 

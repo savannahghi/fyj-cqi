@@ -5,8 +5,8 @@ from crum import get_current_user, get_current_request
 # from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
-from django.template.defaultfilters import slugify
-from multiselectfield import MultiSelectField
+# from django.template.defaultfilters import slugify
+# from multiselectfield import MultiSelectField
 from phonenumber_field.modelfields import PhoneNumberField
 
 from account.models import NewUser
@@ -718,7 +718,7 @@ class Qi_team_members(models.Model):
     designation = models.CharField(max_length=250)
     email = models.EmailField(null=True, blank=True, unique=True)
     choose_qi_team_member_level = models.CharField(max_length=250, choices=TEAM_MEMBER_LEVEL_CHOICES)
-    facility = models.ForeignKey(Facilities,on_delete=models.CASCADE)
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
     # qi_project = models.ForeignKey(QI_Projects,on_delete=models.CASCADE)
 
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
@@ -736,3 +736,19 @@ class Qi_team_members(models.Model):
         self.first_name = self.first_name.title()
         self.last_name = self.last_name.title()
         super().save(*args, **kwargs)
+
+
+class ArchiveProject(models.Model):
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    archive_project = models.BooleanField(default=False)
+    start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
+    date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+
+    class Meta:
+        verbose_name_plural = "archived projects"
+
+    def __str__(self):
+        return self.qi_project.project_title
+
+    # def save(self, *args, **kwargs):
+    #     super(ArchiveProject, self).save(*args, **kwargs)

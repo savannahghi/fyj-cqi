@@ -187,4 +187,14 @@ class Qi_team_membersForm(ModelForm):
     class Meta:
         model = Qi_team_members
         fields = "__all__"
+
     field_order = ['facility']
+
+
+class ArchiveProjectForm(ModelForm):
+    class Meta:
+        model = ArchiveProject
+        fields = "__all__"
+        exclude=['qi_project']
+
+    field_order = ['qi_project']

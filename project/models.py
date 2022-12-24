@@ -43,6 +43,7 @@ class Facilities(models.Model):
     # facilities = models.CharField(max_length=250, choices=FACILITY_CHOICES, unique=True)
     facilities = models.CharField(max_length=250, unique=True)
     mfl_code = models.IntegerField(unique=True)
+    
 
     class Meta:
         verbose_name_plural = 'facilities'
@@ -59,6 +60,7 @@ class Facilities(models.Model):
 
 class Counties(models.Model):
     county_name = models.CharField(max_length=250, unique=True)
+    
 
     # sub_counties = models.ManyToManyField(Sub_counties)
 
@@ -79,6 +81,7 @@ class Sub_counties(models.Model):
     sub_counties = models.CharField(max_length=250, unique=True)
     counties = models.ManyToManyField(Counties)
     facilities = models.ManyToManyField(Facilities)
+    
 
     class Meta:
         verbose_name_plural = 'sub-counties'
@@ -90,6 +93,7 @@ class Sub_counties(models.Model):
 
 class Department(models.Model):
     department = models.CharField(max_length=250, unique=True)
+    
 
     class Meta:
         ordering = ['department']
@@ -100,6 +104,7 @@ class Department(models.Model):
 
 class Category(models.Model):
     category = models.CharField(max_length=250, unique=True)
+    
 
     class Meta:
         ordering = ['category']
@@ -176,6 +181,7 @@ class QI_Projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    
 
     # Django fix Admin plural
     class Meta:
@@ -273,6 +279,7 @@ class Subcounty_qi_projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    
 
     # Django fix Admin plural
     class Meta:
@@ -370,6 +377,7 @@ class County_qi_projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    
 
     # Django fix Admin plural
     class Meta:
@@ -467,6 +475,7 @@ class Hub_qi_projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    
 
     # Django fix Admin plural
     class Meta:
@@ -564,6 +573,7 @@ class Program_qi_projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    
 
     # Django fix Admin plural
     class Meta:
@@ -600,6 +610,7 @@ class Close_project(models.Model):
     measurement_status_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     limitations = models.TextField()
     conclusion = models.TextField()
+    
 
     # Django fix Admin plural
     class Meta:
@@ -614,6 +625,7 @@ class TestedChange(models.Model):
     numerator = models.IntegerField()
     denominator = models.IntegerField()
     achievements = models.FloatField(null=True, blank=True)
+    
 
     def __str__(self):
         return str(self.project)
@@ -631,6 +643,7 @@ class ProjectComments(models.Model):
     comment = models.TextField()
     comment_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     comment_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    
 
     class Meta:
         verbose_name_plural = "Project comments"
@@ -647,6 +660,7 @@ class ProjectResponses(models.Model):
     response = models.TextField()
     response_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     response_updated_date = models.DateTimeField(auto_now=True, auto_now_add=False)
+    
 
     class Meta:
         verbose_name_plural = "Project responses"
@@ -662,6 +676,7 @@ class Resources(models.Model):
     description = models.TextField(max_length=1000)
     uploaded_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     upload_date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    
 
     def __str__(self):
         return self.resource_name
@@ -690,6 +705,7 @@ class Qi_managers(models.Model):
     email = models.EmailField(null=True, blank=True, unique=True)
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    
 
     class Meta:
         ordering = ['first_name']
@@ -723,6 +739,7 @@ class Qi_team_members(models.Model):
 
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    
 
     class Meta:
         ordering = ['first_name']
@@ -743,6 +760,7 @@ class ArchiveProject(models.Model):
     archive_project = models.BooleanField(default=False)
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    
 
     class Meta:
         verbose_name_plural = "archived projects"

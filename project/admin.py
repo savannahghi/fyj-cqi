@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
+
 from project.models import *
 
 admin.site.register(QI_Projects)
@@ -19,3 +20,13 @@ admin.site.register(Resources)
 admin.site.register(Qi_managers)
 admin.site.register(Qi_team_members)
 admin.site.register(ArchiveProject)
+
+# admin.site.register(QI_Projects, SimpleHistoryAdmin)
+# admin.site.register(TestedChange, SimpleHistoryAdmin)
+# admin.site.register(QI_Projects, SimpleHistoryAdmin)
+# admin.site.register(QI_Projects, SimpleHistoryAdmin)
+# admin.site.register(QI_Projects, SimpleHistoryAdmin)
+# admin.site.register(QI_Projects, SimpleHistoryAdmin)
+# admin.site.register(QI_Projects, SimpleHistoryAdmin)
+# admin.site.register(QI_Projects, SimpleHistoryAdmin)
+

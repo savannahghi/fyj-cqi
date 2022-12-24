@@ -5,8 +5,8 @@ from .models import *
 
 
 class QiprojectFilter(django_filters.FilterSet):
-    start_date = DateFilter(field_name="start_date", lookup_expr="gte",label='From (dd/mm/yyyy)')
-    end_date = DateFilter(field_name="start_date", lookup_expr="lte",label='To (dd/mm/yyyy)')
+    start_date = DateFilter(field_name="start_date", lookup_expr="gte",label='From')
+    end_date = DateFilter(field_name="start_date", lookup_expr="lte",label='To')
     # facility = CharFilter(field_name="facility", lookup_expr="icontains",label='Facility')
     project_title = CharFilter(field_name="project_title", lookup_expr="icontains",label='Project Title')
     objective = CharFilter(field_name="objective", lookup_expr="icontains",label='Objective')

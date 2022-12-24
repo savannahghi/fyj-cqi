@@ -32,26 +32,25 @@
             <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
         </div>
     {% if difference %}
-        {% if difference > 0 and pro_perfomance_trial|length > 0 %}
+{#        {% if difference > 0 and pro_perfomance_trial|length > 0 %}#}
+        {% if pro_perfomance_trial %}
             <div class="container">
                 <div class="d-flex justify-content-evenly mt-3">
                     <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
                         View QI projects not tracked
                     </a>
                 </div>
-                    </p>
+{#                    </p>#}
                     <div class="collapse" id="collapseExampleTwo">
-                    {% for key,values in pro_perfomance_trial.items %}
                         {% for project in projects %}
                             <div>
                                 <ul>
-                                    {% if project.id != key %}
+                                    {% if project.id not in projects_tracked %}
                                         <li><a href="{% url 'single_project' project.id %}">{{ project.project_title }}</a></li>
                                     {% endif %}
                                 </ul>
                             </div>
                         {% endfor %}
-                    {% endfor %}
                     </div>
             </div>
         {% else%}
@@ -61,7 +60,7 @@
                     View QI projects not tracked
                     </a>
                 </div>
-                    </p>
+{#                    </p>#}
                     <div class="collapse" id="collapseExampleTwo">
                         {% for project in projects %}
                             <div>
@@ -69,7 +68,6 @@
                                     <li><a href="{% url 'single_project' project.id %}">{{ project.project_title }}</a></li>
                                 </ul>
                             </div>
-
                         {% endfor %}
                     </div>
             </div>
@@ -92,8 +90,8 @@
                                                     {{ values|safe }}
                                                 </div>
                                               </div>
-                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-primary">Go to the project</a>
-                                            <a href="{% url 'qicreator_filter_project' qi.created_by %}" class="btn btn-secondary">Project created by : {{ qi.created_by }}</a>
+                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-primary">View project</a>
+                                            <a href="{% url 'qicreator_filter_project' qi.created_by %}" class="btn btn-secondary">Created by : {{ qi.created_by }}</a>
 
                                             <a href="{% url 'sub_county_filter_project' qi.sub_county.sub_counties %}" class="btn btn-secondary">Sub-county : {{ qi.sub_county.sub_counties }}</a>
                                           </div>

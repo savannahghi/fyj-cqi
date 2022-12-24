@@ -10,10 +10,29 @@
       <div class="container-fluid py-5">
         <h1 class="display-5 fw-bold">FACILITY NAME</h1>
         <p class="col-md-8 fs-4">COUNTY/SUBCOUNTY</p>
-        <form method="POST" class="mt-5" enctype='multipart/form-data'>
+        <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
         {% csrf_token %}
-        {{ form|crispy}}
-         <input class="btn btn-success mt-1" type="submit" value="Add QI project">
+{#        {{ form|crispy}}#}
+            <div class="col-md-4 mt-4">
+                {{ form.month_year|as_crispy_field }}
+            </div>
+
+            <div class="col-md-4 mt-4">
+                {{ form.numerator|as_crispy_field }}
+            </div>
+            <div class="col-md-4 mt-4">
+                {{ form.denominator|as_crispy_field }}
+            </div>
+            <div class="col-md-6 mt-4">
+                {{ form.tested_change|as_crispy_field }}
+            </div>
+            <div class="col-md-6 mt-4">
+                {{ form.comments|as_crispy_field }}
+            </div>
+            <div class="col-md-4 mt-3">
+                <input class="btn btn-success mt-1" type="submit" value="Add QI project">
+            </div>
+
     </form>
       </div>
     </div>

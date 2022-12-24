@@ -10,6 +10,7 @@ from .models import *
 from django import forms
 
 
+
 class QI_ProjectsForm(ModelForm):
     # def __init__(self, *args, **kwargs):
     # Django Model Forms - Setting a required field (True/False)
@@ -21,11 +22,11 @@ class QI_ProjectsForm(ModelForm):
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone', 'county', 'sub_county',
                    'department'
                    ]
-        widgets = {
-            'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
-                                                attrs={'class': 'form-control', 'placeholder': 'Select Date',
-                                                       'type': 'date', 'max': datetime.now().date}),
-        }
+        # widgets = {
+        #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
+        #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
+        #                                                'type': 'date', 'max': datetime.now().date}),
+        # }
 
     field_order = ['qi_manager']
 
@@ -98,11 +99,11 @@ class TestedChangeForm(ModelForm):
         fields = "__all__"
         exclude = ['achievements', 'project']
 
-        widgets = {
-            'month_year': forms.DateInput(format=('%Y-%m-%d'),
-                                          attrs={'class': 'form-control', 'placeholder': 'Select Date',
-                                                 'type': 'date', 'max': datetime.now().date}),
-        }
+        # widgets = {
+        #     'month_year': forms.DateInput(format=('%Y-%m-%d'),
+        #                                   attrs={'class': 'form-control', 'placeholder': 'Select Date',
+        #                                          'type': 'date', 'max': datetime.now().date}),
+        # }
 
 
 class UpdateTestedChangeForm(ModelForm):

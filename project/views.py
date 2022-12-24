@@ -1,4 +1,5 @@
 import os.path
+from itertools import tee
 
 import pandas as pd
 from django.contrib.auth import get_user_model
@@ -831,6 +832,11 @@ def archived(request):
     return render(request, "project/archived.html", context)
 
 
+def pair_iterable_for_delta_changes(iterable):
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a,b)
+
 @login_required(login_url='login')
 def facilities_landing_page(request):
     facility_proj_performance = None
@@ -873,6 +879,24 @@ def facilities_landing_page(request):
     # Get a list of archived qi projects
     archived_projects = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id', flat=True)
 
+    # # Get the change history for the QI_Projects model
+    # history = QI_Projects.history.all()
+    # changes = []
+    # # Loop through the history and compare the differences between each record and the previous one
+    # for i, record in enumerate(history):
+    #     if i > 0:
+    #         prev_record = history[i - 1]
+    #         delta = record.diff_against(prev_record)
+    #         for change in delta.changes:
+    #             # Add the change data to the changes list
+    #             changes.append({
+    #                 'field': change.field,
+    #                 'old': change.old,
+    #                 'new': change.new,
+    #                 'date': record.history_date,
+    #                 'user': record.history_user,
+    #             })
+    # Pass the changes data to the template as context
     context = {"qi_list": qi_list, "num_post": num_post, "projects": projects,
                "my_filters": my_filters, "qi_lists": qi_lists,
                "facility_proj_performance": facility_proj_performance,
@@ -956,6 +980,7 @@ def department_project(request, pk):
 
 @login_required(login_url='login')
 def department_filter_project(request, pk):
+    projects_tracked=[]
     projects = QI_Projects.objects.filter(departments__department=pk)
     # project_id_values = request.session['project_id_values']
 
@@ -981,10 +1006,22 @@ def department_filter_project(request, pk):
 
     facility_name = pk
 
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    keys = list_of_projects['project_id'].unique()
+    projects_tracked = keys
+
+    # difference
+    number_of_projects_created = projects.count()
+    number_of_projects_with_test_of_change = len(pro_perfomance_trial)
+    difference = number_of_projects_created - number_of_projects_with_test_of_change
+
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
+               "difference": difference,
+               "projects_tracked": projects_tracked,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -994,6 +1031,7 @@ def department_filter_project(request, pk):
 def qi_managers_filter_project(request, pk):
     pro_perfomance_trial = {}
     manager_name = []
+    projects_tracked=[]
 
     projects = QI_Projects.objects.filter(qi_manager__id=pk)
     if projects:
@@ -1028,6 +1066,9 @@ def qi_managers_filter_project(request, pk):
              } for x in testedChange
         ]
         list_of_projects_ = pd.DataFrame(list_of_projects)
+        keys = list_of_projects_['project_id'].unique()
+        projects_tracked = keys
+
         manager_name = list(list_of_projects_['qi_manager'].unique())[0]
 
         pro_perfomance_trial = prepare_viz(list_of_projects, manager_name, "qi_manager")
@@ -1051,7 +1092,8 @@ def qi_managers_filter_project(request, pk):
                "facility_name": manager_name,
                "title": "",
                "pro_perfomance_trial": pro_perfomance_trial,
-               "difference": difference
+               "difference": difference,
+               "projects_tracked": projects_tracked,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1059,6 +1101,7 @@ def qi_managers_filter_project(request, pk):
 
 @login_required(login_url='login')
 def facility_filter_project(request, pk):
+    projects_tracked=[]
     projects = QI_Projects.objects.filter(facility_name__facilities=pk).order_by("-date_updated")
     # project_id_values = request.session['project_id_values']
 
@@ -1102,7 +1145,7 @@ def facility_filter_project(request, pk):
     if list_of_projects.shape[0] != 0:
         dicts = {}
         keys = list_of_projects['project_id'].unique()
-
+        projects_tracked = keys
         values = list_of_projects['project'].unique()
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
@@ -1144,6 +1187,7 @@ def facility_filter_project(request, pk):
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
                "difference": difference,
+               "projects_tracked": projects_tracked,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1152,6 +1196,7 @@ def facility_filter_project(request, pk):
 @login_required(login_url='login')
 def qicreator_filter_project(request, pk):
     pro_perfomance_trial = {}
+    projects_tracked=[]
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     pk = str(pk).lower()
     projects = QI_Projects.objects.filter(created_by__username=pk)
@@ -1198,6 +1243,7 @@ def qicreator_filter_project(request, pk):
         if list_of_projects.shape[0] != 0:
             dicts = {}
             keys = list_of_projects['project_id'].unique()
+            projects_tracked=keys
 
             values = list_of_projects['project'].unique()
             for i in range(len(keys)):
@@ -1231,11 +1277,15 @@ def qicreator_filter_project(request, pk):
     number_of_projects_with_test_of_change = len(pro_perfomance_trial)
     difference = number_of_projects_created - number_of_projects_with_test_of_change
 
+    print(f"KEYS: {keys}")
+    print(f"projects: {projects}")
+
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
-               "difference": difference
+               "difference": difference,
+               "projects_tracked":projects_tracked,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1243,6 +1293,7 @@ def qicreator_filter_project(request, pk):
 
 @login_required(login_url='login')
 def county_filter_project(request, pk):
+    projects_tracked=[]
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     projects = QI_Projects.objects.filter(county__county_name=pk)
     # project_id_values = request.session['project_id_values']
@@ -1287,7 +1338,7 @@ def county_filter_project(request, pk):
     if list_of_projects.shape[0] != 0:
         dicts = {}
         keys = list_of_projects['project_id'].unique()
-
+        projects_tracked = keys
         values = list_of_projects['project'].unique()
         for i in range(len(keys)):
             dicts[keys[i]] = values[i]
@@ -1331,6 +1382,7 @@ def county_filter_project(request, pk):
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
                "difference": difference,
+               "projects_tracked": projects_tracked,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1338,6 +1390,7 @@ def county_filter_project(request, pk):
 
 @login_required(login_url='login')
 def sub_county_filter_project(request, pk):
+    projects_tracked=[]
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     projects = QI_Projects.objects.filter(sub_county__sub_counties=pk)
     # project_id_values = request.session['project_id_values']
@@ -1382,6 +1435,7 @@ def sub_county_filter_project(request, pk):
     if list_of_projects.shape[0] != 0:
         dicts = {}
         keys = list_of_projects['project_id'].unique()
+        projects_tracked = keys
 
         values = list_of_projects['project'].unique()
         for i in range(len(keys)):
@@ -1425,6 +1479,7 @@ def sub_county_filter_project(request, pk):
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
                "difference": difference,
+               "projects_tracked": projects_tracked,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1527,7 +1582,7 @@ def ongoing(request, pk):
     facility_name = pk
     context = {"projects": projects,
                "facility_name": facility_name,
-               "title": "Strated or Ongoing",
+               "title": "Started or Ongoing",
                }
     return render(request, "project/department_projects.html", context)
 
@@ -2159,34 +2214,35 @@ def line_chart(df, x_axis, y_axis, title):
 
 
 def line_chart_no_targets(df, x_axis, y_axis, title):
-    fig = px.line(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=300,
+    fig = px.line(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=500,
                   hover_name=None, hover_data={"tested of change": True,
                                                "achievements (%)": True, }
                   )
-
+    fig.update_traces(textfont_size=14, textfont_family="Arial", textfont_color='brown', textposition='top center')
     fig.update_traces(textposition='top center')
     # fig.add_trace(go.Line(x=df[x_axis], y=df[y_axis], mode='markers'))
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
-    # fig.add_hline(y=90, line_width=1, line_dash="dash", line_color="green")
-    # fig.add_hline(y=50, line_width=1, line_dash="dash", line_color="red")
-    # fig.add_hline(y=75, line_width=1, line_dash="dash", line_color="#bcbd22")
-    # fig.add_annotation(x=0.25, y=75,
-    #                    text="75 %",
-    #                    showarrow=True,
-    #                    arrowhead=1)
-    # fig.add_annotation(x=0.5, y=90,
-    #                    text="90 %",
-    #                    showarrow=True,
-    #                    arrowhead=1)
-    # fig.add_annotation(x=0, y=50,
-    #                    text="50 %",
-    #                    showarrow=True,
-    #                    arrowhead=1)
+    fig.add_hline(y=90, line_width=1, line_dash="dash", line_color="green")
+    fig.add_hline(y=50, line_width=1, line_dash="dash", line_color="red")
+    fig.add_hline(y=75, line_width=1, line_dash="dash", line_color="#bcbd22")
+    fig.add_annotation(x=0.25, y=75,
+                       text="75 %",
+                       showarrow=True,
+                       arrowhead=1)
+    fig.add_annotation(x=0.5, y=90,
+                       text="90 %",
+                       showarrow=True,
+                       arrowhead=1)
+    fig.add_annotation(x=0, y=50,
+                       text="50 %",
+                       showarrow=True,
+                       arrowhead=1)
     fig.update_layout({
         'plot_bgcolor': 'rgba(0, 0, 0, 0)',
         'paper_bgcolor': 'rgba(0, 0, 0, 0)',
     })
+    fig.update_yaxes(rangemode="tozero")
     # fig.update_traces(texttemplate='%{text:.s}')
 
     return fig.to_html()
@@ -2248,7 +2304,7 @@ def prepare_trends(df, title=""):
     return project_performance
 
 
-def prepare_trends_no_targets(df, title=""):
+def prepare_trends_big_size(df, title=""):
     df = df.copy()
     df['achievements'] = df['achievements'].astype(int)
     df = df.sort_values("month_year")
@@ -2343,7 +2399,7 @@ def single_project(request, pk):
         df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
         df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
 
-        project_performance = prepare_trends(df)
+        project_performance = prepare_trends_big_size(df)
 
         facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "All projects")
 
@@ -2405,6 +2461,7 @@ def delete_comment(request, pk):
     }
     return render(request, 'project/delete_test_of_change.html', context)
 
+
 # @login_required(login_url='login')
 # def close_project(request, pk):
 #     # check the page user is from
@@ -2443,3 +2500,21 @@ def delete_comment(request, pk):
 # #             redirect("dashboard")
 #     context = {"form": form}
 #     return render(request, "project/login_page.html", context)
+
+
+# def view_history(request):
+    # # Get the Qi_team_members object you want to track changes for
+    # qi_team_member = Qi_team_members.objects.get(pk=1)
+    #
+    # # Get the change history for the object
+    # history = qi_team_member.history.all()
+    #
+    # # Loop through the history and print the change details
+    # for change in history:
+    #     print('Changed field:', change.field_name)
+    #     print('Old value:', change.old_value)
+    #     print('New value:', change.new_value)
+    #     print('Change reason:', change.history_change_reason)
+    #     print('---')
+    # context = {'history_records': history_records}
+    # return render(request, 'project/facility_landing_page.html', context)

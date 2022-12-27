@@ -1,0 +1,22 @@
+{% extends 'project/index.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-3">
+    <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5">
+          <h4 class="d-flex justify-content-evenly mb-5">CHOOSE THE LEVEL OF THE QI PROJECT YOU WANT TO TRACK</h4>
+          <div class="d-flex justify-content-evenly">
+              <a href="{% url 'add_project_facility' %}" class="btn btn-secondary mt-1">Facility</a>
+              <a href="{% url 'add_project_subcounty' %}" class="btn btn-secondary mt-1">Sub-county</a>
+              <a href="{% url 'add_project_county' %}" class="btn btn-secondary mt-1">County</a>
+              <a href="{% url 'add_project_hub' %}" class="btn btn-secondary mt-1">Hub</a>
+              <a href="{% url 'add_project_program' %}" class="btn btn-secondary mt-1">Program</a>
+          </div>
+            <div class="col-md-3 mt-4 pt-2">
+            <a href="{% url 'add_project' %}" class="btn btn-info" role="button">BACK</a>
+        </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

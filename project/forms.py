@@ -2,13 +2,12 @@ from datetime import datetime
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field
-from django.forms import ModelForm
+from django.forms import ModelForm, CheckboxSelectMultiple
 # from django.contrib.auth.forms import UserCreationForm
 
 # from account.models import Account
 from .models import *
 from django import forms
-
 
 
 class QI_ProjectsForm(ModelForm):
@@ -31,16 +30,31 @@ class QI_ProjectsForm(ModelForm):
     field_order = ['qi_manager']
 
 
+class QI_ProjectsConfirmForm(ModelForm):
+    class Meta:
+        model = QI_Projects
+        fields = "__all__"
+        exclude = ['created_by', 'modified_by', 'remote_addr', 'phone',
+                   'department'
+                   ]
+
+    field_order = ['qi_manager']
+
+
 class QI_ProjectsSubcountyForm(ModelForm):
     class Meta:
         model = Subcounty_qi_projects
         fields = "__all__"
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone', 'county']
-        widgets = {
-            'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
-                                                attrs={'class': 'form-control', 'placeholder': 'Select Date',
-                                                       'type': 'date', 'max': datetime.now().date}),
-        }
+        # widgets = {
+        #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
+        #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
+        #                                                'type': 'date', 'max': datetime.now().date}),
+        # }
+        # widgets = {
+        #     'counties': forms.CheckboxSelectMultiple,
+        #     'facilities': forms.CheckboxSelectMultiple,
+        # }
 
     field_order = ['qi_manager']
 
@@ -163,6 +177,10 @@ class Sub_countiesForm(ModelForm):
     class Meta:
         model = Sub_counties
         fields = "__all__"
+        widgets = {
+            'counties': forms.RadioSelect,
+            'facilities': forms.CheckboxSelectMultiple
+        }
 
 
 class FacilitiesForm(ModelForm):
@@ -196,6 +214,6 @@ class ArchiveProjectForm(ModelForm):
     class Meta:
         model = ArchiveProject
         fields = "__all__"
-        exclude=['qi_project']
+        exclude = ['qi_project']
 
     field_order = ['qi_project']

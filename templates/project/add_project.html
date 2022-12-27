@@ -6,80 +6,60 @@
 {% block content %}
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-3">
     <div class="p-5 mb-4 bg-light rounded-3">
+
       <div class="container-fluid py-5">
 {#        <h1 class="display-5 fw-bold">FACILITY NAME</h1>#}
 {#        <p class="col-md-8 fs-4 ">CHOOSE THE LEVEL OF THE QI PROJECT</p>#}
-          <h1 class="d-flex justify-content-evenly mb-5">CHOOSE THE LEVEL OF THE QI PROJECT YOU WANT TO TRACK</h1>
+          <h3 class="d-flex justify-content-evenly mb-5">CONFIRM IF FIELDS FOR YOUR PROJECT ARE AVAILABLE</h3>
           <div class="d-flex justify-content-evenly">
-              <a href="{% url 'add_project_facility' %}" class="btn btn-secondary mt-1">Facility</a>
-              <a href="{% url 'add_project_subcounty' %}" class="btn btn-secondary mt-1">Sub-county</a>
-              <a href="{% url 'add_project_county' %}" class="btn btn-secondary mt-1">County</a>
-              <a href="{% url 'add_project_hub' %}" class="btn btn-secondary mt-1">Hub</a>
-              <a href="{% url 'add_project_program' %}" class="btn btn-secondary mt-1">Program</a>
           </div>
-
-
-{#          <p>#}
-{#            <div class="d-flex justify-content-evenly">#}
-{#                <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
-{#                Facility Level#}
-{#                </a>#}
-{#              <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample1" role="button" aria-expanded="false" aria-controls="collapseExample1">#}
-{#                    Sub-County Level#}
-{#              </a>#}
-{#              <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample2" role="button" aria-expanded="false" aria-controls="collapseExample2">#}
-{#                    County Level#}
-{#              </a>#}
-{#              <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample3" role="button" aria-expanded="false" aria-controls="collapseExample3">#}
-{#                    Hub Level#}
-{#              </a>#}
-{#              <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample4" role="button" aria-expanded="false" aria-controls="collapseExample4">#}
-{#                    Program Level#}
-{#              </a>#}
-{#            </div>#}
-{#          </p>#}
-{#          <div class="collapse" id="collapseExample">#}
-{#              <form method="POST" class="mt-5" enctype='multipart/form-data'>#}
-{#                {% csrf_token %}#}
-{#                {{ form|crispy}}#}
-{#                <input class="btn btn-success mt-1" type="submit" value="Submit">#}
-{#            </form>#}
-{#          </div>#}
-{#          <div class="collapse" id="collapseExample1">#}
-{#                 <form method="POST" class="mt-5" enctype='multipart/form-data'>#}
-{#                    {% csrf_token %}#}
-{#                    {{ form|crispy}}#}
-{#                    <input class="btn btn-success mt-1" type="submit" value="Submit">#}
-{#                </form>#}
-{#          </div>#}
-{#          <div class="collapse" id="collapseExample2">#}
-{#                 <form method="POST" class="mt-5" enctype='multipart/form-data'>#}
-{#                    {% csrf_token %}#}
-{#                    {{ form|crispy}}#}
-{#                    <input class="btn btn-success mt-1" type="submit" value="Submit">#}
-{#                </form>#}
-{#          </div>#}
-{#          <div class="collapse" id="collapseExample3">#}
-{#                 <form method="POST" class="mt-5" enctype='multipart/form-data'>#}
-{#                    {% csrf_token %}#}
-{#                    {{ form|crispy}}#}
-{#                    <input class="btn btn-success mt-1" type="submit" value="Submit">#}
-{#                </form>#}
-{#          </div>#}
-{#          <div class="collapse" id="collapseExample4">#}
-{#                 <form method="POST" class="mt-5" enctype='multipart/form-data'>#}
-{#                    {% csrf_token %}#}
-{#                    {{ form|crispy}}#}
-{#                    <input class="btn btn-success mt-1" type="submit" value="Submit">#}
-{#                </form>#}
-{#          </div>#}
-
-{#        <form method="POST" class="mt-5" enctype='multipart/form-data'>#}
-{#            {% csrf_token %}#}
+        <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+            {% csrf_token %}
 {#            {{ form|crispy}}#}
-{#            <input class="btn btn-success mt-1" type="submit" value="Submit">#}
-{#        </form>#}
+            <div class="col-md-2 mt-4">
+                {{ form.qi_manager|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-4">
+                {{ form.departments|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-4">
+                {{ form.project_category|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-4">
+                {{ form.facility_name|as_crispy_field }}
+            </div>
+
+            <div class="col-md-2 mt-4">
+                {{ form.sub_county|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-4">
+                {{ county_form.county|as_crispy_field }}
+            </div>
+        </form>
+          <p>If missing, please add below before proceeding</p>
+          <div class="d-flex justify-content-between">
+              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
+              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
+              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT CATEGORY</a>
+              <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
+              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>
+              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>
+          </div>
+          <div class="col-md-3 mt-4 pt-2">
+            <a href="{% url 'choose_project_level' %}" class="btn btn-secondary" role="button">CONTINUE</a>
+        </div>
       </div>
     </div>
+
+{#    <div class="container-fluid py-5">#}
+{#      <h4 class="d-flex justify-content-evenly mb-5">CHOOSE THE LEVEL OF THE QI PROJECT YOU WANT TO TRACK</h4>#}
+{#      <div class="d-flex justify-content-evenly">#}
+{#          <a href="{% url 'add_project_facility' %}" class="btn btn-secondary mt-1">Facility</a>#}
+{#          <a href="{% url 'add_project_subcounty' %}" class="btn btn-secondary mt-1">Sub-county</a>#}
+{#          <a href="{% url 'add_project_county' %}" class="btn btn-secondary mt-1">County</a>#}
+{#          <a href="{% url 'add_project_hub' %}" class="btn btn-secondary mt-1">Hub</a>#}
+{#          <a href="{% url 'add_project_program' %}" class="btn btn-secondary mt-1">Program</a>#}
+{#      </div>#}
+{#    </div>#}
 </main>
 {% endblock %}

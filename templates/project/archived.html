@@ -100,9 +100,9 @@
 {#                                {% endif %}#}
                           </div>
                           <div class="card-footer justify-content-evenly">
-                              {% for project_archived in qi.archiveproject_set.all %}
-                                <small class="text-muted">Archived on {{ project_archived.date_updated }}</small>
-                              {% endfor %}
+{#                              {% for project_archived in qi.archiveproject_set.all %}#}
+{#                                <small class="text-muted">Archived on {{ project_archived.date_updated }}</small>#}
+{#                              {% endfor %}#}
                           {% if user.id == qi.created_by.id %}
 {#                                      <div class="d-flex justify-content-start" >#}
                                           {% for project_archived in qi.archiveproject_set.all %}

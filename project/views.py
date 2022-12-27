@@ -20,7 +20,7 @@ from cqi_fyj import settings
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
-    ArchiveProjectForm
+    ArchiveProjectForm, QI_ProjectsConfirmForm
 from .filters import *
 
 import plotly.express as px
@@ -362,8 +362,9 @@ def add_project(request):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
     if request.method == "POST":
-        form = QI_ProjectsForm(request.POST)
-        if form.is_valid():
+        form = QI_ProjectsConfirmForm(request.POST)
+        county_form = QI_Projects_countyForm(request.POST)
+        if form.is_valid() and county_form.is_valid():
             # form.save()
             # # do not save first, wait to update foreign key
             post = form.save(commit=False)
@@ -386,12 +387,18 @@ def add_project(request):
                     post.county = Counties.objects.get(id=county.counties_id)
             # save
             post.save()
+            county_form.save()
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = QI_ProjectsForm()
-    context = {"form": form}
+        form = QI_ProjectsConfirmForm()
+        county_form = QI_Projects_countyForm()
+    context = {"form": form,"county_form":county_form}
     return render(request, "project/add_project.html", context)
+
+
+def choose_project_level(request):
+    return render(request, "project/choose_project.html")
 
 
 @login_required(login_url='login')
@@ -523,7 +530,7 @@ def add_subcounty(request):
     else:
         form = Sub_countiesForm()
     context = {"form": form, "title": title}
-    return render(request, "project/add_qi_manager.html", context)
+    return render(request, "project/add_subcounty.html", context)
 
 
 @login_required(login_url='login')

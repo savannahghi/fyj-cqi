@@ -50,6 +50,7 @@ urlpatterns = [
     path('add-county/', add_county, name="add_county"),
     path('add-resources/', add_resources, name="add_resources"),
     path('add-project/', add_project, name="add_project"),
+    path('choose-project-level/', choose_project_level, name="choose_project_level"),
     path('add-project/facility', add_project_facility, name="add_project_facility"),
     path('add-project/subcounty', add_project_subcounty, name="add_project_subcounty"),
     path('add-project/county', add_project_county, name="add_project_county"),

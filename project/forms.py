@@ -178,7 +178,8 @@ class Sub_countiesForm(ModelForm):
         model = Sub_counties
         fields = "__all__"
         widgets = {
-            'counties': forms.RadioSelect,
+            'counties': forms.CheckboxSelectMultiple,
+            # 'counties': forms.RadioSelect,
             'facilities': forms.CheckboxSelectMultiple
         }
 

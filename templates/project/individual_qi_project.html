@@ -12,8 +12,11 @@
 
   </div>
     <div class="d-flex justify-content-between">
-       <h4>Facility name: {{ facility_project.facility_name|upper }}</h4>
-        <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">All projects</a>
+    <div class="col-md-6">
+        <h5>Facility name: {{ facility_project.facility_name|upper }}</h5>
+    </div>
+    <div class="col-md-6">
+         <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">All projects</a>
         <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
         {% if user.is_authenticated %}
             {% if user.id == facility_project.created_by.id %}
@@ -40,12 +43,16 @@
                 <a href="{% url 'delete_project' facility_project.id %}" class="btn btn-danger">Delete project</a>
             {% endif %}
         {% endif %}
+
+    </div>
+
+
        </div>
     <div class="row row-cols-1 row-cols-md-12 g-4 mt-2 col-md-12">
       <div class="col">
         <div class="card h-100 bg-light mb-3">
           <div class="card-body">
-            <h5 class="card-title">{{ facility_project.project_title}}</h5>
+{#            <h5 class="card-title">{{ facility_project.project_title}}</h5>#}
               <div class="row">
                   <div class="col-md-3">
                   <p class="card-text"><strong>Created by : </strong>{{ facility_project.created_by|upper }}</p>

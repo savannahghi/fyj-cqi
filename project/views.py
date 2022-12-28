@@ -130,6 +130,7 @@ def dashboard(request):
     dicts = None
     testedChange_current = None
     qi_mans = None
+    project_id_values = []
 
     qi_list = QI_Projects.objects.all()
 
@@ -393,7 +394,7 @@ def add_project(request):
     else:
         form = QI_ProjectsConfirmForm()
         county_form = QI_Projects_countyForm()
-    context = {"form": form,"county_form":county_form}
+    context = {"form": form, "county_form": county_form}
     return render(request, "project/add_project.html", context)
 
 
@@ -531,6 +532,48 @@ def add_subcounty(request):
         form = Sub_countiesForm()
     context = {"form": form, "title": title}
     return render(request, "project/add_subcounty.html", context)
+
+
+def sub_counties_list(request):
+    sub_counties = Sub_counties.objects.all().order_by('counties__county_name')
+    context = {'sub_counties': sub_counties}
+    return render(request, 'project/sub_counties_list.html', context)
+
+def update_fields(request):
+    if request.method == "POST":
+        form = Sub_countiesForm(request.POST)
+        try:
+            if form.is_valid():
+                form.save()
+                return HttpResponseRedirect(request.session['page_from'])
+                # form = Qi_managersForm(prefix='expected')
+        except IntegrityError as e:
+            text = """<h1 class="display-5 fw-bold text-primary" >Sub-county already exist!</h1>"""
+            return HttpResponse(text)
+    else:
+        form = Sub_countiesForm()
+    context = {"form": form, "title": "UPDATE SUBCOUNTY"}
+    return render(request,'project/update_project_fields.html',context)
+
+@login_required(login_url='login')
+def update_sub_counties(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    sub_counties = get_object_or_404(Sub_counties, pk=pk)
+    form = Sub_countiesForm(request.POST or None, instance=sub_counties)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = Sub_countiesForm(instance=sub_counties)
+    context={
+        "title": "Update QI manager details",
+        "form":form
+    }
+
+    return render(request, 'project/update.html', context)
 
 
 @login_required(login_url='login')
@@ -736,6 +779,7 @@ def archived(request):
     facility_proj_performance = None
     departments_viz = None
     status_viz = None
+    pro_perfomance_trial = None
 
     qi_list = QI_Projects.objects.all().order_by('-date_updated')
     num_post = QI_Projects.objects.filter(created_by=request.user).count()
@@ -752,15 +796,19 @@ def archived(request):
     archived_projects_qs = ArchiveProject.objects.filter(archive_project=True)
 
     if archived_projects_qs:
-        list_of_projects = [
-            {
-                'qi_project': x.qi_project.facility_name.facilities,
-                'qi_project_id': x.qi_project.id,
-                'qi_project_title': x.qi_project.project_title,
-            } for x in archived_projects_qs
-        ]
-        # convert data from database to a dataframe
-        list_of_projects_archived = pd.DataFrame(list_of_projects)
+        try:
+            list_of_projects = [
+                {
+                    'qi_project': x.qi_project.facility_name.facilities,
+                    'qi_project_id': x.qi_project.id,
+                    'qi_project_title': x.qi_project.project_title,
+                } for x in archived_projects_qs
+            ]
+            # convert data from database to a dataframe
+            list_of_projects_archived = pd.DataFrame(list_of_projects)
+        except:
+            list_of_projects_archived = pd.DataFrame(columns=['qi_project', 'qi_project_id', 'qi_project_title'])
+
         project_id_values = list(list_of_projects_archived['qi_project_id'].unique())
 
         # try:
@@ -842,7 +890,8 @@ def archived(request):
 def pair_iterable_for_delta_changes(iterable):
     a, b = tee(iterable)
     next(b, None)
-    return zip(a,b)
+    return zip(a, b)
+
 
 @login_required(login_url='login')
 def facilities_landing_page(request):
@@ -987,7 +1036,7 @@ def department_project(request, pk):
 
 @login_required(login_url='login')
 def department_filter_project(request, pk):
-    projects_tracked=[]
+    projects_tracked = []
     projects = QI_Projects.objects.filter(departments__department=pk)
     # project_id_values = request.session['project_id_values']
 
@@ -1038,7 +1087,7 @@ def department_filter_project(request, pk):
 def qi_managers_filter_project(request, pk):
     pro_perfomance_trial = {}
     manager_name = []
-    projects_tracked=[]
+    projects_tracked = []
 
     projects = QI_Projects.objects.filter(qi_manager__id=pk)
     if projects:
@@ -1108,7 +1157,7 @@ def qi_managers_filter_project(request, pk):
 
 @login_required(login_url='login')
 def facility_filter_project(request, pk):
-    projects_tracked=[]
+    projects_tracked = []
     projects = QI_Projects.objects.filter(facility_name__facilities=pk).order_by("-date_updated")
     # project_id_values = request.session['project_id_values']
 
@@ -1203,7 +1252,7 @@ def facility_filter_project(request, pk):
 @login_required(login_url='login')
 def qicreator_filter_project(request, pk):
     pro_perfomance_trial = {}
-    projects_tracked=[]
+    projects_tracked = []
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     pk = str(pk).lower()
     projects = QI_Projects.objects.filter(created_by__username=pk)
@@ -1250,7 +1299,7 @@ def qicreator_filter_project(request, pk):
         if list_of_projects.shape[0] != 0:
             dicts = {}
             keys = list_of_projects['project_id'].unique()
-            projects_tracked=keys
+            projects_tracked = keys
 
             values = list_of_projects['project'].unique()
             for i in range(len(keys)):
@@ -1292,7 +1341,7 @@ def qicreator_filter_project(request, pk):
                "title": "Ongoing",
                "pro_perfomance_trial": pro_perfomance_trial,
                "difference": difference,
-               "projects_tracked":projects_tracked,
+               "projects_tracked": projects_tracked,
 
                }
     return render(request, "project/department_filter_projects.html", context)
@@ -1300,7 +1349,7 @@ def qicreator_filter_project(request, pk):
 
 @login_required(login_url='login')
 def county_filter_project(request, pk):
-    projects_tracked=[]
+    projects_tracked = []
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     projects = QI_Projects.objects.filter(county__county_name=pk)
     # project_id_values = request.session['project_id_values']
@@ -1397,7 +1446,7 @@ def county_filter_project(request, pk):
 
 @login_required(login_url='login')
 def sub_county_filter_project(request, pk):
-    projects_tracked=[]
+    projects_tracked = []
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     projects = QI_Projects.objects.filter(sub_county__sub_counties=pk)
     # project_id_values = request.session['project_id_values']
@@ -1828,24 +1877,27 @@ def qi_team_members(request):
     # qi_managers_list = Qi_managers.objects.all()
     projects = QI_Projects.objects.all()
     #
-    # Get df for QI team members with QI projects
-    list_of_projects = [
-        {
-            # {'project_ids': x.id,
-            'First name': x.created_by.first_name,
-            'Last name': x.created_by.last_name,
-            'Email': x.created_by.email,
-            'Phone Number': x.created_by.phone_number,
-            'User_id': x.created_by.id,
-            'QI project id': x.id,
-            'Date created': x.created_by.date_joined,
-            'Facility': x.facility_name,
-        } for x in projects
-    ]
-    qi_team_members_with_projects = pd.DataFrame(list_of_projects)
-    qi_team_members_with_projects['First name'] = qi_team_members_with_projects['First name'].str.title()
-    qi_team_members_with_projects['Last name'] = qi_team_members_with_projects['Last name'].str.title()
-
+    if projects:
+        # Get df for QI team members with QI projects
+        list_of_projects = [
+            {
+                # {'project_ids': x.id,
+                'First name': x.created_by.first_name,
+                'Last name': x.created_by.last_name,
+                'Email': x.created_by.email,
+                'Phone Number': x.created_by.phone_number,
+                'User_id': x.created_by.id,
+                'QI project id': x.id,
+                'Date created': x.created_by.date_joined,
+                'Facility': x.facility_name,
+            } for x in projects
+        ]
+        qi_team_members_with_projects = pd.DataFrame(list_of_projects)
+        qi_team_members_with_projects['First name'] = qi_team_members_with_projects['First name'].str.title()
+        qi_team_members_with_projects['Last name'] = qi_team_members_with_projects['Last name'].str.title()
+    else:
+        qi_team_members_with_projects = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
+                                                              'User_id', 'QI project id', 'Date created', 'Facility'])
     # # pandas count frequency of column value in another dataframe column
     # qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
     #     qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
@@ -1853,23 +1905,27 @@ def qi_team_members(request):
     #     ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created']).max(
     #     "Projects Supervising").reset_index()
 
-    # Get df for QI managers with projects
-    list_of_projects = [
-        {
-            # {'project_ids': x.id,
-            'First name': x.first_name,
-            'Last name': x.last_name,
-            'Email': x.email,
-            'Phone Number': x.phone_number,
+    if qi_teams:
+        # Get df for QI managers with projects
+        list_of_projects = [
+            {
+                # {'project_ids': x.id,
+                'First name': x.first_name,
+                'Last name': x.last_name,
+                'Email': x.email,
+                'Phone Number': x.phone_number,
 
-            'QI_team_member_id': x.id,
-            'Designation': x.designation,
-            'Date created': x.date_created,
-            'Facility': x.facility.facilities,
-        } for x in qi_teams
-    ]
-    # convert data from database to a dataframe
-    qi_team_members_df = pd.DataFrame(list_of_projects)
+                'QI_team_member_id': x.id,
+                'Designation': x.designation,
+                'Date created': x.date_created,
+                'Facility': x.facility.facilities,
+            } for x in qi_teams
+        ]
+        # convert data from database to a dataframe
+        qi_team_members_df = pd.DataFrame(list_of_projects)
+    else:
+        qi_team_members_df = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
+                                                   'QI_team_member_id', 'Designation', 'Date created', 'Facility'])
 
     merged_df = qi_team_members_with_projects.merge(qi_team_members_df, how='left', on=['Email', 'Phone Number'])
     # merged_df=qi_team_members_with_projects.merge(qi_team_members_df,how='left')
@@ -1904,7 +1960,8 @@ def qi_team_members(request):
     #
     # Join df for all QI managers with and without
 
-    del qi_team_members_with_projects['User_id']
+    if 'User_id' in qi_team_members_with_projects.columns:
+        del qi_team_members_with_projects['User_id']
     # del qi_team_members_without_projects['Date created']
     qi_team_members_ = pd.concat([qi_team_members_with_projects, qi_team_members_without_projects])
     qi_team_members_ = qi_team_members_.sort_values("Facility")
@@ -1933,46 +1990,56 @@ def qi_managers(request):
     qi_managers_list = Qi_managers.objects.all()
     qi_managers_ = QI_Projects.objects.all()
 
-    # Get df for QI managers with projects
-    list_of_projects = [
-        {
-            # {'project_ids': x.id,
-            'First name': x.qi_manager.first_name,
-            'Last name': x.qi_manager.last_name,
-            'Email': x.qi_manager.email,
-            'Phone Number': x.qi_manager.phone_number,
-            'QI_manager_id': x.qi_manager.id,
-            'Designation': x.qi_manager.designation,
-            'Date created': x.qi_manager.date_created,
-        } for x in qi_managers_
-    ]
-    qi_managers_with_projects = pd.DataFrame(list_of_projects)
-    # pandas count frequency of column value in another dataframe column
-    qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
-        qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
-    qi_managers_with_projects = qi_managers_with_projects.groupby(
-        ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created']).max(
-        "Projects Supervising").reset_index()
+    if qi_managers_:
+        # Get df for QI managers with projects
+        list_of_projects = [
+            {
+                # {'project_ids': x.id,
+                'First name': x.qi_manager.first_name,
+                'Last name': x.qi_manager.last_name,
+                'Email': x.qi_manager.email,
+                'Phone Number': x.qi_manager.phone_number,
+                'QI_manager_id': x.qi_manager.id,
+                'Designation': x.qi_manager.designation,
+                'Date created': x.qi_manager.date_created,
+            } for x in qi_managers_
+        ]
+        qi_managers_with_projects = pd.DataFrame(list_of_projects)
+        # pandas count frequency of column value in another dataframe column
+        qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
+            qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
+        qi_managers_with_projects = qi_managers_with_projects.groupby(
+            ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created']).max(
+            "Projects Supervising").reset_index()
+    else:
+        qi_managers_with_projects = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
+                                                          'QI_manager_id', 'Designation', 'Date created',
+                                                          'Projects Supervising'])
 
-    # Get df for QI managers with projects
-    list_of_projects = [
-        {
-            # {'project_ids': x.id,
-            'First name': x.first_name,
-            'Last name': x.last_name,
-            'Email': x.email,
-            'Phone Number': x.phone_number,
+    if qi_managers_list:
+        # Get df for QI managers with projects
+        list_of_projects = [
+            {
+                # {'project_ids': x.id,
+                'First name': x.first_name,
+                'Last name': x.last_name,
+                'Email': x.email,
+                'Phone Number': x.phone_number,
 
-            'QI_manager_id': x.id,
-            'Designation': x.designation,
-            'Date created': x.date_created,
-        } for x in qi_managers_list
-    ]
-    # convert data from database to a dataframe
-    qi_managers_without_projects = pd.DataFrame(list_of_projects)
-    qi_managers_without_projects["Projects Supervising"] = 0
-    qi_managers_without_projects = qi_managers_without_projects[
-        ~qi_managers_without_projects['QI_manager_id'].isin(list(qi_managers_with_projects['QI_manager_id']))]
+                'QI_manager_id': x.id,
+                'Designation': x.designation,
+                'Date created': x.date_created,
+            } for x in qi_managers_list
+        ]
+        # convert data from database to a dataframe
+        qi_managers_without_projects = pd.DataFrame(list_of_projects)
+        qi_managers_without_projects["Projects Supervising"] = 0
+        qi_managers_without_projects = qi_managers_without_projects[
+            ~qi_managers_without_projects['QI_manager_id'].isin(list(qi_managers_with_projects['QI_manager_id']))]
+    else:
+        qi_managers_without_projects = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
+                                                             'QI_manager_id', 'Designation', 'Date created',
+                                                             'Projects Supervising'])
 
     # Join df for all QI managers with and without
     qi_managers = pd.concat([qi_managers_with_projects, qi_managers_without_projects])
@@ -1980,7 +2047,8 @@ def qi_managers(request):
     qi_managers.reset_index(drop=True, inplace=True)
     qi_managers.index += 1
     # del qi_managers['QI_manager id']
-    del qi_managers['index']
+    if 'index' in qi_managers.columns:
+        del qi_managers['index']
 
     context = {
         "qi_managers_list": qi_managers_list,
@@ -2199,20 +2267,57 @@ def line_chart(df, x_axis, y_axis, title):
     fig.add_annotation(x=0.25, y=75,
                        text="75 %",
                        showarrow=True,
-                       arrowhead=1)
+                       arrowhead=1,
+                       font=dict(
+                           size=7
+                       )
+                       )
     fig.add_annotation(x=0.5, y=90,
                        text="90 %",
                        showarrow=True,
-                       arrowhead=1)
+                       arrowhead=1,
+                       font=dict(
+                           size=7
+                       ))
     fig.add_annotation(x=0, y=50,
                        text="50 %",
                        showarrow=True,
-                       arrowhead=1)
+                       arrowhead=1,
+                       font=dict(
+                           size=7
+                       ))
     fig.update_layout({
         'plot_bgcolor': 'rgba(0, 0, 0, 0)',
         'paper_bgcolor': 'rgba(0, 0, 0, 0)',
     })
     fig.update_yaxes(rangemode="tozero")
+    # Set the font size of the x-axis and y-axis labels
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=10
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=10
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            # text="My Line Chart",
+            font=dict(
+                size=12
+            )
+        )
+    )
 
     # fig.update_traces(textfont_size=14,textfont_color='red',textfont_weight='bold')
     # fig.update_traces(texttemplate='%{text:.s}')
@@ -2236,20 +2341,57 @@ def line_chart_no_targets(df, x_axis, y_axis, title):
     fig.add_annotation(x=0.25, y=75,
                        text="75 %",
                        showarrow=True,
-                       arrowhead=1)
+                       arrowhead=1,
+                       font=dict(
+                           size=7
+                       )
+                       )
     fig.add_annotation(x=0.5, y=90,
                        text="90 %",
                        showarrow=True,
-                       arrowhead=1)
+                       arrowhead=1,
+                       font=dict(
+                           size=7
+                       ))
     fig.add_annotation(x=0, y=50,
                        text="50 %",
                        showarrow=True,
-                       arrowhead=1)
+                       arrowhead=1,
+                       font=dict(
+                           size=7
+                       ))
     fig.update_layout({
         'plot_bgcolor': 'rgba(0, 0, 0, 0)',
         'paper_bgcolor': 'rgba(0, 0, 0, 0)',
     })
     fig.update_yaxes(rangemode="tozero")
+    # Set the font size of the x-axis and y-axis labels
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=10
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=10
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            # text="My Line Chart",
+            font=dict(
+                size=12
+            )
+        )
+    )
     # fig.update_traces(texttemplate='%{text:.s}')
 
     return fig.to_html()
@@ -2281,7 +2423,7 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
 def bar_chart(df, x_axis, y_axis, title):
     # df[x_axis]=df[x_axis].str.split(" ").str[0]
 
-    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title,
+    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title,height=300
                  # hover_name=x_axis,  hover_data={
                  #                                        "tested of change":True,
                  #                                        "achievements":True,}
@@ -2296,6 +2438,33 @@ def bar_chart(df, x_axis, y_axis, title):
         'plot_bgcolor': 'rgba(0, 0, 0, 0)',
         'paper_bgcolor': 'rgba(0, 0, 0, 0)',
     })
+    # Set the font size of the x-axis and y-axis labels
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=10
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=10
+            )
+        ),
+        legend = dict(
+            font=dict(
+                size=10
+            )
+        ),
+                 title = dict(
+            # text="My Line Chart",
+            font=dict(
+                size=12
+            )
+        )
+    )
     # fig.update_traces(texttemplate='%{text:.s}')
 
     return fig.to_html()
@@ -2468,7 +2637,6 @@ def delete_comment(request, pk):
     }
     return render(request, 'project/delete_test_of_change.html', context)
 
-
 # @login_required(login_url='login')
 # def close_project(request, pk):
 #     # check the page user is from
@@ -2510,18 +2678,18 @@ def delete_comment(request, pk):
 
 
 # def view_history(request):
-    # # Get the Qi_team_members object you want to track changes for
-    # qi_team_member = Qi_team_members.objects.get(pk=1)
-    #
-    # # Get the change history for the object
-    # history = qi_team_member.history.all()
-    #
-    # # Loop through the history and print the change details
-    # for change in history:
-    #     print('Changed field:', change.field_name)
-    #     print('Old value:', change.old_value)
-    #     print('New value:', change.new_value)
-    #     print('Change reason:', change.history_change_reason)
-    #     print('---')
-    # context = {'history_records': history_records}
-    # return render(request, 'project/facility_landing_page.html', context)
+# # Get the Qi_team_members object you want to track changes for
+# qi_team_member = Qi_team_members.objects.get(pk=1)
+#
+# # Get the change history for the object
+# history = qi_team_member.history.all()
+#
+# # Loop through the history and print the change details
+# for change in history:
+#     print('Changed field:', change.field_name)
+#     print('Old value:', change.old_value)
+#     print('New value:', change.new_value)
+#     print('Change reason:', change.history_change_reason)
+#     print('---')
+# context = {'history_records': history_records}
+# return render(request, 'project/facility_landing_page.html', context)

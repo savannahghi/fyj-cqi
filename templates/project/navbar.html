@@ -76,6 +76,12 @@
               Archived Projects
             </a>
           </li>
+                  <li class="nav-item">
+             <a class="nav-link {% if request.path == audit_trail %} active{% endif %}" href="{% url 'sub_counties_list' %}">
+              <span data-feather="target" class="align-text-bottom"></span>
+              Sub-counties
+            </a>
+          </li>
 {#          <li class="nav-item">#}
 {#             <a class="nav-link {% if request.path == audit_trail %} active{% endif %}" href="{% url 'audit_trail' %}">#}
 {#              <span data-feather="target" class="align-text-bottom"></span>#}

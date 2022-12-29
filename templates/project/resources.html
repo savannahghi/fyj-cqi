@@ -5,7 +5,7 @@
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
 <div class="p-5 mb-4 bg-light rounded-3">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h2 class="h2">Published Resources</h2>
+        <h4>Published Resources</h4>
           <a href="{% url 'add_resources' %}" class="btn btn-success" role="button">ADD RESOURCES</a>
 
 {#        <div class="btn-toolbar mb-2 mb-md-0">#}
@@ -72,7 +72,7 @@
               <div class="col-md-11">
                 <div class="card h-100">
                   <div class="card-body">
-                    <h5 class="card-title">
+                    <h6 class="card-title">
                         <div class="d-flex justify-content-between">
                             <div>
                                 <a href="{{ resource.resource.url }}">
@@ -112,7 +112,7 @@
                                 {% endif %}
                             </div>
                         </div>
-                    </h5>
+                    </h6>
                       {{ resource.description }}
                   </div>
                   <div class="card-footer d-flex justify-content-between">

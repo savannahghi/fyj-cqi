@@ -55,7 +55,7 @@
 {% for comment in all_comments %}
 <div class="card mt-3">
       <div class="card-body">
-        <h5 class="card-title"> {{ forloop.counter }}. {{ comment.qi_project_title.project_title|title }}</h5>
+        <h6 class="card-title"> {{ forloop.counter }}. {{ comment.qi_project_title.project_title|title }}</h6>
           <ul>
               <li><strong>Comment : {{ comment.comment }}</strong></li>
 {#              <li>Date comment made : {{ comment.comment_date }}</li>#}

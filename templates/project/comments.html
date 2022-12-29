@@ -5,7 +5,7 @@
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h2 class="h2">Comments</h2>
+        <h4 >Comments</h2>
 {#        <div class="btn-toolbar mb-2 mb-md-0">#}
 {#          <div class="btn-group me-2">#}
 {#            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>#}
@@ -61,7 +61,7 @@
 {% for comment in all_comments %}
 <div class="card mt-3">
       <div class="card-body">
-        <h5 class="card-title"> {{ forloop.counter }}. <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.qi_project_title.project_title|title }}</a></h5>
+        <h6 class="card-title"> {{ forloop.counter }}. <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.qi_project_title.project_title|title }}</a></h6>
           <ul>
               <li><strong>Comment : <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.comment }}</a></strong></li>
               <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by.username %}">{{ comment.commented_by.username|title }}</a></li>

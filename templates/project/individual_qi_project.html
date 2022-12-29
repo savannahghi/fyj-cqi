@@ -6,7 +6,7 @@
     <main>
 <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">{{ facility_project.project_title}}</h1>
+    <h4>{{ facility_project.project_title}}</h4>
     <hr>
 
 
@@ -89,6 +89,7 @@
     {% if facility_project.process_analysis.url is not null %}
         <h6><strong>ROOT CAUSE ANALYSIS :</strong></h6>
         <div class="bg-image hover-zoom">
+        {{facility_project.process_analysis.url }}
         <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}">
         </div>
     {% endif %}
@@ -309,7 +310,7 @@
             </p>
         {% endif %}
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
-            <h5 class="d-flex justify-content-evenly">QI Thematic areas for {{ facility_project.facility_name|title }}.</h5>
+            <h6 class="d-flex justify-content-evenly">QI Thematic areas for {{ facility_project.facility_name|title }}.</h6>
             <div class="container">
                 <div class="col">
                     <div class="row">

@@ -92,11 +92,11 @@ class QI_Projects_programForm(ModelForm):
         model = Program_qi_projects
         fields = "__all__"
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
-        widgets = {
-            'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
-                                                attrs={'class': 'form-control', 'placeholder': 'Select Date',
-                                                       'type': 'date', 'max': datetime.now().date}),
-        }
+        # widgets = {
+        #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
+        #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
+        #                                                'type': 'date', 'max': datetime.now().date}),
+        # }
 
     field_order = ['qi_manager']
 

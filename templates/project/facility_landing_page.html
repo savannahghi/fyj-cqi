@@ -105,7 +105,7 @@
                    <div class="col-md-12">
                    <div class="card h-100">
                    <div class="card-body">
-                       <h5 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h5>
+                       <h6 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h6>
                        <ul>
                           <li>Facility : <a href="{% url 'facility_project' qi.facility_name %}">{{ qi.facility_name }}</a></li>
                           <li>Problem background : {{ qi.problem_background }}</li>
@@ -156,7 +156,7 @@
                 <div class="col-md-12">
                 <div class="card h-100">
                   <div class="card-body">
-                    <h5 class="card-title"> {{ qi.project_title}}</h5>
+                    <h6 class="card-title"> {{ qi.project_title}}</h6>
 
 {#                        {{ archived_project.qi_project.id }}#}
 

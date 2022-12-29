@@ -9,9 +9,9 @@
     <div class="row mt-5">
         <div class="d-flex justify-content-center">
             {% if facility_name == "Fortnightly" %}
-                <h3 class="text-success">CQI PROJECTS TRACKED EVERY TWO WEEKS</h3>
+                <h4 class="text-success">CQI PROJECTS TRACKED EVERY TWO WEEKS</h4>
                 {% else %}
-            <h3 class="text-success">{{ facility_name|upper }}'S CQI PROJECTS</h3>
+            <h4 class="text-success">{{ facility_name|upper }}'S CQI PROJECTS</h4>
             {% endif %}
         </div>
     </div>
@@ -19,13 +19,13 @@
     <div class="row mt-5">
         <div class="d-flex justify-content-evenly">
             {% if pro_perfomance_trial|length == 0 and pro_perfomance_trial|length == projects.count %}
-                    <h5 >No QI projects so far </h5>
+                    <h6 >No QI projects so far </h6>
             {% elif pro_perfomance_trial|length == 0  or pro_perfomance_trial|length < projects.count %}
-                 <h5 >{{ pro_perfomance_trial|length }} {{ title }} QI projects</h5>
+                 <h6 >{{ pro_perfomance_trial|length }} {{ title }} QI projects</h6>
                 <br>
-                <h5 >{{ difference }} QI Project not tracked </h5>
+                <h6 >{{ difference }} QI Project not tracked </h6>
                 {% else %}
-                <h5 >{{ pro_perfomance_trial|length }} {{ title }} QI projects</h5>
+                <h6 >{{ pro_perfomance_trial|length }} {{ title }} QI projects</h6>
             {% endif %}
             <a href="{% url 'dashboard' %}" class="btn btn-primary">Dashboard</a>
             <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">All projects</a>

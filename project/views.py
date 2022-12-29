@@ -1,21 +1,21 @@
-import os.path
+# import os.path
 from itertools import tee
 
 import pandas as pd
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.core.files.storage import FileSystemStorage
+# from django.core.files.storage import FileSystemStorage
 
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db import IntegrityError
-from django.db.models import Count, Q
-from django.forms import forms
+# from django.db.models import Count, Q
+# from django.forms import forms
 
-from django.http import HttpResponseRedirect, HttpResponse, Http404
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from account.forms import UpdateUserForm
-from cqi_fyj import settings
+# from cqi_fyj import settings
 
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
@@ -539,6 +539,7 @@ def sub_counties_list(request):
     context = {'sub_counties': sub_counties}
     return render(request, 'project/sub_counties_list.html', context)
 
+
 def update_fields(request):
     if request.method == "POST":
         form = Sub_countiesForm(request.POST)
@@ -553,7 +554,8 @@ def update_fields(request):
     else:
         form = Sub_countiesForm()
     context = {"form": form, "title": "UPDATE SUBCOUNTY"}
-    return render(request,'project/update_project_fields.html',context)
+    return render(request, 'project/update_project_fields.html', context)
+
 
 @login_required(login_url='login')
 def update_sub_counties(request, pk):
@@ -568,9 +570,9 @@ def update_sub_counties(request, pk):
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = Sub_countiesForm(instance=sub_counties)
-    context={
+    context = {
         "title": "Update QI manager details",
-        "form":form
+        "form": form
     }
 
     return render(request, 'project/update.html', context)
@@ -780,6 +782,8 @@ def archived(request):
     departments_viz = None
     status_viz = None
     pro_perfomance_trial = None
+    dicts = None
+    dicts = None
 
     qi_list = QI_Projects.objects.all().order_by('-date_updated')
     num_post = QI_Projects.objects.filter(created_by=request.user).count()
@@ -881,7 +885,7 @@ def archived(request):
                "tracked_projects": tracked_projects,
                "archived_projects": archived_projects,
                "pro_perfomance_trial": pro_perfomance_trial,
-               "a": a,
+               # "a": a,
                "dicts": dicts,
                }
     return render(request, "project/archived.html", context)
@@ -1715,6 +1719,9 @@ def toggle_archive_project(request, project_id):
 
 @login_required(login_url='login')
 def tested_change(request, pk):
+    qi_project = QI_Projects.objects.get(id=pk)
+    facility=qi_project.facility_name
+    subcounty=qi_project.sub_county
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     if request.method == "POST":
@@ -1730,7 +1737,8 @@ def tested_change(request, pk):
     else:
         form = TestedChangeForm(instance=request.user)
     context = {
-        "form": form
+        "form": form,
+        "qi_project":qi_project,
     }
     return render(request, 'project/add_tested_change.html', context)
 
@@ -2423,7 +2431,7 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
 def bar_chart(df, x_axis, y_axis, title):
     # df[x_axis]=df[x_axis].str.split(" ").str[0]
 
-    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title,height=300
+    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=300
                  # hover_name=x_axis,  hover_data={
                  #                                        "tested of change":True,
                  #                                        "achievements":True,}
@@ -2453,12 +2461,12 @@ def bar_chart(df, x_axis, y_axis, title):
                 size=10
             )
         ),
-        legend = dict(
+        legend=dict(
             font=dict(
                 size=10
             )
         ),
-                 title = dict(
+        title=dict(
             # text="My Line Chart",
             font=dict(
                 size=12
@@ -2498,6 +2506,8 @@ def single_project(request, pk):
         all_archived = []
 
     facility_project = QI_Projects.objects.get(id=pk)
+    if not facility_project.process_analysis:
+        facility_project.process_analysis = 'media/images/default.png'
     # get other All projects
     other_projects = QI_Projects.objects.filter(facility_name=facility_project.facility_name)
     # Hit db once

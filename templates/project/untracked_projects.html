@@ -5,7 +5,7 @@
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h2 class="h2">Untracked QI projects</h2>
+        <h4 >Untracked QI projects</h4>
       </div>
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
         <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
@@ -15,7 +15,7 @@
                          {% if project.id not in all_responses %}
                               <div class="card mt-3">
                                   <div class="card-body">
-                                        <h5 class="card-title"> <a href="{% url 'single_project' project.id %}">{{ project.project_title|title }}</a></h5>
+                                        <h6 class="card-title"> <a href="{% url 'single_project' project.id %}">{{ project.project_title|title }}</a></h6>
                                           <ul>
                                               <li><strong>Facility :</strong>  <a href="{% url 'facility_project' project.facility_name.facilities %}">{{ project.facility_name.facilities }}</a></li>
                                               <li><strong>CQI Project created by :</strong> <a href="{% url 'qi_creators' project.created_by %}">{{ project.created_by|title }}</a> ({{ project.created_by.phone_number }})</li>

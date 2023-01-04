@@ -5,7 +5,7 @@
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h4 >QI Team Members</h4>
-             <a href="{% url 'add_qi_team_member' %}" class="btn btn-success mt-4">ADD QI TEAM MEMBER</a>
+{#             <a href="{% url 'add_qi_team_member' %}" class="btn btn-success mt-4">ADD QI TEAM MEMBER</a>#}
 {#        <div class="btn-toolbar mb-2 mb-md-0">#}
 {#          <div class="btn-group me-2">#}
 {#            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>#}
@@ -85,15 +85,20 @@
 
                 {% endfor %}
               <td>
-
-                    {% if row.8 > 0 %}
-                        <a href="{% url 'qicreator_filter_project' row.0 %}" class="btn btn-secondary" role="button">View</a>
-                    {% endif %}
-
+                {% if row.8 > 0 %}
+                    <a href="{% url 'qicreator_filter_project' row.0 %}" class="btn btn-secondary" role="button">View</a>
+                {% endif %}
               </td>
               <td>
-                  <a href="{% url 'update_qi_team_member' row.QI_team_member_id %}" class="btn btn-info" role="button">Update</a>
+                  <a href="{% url 'update_qi_team_member' row.QI_team_member_id|add:"0" %}" class="btn btn-info" role="button">Update</a>
               </td>
+              {% if user.is_authenticated %}
+                  {% if user.id == field.created_by.id %}
+                      <td>
+                          <a href="{% url 'delete_qi_team_member' row.QI_team_member_id|add:"0" %}" class="btn btn-danger" role="button">Delete</a>
+                      </td>
+                  {% endif %}
+              {% endif %}
 {#              <td>#}
 {#                  <a href="#" class="btn btn-secondary" role="button">View</a>#}
 {#              </td>#}

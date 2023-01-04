@@ -9,6 +9,7 @@
 {% url "comments" as comments %}
 {% url "resources" as resources %}
 {% url "facilities_landing_page" as facilities_landing_page %}
+{% url "sub_counties_list" as sub_counties_list %}
 
 
 {% block nav %}
@@ -77,7 +78,7 @@
             </a>
           </li>
                   <li class="nav-item">
-             <a class="nav-link {% if request.path == audit_trail %} active{% endif %}" href="{% url 'sub_counties_list' %}">
+             <a class="nav-link {% if request.path == sub_counties_list %} active{% endif %}" href="{% url 'sub_counties_list' %}">
               <span data-feather="target" class="align-text-bottom"></span>
               Sub-counties
             </a>

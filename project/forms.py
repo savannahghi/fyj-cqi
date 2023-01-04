@@ -207,6 +207,14 @@ class Qi_team_membersForm(ModelForm):
     class Meta:
         model = Qi_team_members
         fields = "__all__"
+        exclude = ['facility','qi_project','created_by']
+        widgets = {
+            'impact': forms.Textarea(attrs={'placeholder': 'How the stakeholder is impacted by the project, or how will'
+                                                           ' he/she contribute to its success.'}),
+            'notes': forms.Textarea(attrs={'placeholder': 'Any additional notes or comments about the stakeholder, '
+                                                          'such as any specific expertise or experience he/she brings '
+                                                          'to the project.'}),
+        }
 
     field_order = ['facility']
 
@@ -218,3 +226,12 @@ class ArchiveProjectForm(ModelForm):
         exclude = ['qi_project']
 
     field_order = ['qi_project']
+
+
+class StakeholderForm(ModelForm):
+    class Meta:
+        model = Stakeholder
+        fields = "__all__"
+        exclude = ['facility']
+
+    field_order = ['facility']

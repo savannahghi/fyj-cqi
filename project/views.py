@@ -20,7 +20,7 @@ from account.forms import UpdateUserForm
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
-    ArchiveProjectForm, QI_ProjectsConfirmForm
+    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm
 from .filters import *
 
 import plotly.express as px
@@ -434,7 +434,8 @@ def add_project_facility(request):
             # save
             post.save()
             # redirect back to the page the user was from after saving the form
-            return HttpResponseRedirect(request.session['page_from'])
+            # return HttpResponseRedirect(request.session['page_from'])
+            return redirect("facilities_landing_page")
     else:
         form = QI_ProjectsForm(prefix='banned')
 
@@ -1720,8 +1721,8 @@ def toggle_archive_project(request, project_id):
 @login_required(login_url='login')
 def tested_change(request, pk):
     qi_project = QI_Projects.objects.get(id=pk)
-    facility=qi_project.facility_name
-    subcounty=qi_project.sub_county
+    facility = qi_project.facility_name
+    subcounty = qi_project.sub_county
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     if request.method == "POST":
@@ -1738,7 +1739,7 @@ def tested_change(request, pk):
         form = TestedChangeForm(instance=request.user)
     context = {
         "form": form,
-        "qi_project":qi_project,
+        "qi_project": qi_project,
     }
     return render(request, 'project/add_tested_change.html', context)
 
@@ -1835,7 +1836,10 @@ def deep_dive_chmt(request):
 
 
 @login_required(login_url='login')
-def add_qi_team_member(request):
+def add_qi_team_member(request, pk):
+    print("pk::::::::::::::::::")
+    print(pk)
+    facility_project = QI_Projects.objects.get(id=pk)
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -1843,8 +1847,11 @@ def add_qi_team_member(request):
     if request.method == "POST":
         form = Qi_team_membersForm(request.POST)
         if form.is_valid():
-            form.save()
-
+            post = form.save(commit=False)
+            post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
+            post.qi_project = QI_Projects.objects.get(id=pk)
+            post.created_by = request.user
+            post.save()
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
@@ -1852,7 +1859,23 @@ def add_qi_team_member(request):
     context = {"form": form,
                "title": "add qi team member",
                }
-    return render(request, "project/add_program_project.html", context)
+    return render(request, "project/add_qi_teams.html", context)
+
+
+@login_required(login_url='login')
+def delete_qi_team_member(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = Qi_team_members.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+        "test_of_changes": item
+    }
+    return render(request, 'project/delete_test_of_change.html', context)
 
 
 @login_required(login_url='login')
@@ -1871,7 +1894,7 @@ def update_qi_team_member(request, pk):
         "form": form,
         "title": "update details of a qi team member",
     }
-    return render(request, 'project/add_program_project.html', context)
+    return render(request, 'project/add_qi_teams.html', context)
 
 
 @login_required(login_url='login')
@@ -1898,6 +1921,8 @@ def qi_team_members(request):
                 'QI project id': x.id,
                 'Date created': x.created_by.date_joined,
                 'Facility': x.facility_name,
+                # TODO : INCLUDE CREATED BY COLUMN SO THAT USER ON QI TEAM MEMBER TABLE CAN ONLY DELETE MEMBER
+                #  THEY CREATED
             } for x in projects
         ]
         qi_team_members_with_projects = pd.DataFrame(list_of_projects)
@@ -2515,9 +2540,15 @@ def single_project(request, pk):
     # check comments
     all_comments = ProjectComments.objects.filter(qi_project_title__id=facility_project.id).order_by('-comment_updated')
 
+    # get qi team members for this project
+    qi_teams = Qi_team_members.objects.filter(qi_project__id=pk)
+    print("qi_teams:::::::")
+    print(qi_teams)
+
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
-        if form.is_valid():
+        stakeholderform = StakeholderForm(request.POST)
+        if form.is_valid() and stakeholderform.is_valid():
             post = form.save(commit=False)
             # get project primary key
             post.qi_project_title = QI_Projects.objects.get(project_title=facility_project.project_title)
@@ -2528,6 +2559,7 @@ def single_project(request, pk):
             form = ProjectCommentsForm()
     else:
         form = ProjectCommentsForm()
+        stakeholderform = StakeholderForm()
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
@@ -2592,7 +2624,7 @@ def single_project(request, pk):
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
-                   "all_archived": all_archived, }
+                   "all_archived": all_archived, "stakeholderform": stakeholderform,"qi_teams":qi_teams, }
 
     else:
         project_performance = {}
@@ -2600,7 +2632,7 @@ def single_project(request, pk):
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
-                   "all_archived": all_archived, }
+                   "all_archived": all_archived, "stakeholderform": stakeholderform,"qi_teams":qi_teams, }
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -2614,6 +2646,29 @@ def untracked_projects(request):
         "all_responses": tracked_projects,
     }
     return render(request, "project/untracked_projects.html", context)
+
+
+def add_stake_holders(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    facility_project = QI_Projects.objects.get(id=pk)
+    print("facility_project.facility_name::::::::::")
+    print(facility_project.facility_name)
+    if request.method == "POST":
+        stakeholderform = StakeholderForm(request.POST)
+        if stakeholderform.is_valid():
+            post = stakeholderform.save(commit=False)
+
+            post.facility = Facilities.objects.get(facilities=facility_project.facility_name)
+            post.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        stakeholderform = StakeholderForm()
+    context = {"stakeholderform": stakeholderform,
+
+               }
+    return render(request, 'project/stakeholders.html', context)
 
 
 @login_required(login_url='login')

@@ -731,11 +731,16 @@ class Qi_team_members(models.Model):
     first_name = models.CharField(max_length=250)
     last_name = models.CharField(max_length=250)
     phone_number = PhoneNumberField(null=True, blank=True)
-    designation = models.CharField(max_length=250)
     email = models.EmailField(null=True, blank=True, unique=True)
+    designation = models.CharField(max_length=250)
+    role = models.CharField(max_length=250)
+    department = models.CharField(max_length=250,null=True, blank=True)
     choose_qi_team_member_level = models.CharField(max_length=250, choices=TEAM_MEMBER_LEVEL_CHOICES)
+    impact = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
-    # qi_project = models.ForeignKey(QI_Projects,on_delete=models.CASCADE)
+    qi_project = models.ForeignKey(QI_Projects,on_delete=models.CASCADE)
+    created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
 
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
@@ -752,6 +757,9 @@ class Qi_team_members(models.Model):
         """Ensure manager name is in title case"""
         self.first_name = self.first_name.title()
         self.last_name = self.last_name.title()
+        self.designation = self.designation.upper()
+        self.department = self.department.upper()
+        self.role = self.role.title()
         super().save(*args, **kwargs)
 
 
@@ -770,3 +778,13 @@ class ArchiveProject(models.Model):
 
     # def save(self, *args, **kwargs):
     #     super(ArchiveProject, self).save(*args, **kwargs)
+
+
+class Stakeholder(models.Model):
+    name = models.CharField(max_length=200)
+    role = models.CharField(max_length=200)
+    department = models.CharField(max_length=200)
+    contact_info = models.CharField(max_length=200)
+    impact = models.TextField()
+    notes = models.TextField(blank=True, null=True)
+    facility=models.ForeignKey(Facilities,on_delete=models.CASCADE)

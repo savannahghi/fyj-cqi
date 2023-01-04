@@ -43,6 +43,7 @@ urlpatterns = [
     path('ongoing-projects/<str:pk>', ongoing, name="ongoing"),
     path('measurement-frequency/<str:pk>', measurement_frequency, name="measurement_frequency"),
     path('postponed/<str:pk>', postponed, name="postponed"),
+    path('add-stake-holders/<int:pk>', add_stake_holders, name="add_stake_holders"),
     path('add-qi-manager/', add_qi_manager, name="add_qi_manager"),
     path('add-department/', add_department, name="add_department"),
     path('add-category/', add_category, name="add_category"),
@@ -57,7 +58,7 @@ urlpatterns = [
     path('add-project/county', add_project_county, name="add_project_county"),
     path('add-project/hub', add_project_hub, name="add_project_hub"),
     path('add-project/program', add_project_program, name="add_project_program"),
-    path('add-qi-team-member', add_qi_team_member, name="add_qi_team_member"),
+    path('add-qi-team-member/<int:pk>', add_qi_team_member, name="add_qi_team_member"),
 
     path('facilities-landing-page/', facilities_landing_page, name="facilities_landing_page"),
     path('update-project/<int:pk>/', update_project, name="update_project"),
@@ -74,5 +75,6 @@ urlpatterns = [
     path('delete-commment/<int:pk>/', delete_comment, name="delete_comment"),
     path('delete-response/<int:pk>/', delete_response, name="delete_response"),
     path('delete-resource/<int:pk>/', delete_resource, name="delete_resource"),
+    path('delete-qi-team-member/<int:pk>/', delete_qi_team_member, name="delete_qi_team_member"),
 
 ]

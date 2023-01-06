@@ -413,6 +413,30 @@
         {% endfor %}
     </tbody>
 </table>
+     <!-- Display the pagination links -->
+          <div class="mt-3">
+          {% if qi_teams.has_other_pages %}
+                    <ul class="pagination justify-content-end">
+                   {% if qi_teams.has_previous %}
+                     <li class="page-item"><a class="page-link" href="?page={{ qi_teams.previous_page_number }}">Prev</a></li>
+                   {% else %}
+                     <li class="disabled"><span class="page-link" >Prev</span></li>
+                   {% endif %}
+                   {% for i in qi_teams.paginator.page_range %}
+                     {% if qi_teams.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>
+                     {% else %}
+                        <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a></li>
+                     {% endif %}
+                   {% endfor %}
+                   {% if qi_teams.has_next %}
+                     <li class="page-item"><a class="page-link" href="?page={{ qi_teams.next_page_number }}">Next</a></li>
+                   {% else %}
+                     <li class="disabled page-item"><span class="page-link">Next</span></li>
+                   {% endif %}
+                    </ul>
+                {% endif %}
+          </div>
 {% endif %}
 
 
@@ -485,8 +509,8 @@
                     <br>
                     <br>
                     <span class="badge alert-warning">Start date: {{ action_plan.start_date }}</span>
-                    <br>
-                    <br>
+{#                    <br>#}
+{#                    <br>#}
                     <span class="badge alert-info">Due date: {{ action_plan.due_date }}</span>
 
 
@@ -496,9 +520,7 @@
                     <br>
                     <br>
                     <span class="badge alert-warning">Timeframe: {{ action_plan.timeframe|add:"0" }} days</span>
-                    <br>
-                    <br>
-                    <span class="badge alert-info">Percent completed: {{ action_plan.percent_completed }}%</span>
+
 
                 </td>
                 <td>
@@ -507,11 +529,14 @@
                     {% endfor %}
                     <br>
                     <br>
-                    <span class="badge alert-warning">Last updated on: {{ action_plan.date_updated|date:"D j M Y H:i" }}</span>
-
+                    <span class="badge alert-info">Percent completed: {{ action_plan.percent_completed }}%</span>
                 </td>
                 <td>
                     {{ action_plan.constraints }}
+                    <br>
+                    <br>
+                    <span class="badge alert-warning">Last updated on: {{ action_plan.date_updated|date:"D j M Y H:i" }}</span>
+
                 </td>
 
 {#                <td>#}
@@ -525,6 +550,13 @@
 {#                </td>#}
                 <td>
                     {{ action_plan.indicator }}
+                    <br>
+                    <br>
+                    {% if action_plan.progress >= 0 %}
+                        <span class="badge alert-info">Remaining time: {{ action_plan.progress|add:"0" }} days</span>
+                        {% else %}
+                        <span class="badge alert-danger">Overdue by: {{ action_plan.progress|add:"0" }} days</span>
+                    {% endif %}
                 </td>
 {#                <td>#}
 {#                    {{ action_plan.percent_completed }}%#}
@@ -546,6 +578,30 @@
         {% endfor %}
     </tbody>
 </table>
+    <!-- Display the pagination links -->
+          <div class="mt-3">
+          {% if action_plans.has_other_pages %}
+                    <ul class="pagination justify-content-end">
+                   {% if action_plans.has_previous %}
+                     <li class="page-item"><a class="page-link" href="?page={{ action_plans.previous_page_number }}">Prev</a></li>
+                   {% else %}
+                     <li class="disabled"><span class="page-link" >Prev</span></li>
+                   {% endif %}
+                   {% for i in action_plans.paginator.page_range %}
+                     {% if action_plans.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>
+                     {% else %}
+                        <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a></li>
+                     {% endif %}
+                   {% endfor %}
+                   {% if action_plans.has_next %}
+                     <li class="page-item"><a class="page-link" href="?page={{ action_plans.next_page_number }}">Next</a></li>
+                   {% else %}
+                     <li class="disabled page-item"><span class="page-link">Next</span></li>
+                   {% endif %}
+                    </ul>
+                {% endif %}
+          </div>
 {% endif %}
 
 {% endif %}

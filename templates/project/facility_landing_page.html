@@ -67,8 +67,7 @@
                         <button class="btn btn-outline-primary" type="submit">search</button>
                     </div>
               </form>
-
-{#                  <a href="{% url 'untracked_projects' %}" class="btn btn-danger">UNTRACKED QI PROJECTS</a>#}
+              <!-- Display the pagination links -->
               <div class="col-md-2 mt-3">
                   {% if qi_list.has_other_pages %}
                         <ul class="pagination justify-content-end">
@@ -216,6 +215,7 @@
               </div>
                   {% endif %}
                   {% endfor %}
+          <!-- Display the pagination links -->
           <div class="mt-3">
           {% if qi_list.has_other_pages %}
                     <ul class="pagination justify-content-end">

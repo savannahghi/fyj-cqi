@@ -28,10 +28,10 @@ import plotly.express as px
 
 # Create your views here.
 
-def pagination_(request, item_list):
+def pagination_(request, item_list,item_number=10):
     page = request.GET.get('page', 1)
 
-    paginator = Paginator(item_list, 10)
+    paginator = Paginator(item_list, item_number)
     try:
         items = paginator.page(page)
     except PageNotAnInteger:
@@ -1854,7 +1854,7 @@ def add_qi_team_member(request, pk):
         form = Qi_team_membersForm()
     context = {"form": form,
                "title": "add qi team member",
-               "qi_project":facility_project,
+               "qi_project": facility_project,
                }
     return render(request, "project/add_qi_teams.html", context)
 
@@ -1895,7 +1895,7 @@ def update_qi_team_member(request, pk):
     context = {
         "form": form,
         "title": "update details of a qi team member",
-        "qi_project":qi_project,
+        "qi_project": qi_project,
     }
     return render(request, 'project/add_qi_teams.html', context)
 
@@ -2294,7 +2294,7 @@ def resources(request):
     print("qi_list::::::::::::::::::")
     print(qi_lists)
 
-    context = {"all_resources": all_resources,"my_filters":my_filters,"qi_lists":qi_lists,}
+    context = {"all_resources": all_resources, "my_filters": my_filters, "qi_lists": qi_lists, }
     return render(request, "project/resources.html", context)
 
 
@@ -2556,10 +2556,12 @@ def single_project(request, pk):
 
     # get qi team members for this project
     qi_teams = Qi_team_members.objects.filter(qi_project__id=pk)
+    qi_teams = pagination_(request, qi_teams)
     # get milestones for this project
     milestones = Milestone.objects.filter(qi_project__id=pk)
     # # get action plan for this project
-    action_plan = ActionPlan.objects.filter(qi_project__id=pk)
+    action_plan = ActionPlan.objects.filter(qi_project__id=pk).order_by('-percent_completed', 'progress')
+    action_plans = pagination_(request, action_plan)
 
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
@@ -2641,7 +2643,7 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
-                   "milestones":milestones,"action_plans":action_plan, }
+                   "milestones": milestones, "action_plans": action_plans, }
 
     else:
         project_performance = {}
@@ -2650,7 +2652,7 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
-                   "milestones":milestones,"action_plans":action_plan,}
+                   "milestones": milestones, "action_plans": action_plans, }
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -2799,7 +2801,7 @@ def add_project_milestone(request, pk):
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = MilestoneForm()
-    context = {"form": form, "title": title,"qi_project":qi_project,}
+    context = {"form": form, "title": title, "qi_project": qi_project, }
     return render(request, "project/add_milestones.html", context)
 
 
@@ -2819,10 +2821,9 @@ def update_milestone(request, pk):
     context = {
         "form": form,
         "title": "Update Project Milestone",
-        "qi_project":qi_project,
+        "qi_project": qi_project,
     }
     return render(request, 'project/add_milestones.html', context)
-
 
 
 @login_required(login_url='login')
@@ -2868,7 +2869,7 @@ def add_corrective_action(request, pk):
             post.qi_project = qi_project
             post.created_by = request.user
             #
-            post.progress = (today - post.start_date).days
+            post.progress = (post.due_date - today).days
             post.timeframe = (post.due_date - post.start_date).days
             post.save()
 
@@ -2880,8 +2881,8 @@ def add_corrective_action(request, pk):
         form = ActionPlanForm()
     context = {"form": form,
                "title": "Add Action Plan",
-               "qi_team_members":qi_team_members,
-               "qi_project":qi_project,
+               "qi_team_members": qi_team_members,
+               "qi_project": qi_project,
                }
     return render(request, "project/add_qi_manager.html", context)
 
@@ -2899,9 +2900,9 @@ def update_action_plan(request, pk):
         form = ActionPlanForm(request.POST, instance=action_plan)
         if form.is_valid():
             # responsible = form.cleaned_data['responsible']
-            post=form.save(commit=False)
+            post = form.save(commit=False)
             today = timezone.now().date()
-            post.progress = (today - post.start_date).days
+            post.progress = (post.due_date - today).days
             post.timeframe = (post.due_date - post.start_date).days
             # post.responsible.set(responsible)
             post.save()
@@ -2910,12 +2911,12 @@ def update_action_plan(request, pk):
             form.save_m2m()
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = ActionPlanForm(instance=action_plan,initial={'responsible': action_plan.responsible.all()})
+        form = ActionPlanForm(instance=action_plan, initial={'responsible': action_plan.responsible.all()})
     context = {
         "form": form,
-        "qi_team_members":qi_team_members,
+        "qi_team_members": qi_team_members,
         "title": "Update Action Plan",
-        "qi_project":qi_project,
+        "qi_project": qi_project,
     }
     return render(request, 'project/add_qi_manager.html', context)
 

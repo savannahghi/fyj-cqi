@@ -10,7 +10,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db import IntegrityError
 # from django.db.models import Count, Q
 # from django.forms import forms
-
+from django.utils import timezone
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -20,7 +20,7 @@ from account.forms import UpdateUserForm
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
-    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm
+    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm
 from .filters import *
 
 import plotly.express as px
@@ -1845,7 +1845,7 @@ def add_qi_team_member(request, pk):
         if form.is_valid():
             post = form.save(commit=False)
             post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
-            post.qi_project = QI_Projects.objects.get(id=pk)
+            post.qi_project = facility_project
             post.created_by = request.user
             post.save()
             # redirect back to the page the user was from after saving the form
@@ -1854,6 +1854,7 @@ def add_qi_team_member(request, pk):
         form = Qi_team_membersForm()
     context = {"form": form,
                "title": "add qi team member",
+               "qi_project":facility_project,
                }
     return render(request, "project/add_qi_teams.html", context)
 
@@ -1876,11 +1877,16 @@ def delete_qi_team_member(request, pk):
 
 @login_required(login_url='login')
 def update_qi_team_member(request, pk):
+    print("pk::::::::::::::::::::")
+    print(pk)
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Qi_team_members.objects.get(id=pk)
+    print("item::::::::::::::::::::")
+    print(item.qi_project_id)
+    qi_project = QI_Projects.objects.get(id=item.qi_project_id)
     if request.method == "POST":
-        form = Qi_team_membersForm(request.POST, instance=item)
+        form = Qi_team_membersForm(request.POST, instance=item.id)
         if form.is_valid():
             form.save()
             return HttpResponseRedirect(request.session['page_from'])
@@ -1889,6 +1895,7 @@ def update_qi_team_member(request, pk):
     context = {
         "form": form,
         "title": "update details of a qi team member",
+        "qi_project":qi_project,
     }
     return render(request, 'project/add_qi_teams.html', context)
 
@@ -2549,9 +2556,10 @@ def single_project(request, pk):
 
     # get qi team members for this project
     qi_teams = Qi_team_members.objects.filter(qi_project__id=pk)
+    # get milestones for this project
     milestones = Milestone.objects.filter(qi_project__id=pk)
-    print("milestones:::::::")
-    print(milestones)
+    # # get action plan for this project
+    action_plan = ActionPlan.objects.filter(qi_project__id=pk)
 
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
@@ -2633,7 +2641,7 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
-                   "milestones":milestones, }
+                   "milestones":milestones,"action_plans":action_plan, }
 
     else:
         project_performance = {}
@@ -2642,7 +2650,7 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
-                   "milestones":milestones,}
+                   "milestones":milestones,"action_plans":action_plan,}
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -2777,6 +2785,7 @@ def add_project_milestone(request, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     facility_project = QI_Projects.objects.get(id=pk)
+    qi_project = QI_Projects.objects.get(id=pk)
 
     if request.method == "POST":
         form = MilestoneForm(request.POST)
@@ -2784,13 +2793,13 @@ def add_project_milestone(request, pk):
         if form.is_valid():
             post = form.save(commit=False)
             post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
-            post.qi_project = QI_Projects.objects.get(id=pk)
+            post.qi_project = qi_project
             post.created_by = request.user
             post.save()
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = MilestoneForm()
-    context = {"form": form, "title": title}
+    context = {"form": form, "title": title,"qi_project":qi_project,}
     return render(request, "project/add_milestones.html", context)
 
 
@@ -2799,6 +2808,7 @@ def update_milestone(request, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Milestone.objects.get(id=pk)
+    qi_project = QI_Projects.objects.get(id=pk)
     if request.method == "POST":
         form = MilestoneForm(request.POST, instance=item)
         if form.is_valid():
@@ -2809,6 +2819,7 @@ def update_milestone(request, pk):
     context = {
         "form": form,
         "title": "Update Project Milestone",
+        "qi_project":qi_project,
     }
     return render(request, 'project/add_milestones.html', context)
 
@@ -2820,6 +2831,101 @@ def delete_milestone(request, pk):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
     item = Milestone.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+        "test_of_changes": item
+    }
+    return render(request, 'project/delete_test_of_change.html', context)
+
+
+@login_required(login_url='login')
+def add_corrective_action(request, pk):
+    # facility_project = QI_Projects.objects.get(id=pk)
+    facility_project = get_object_or_404(QI_Projects, id=pk)
+    qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
+    qi_project = QI_Projects.objects.get(id=pk)
+
+    today = timezone.now().date()
+    # print("qi_project::::::::::::::::::::::")
+    # print(qi_project.fac)
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        print("request.POST:::::::::::::::::::::::")
+        print(request.POST)
+        form = ActionPlanForm(request.POST)
+        if form.is_valid():
+            print("form.cleaned_data:::::::::::::::::::")
+            print(form.cleaned_data)
+            # form.save()
+            post = form.save(commit=False)
+            post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
+            post.qi_project = qi_project
+            post.created_by = request.user
+            #
+            post.progress = (today - post.start_date).days
+            post.timeframe = (post.due_date - post.start_date).days
+            post.save()
+
+            # Save many-to-many relationships
+            form.save_m2m()
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = ActionPlanForm()
+    context = {"form": form,
+               "title": "Add Action Plan",
+               "qi_team_members":qi_team_members,
+               "qi_project":qi_project,
+               }
+    return render(request, "project/add_qi_manager.html", context)
+
+
+@login_required(login_url='login')
+def update_action_plan(request, pk):
+    # facility_project = get_object_or_404(QI_Projects, id=pk)
+    # qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    action_plan = ActionPlan.objects.get(id=pk)
+    qi_project = QI_Projects.objects.get(id=action_plan.qi_project_id)
+    qi_team_members = Qi_team_members.objects.filter(qi_project=action_plan.qi_project)
+    if request.method == "POST":
+        form = ActionPlanForm(request.POST, instance=action_plan)
+        if form.is_valid():
+            # responsible = form.cleaned_data['responsible']
+            post=form.save(commit=False)
+            today = timezone.now().date()
+            post.progress = (today - post.start_date).days
+            post.timeframe = (post.due_date - post.start_date).days
+            # post.responsible.set(responsible)
+            post.save()
+
+            # Save many-to-many relationships
+            form.save_m2m()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = ActionPlanForm(instance=action_plan,initial={'responsible': action_plan.responsible.all()})
+    context = {
+        "form": form,
+        "qi_team_members":qi_team_members,
+        "title": "Update Action Plan",
+        "qi_project":qi_project,
+    }
+    return render(request, 'project/add_qi_manager.html', context)
+
+
+@login_required(login_url='login')
+def delete_action_plan(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = ActionPlan.objects.get(id=pk)
     if request.method == "POST":
         item.delete()
 

@@ -222,18 +222,18 @@ class Qi_team_membersForm(ModelForm):
     class Meta:
         model = Qi_team_members
         fields = "__all__"
-        exclude = ['facility','qi_project','created_by']
+        exclude = ['facility', 'qi_project', 'created_by']
         widgets = {
             'impact': forms.Textarea(attrs={'placeholder': 'How the stakeholder is impacted by the project, or how will'
                                                            ' he/she contribute to its success.',
-                                            'style': 'font-size: 14px;',}),
+                                            'style': 'font-size: 14px;', }),
             'notes': forms.Textarea(attrs={'placeholder': 'Any additional notes or comments about the stakeholder, '
                                                           'such as any specific expertise or experience he/she brings '
                                                           'to the project.',
-                                           'style': 'font-size: 14px;',}),
+                                           'style': 'font-size: 14px;', }),
             'responsibility': forms.Textarea(attrs={
                 'placeholder': 'Any specific tasks or responsibilities that stakeholder will be responsible for',
-            'style': 'font-size: 14px;',}),
+                'style': 'font-size: 14px;', }),
         }
 
     field_order = ['facility']
@@ -259,21 +259,40 @@ class StakeholderForm(ModelForm):
 
 class MilestoneForm(ModelForm):
     class Meta:
-        model= Milestone
-        fields= "__all__"
-        exclude= ['facility','qi_project','created_by']
-        widgets={
-            'name': forms.TextInput(attrs={'placeholder':'Major tasks or phases of the project'}),
+        model = Milestone
+        fields = "__all__"
+        exclude = ['facility', 'qi_project', 'created_by']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'Major tasks or phases of the project'}),
 
             'description': forms.Textarea(attrs={
-            'placeholder':'A more detailed explanation of the tasks or activities that are included in the milestone',
-            'style': 'font-size: 14px;',}),
+                'placeholder': 'A more detailed explanation of the tasks or activities that are included in the milestone',
+                'style': 'font-size: 14px;', }),
 
             'notes': forms.Textarea(attrs={
-            'placeholder':'The purpose of the notes field is to provide a place to include any additional context or '
-                          'details that might be relevant to the milestone but that do not fit in the other fields of '
-                          'the model. For example, you might use the notes field to include details about any '
-                          'dependencies or risks associated with the milestone or to provide instructions or guidance '
-                          'for completing the tasks in the milestone.',
-            'style': 'font-size: 14px;',}),
+                'placeholder': 'The purpose of the notes field is to provide a place to include any additional context or '
+                               'details that might be relevant to the milestone but that do not fit in the other fields of '
+                               'the model. For example, you might use the notes field to include details about any '
+                               'dependencies or risks associated with the milestone or to provide instructions or guidance '
+                               'for completing the tasks in the milestone.',
+                'style': 'font-size: 14px;', }),
         }
+
+
+class ActionPlanForm(ModelForm):
+    class Meta:
+        model = ActionPlan
+        fields = "__all__"
+        exclude= ['facility','qi_project','created_by','progress','timeframe']
+        widgets = {
+            'responsible': forms.CheckboxSelectMultiple
+        }
+
+    # def save(self, commit=True):
+    #     instance = super().save(commit=False)
+    #     # Save the instance
+    #     if commit:
+    #         instance.save()
+    #     # Save many-to-many relationships
+    #     self.save_m2m()
+    #     return instance

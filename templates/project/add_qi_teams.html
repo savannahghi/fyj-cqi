@@ -9,6 +9,25 @@
       <div class="container-fluid py-5">
       {% if "qi team" in title %}
           <h1 class="display-6 fw-bold text-primary">{{ title|upper}} </h1>
+          <h4 class="display-6">FACILITY: {{ qi_project.facility_name}}</h4>
+          <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
+{#          {% endfor %}#}
+          <div class="row mb-4">
+{#              <div class="col d-flex justify-content-between">#}
+                <div class="col-md-6">
+                       <strong>OBJECTIVE: </strong>{{ qi_project.objective }}
+                  </div>
+                  <div class="col-md-6">
+                       <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}
+                  </div>
+                  <div class="col-md-6">
+                       <strong>NUMERATOR: </strong> {{ qi_project.numerator }}
+                  </div>
+                  <div class="col-md-6">
+                       <strong>DENOMINATOR: </strong>{{ qi_project.denominator }}
+                  </div>
+{#              </div>#}
+          </div>
       {% else %}
         <h1 class="display-6 fw-bold text-primary">CREATE PROGRAM QI </h1>
       {% endif %}
@@ -17,8 +36,12 @@
         {% csrf_token %}
 {#            {{ form|crispy}}#}
         {% for field in form %}
-            {% if "impact" in field.html_name|lower  or "notes" in field.html_name|lower or "respons" in field.html_name|lower %}
+            {% if "respons" in field.html_name|lower %}
                 <div class="col-md-4 mt-4">
+                {{ field|as_crispy_field }}
+            </div>
+            {% elif "impact" in field.html_name|lower  or "notes" in field.html_name|lower %}
+                <div class="col-md-6 mt-4">
                 {{ field|as_crispy_field }}
             </div>
                 {% else %}

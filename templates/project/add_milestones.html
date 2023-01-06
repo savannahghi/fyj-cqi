@@ -8,6 +8,25 @@
     <div class="p-5 mb-4 bg-light rounded-3">
       <div class="container-fluid py-5">
         <h1 class="display-6 fw-bold text-primary">{{ title }} </h1>
+      <h4 class="display-6">FACILITY: {{ qi_project.facility_name}}</h4>
+          <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
+{#          {% endfor %}#}
+          <div class="row">
+{#              <div class="col d-flex justify-content-between">#}
+                <div class="col-md-6">
+                       <strong>OBJECTIVE: </strong>{{ qi_project.objective }}
+                  </div>
+                  <div class="col-md-6">
+                       <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}
+                  </div>
+                  <div class="col-md-6">
+                       <strong>NUMERATOR: </strong> {{ qi_project.numerator }}
+                  </div>
+                  <div class="col-md-6">
+                       <strong>DENOMINATOR: </strong>{{ qi_project.denominator }}
+                  </div>
+{#              </div>#}
+          </div>
         <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
             {% csrf_token %}
 {#            {{ form|crispy}}#}

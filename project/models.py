@@ -7,6 +7,7 @@ from crum import get_current_user, get_current_request
 # Create your models here.
 # from django.template.defaultfilters import slugify
 # from multiselectfield import MultiSelectField
+from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
 
 from account.models import NewUser
@@ -730,7 +731,7 @@ class Qi_team_members(models.Model):
 
     department = models.CharField(max_length=250, null=True, blank=True)
     choose_qi_team_member_level = models.CharField(max_length=250, choices=TEAM_MEMBER_LEVEL_CHOICES)
-    responsibility = models.CharField(max_length=1000, blank=True, null=True)
+    # responsibility = models.CharField(max_length=1000, blank=True, null=True)
     impact = models.TextField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
@@ -793,3 +794,27 @@ class Milestone(models.Model):
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
+
+
+class ActionPlan(models.Model):
+    corrective_action = models.TextField()
+    resources_required = models.TextField()
+    responsible = models.ManyToManyField(Qi_team_members)
+    constraints = models.TextField(blank=True, null=True)
+    indicator = models.CharField(max_length=250)
+    percent_completed = models.IntegerField()
+    start_date = models.DateField()
+    due_date = models.DateField()
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
+    date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
+    date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+    progress = models.FloatField(null=True, blank=True)
+    timeframe = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "Action plans"
+
+    def __str__(self):
+        return self.corrective_action + "-" + str(self.responsible)

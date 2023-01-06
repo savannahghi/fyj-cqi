@@ -12,39 +12,27 @@
       {% else %}
         <h1 class="display-6 fw-bold text-primary">CREATE PROGRAM QI </h1>
       {% endif %}
-          <div class="d-flex justify-content-between">
-{#              {% if "qi team" in title %}#}
-{#                  <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>#}
-{#              {% else %}#}
-{#                  <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>#}
-{#                  <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>#}
-{#                  <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT CATEGORY</a>#}
-{#                  <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>#}
-{#                  <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
-{#              {% endif %}#}
-          </div>
 
-
-        <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data'>
-            {% csrf_token %}
+    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data'>
+        {% csrf_token %}
 {#            {{ form|crispy}}#}
-            {% for field in form %}
-                {% if "impact" in field.html_name|lower  or "notes" in field.html_name|lower %}
-                    <div class="col-md-6 mt-4">
-                    {{ field|as_crispy_field }}
-                </div>
-                    {% else %}
-                    <div class="col-md-3 mt-4">
-                    {{ field|as_crispy_field }}
-                </div>
-                
-                {% endif %} 
+        {% for field in form %}
+            {% if "impact" in field.html_name|lower  or "notes" in field.html_name|lower or "respons" in field.html_name|lower %}
+                <div class="col-md-4 mt-4">
+                {{ field|as_crispy_field }}
+            </div>
+                {% else %}
+                <div class="col-md-3 mt-4">
+                {{ field|as_crispy_field }}
+            </div>
 
-            {% endfor %}
-            <div class="col-md-3 mt-4">
-            <input class="btn btn-success mt-1" type="submit" value="Submit">
-                </div>
-        </form>
+            {% endif %}
+
+        {% endfor %}
+        <div class="col-md-3 mt-4">
+        <input class="btn btn-success mt-1" type="submit" value="Submit">
+            </div>
+    </form>
       </div>
     </div>
 </main>

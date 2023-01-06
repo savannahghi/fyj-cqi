@@ -59,6 +59,7 @@ urlpatterns = [
     path('add-project/hub', add_project_hub, name="add_project_hub"),
     path('add-project/program', add_project_program, name="add_project_program"),
     path('add-qi-team-member/<int:pk>', add_qi_team_member, name="add_qi_team_member"),
+    path('add-project-milestone/<int:pk>', add_project_milestone, name="add_project_milestone"),
 
     path('facilities-landing-page/', facilities_landing_page, name="facilities_landing_page"),
     path('update-project/<int:pk>/', update_project, name="update_project"),
@@ -67,6 +68,7 @@ urlpatterns = [
     path('update-resource/<int:pk>/', update_resource, name="update_resource"),
     path('update-qi-managers/<int:pk>/', update_qi_managers, name="update_qi_managers"),
     path('update-qi-team-member/<int:pk>/', update_qi_team_member, name="update_qi_team_member"),
+    path('update-milestone/<int:pk>/', update_milestone, name="update_milestone"),
     path('update-sub-counties/<int:pk>/', update_sub_counties, name="update_sub_counties"),
     path('update-fields', update_fields, name="update_fields"),
 
@@ -76,5 +78,6 @@ urlpatterns = [
     path('delete-response/<int:pk>/', delete_response, name="delete_response"),
     path('delete-resource/<int:pk>/', delete_resource, name="delete_resource"),
     path('delete-qi-team-member/<int:pk>/', delete_qi_team_member, name="delete_qi_team_member"),
+    path('delete-milestone/<int:pk>/', delete_milestone, name="delete_milestone"),
 
 ]

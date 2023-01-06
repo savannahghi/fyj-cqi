@@ -20,7 +20,7 @@ from account.forms import UpdateUserForm
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
-    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm
+    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm
 from .filters import *
 
 import plotly.express as px
@@ -1338,9 +1338,6 @@ def qicreator_filter_project(request, pk):
     number_of_projects_with_test_of_change = len(pro_perfomance_trial)
     difference = number_of_projects_created - number_of_projects_with_test_of_change
 
-    print(f"KEYS: {keys}")
-    print(f"projects: {projects}")
-
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Ongoing",
@@ -1760,7 +1757,8 @@ def update_test_of_change(request, pk):
         "form": form,
         "title": "Update test of change",
     }
-    return render(request, 'project/update_test_of_change.html', context)
+    # return render(request, 'project/update_test_of_change.html', context)
+    return render(request, 'project/add_qi_manager.html', context)
 
 
 @login_required(login_url='login')
@@ -1837,8 +1835,6 @@ def deep_dive_chmt(request):
 
 @login_required(login_url='login')
 def add_qi_team_member(request, pk):
-    print("pk::::::::::::::::::")
-    print(pk)
     facility_project = QI_Projects.objects.get(id=pk)
     # check the page user is from
     if request.method == "GET":
@@ -1921,6 +1917,7 @@ def qi_team_members(request):
                 'QI project id': x.id,
                 'Date created': x.created_by.date_joined,
                 'Facility': x.facility_name,
+                'created_by': x.created_by_id,
                 # TODO : INCLUDE CREATED BY COLUMN SO THAT USER ON QI TEAM MEMBER TABLE CAN ONLY DELETE MEMBER
                 #  THEY CREATED
             } for x in projects
@@ -1930,7 +1927,8 @@ def qi_team_members(request):
         qi_team_members_with_projects['Last name'] = qi_team_members_with_projects['Last name'].str.title()
     else:
         qi_team_members_with_projects = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
-                                                              'User_id', 'QI project id', 'Date created', 'Facility'])
+                                                              'User_id', 'QI project id', 'Date created', 'Facility',
+                                                              'created_by'])
     # # pandas count frequency of column value in another dataframe column
     # qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
     #     qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
@@ -1952,22 +1950,24 @@ def qi_team_members(request):
                 'Designation': x.designation,
                 'Date created': x.date_created,
                 'Facility': x.facility.facilities,
+                "created_by": x.created_by
             } for x in qi_teams
         ]
         # convert data from database to a dataframe
         qi_team_members_df = pd.DataFrame(list_of_projects)
     else:
         qi_team_members_df = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
-                                                   'QI_team_member_id', 'Designation', 'Date created', 'Facility'])
+                                                   'QI_team_member_id', 'Designation', 'Date created', 'Facility',
+                                                   'created_by'])
 
     merged_df = qi_team_members_with_projects.merge(qi_team_members_df, how='left', on=['Email', 'Phone Number'])
     # merged_df=qi_team_members_with_projects.merge(qi_team_members_df,how='left')
     merged_df = merged_df[['First name_x', 'Last name_x', 'Email', 'Phone Number', 'User_id',
                            'QI_team_member_id',
-                           'Designation', 'Date created_x', 'Facility_x']]
+                           'Designation', 'Date created_x', 'Facility_x', 'created_by_x']]
     merged_df = merged_df.rename(
         columns={"First name_x": "First name", "Last name_x": "Last name", "Facility_x": "Facility",
-                 "Date created_x": "Date created"})
+                 "Date created_x": "Date created", 'created_by_x': "created_by"})
 
     # # pandas count frequency of column value in another dataframe column
     merged_df["Projects created"] = merged_df["User_id"].map(
@@ -1976,8 +1976,8 @@ def qi_team_members(request):
     #
     merged_df['Facility'] = merged_df['Facility'].astype(str)
     qi_team_members_with_projects = merged_df.groupby(
-        ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created', "Facility"]).max(
-        "Projects created").reset_index()
+        ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created', "Facility",
+         'created_by']).max("Projects created").reset_index()
 
     # without projects
     qi_team_members_without_projects = qi_team_members_df.copy()
@@ -2280,7 +2280,14 @@ def update_response(request, pk):
 @login_required(login_url='login')
 def resources(request):
     all_resources = Resources.objects.all()
-    context = {"all_resources": all_resources}
+
+    my_filters = ResourcesFilter(request.GET, queryset=all_resources)
+    qi_lists = my_filters.qs
+    qi_list = pagination_(request, qi_lists)
+    print("qi_list::::::::::::::::::")
+    print(qi_lists)
+
+    context = {"all_resources": all_resources,"my_filters":my_filters,"qi_lists":qi_lists,}
     return render(request, "project/resources.html", context)
 
 
@@ -2542,8 +2549,9 @@ def single_project(request, pk):
 
     # get qi team members for this project
     qi_teams = Qi_team_members.objects.filter(qi_project__id=pk)
-    print("qi_teams:::::::")
-    print(qi_teams)
+    milestones = Milestone.objects.filter(qi_project__id=pk)
+    print("milestones:::::::")
+    print(milestones)
 
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
@@ -2624,7 +2632,8 @@ def single_project(request, pk):
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
-                   "all_archived": all_archived, "stakeholderform": stakeholderform,"qi_teams":qi_teams, }
+                   "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
+                   "milestones":milestones, }
 
     else:
         project_performance = {}
@@ -2632,7 +2641,8 @@ def single_project(request, pk):
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
-                   "all_archived": all_archived, "stakeholderform": stakeholderform,"qi_teams":qi_teams, }
+                   "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
+                   "milestones":milestones,}
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -2702,6 +2712,7 @@ def delete_comment(request, pk):
     }
     return render(request, 'project/delete_test_of_change.html', context)
 
+
 # @login_required(login_url='login')
 # def close_project(request, pk):
 #     # check the page user is from
@@ -2758,3 +2769,62 @@ def delete_comment(request, pk):
 #     print('---')
 # context = {'history_records': history_records}
 # return render(request, 'project/facility_landing_page.html', context)
+
+@login_required(login_url='login')
+def add_project_milestone(request, pk):
+    title = "ADD PROJECT MILESTONE"
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    facility_project = QI_Projects.objects.get(id=pk)
+
+    if request.method == "POST":
+        form = MilestoneForm(request.POST)
+        # try:
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
+            post.qi_project = QI_Projects.objects.get(id=pk)
+            post.created_by = request.user
+            post.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = MilestoneForm()
+    context = {"form": form, "title": title}
+    return render(request, "project/add_milestones.html", context)
+
+
+@login_required(login_url='login')
+def update_milestone(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = Milestone.objects.get(id=pk)
+    if request.method == "POST":
+        form = MilestoneForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = MilestoneForm(instance=item)
+    context = {
+        "form": form,
+        "title": "Update Project Milestone",
+    }
+    return render(request, 'project/add_milestones.html', context)
+
+
+
+@login_required(login_url='login')
+def delete_milestone(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = Milestone.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+        "test_of_changes": item
+    }
+    return render(request, 'project/delete_test_of_change.html', context)

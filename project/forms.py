@@ -112,6 +112,21 @@ class TestedChangeForm(ModelForm):
         model = TestedChange
         fields = "__all__"
         exclude = ['achievements', 'project']
+        widgets = {
+            'data_sources': forms.TextInput(attrs={
+                'placeholder': 'Specify the tools or systems used to collect data for the metric',
+                'style': 'font-size: 14px;',
+            }),
+            'tested_change': forms.TextInput(attrs={
+                'placeholder': 'The specific change or improvement that was tested.',
+                'style': 'font-size: 14px;',
+            })
+            # 'notes': forms.Textarea(attrs={'placeholder': 'Any additional notes or comments about the stakeholder, '
+            #                                               'such as any specific expertise or experience he/she brings '
+            #                                               'to the project.'}),
+            # 'responsibility': forms.Textarea(attrs={
+            #     'placeholder': 'Any specific tasks or responsibilities that stakeholder will be responsible for'}),
+        }
 
         # widgets = {
         #     'month_year': forms.DateInput(format=('%Y-%m-%d'),
@@ -210,10 +225,15 @@ class Qi_team_membersForm(ModelForm):
         exclude = ['facility','qi_project','created_by']
         widgets = {
             'impact': forms.Textarea(attrs={'placeholder': 'How the stakeholder is impacted by the project, or how will'
-                                                           ' he/she contribute to its success.'}),
+                                                           ' he/she contribute to its success.',
+                                            'style': 'font-size: 14px;',}),
             'notes': forms.Textarea(attrs={'placeholder': 'Any additional notes or comments about the stakeholder, '
                                                           'such as any specific expertise or experience he/she brings '
-                                                          'to the project.'}),
+                                                          'to the project.',
+                                           'style': 'font-size: 14px;',}),
+            'responsibility': forms.Textarea(attrs={
+                'placeholder': 'Any specific tasks or responsibilities that stakeholder will be responsible for',
+            'style': 'font-size: 14px;',}),
         }
 
     field_order = ['facility']
@@ -235,3 +255,25 @@ class StakeholderForm(ModelForm):
         exclude = ['facility']
 
     field_order = ['facility']
+
+
+class MilestoneForm(ModelForm):
+    class Meta:
+        model= Milestone
+        fields= "__all__"
+        exclude= ['facility','qi_project','created_by']
+        widgets={
+            'name': forms.TextInput(attrs={'placeholder':'Major tasks or phases of the project'}),
+
+            'description': forms.Textarea(attrs={
+            'placeholder':'A more detailed explanation of the tasks or activities that are included in the milestone',
+            'style': 'font-size: 14px;',}),
+
+            'notes': forms.Textarea(attrs={
+            'placeholder':'The purpose of the notes field is to provide a place to include any additional context or '
+                          'details that might be relevant to the milestone but that do not fit in the other fields of '
+                          'the model. For example, you might use the notes field to include details about any '
+                          'dependencies or risks associated with the milestone or to provide instructions or guidance '
+                          'for completing the tasks in the milestone.',
+            'style': 'font-size: 14px;',}),
+        }

@@ -84,20 +84,276 @@
       </div>
     </div>
     <h6 class="mt-2"><strong>PROBLEM STATEMENT :</strong></h6>
+<div class="d-flex justify-content-between">
+    <div>
+        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseproblemstatement" role="button" aria-expanded="false" aria-controls="collapseproblemstatement">
+        PROBLEM STATEMENT IN BRIEF
+        </a>
+    </div>
+</div>
+<div class="collapse bg-light mt-2" id="collapseproblemstatement">
+                    <p>
+                        In continuous quality improvement (CQI), a problem statement is a clear, concise description of
+                        a specific problem or issue that an organization is trying to address. It identifies the problem
+                        and its scope and may include information about the impact or consequences of the problem and
+                        any relevant background or context.
+                    </p>
+
+                      <p>
+                          The purpose of a problem statement is to define the problem clearly and to provide a common
+                          understanding of the issue among stakeholders. It helps to focus the CQI effort on a specific
+                          problem or issue and to guide the development of a plan to address the problem.
+                      </p>
+                    <p>
+                        A good problem statement should be objective, specific, and measurable. It should clearly
+                        describe the problem and its impact and be based on data and evidence. It should also be
+                        relevant and vital to the organization and expressed in meaningful and actionable terms.
+                    </p>
+                    <p>
+                        Overall, a well-written problem statement is an essential first step in the CQI process, as it
+                        helps to focus the effort and to guide the development of a plan to address the problem.
+                    </p>
+                </div>
     <p>{{ facility_project.problem_background }}</p>
 
     {% if facility_project.process_analysis.url is not null %}
         <h6><strong>ROOT CAUSE ANALYSIS :</strong></h6>
+         <div class="d-flex justify-content-between">
+                        <div>
+                            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapserootcause" role="button" aria-expanded="false" aria-controls="collapserootcause">
+                        ROOT CAUSE ANALYSIS IN BRIEF
+                        </a>
+                        </div>
+
+{#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                    </div>
+                </p>
+                <div class="collapse bg-light mt-2" id="collapserootcause">
+                    <p>Root cause analysis is a process of identifying the underlying causes of a problem or issue, in
+                        order to understand how it occurred and how to prevent it from happening again in the future.
+                        There are many tools and techniques that can be used to perform root cause analysis, and the
+                        best one to use will depend on the specific context and needs of your organization.
+                        Here are a few common root cause analysis tools that you might consider:
+                    </p>
+
+                      <ol>
+                          <li>
+                              <strong>Five Whys:</strong> This is a simple, iterative process of asking "why" a problem occurred, and
+                              then asking "why" again for each answer, until the root cause is identified.
+                          </li>
+                          <li>
+                              <strong>Fishbone Diagram: </strong>Also known as an Ishikawa diagram, this is a visual tool that helps to
+                              identify the various factors that may have contributed to a problem. It allows you to map
+                              out the different categories of causes and the specific factors within each category.
+                          </li>
+                          <li>
+                              <strong>Pareto Chart: </strong>This is a graphical tool that shows the relative frequency or impact of
+                              different factors, helping you to prioritize the most significant causes of a problem.
+                          </li>
+                          <li>
+                              <strong>Cause-and-Effect Diagram: </strong>Also known as a causal diagram, this is a visual tool that helps
+                              to identify the relationships between different causes and their effects.
+                          </li>
+                          <li>
+                              <strong>Failure Mode and Effects Analysis (FMEA): </strong>This is a systematic process for identifying
+                              potential failures in a system or process, and evaluating their consequences and
+                              likelihood of occurrence. It helps to identify and prioritize risk-reduction measures.
+                          </li>
+                          <li>
+                              <strong>Check Sheets: </strong>These are simple, structured forms that are used to collect data about a
+                              problem or process. They can help to identify patterns and trends, and to identify common
+                              causes of problems.
+                          </li>
+                          <li>
+                              <strong>Scatter Plots: </strong>This is a graphical tool that helps to identify the relationship between
+                              two variables. It can be used to identify correlations or trends that may help to identify
+                              the root cause of a problem.
+                          </li>
+                          <li>
+                              <strong>Flowcharts: </strong>These are visual diagrams that show the steps in a process or system. They can
+                              help to identify where problems are occurring, and to identify potential root causes.
+                          </li>
+                          <li>
+                              <strong>Run Charts: </strong>These are graphical tools that show the trend or pattern of a metric over
+                              time. They can help to identify changes or deviations from the normal trend, which may
+                              indicate a root cause.
+                          </li>
+                          <li>
+                              <strong>Triangulation: </strong>This is a process of using multiple data sources or methods to validate or
+                              confirm root causes. It can help to reduce the risk of bias or error in the root cause
+                              analysis process.
+                          </li>
+                          <li>
+                              <strong>3D: </strong>3D stands for "Define, Measure, Analyze, Design, and Verify," and it is a process for
+                              identifying and addressing problems in a systematic way. It involves the following steps:
+                              <ul>
+                                  <li>
+                                      Define the problem: Identify the problem and define its scope.
+                                  </li>
+                                  <li>
+                                      Measure the current situation: Collect data and other information about the
+                                      problem.
+                                  </li>
+                                  <li>
+                                      Analyze the data: Use tools and techniques such as root cause analysis to
+                                      understand the underlying causes of the problem.
+                                  </li>
+                                  <li>
+                                      Design a solution: Develop and evaluate potential solutions to the problem.
+                                  </li>
+                                  <li>
+                                      Verify the solution: Implement the chosen solution and verify that it addresses
+                                      the problem effectively.
+                                  </li>
+                              </ul>
+                          </li>
+                          <li>
+                              <strong>8D (Eight Disciplines): </strong>This is a structured problem-solving approach that can be applied
+                              in a wide range of industries and contexts, including healthcare. It is often used in the
+                              manufacturing and engineering industries, but it can be adapted to fit the specific needs
+                              and goals of any organization. It involves the following steps:
+                             <ul>
+                                 <li>
+                                     Create a team: Assemble a cross-functional team to address the problem.
+                                 </li>
+                                 <li>
+                                     Describe the problem: Define the problem and its scope.
+                                 </li>
+                                 <li>
+                                     Implement and verify immediate corrective actions: Take immediate actions to
+                                     address the problem and prevent it from happening again.
+                                 </li>
+                                 <li>
+                                     Determine and verify the root cause: Use root cause analysis to identify the
+                                     underlying cause of the problem.
+                                 </li>
+                                 <li>
+                                     Develop and verify permanent corrective actions: Develop and implement long-term
+                                     solutions to prevent the problem from recurring.
+                                 </li>
+                                 <li>
+                                     Implement and verify the permanent corrective actions: Implement the chosen
+                                     solutions and verify their effectiveness.
+                                 </li>
+                                 <li>
+                                     Prevent recurrence: Take steps to prevent the problem from happening again in the
+                                     future.
+                                 </li>
+                                 <li>
+                                     Celebrate success: Recognize and celebrate the team's achievements in addressing the problem.
+                                 </li>
+                             </ul>
+
+                          </li>
+                      </ol>
+
+                      <p>These are just a few examples of root cause analysis tools that you might consider using.
+                          There are many other tools and techniques available, and the best one to use will depend on
+                          the specific needs and goals of your organization.
+                      </p>
+                </div>
         <div class="bg-image hover-zoom">
         <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}">
         </div>
     {% endif %}
     <h6><strong>OBJECTIVE :</strong></h6>
+<div class="d-flex justify-content-between">
+    <div>
+        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseobjective" role="button" aria-expanded="false" aria-controls="collapseobjective">
+        OBJECTIVE IN BRIEF
+        </a>
+    </div>
+</div>
+<div class="collapse bg-light mt-2" id="collapseobjective">
+                    <p>
+                        An objective is a specific, measurable goal that an organization tries to achieve through a
+                        CQI project. It should be aligned with the organization's overall goals and objectives. It
+                        should be specific, measurable, achievable, relevant, and time-bound (SMART).
+                    </p>
+
+                      <p>
+                          An objective should be:
+                          <ul>
+                            <li><strong>S</strong>PECIFIC: Clearly define what the organization is trying to accomplish through the CQI
+                                project.
+                            </li>
+                            <li><strong>M</strong>EASURABLE: So that progress can be tracked and success can be evaluated.</li>
+                            <li><strong>A</strong>CHIEVABLE: Meaning that it is realistic and feasible given the resources and
+                                constraints of the project.
+                            </li>
+                            <li><strong>R</strong>ELEVANT: Meaning that it is important and aligned with the overall goals and
+                                objectives of the organization.
+                            </li>
+                            <li><strong>T</strong>IME BOUND: It should have a precise time frame, so that progress can be tracked and
+                                the project can be completed within a reasonable period.</li>
+                        </ul>
+                      </p>
+                    <p>
+                        Overall, an objective is a critical element of a CQI project, as it helps to focus the
+                        effort and to guide the development of a plan to achieve the desired outcomes. It should be
+                        clearly defined and communicated to all stakeholders. It should be used as a reference point
+                        throughout the project to ensure progress toward the desired goals.
+                    </p>
+
+                </div>
     <p>{{ facility_project.objective }}</p>
 {#    <h6><strong>Responsible people :</strong></h6>#}
 {#    <p>{{ facility_project.responsible_people }} </p>#}
 
-    <a href="{% url 'add_qi_team_member' facility_project.id %}" class="btn btn-success mb-3">Add Stakeholders</a>
+
+<div class="d-flex justify-content-between">
+    <div>
+        <a href="{% url 'add_qi_team_member' facility_project.id %}" class="btn btn-success mb-3">Add Stakeholders</a>
+    </div>
+    <div>
+        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapsestakeholders" role="button" aria-expanded="false" aria-controls="collapsestakeholders">
+        STAKEHOLDERS IN BRIEF
+        </a>
+    </div>
+</div>
+<div class="collapse bg-light mt-2" id="collapsestakeholders">
+                    <p>
+                        In healthcare, stakeholders are individuals or groups with an interest or stake in the CQI
+                        process and the project outcomes. They may be directly or indirectly affected by the project or
+                        have a role to play in its success.
+
+                    </p>
+
+                      <p>
+                          Examples of stakeholders in CQI in healthcare may include:
+                          <ul>
+                            <li><strong>Patients: </strong>Patients are critical stakeholders in CQI, as they are the ultimate
+                                beneficiaries of the quality improvement process.
+                            </li>
+                            <li><strong>Health care workers: </strong>
+                                Doctors, clinicians, nurses, and other healthcare professionals, are also
+                                critical stakeholders in CQI, as they are responsible for delivering care to patients
+                                and for implementing any changes or improvements that are identified through the CQI
+                                process.
+                            </li>
+                            <li><strong>Managers and administrators: </strong>Managers and administrators in healthcare
+                                organizations have a critical role to play in the CQI process, as they are responsible
+                                for establishing the goals and objectives of the project, as well as for providing the
+                                resources and support needed to implement changes and improvements.
+                            </li>
+                            <li><strong>Other healthcare staff: </strong>Other healthcare staff, including support staff, IT staff, and others,
+                                may also be stakeholders in CQI projects, as they may be directly or indirectly affected
+                                by the project, or they may have a role to play in the success of the project.
+                            </li>
+                            <li><strong>Regulators: </strong>Regulators, such as accrediting bodies and government agencies, may
+                                also be stakeholders in CQI in healthcare, as they are responsible for ensuring that
+                                healthcare organizations meet quality standards and requirements.
+                            </li>
+                        </ul>
+                      </p>
+                    <p>
+                        In a nutshell, stakeholders in CQI in healthcare may be internal or external to the organization
+                        and may have a direct or indirect role in the CQI process. It is crucial to consider the
+                        perspectives and needs of all stakeholders in the CQI process to ensure that the project is
+                        successful and that the outcomes are relevant and meaningful to all stakeholders.
+                    </p>
+
+                </div>
 
 {% if qi_teams %}
 <table class="table table-striped table-hover">
@@ -111,7 +367,9 @@
               <th scope="col">Designation</th>
               <th scope="col">Department</th>
               <th scope="col">Role</th>
+              <th scope="col">Responsibility</th>
               <th scope="col">Impact</th>
+              <th scope="col">Notes</th>
 
     </thead>
     <tbody>
@@ -137,7 +395,13 @@
                     {{ field.role }}
                 </td>
                 <td>
+                    {{ field.responsibility }}
+                </td>
+                <td>
                     {{ field.impact }}
+                </td>
+                <td>
+                    {{ field.notes }}
                 </td>
                 <td>
                   <a href="{% url 'update_qi_team_member' field.id %}" class="btn btn-info" role="button">Update</a>
@@ -158,21 +422,129 @@
 
 {#    <h6><strong>Participants :</strong></h6>#}
 {#    <p>{{ facility_project.participants }}</p>#}
-    <h6><strong>Indicator Numerator & Denominator :</strong></h6>
+{#    <h6><strong>Indicator Numerator & Denominator :</strong></h6>#}
     <p><strong>Numerator : </strong>{{ facility_project.numerator }}</p>
     <p><strong>Denominator : </strong>{{ facility_project.denominator }}</p>
+
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{% url 'add_project_milestone' facility_project.id %}" class="btn btn-success mb-3">Add Milestones</a>
+                        </div>
+                        <div>
+                            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapsemilestone" role="button" aria-expanded="false" aria-controls="collapsemilestone">
+                        PROJECT MILESTONES IN BRIEF
+                        </a>
+                        </div>
+
+{#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                    </div>
+                </p>
+                <div class="collapse bg-light mt-2" id="collapsemilestone">
+                    <p>The "Timelines and Milestones" section of a CQI (Continuous Quality Improvement) project workplan outlines
+                      the key activities and milestones for the project. It provides a detailed roadmap for the project,
+                      including a list of major tasks or phases, along with target start and end dates for each one.
+                    </p>
+
+                      <p>The purpose of this section is to help project team members and stakeholders understand what needs to be
+                          done and when, and to ensure that the project stays on track and makes progress towards its goals and
+                          objectives. It can also help to identify any dependencies or interdependencies between tasks, or any risks
+                          or challenges that could impact the project's timeline.
+                      </p>
+
+                      <p>By reviewing this section of the workplan, you can get a clear understanding of the project's scope and
+                          timeline, and how your role or responsibilities fit into the overall plan. It can also help you to track
+                          the project's progress and identify any potential issues or delays.
+                      </p>
+                </div>
+{% if milestones %}
+<table class="table table-striped table-hover">
+    <thead class="thead-dark">
+        <th scope="col"></th>
+              <th scope="col">Project Milestones</th>
+              <th scope="col">Start date</th>
+              <th scope="col">End date</th>
+              <th scope="col">Description</th>
+              <th scope="col">Notes</th>
+    </thead>
+    <tbody>
+        {% for field in milestones %}
+          <tr>
+              <th scope="row">{{ forloop.counter }}</th>
+                <td>
+                {{ field.name }}
+                </td>
+                <td>
+                    {{ field.start_date }}
+                </td>
+                <td>
+                    {{ field.end_date }}
+                </td>
+                <td>
+                    {{ field.description }}
+                </td>
+                <td>
+                    {{ field.notes }}
+                </td>
+
+                <td>
+                  <a href="{% url 'update_milestone' field.id %}" class="btn btn-info" role="button">Update</a>
+                </td>
+                    {% if user.is_authenticated %}
+                      {% if user.id == field.created_by.id %}
+                            <td>
+                              <a href="{% url 'delete_milestone' field.id %}" class="btn btn-danger" role="button">Delete</a>
+                            </td>
+                      {% endif %}
+                  {% endif %}
+          </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+    <hr>
 
 {#    <p>Do you have any comments regarding the above QI Initiative? Click the button below to send your comment to the QI team members implementing this QI initiative.</p>#}
 {#                <p>#}
                     <div class="d-flex justify-content-evenly">
                         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExampleOne" role="button" aria-expanded="false" aria-controls="collapseExampleOne">
-                        PDSA TEST CYCLE
+                        PDSA TEST CYCLE IN BRIEF
                         </a>
 {#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
                     </div>
                 </p>
-                <div class="collapse bg-light" id="collapseExampleOne">
-                    <p class="text-primary lead">The Plan-Do-Study-Act (PDSA) Test Cycle is an iterative process used to identify, test, and implement solutions to improve quality. It involves planning a change, testing it, analyzing the results, and deciding whether to keep, modify, or discard the change. The PDSA Test Cycle is a powerful tool for driving quality improvement initiatives, as it allows for rapid iteration and experimentation. It is an important part of any quality improvement efforts and can be used to identify and troubleshoot problems quickly and efficiently.</p>
+                <div class="collapse bg-light mt-2" id="collapseExampleOne">
+{#                    <p class="text-primary lead">The Plan-Do-Study-Act (PDSA) Test Cycle is an iterative process used to identify, test, and implement solutions to improve quality. It involves planning a change, testing it, analyzing the results, and deciding whether to keep, modify, or discard the change. The PDSA Test Cycle is a powerful tool for driving quality improvement initiatives, as it allows for rapid iteration and experimentation. It is an important part of any quality improvement efforts and can be used to identify and troubleshoot problems quickly and efficiently.</p>#}
+                    <p>The PDSA (Plan-Do-Study-Act) cycle is a continuous improvement tool used to test and implement
+                        changes systematically and scientifically. It is a four-step process that helps organizations
+                        understand the root causes of problems, identify potential solutions, test those solutions in a
+                        controlled way, and then implement the most effective changes on a larger scale.</p>
+
+                    <p> The four steps of the PDSA cycle are:</p>
+
+                    <ul>
+                        <li>
+                            <strong>Plan:</strong> In this step, the team identifies a problem or opportunity they want
+                            to address and develops a plan to test a change that they think will address the issue.
+                        </li>
+                        <li>
+                            <strong>Do:</strong> In this step, the team implements the change on a small scale and
+                            collects data to see how it affects the problem or opportunity.
+                        </li>
+                        <li>
+                            <strong>Study:</strong> In this step, the team reviews the data collected during the Do
+                            step and evaluates the results of the change.
+                        </li>
+                        <li>
+                            <strong>Act:</strong> Based on the results of the study, the team decides whether to implement the change on a larger scale,
+                            modify the change, or abandon it and try a different approach.
+                        </li>
+                    </ul>
+                    <p>
+                        The PDSA cycle is designed to be repeated continuously, with each iteration building on the
+                        lessons learned from the previous one. The PDSA cycle allows organizations to make incremental
+                        improvements and continuously optimize their processes and systems.</p>
+                    </p>
+
                     <div class="row">
                           <div class="col-sm-6 mt-4">
                             <div class="card rounded-pill text-bg-success p-3">
@@ -220,9 +592,9 @@
                               <div class="card-body ">
                                       <h5 class="card-title d-flex justify-content-center">4. ACT</h5>
 
-                                  <h6>Your responses derived from the Study stage define the tasks for the Act stage.
+                                  <p>Your responses derived from the Study stage define the tasks for the Act stage.
                                       There are two possible responses you may have:
-                                  </h6>
+                                  </p>
                                   <div class="d-flex justify-content-lg-between ml-auto">
                                 <ul>
                                   <li>
@@ -259,12 +631,6 @@
                           </div>
                         </div>
                       </div>
-                        <div>
-                            <form action="">
-                                {% csrf_token %}
-                                {{ stakeholderform }}
-                            </form>
-                        </div>
                     </div>
                 </div>
 
@@ -286,6 +652,54 @@
             <a href="{% url 'tested_change' facility_project.id %}" class="btn btn-warning mt-4">Add tested change</a>
         {% endif %}
     {% endif %}
+<div class="d-flex justify-content-between">
+
+    <div class="mt-4">
+        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapsestakeholders" role="button" aria-expanded="false" aria-controls="collapsestakeholders">
+        TESTED CHANGE IN BRIEF
+        </a>
+    </div>
+</div>
+<div class="collapse bg-light mt-2" id="collapsestakeholders">
+                    <p>
+                        A tested change is a change or improvement that has been implemented and tested in a controlled
+                        manner to evaluate its impact and determine its effectiveness.
+                    </p>
+                    <p>
+                        In the context of continuous quality improvement (CQI), a tested change is often used as part
+                        of a plan-do-study-act (PDSA) cycle, a systematic, iterative process for identifying and
+                        implementing improvements.
+                    </p>
+
+                      <p>
+                          The PDSA cycle involves the following steps:
+                          <ul>
+                            <li><strong>Plan: </strong>Develop a plan for testing a change or improvement.
+                            </li>
+                            <li><strong>Do: </strong>
+                                Implement the change or improvement in a controlled manner.
+                            </li>
+                            <li><strong>Study: </strong>Collect data and evaluate the impact of the change or
+                                improvement.
+                            </li>
+                            <li><strong>Act: </strong>Based on the evaluation results, either adopt the change or
+                                improvement or return to the planning phase to develop a new plan.
+                            </li>
+
+                        </ul>
+                      </p>
+                    <p>
+                        A tested change is typically implemented in a small, controlled environment to minimize the risk
+                        of unintended consequences or negative impacts. It is then evaluated to determine whether it is
+                        effective and whether it should be implemented more broadly.
+                    </p>
+                    <p>
+                        A tested change is an integral part of the CQI process, as it helps to ensure that changes and
+                        improvements are based on data and evidence and that they are effective in achieving the desired
+                        outcomes.
+                    </p>
+
+                </div>
     <div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
         <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>

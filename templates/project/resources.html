@@ -1,5 +1,6 @@
 {% extends 'project/index.html' %}
 {% load static %}
+{% load crispy_forms_tags %}
 {% block content %}
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
@@ -36,6 +37,18 @@
         <p>Thank you for visiting our page, and we hope that you find it useful.</p>
     </div>
       </div>
+    <form class="row g-3" autocomplete="off">
+        <div class="col-md-8">
+            {{ my_filters.form.resource_name|as_crispy_field }}
+        </div>
+        <div class="col-md-2">
+            {{ my_filters.form.resource_type|as_crispy_field }}
+        </div>
+
+        <div class="col-md-1 mt-4 pt-2">
+            <button class="btn btn-outline-primary" type="submit">search</button>
+        </div>
+  </form>
 
 {#      <canvas class="my-4 w-100" id="myChart" width="900" height="280"></canvas>#}
 
@@ -68,7 +81,7 @@
 {#        </div>#}
 
         <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
-            {% for resource in all_resources %}
+            {% for resource in qi_lists %}
               <div class="col-md-11">
                 <div class="card h-100">
                   <div class="card-body">
@@ -88,13 +101,13 @@
                                 {% if user.id == resource.uploaded_by.id or user.is_superuser %}
                                     <a href="{% url 'update_resource' resource.id %}">
                                         <button type="button" class="btn btn-outline-warning btn-floating mr-2" data-mdb-ripple-color="dark">
-                                            EDIT <i class="fas fa-download"></i>
+                                            EDIT
                                         </button>
                                     </a>
 
                                     <a href="{% url 'delete_resource' resource.id %}">
                                         <button type="button" class="btn btn-outline-danger btn-floating mr-2" data-mdb-ripple-color="dark">
-                                            DELETE <i class="fas fa-download"></i>
+                                            DELETE
                                         </button>
                                     </a>
 {#                                    {% elif user.is_superuser %}#}
@@ -117,6 +130,7 @@
                   </div>
                   <div class="card-footer d-flex justify-content-between">
                     <small class="text-muted">Uploaded on {{ resource.upload_date_updated|date:"M d, Y" }}</small>
+                    <small class="text-muted">Resource type : {{ resource.resource_type|title }}</small>
                     <small class="text-muted">Uploaded by {{ resource.uploaded_by|upper }}</small>
                   </div>
                 </div>

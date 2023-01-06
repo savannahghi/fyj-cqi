@@ -43,7 +43,6 @@ class Facilities(models.Model):
     # facilities = models.CharField(max_length=250, choices=FACILITY_CHOICES, unique=True)
     facilities = models.CharField(max_length=250, unique=True)
     mfl_code = models.IntegerField(unique=True)
-    
 
     class Meta:
         verbose_name_plural = 'facilities'
@@ -60,7 +59,6 @@ class Facilities(models.Model):
 
 class Counties(models.Model):
     county_name = models.CharField(max_length=250, unique=True)
-    
 
     # sub_counties = models.ManyToManyField(Sub_counties)
 
@@ -81,7 +79,6 @@ class Sub_counties(models.Model):
     sub_counties = models.CharField(max_length=250, unique=True)
     counties = models.ManyToManyField(Counties)
     facilities = models.ManyToManyField(Facilities)
-    
 
     class Meta:
         verbose_name_plural = 'sub-counties'
@@ -93,7 +90,6 @@ class Sub_counties(models.Model):
 
 class Department(models.Model):
     department = models.CharField(max_length=250, unique=True)
-    
 
     class Meta:
         ordering = ['department']
@@ -104,7 +100,6 @@ class Department(models.Model):
 
 class Category(models.Model):
     category = models.CharField(max_length=250, unique=True)
-    
 
     class Meta:
         ordering = ['category']
@@ -141,8 +136,8 @@ class QI_Projects(models.Model):
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
     objective = models.TextField()
-    participants = models.TextField()
-    responsible_people = models.TextField()
+    # participants = models.TextField()
+    # responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
@@ -181,7 +176,6 @@ class QI_Projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
-    
 
     # Django fix Admin plural
     class Meta:
@@ -239,8 +233,8 @@ class Subcounty_qi_projects(models.Model):
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
     objective = models.TextField()
-    participants = models.TextField()
-    responsible_people = models.TextField()
+    # participants = models.TextField()
+    # responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
@@ -279,7 +273,6 @@ class Subcounty_qi_projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
-    
 
     # Django fix Admin plural
     class Meta:
@@ -337,8 +330,8 @@ class County_qi_projects(models.Model):
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
     objective = models.TextField()
-    participants = models.TextField()
-    responsible_people = models.TextField()
+    # participants = models.TextField()
+    # responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
@@ -377,7 +370,6 @@ class County_qi_projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
-    
 
     # Django fix Admin plural
     class Meta:
@@ -435,8 +427,8 @@ class Hub_qi_projects(models.Model):
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
     objective = models.TextField()
-    participants = models.TextField()
-    responsible_people = models.TextField()
+    # participants = models.TextField()
+    # responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
@@ -475,7 +467,6 @@ class Hub_qi_projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
-    
 
     # Django fix Admin plural
     class Meta:
@@ -533,8 +524,8 @@ class Program_qi_projects(models.Model):
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
     objective = models.TextField()
-    participants = models.TextField()
-    responsible_people = models.TextField()
+    # participants = models.TextField()
+    # responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
@@ -573,7 +564,6 @@ class Program_qi_projects(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
-    
 
     # Django fix Admin plural
     class Meta:
@@ -610,7 +600,6 @@ class Close_project(models.Model):
     measurement_status_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     limitations = models.TextField()
     conclusion = models.TextField()
-    
 
     # Django fix Admin plural
     class Meta:
@@ -619,13 +608,13 @@ class Close_project(models.Model):
 
 class TestedChange(models.Model):
     project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
-    month_year = models.DateField()
-    tested_change = models.CharField(max_length=1000)
-    comments = models.CharField(max_length=2000)
+    month_year = models.DateField(verbose_name="Date")
     numerator = models.IntegerField()
     denominator = models.IntegerField()
+    data_sources = models.CharField(max_length=250)
+    tested_change = models.CharField(max_length=1000)
+    comments = models.TextField(blank=True, null=True)
     achievements = models.FloatField(null=True, blank=True)
-    
 
     def __str__(self):
         return str(self.project)
@@ -643,7 +632,6 @@ class ProjectComments(models.Model):
     comment = models.TextField()
     comment_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     comment_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
-    
 
     class Meta:
         verbose_name_plural = "Project comments"
@@ -660,7 +648,6 @@ class ProjectResponses(models.Model):
     response = models.TextField()
     response_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     response_updated_date = models.DateTimeField(auto_now=True, auto_now_add=False)
-    
 
     class Meta:
         verbose_name_plural = "Project responses"
@@ -670,13 +657,20 @@ class ProjectResponses(models.Model):
 
 
 class Resources(models.Model):
+    RESOURCE_TYPE = (
+        ("articles", "Articles"),
+        ("case studies", "Case Studies"),
+        ("guides", "Guides"),
+        ("research papers", "Research Papers"),
+    )
     resource_name = models.CharField(max_length=250)
+    resource_type = models.CharField(max_length=250, choices=RESOURCE_TYPE)
     resource = models.FileField(upload_to='resources')
     uploaded_by = models.ForeignKey(NewUser, on_delete=models.CASCADE)
     description = models.TextField(max_length=1000)
+
     uploaded_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     upload_date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
-    
 
     def __str__(self):
         return self.resource_name
@@ -705,7 +699,6 @@ class Qi_managers(models.Model):
     email = models.EmailField(null=True, blank=True, unique=True)
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
-    
 
     class Meta:
         ordering = ['first_name']
@@ -733,18 +726,19 @@ class Qi_team_members(models.Model):
     phone_number = PhoneNumberField(null=True, blank=True)
     email = models.EmailField(null=True, blank=True, unique=True)
     designation = models.CharField(max_length=250)
-    role = models.CharField(max_length=250)
-    department = models.CharField(max_length=250,null=True, blank=True)
+    role = models.CharField(max_length=250, null=True, blank=True)
+
+    department = models.CharField(max_length=250, null=True, blank=True)
     choose_qi_team_member_level = models.CharField(max_length=250, choices=TEAM_MEMBER_LEVEL_CHOICES)
+    responsibility = models.CharField(max_length=1000, blank=True, null=True)
     impact = models.TextField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
-    qi_project = models.ForeignKey(QI_Projects,on_delete=models.CASCADE)
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
 
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
-    
 
     class Meta:
         ordering = ['first_name']
@@ -760,6 +754,7 @@ class Qi_team_members(models.Model):
         self.designation = self.designation.upper()
         self.department = self.department.upper()
         self.role = self.role.title()
+        self.email = self.email.lower()
         super().save(*args, **kwargs)
 
 
@@ -768,7 +763,6 @@ class ArchiveProject(models.Model):
     archive_project = models.BooleanField(default=False)
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
-    
 
     class Meta:
         verbose_name_plural = "archived projects"
@@ -787,4 +781,15 @@ class Stakeholder(models.Model):
     contact_info = models.CharField(max_length=200)
     impact = models.TextField()
     notes = models.TextField(blank=True, null=True)
-    facility=models.ForeignKey(Facilities,on_delete=models.CASCADE)
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+
+
+class Milestone(models.Model):
+    name = models.CharField(max_length=200, verbose_name='Milestone name')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    description = models.TextField()
+    notes = models.TextField(blank=True, null=True)
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)

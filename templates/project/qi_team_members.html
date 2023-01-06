@@ -38,8 +38,10 @@
         {% for col in qi_team_members_.columns %}
 {#            {{ forloop.counter }} {{ col }}#}
 {#            {% if col == " " %}#}
-            {% if forloop.counter != 8 %}
+            {% if forloop.counter != 8  and forloop.counter != 9 %}
+{#            {% if forloop.counter != 9 %}#}
                 <th scope="col">{{ col }}</th>
+{#            {% endif %}#}
             {% endif %}
 {#          {{ forloop.counter }} {{ col }}#}
 {#            {% endif %}#}
@@ -51,11 +53,12 @@
         {% for index, row in qi_team_members_.iterrows %}
               <tr>
                   <th scope="row">{{ index}}</th>
-{#              {{ forloop.counter }}{{ row }}#}
+{#              {{ forloop.counter }}#}
+{#                  {{ row }}#}
 
                 {% for cell in row %}
 {#                    {{ forloop.counter }},{{ cell }}#}
-                    {% if forloop.counter != 8 %}
+                    {% if forloop.counter != 8 and forloop.counter != 9 %}
                         {% if forloop.counter == 6 %}
                               <td>
                                 {{cell|date}}
@@ -64,7 +67,7 @@
 {#                              <td>#}
 {#                                {{cell|date}}#}
 {#                              </td>#}
-                        {% elif forloop.counter == 9 %}
+                        {% elif forloop.counter == 10 %}
                             {% if cell > 0 %}
                               <td class="text-center text-white" style="background-color: green">
                                     <strong>{{cell}}</strong>
@@ -93,9 +96,11 @@
                   <a href="{% url 'update_qi_team_member' row.QI_team_member_id|add:"0" %}" class="btn btn-info" role="button">Update</a>
               </td>
               {% if user.is_authenticated %}
-                  {% if user.id == field.created_by.id %}
+{#                  USER ID: {{ user.id }}#}
+{#                  CREATED BY : {{ row.created_by.id }}#}
+                  {% if user.id == row.created_by.id %}
                       <td>
-                          <a href="{% url 'delete_qi_team_member' row.QI_team_member_id|add:"0" %}" class="btn btn-danger" role="button">Delete</a>
+                          <a href="{% url 'delete_qi_team_member' row.created_by.id|add:"0" %}" class="btn btn-danger" role="button">Delete</a>
                       </td>
                   {% endif %}
               {% endif %}

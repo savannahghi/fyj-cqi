@@ -1,0 +1,35 @@
+{% extends 'project/index.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="p-5 mb-4 bg-light rounded-3">
+      <div class="container-fluid py-5">
+        <h1 class="display-6 fw-bold text-primary">{{ title }} </h1>
+        <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+            {% csrf_token %}
+{#            {{ form|crispy}}#}
+            {% for field in form %}
+                {% if "note" in field.html_name or "descrip" in field.html_name %}
+                    <div class="col-md-6 mt-4">
+                    {{ field|as_crispy_field }}
+                </div>
+                    {% else %}
+                    <div class="col-md-4 mt-4">
+                    {{ field|as_crispy_field }}
+                </div>
+
+                {% endif %}
+
+            {% endfor %}
+            <div class="col-md-4 mt-4">
+                <input class="btn btn-success mt-1" type="submit" value="Submit">
+            </div>
+
+        </form>
+      </div>
+    </div>
+</main>
+{% endblock %}

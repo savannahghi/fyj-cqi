@@ -35,7 +35,7 @@
               <li>Objective : {{ qi.objective }}</li>
               <li>Setting : {{ qi.settings }}</li>
               <li>Department : {{ qi.department }}</li>
-              <li>Responsible person : {{ qi.responsible_people }}</li>
+{#              <li>Responsible person : {{ qi.responsible_people }}</li>#}
               <li>Measurement Frequency : {{ qi.measurement_frequency }}</li>
               <li>Created by : {{ qi.created_by }}</li>
               {% if qi.comments%}
@@ -72,15 +72,15 @@
       <div class="card-body">
         <h6 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h6>
           <ul>
-              <li>Facility : {{ qi.facility }}</li>
+              <li>Facility : {{ qi.facility_name }}</li>
               <li>Problem background : {{ qi.problem_background }}</li>
               <li>Objective : {{ qi.objective }}</li>
               <li>Setting : {{ qi.settings }}</li>
-              <li>Department : {{ qi.department }}</li>
-              <li>Responsible person : {{ qi.responsible_people }}</li>
+              <li>Department : {{ qi.departments }}</li>
+{#              <li>Responsible person : {{ qi.responsible_people }}</li>#}
               <li>Measurement Frequency : {{ qi.measurement_frequency }}</li>
               <li>Created by : {{ qi.created_by }}</li>
-              <li>Created by : {{ qi.qi_manager }}</li>
+              <li>QI manager : {{ qi.qi_manager }}</li>
 
 
 {#              <li>Number of post : {{ num_post }}</li>#}

@@ -148,6 +148,7 @@ class QI_Projects(models.Model):
 
     created_by = models.ForeignKey(NewUser, blank=True, null=True,
                                    default=None, on_delete=models.CASCADE)
+    team_member = models.ForeignKey('Qi_team_members', on_delete=models.CASCADE, null=True, blank=True)
     STATUS_CHOICES = (
         ('Started or Ongoing', 'STARTED OR ONGOING'),
         ('Completed or Closed', 'COMPLETED OR CLOSED'),
@@ -715,6 +716,50 @@ class Qi_managers(models.Model):
         super().save(*args, **kwargs)
 
 
+# class Qi_team_members(models.Model):
+#     TEAM_MEMBER_LEVEL_CHOICES = [
+#         ('Facility QI team member', 'Facility QI team member'),
+#         ('Sub-county QI team member', 'Sub-county QI team member'),
+#         ('County QI team member', 'County QI team member'), ('Hub QI team member', 'Hub QI team member'),
+#         ('Program QI team member', 'Program QI team member'),
+#     ]
+#     first_name = models.CharField(max_length=250)
+#     last_name = models.CharField(max_length=250)
+#     phone_number = PhoneNumberField(null=True, blank=True)
+#     email = models.EmailField(null=True, blank=True, unique=True)
+#     designation = models.CharField(max_length=250)
+#     role = models.CharField(max_length=250, null=True, blank=True)
+#
+#     department = models.CharField(max_length=250, null=True, blank=True)
+#     choose_qi_team_member_level = models.CharField(max_length=250, choices=TEAM_MEMBER_LEVEL_CHOICES)
+#     # responsibility = models.CharField(max_length=1000, blank=True, null=True)
+#     impact = models.TextField(blank=True, null=True)
+#     notes = models.TextField(blank=True, null=True)
+#     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+#     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+#     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
+#
+#     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
+#     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+#
+#     class Meta:
+#         ordering = ['first_name']
+#         verbose_name_plural = "qi team members"
+#
+#     def __str__(self):
+#         return self.first_name + " " + self.last_name
+#
+#     def save(self, *args, **kwargs):
+#         """Ensure manager name is in title case"""
+#         self.first_name = self.first_name.title()
+#         self.last_name = self.last_name.title()
+#         self.designation = self.designation.upper()
+#         self.department = self.department.upper()
+#         self.role = self.role.title()
+#         self.email = self.email.lower()
+#         super().save(*args, **kwargs)
+
+
 class Qi_team_members(models.Model):
     TEAM_MEMBER_LEVEL_CHOICES = [
         ('Facility QI team member', 'Facility QI team member'),
@@ -722,10 +767,6 @@ class Qi_team_members(models.Model):
         ('County QI team member', 'County QI team member'), ('Hub QI team member', 'Hub QI team member'),
         ('Program QI team member', 'Program QI team member'),
     ]
-    first_name = models.CharField(max_length=250)
-    last_name = models.CharField(max_length=250)
-    phone_number = PhoneNumberField(null=True, blank=True)
-    email = models.EmailField(null=True, blank=True, unique=True)
     designation = models.CharField(max_length=250)
     role = models.CharField(max_length=250, null=True, blank=True)
 
@@ -737,25 +778,26 @@ class Qi_team_members(models.Model):
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
+    user = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE,related_name="team_member")
 
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     class Meta:
-        ordering = ['first_name']
+        # ordering = ['first_name']
         verbose_name_plural = "qi team members"
 
     def __str__(self):
-        return self.first_name + " " + self.last_name
+        return self.user.first_name + " " + self.user.last_name
 
     def save(self, *args, **kwargs):
         """Ensure manager name is in title case"""
-        self.first_name = self.first_name.title()
-        self.last_name = self.last_name.title()
+        # self.first_name = self.first_name.title()
+        # self.last_name = self.last_name.title()
         self.designation = self.designation.upper()
         self.department = self.department.upper()
         self.role = self.role.title()
-        self.email = self.email.lower()
+        # self.email = self.email.lower()
         super().save(*args, **kwargs)
 
 

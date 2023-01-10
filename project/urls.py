@@ -9,8 +9,10 @@ urlpatterns = [
     # path('update-profile/<int:pk>', update_profile, name="update_profile"),
     path('update-profile/', update_profile, name="update_profile"),
     path('deep-dive-chmt/', deep_dive_chmt, name="deep_dive_chmt"),
-    path('qi-team-members/', qi_team_members, name="qi_team_members"),
-    path('qi-managers/', qi_managers, name="qi_managers"),
+    # path('qi-team-members/', qi_team_members, name="qi_team_members"),
+    path('qi-team-members/', qi_team_members_view, name="qi_team_members"),
+    # path('qi-managers/', qi_managers, name="qi_managers"),
+    path('qi-managers/', qi_managers_view, name="qi_managers"),
     path('archived/', archived, name="archived"),
     path('audit-trail/', audit_trail, name="audit_trail"),
     path('comments/', comments, name="comments"),
@@ -61,6 +63,8 @@ urlpatterns = [
     path('add-qi-team-member/<int:pk>', add_qi_team_member, name="add_qi_team_member"),
     path('add-project-milestone/<int:pk>', add_project_milestone, name="add_project_milestone"),
     path('add-corrective-action/<int:pk>', add_corrective_action, name="add_corrective_action"),
+
+    path('qi-projects-involved-in/<int:pk>', qi_team_involved, name="qi_team_involved"),
 
     path('facilities-landing-page/', facilities_landing_page, name="facilities_landing_page"),
     path('update-project/<int:pk>/', update_project, name="update_project"),

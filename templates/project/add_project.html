@@ -6,10 +6,7 @@
 {% block content %}
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-3">
     <div class="p-5 mb-4 bg-light rounded-3">
-
       <div class="container-fluid py-5">
-{#        <h1 class="display-5 fw-bold">FACILITY NAME</h1>#}
-{#        <p class="col-md-8 fs-4 ">CHOOSE THE LEVEL OF THE QI PROJECT</p>#}
           <div class="alert alert-info">
               <h4 class="d-flex justify-content-evenly mb-5">CONFIRM IF FIELDS FOR YOUR PROJECT ARE AVAILABLE</h4>
           </div>
@@ -21,52 +18,37 @@
 {#            {{ form|crispy}}#}
             <div class="col-md-2 mt-4">
                 {{ form.qi_manager|as_crispy_field }}
+                <a href="{% url 'add_qi_manager' %}" class="btn btn-success mt-4 btn-block" role="button">ADD QI MANAGER</a>
             </div>
             <div class="col-md-2 mt-4">
                 {{ form.departments|as_crispy_field }}
+                <a href="{% url 'add_department' %}" class="btn btn-success mt-4 btn-block" role="button">ADD DEPARTMENT</a>
             </div>
             <div class="col-md-2 mt-4">
                 {{ form.project_category|as_crispy_field }}
+                <a href="{% url 'add_category' %}" class="btn btn-success mt-4 btn-block" role="button">ADD PROJECT CATEGORY</a>
             </div>
             <div class="col-md-2 mt-4">
                 {{ form.facility_name|as_crispy_field }}
-            </div>
-
-            <div class="col-md-2 mt-4">
-                {{ form.sub_county|as_crispy_field }}
+                <a href="{% url 'add_facility' %}" class="btn btn-success mt-4 btn-block" role="button">ADD FACILITY</a>
             </div>
             <div class="col-md-2 mt-4">
                 {{ county_form.county|as_crispy_field }}
+                <a href="{% url 'add_county' %}" class="btn btn-success mt-4 btn-block" role="button">ADD COUNTY</a>
+            </div>
+            <div class="col-md-2 mt-4">
+                {{ form.sub_county|as_crispy_field }}
+                <a href="{% url 'add_subcounty' %}" class="btn btn-success mt-4 btn-block" role="button">ADD SUBCOUNTY</a>
             </div>
         </form>
-          <p>If missing, please add below before proceeding</p>
-          <div class="d-flex justify-content-between">
-              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
-              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
-              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT CATEGORY</a>
-              <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
-              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>
-              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>
-
-          </div>
+          <p>If a field is missing, please add by clicking respective buttons above before proceeding</p>
           <div class="d-flex justify-content-between mt-3 mb-3">
               <a href="{% url 'update_fields' %}" class="btn btn-warning" role="button">Update</a>
-          </div
+          </div>
           <div class="col-md-3 mt-4 pt-2">
             <a href="{% url 'choose_project_level' %}" class="btn btn-secondary" role="button">CONTINUE</a>
         </div>
       </div>
     </div>
-
-{#    <div class="container-fluid py-5">#}
-{#      <h4 class="d-flex justify-content-evenly mb-5">CHOOSE THE LEVEL OF THE QI PROJECT YOU WANT TO TRACK</h4>#}
-{#      <div class="d-flex justify-content-evenly">#}
-{#          <a href="{% url 'add_project_facility' %}" class="btn btn-secondary mt-1">Facility</a>#}
-{#          <a href="{% url 'add_project_subcounty' %}" class="btn btn-secondary mt-1">Sub-county</a>#}
-{#          <a href="{% url 'add_project_county' %}" class="btn btn-secondary mt-1">County</a>#}
-{#          <a href="{% url 'add_project_hub' %}" class="btn btn-secondary mt-1">Hub</a>#}
-{#          <a href="{% url 'add_project_program' %}" class="btn btn-secondary mt-1">Program</a>#}
-{#      </div>#}
-{#    </div>#}
 </main>
 {% endblock %}

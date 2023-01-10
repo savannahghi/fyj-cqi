@@ -3,7 +3,7 @@
 
 {% block content %}
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-         <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+         <div class="d-flex justify-content-between pt-3 pb-2 mb-3">
         <h4 >QI Team Members</h4>
 {#             <a href="{% url 'add_qi_team_member' %}" class="btn btn-success mt-4">ADD QI TEAM MEMBER</a>#}
 {#        <div class="btn-toolbar mb-2 mb-md-0">#}
@@ -36,15 +36,9 @@
     <th scope="col"></th>
 
         {% for col in qi_team_members_.columns %}
-{#            {{ forloop.counter }} {{ col }}#}
-{#            {% if col == " " %}#}
             {% if forloop.counter != 8  and forloop.counter != 9 %}
-{#            {% if forloop.counter != 9 %}#}
                 <th scope="col">{{ col }}</th>
-{#            {% endif %}#}
             {% endif %}
-{#          {{ forloop.counter }} {{ col }}#}
-{#            {% endif %}#}
         {% endfor %}
 
     </thead>
@@ -53,20 +47,14 @@
         {% for index, row in qi_team_members_.iterrows %}
               <tr>
                   <th scope="row">{{ index}}</th>
-{#              {{ forloop.counter }}#}
-{#                  {{ row }}#}
 
                 {% for cell in row %}
-{#                    {{ forloop.counter }},{{ cell }}#}
                     {% if forloop.counter != 8 and forloop.counter != 9 %}
                         {% if forloop.counter == 6 %}
                               <td>
                                 {{cell|date}}
                               </td>
-{#                        {% elif forloop.counter == 6 %}#}
-{#                              <td>#}
-{#                                {{cell|date}}#}
-{#                              </td>#}
+
                         {% elif forloop.counter == 10 %}
                             {% if cell > 0 %}
                               <td class="text-center text-white" style="background-color: green">
@@ -80,7 +68,6 @@
 
                         {% else %}
                                 <td>
-{#                              <a href="#" >DELETE {{ cell }} </a>#}
                                 {{cell}}
                               </td>
                         {% endif %}
@@ -96,61 +83,67 @@
                   <a href="{% url 'update_qi_team_member' row.QI_team_member_id|add:"0" %}" class="btn btn-info" role="button">Update</a>
               </td>
               {% if user.is_authenticated %}
-{#                  USER ID: {{ user.id }}#}
-{#                  CREATED BY : {{ row.created_by.id }}#}
                   {% if user.id == row.created_by.id %}
                       <td>
                           <a href="{% url 'delete_qi_team_member' row.created_by.id|add:"0" %}" class="btn btn-danger" role="button">Delete</a>
                       </td>
                   {% endif %}
               {% endif %}
-{#              <td>#}
-{#                  <a href="#" class="btn btn-secondary" role="button">View</a>#}
-{#              </td>#}
               </tr>
         {% endfor %}
     </tbody>
 </table>
-{#        <table class="table table-striped table-hover table-users">#}
-{#    			<thead>#}
-{#    				<tr>#}
-{##}
-{#    					<th></th>#}
-{#    					<th>First name</th>#}
-{#    					<th>Last name</th>#}
-{#    					<th >Email</th>#}
-{#    					<th>Phone Number</th>#}
-{#    					<th>Facility</th>#}
-{#    					<th>Projects created</th>#}
-{#    					<th>Facility/CHMT</th>#}
-{#    					<th></th>#}
-{#    					<th></th>#}
-{#    				</tr>#}
-{#    			</thead>#}
-{##}
-{#    			<tbody>#}
-{#                {% for team in qi_teams %}#}
-{##}
-{##}
-{##}
-{#    				<tr>#}
-{#    					<td>{{ forloop.counter }}</td>#}
-{#    					<td>{{ team.first_name }}</td>#}
-{#    					<td>{{ team.last_name }}</td>#}
-{#    					<td>{{ team.email }}</td>#}
-{#    					<td>{{ team.phone_number }}</td>#}
-{#                      <td>{{ team.facility }}</td>#}
-{##}
-{#                    	<td><span class="label label-warning">Not Active</span></td>#}
-{##}
-{##}
-{#                        <td><a href="{% url 'update_qi_team_member' team.id %}" class="btn btn-info" role="button">Edit</a></td>#}
-{#                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-danger" role="button">Delete</a></td>#}
-{#                    </tr>#}
-{#                {% endfor %}#}
-{##}
-{#	               </tbody>#}
-{##}
-{#    		</table>#}
+
+
+        <table class="table table-striped table-hover table-users">
+    			<thead>
+    				<tr>
+
+    					<th></th>
+    					<th>Name</th>
+    					<th >Email</th>
+    					<th>Phone Number</th>
+    					<th>QI team member level</th>
+    					<th>Project Participation</th>
+    					<th>Projects Created</th>
+    					<th></th>
+    				</tr>
+    			</thead>
+
+    			<tbody>
+                {% for team in team_members %}
+
+
+
+    				<tr>
+    					<td>{{ forloop.counter }}</td>
+    					<td>
+                            {{ team.user__first_name|title }} {{ team.user__last_name|title }}
+                        </td>
+    					<td>{{ team.user__email }}</td>
+    					<td>{{ team.user__phone_number }}</td>
+                      <td>{{ team.choose_qi_team_member_level }}</td>
+                      <td>
+{#                        <strong class="badge alert-success">{{ team.num_participating_projects }}</strong>#}
+                        <strong class="badge"><a href="{% url 'qi_team_involved' team.user__id %}" >
+                            {{ team.num_participating_projects }}</a></strong>
+                      </td>
+                        <td>
+{#                            {{ team.user__username }} {{ team.num_created_projects }}#}
+{#                            <strong class="badge alert-success">{{ team.num_created_projects }}</strong>#}
+                            <strong class="badge"><a href="{% url 'qi_creators' team.user__username %}">
+                                {{ team.num_created_projects }}</a></strong>
+
+                        </td>
+                    <td>
+                        <a href="{% url 'qi_team_involved' team.user__id %}" class="btn btn-secondary" role="button">View Projects</a>
+                    </td>
+
+                    </tr>
+                {% endfor %}
+
+	               </tbody>
+
+    		</table>
     </main>
 {% endblock %}

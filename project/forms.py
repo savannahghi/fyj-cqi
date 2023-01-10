@@ -223,6 +223,9 @@ class Qi_team_membersForm(ModelForm):
         model = Qi_team_members
         fields = "__all__"
         exclude = ['facility', 'qi_project', 'created_by']
+        labels = {
+            'user': 'Team Member',
+        }
         widgets = {
             'impact': forms.Textarea(attrs={'placeholder': 'How the stakeholder is impacted by the project, or how will'
                                                            ' he/she contribute to its success.',

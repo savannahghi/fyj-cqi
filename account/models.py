@@ -9,8 +9,11 @@ from phonenumber_field.modelfields import PhoneNumberField
 class NewUser(AbstractUser):
     phone_number = PhoneNumberField(null=True, blank=True)
 
+    class Meta:
+        ordering = ['first_name']
+
     def __str__(self):
-        return self.username
+        return self.first_name.title() + " " + self.last_name.title() + " " + str(self.phone_number) + " " + self.email
 
     def save(self, *args, **kwargs):
         """Ensure email are in the lower case"""

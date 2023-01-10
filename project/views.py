@@ -10,7 +10,8 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db import IntegrityError
 # from django.db.models import Count, Q
 # from django.forms import forms
-from django.utils import timezone
+from django.db.models import Count, Q, F
+# from django.utils import timezone
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -28,7 +29,7 @@ import plotly.express as px
 
 # Create your views here.
 
-def pagination_(request, item_list,item_number=10):
+def pagination_(request, item_list, item_number=10):
     page = request.GET.get('page', 1)
 
     paginator = Paginator(item_list, item_number)
@@ -2025,76 +2026,167 @@ def qi_team_members(request):
     return render(request, "project/qi_team_members.html", context)
 
 
+# @login_required(login_url='login')
+# def qi_team_members_view(request):
+#     """
+#     A view that displays the first name, last name, email, and number of projects
+#     for each QI manager in a table.
+#     """
+#     # Get a queryset of QI managers, annotated with the number of projects they are supervising
+#     # and ordered by the number of projects in descending order
+#     qi_team_members = Qi_team_members.objects.annotate(
+#         num_projects=Count('qi_project')
+#     ).order_by('-num_projects')
+#     print(qi_team_members)
+#
+#     # Create the context variable to pass to the template
+#     context = {
+#         'qi_team_members': qi_team_members,
+#     }
+#
+#     # Render the template with the context variable
+#     return render(request, 'project/qi_team_members.html', context)
 @login_required(login_url='login')
-def qi_managers(request):
-    qi_managers_list = Qi_managers.objects.all()
-    qi_managers_ = QI_Projects.objects.all()
+def qi_team_members_view(request):
+    # """
+    # Retrieves all Qi_team_members associated with each user, then it counts the number of `qi_project` objects
+    # associated with each user and store the number of projects into the num_projects.
+    # Returns the template of qi_team_members with the data of the number of projects for each user
+    # """
+    # Retrieve all Qi_team_members and their associated user, counts the number of qi_project per user and order by user
+    # team_members = Qi_team_members.objects.values(
+    #     'user__first_name','user__last_name','user__email','user__phone_number','choose_qi_team_member_level','user__id'
+    # ).annotate(num_projects=Count('qi_project')).order_by('user')
 
-    if qi_managers_:
-        # Get df for QI managers with projects
-        list_of_projects = [
-            {
-                # {'project_ids': x.id,
-                'First name': x.qi_manager.first_name,
-                'Last name': x.qi_manager.last_name,
-                'Email': x.qi_manager.email,
-                'Phone Number': x.qi_manager.phone_number,
-                'QI_manager_id': x.qi_manager.id,
-                'Designation': x.qi_manager.designation,
-                'Date created': x.qi_manager.date_created,
-            } for x in qi_managers_
-        ]
-        qi_managers_with_projects = pd.DataFrame(list_of_projects)
-        # pandas count frequency of column value in another dataframe column
-        qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
-            qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
-        qi_managers_with_projects = qi_managers_with_projects.groupby(
-            ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created']).max(
-            "Projects Supervising").reset_index()
-    else:
-        qi_managers_with_projects = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
-                                                          'QI_manager_id', 'Designation', 'Date created',
-                                                          'Projects Supervising'])
+    """
+    Get the data of qi team members with the number of projects created and participated.
+    :return: Queryset of qi team members with the number of projects created and participated
+    """
+    team_members = Qi_team_members.objects.values(
+        'user__first_name', 'user__last_name', 'user__email', 'user__phone_number', 'choose_qi_team_member_level',
+        'user__id','user__username',
+    ).annotate(num_participating_projects=Count('qi_project'),
+               num_created_projects=Count('created_by', filter=Q(created_by=F('user')))).order_by('user')
 
-    if qi_managers_list:
-        # Get df for QI managers with projects
-        list_of_projects = [
-            {
-                # {'project_ids': x.id,
-                'First name': x.first_name,
-                'Last name': x.last_name,
-                'Email': x.email,
-                'Phone Number': x.phone_number,
+    # TODO: INCLUDE PROJECTS CREATED BUT USER NOT A TEAM MEMBER
 
-                'QI_manager_id': x.id,
-                'Designation': x.designation,
-                'Date created': x.date_created,
-            } for x in qi_managers_list
-        ]
-        # convert data from database to a dataframe
-        qi_managers_without_projects = pd.DataFrame(list_of_projects)
-        qi_managers_without_projects["Projects Supervising"] = 0
-        qi_managers_without_projects = qi_managers_without_projects[
-            ~qi_managers_without_projects['QI_manager_id'].isin(list(qi_managers_with_projects['QI_manager_id']))]
-    else:
-        qi_managers_without_projects = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
-                                                             'QI_manager_id', 'Designation', 'Date created',
-                                                             'Projects Supervising'])
+    # team_members = NewUser.objects.values(
+    #     'first_name', 'last_name', 'email', 'phone_number', 'id', 'username'
+    # ).annotate(num_created_projects=Count('qi_projects')).annotate(
+    #     num_participating_projects=Count('qi_team_members__qi_projects', filter=~Q(qi_projects__created_by=F('id'))))
 
-    # Join df for all QI managers with and without
-    qi_managers = pd.concat([qi_managers_with_projects, qi_managers_without_projects])
-    qi_managers = qi_managers.sort_values("Projects Supervising", ascending=False).reset_index()
-    qi_managers.reset_index(drop=True, inplace=True)
-    qi_managers.index += 1
-    # del qi_managers['QI_manager id']
-    if 'index' in qi_managers.columns:
-        del qi_managers['index']
+    # team_members = Qi_team_members.objects.values('user__id').annotate(
+    #     num_created_projects=Count('created_by', filter=Q(created_by=F('user')))
+    # )
 
+    # Render the template with the queryset of data
+    return render(request, 'project/qi_team_members.html', {'team_members': team_members})
+
+
+@login_required(login_url='login')
+def qi_team_involved(request, pk):
+    projects = Qi_team_members.objects.filter(user__id=pk)
+
+    facility_name = pk
+
+    context = {"projects": projects,
+               "facility_name": facility_name,
+
+               }
+    return render(request, "project/qi_team_involved.html", context)
+
+
+
+# @login_required(login_url='login')
+# def qi_managers(request):
+#     qi_managers_list = Qi_managers.objects.all()
+#     qi_managers_ = QI_Projects.objects.all()
+#
+#     if qi_managers_:
+#         # Get df for QI managers with projects
+#         list_of_projects = [
+#             {
+#                 # {'project_ids': x.id,
+#                 'First name': x.qi_manager.first_name,
+#                 'Last name': x.qi_manager.last_name,
+#                 'Email': x.qi_manager.email,
+#                 'Phone Number': x.qi_manager.phone_number,
+#                 'QI_manager_id': x.qi_manager.id,
+#                 'Designation': x.qi_manager.designation,
+#                 'Date created': x.qi_manager.date_created,
+#             } for x in qi_managers_
+#         ]
+#         qi_managers_with_projects = pd.DataFrame(list_of_projects)
+#         # pandas count frequency of column value in another dataframe column
+#         qi_managers_with_projects["Projects Supervising"] = qi_managers_with_projects["First name"].map(
+#             qi_managers_with_projects["First name"].value_counts()).fillna(0).astype(int)
+#         qi_managers_with_projects = qi_managers_with_projects.groupby(
+#             ['First name', 'Last name', 'Email', 'Phone Number', 'Designation', 'Date created']).max(
+#             "Projects Supervising").reset_index()
+#     else:
+#         qi_managers_with_projects = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
+#                                                           'QI_manager_id', 'Designation', 'Date created',
+#                                                           'Projects Supervising'])
+#
+#     if qi_managers_list:
+#         # Get df for QI managers with projects
+#         list_of_projects = [
+#             {
+#                 # {'project_ids': x.id,
+#                 'First name': x.first_name,
+#                 'Last name': x.last_name,
+#                 'Email': x.email,
+#                 'Phone Number': x.phone_number,
+#
+#                 'QI_manager_id': x.id,
+#                 'Designation': x.designation,
+#                 'Date created': x.date_created,
+#             } for x in qi_managers_list
+#         ]
+#         # convert data from database to a dataframe
+#         qi_managers_without_projects = pd.DataFrame(list_of_projects)
+#         qi_managers_without_projects["Projects Supervising"] = 0
+#         qi_managers_without_projects = qi_managers_without_projects[
+#             ~qi_managers_without_projects['QI_manager_id'].isin(list(qi_managers_with_projects['QI_manager_id']))]
+#     else:
+#         qi_managers_without_projects = pd.DataFrame(columns=['First name', 'Last name', 'Email', 'Phone Number',
+#                                                              'QI_manager_id', 'Designation', 'Date created',
+#                                                              'Projects Supervising'])
+#
+#     # Join df for all QI managers with and without
+#     qi_managers = pd.concat([qi_managers_with_projects, qi_managers_without_projects])
+#     qi_managers = qi_managers.sort_values("Projects Supervising", ascending=False).reset_index()
+#     qi_managers.reset_index(drop=True, inplace=True)
+#     qi_managers.index += 1
+#     # del qi_managers['QI_manager id']
+#     if 'index' in qi_managers.columns:
+#         del qi_managers['index']
+#
+#     context = {
+#         "qi_managers_list": qi_managers_list,
+#         "qi_managers": qi_managers,
+#     }
+#     return render(request, "project/qi_managers.html", context)
+
+
+@login_required(login_url='login')
+def qi_managers_view(request):
+    """
+    A view that displays the first name, last name, email, and number of projects
+    for each QI manager in a table.
+    """
+    # Get a queryset of QI managers, annotated with the number of projects they are supervising
+    # and ordered by the number of projects in descending order
+    qi_managers = Qi_managers.objects.annotate(num_projects=Count('qi_projects')).order_by('-num_projects')
+    print(qi_managers)
+
+    # Create the context variable to pass to the template
     context = {
-        "qi_managers_list": qi_managers_list,
-        "qi_managers": qi_managers,
+        'qi_managers': qi_managers
     }
-    return render(request, "project/qi_managers.html", context)
+
+    # Render the template with the context variable
+    return render(request, 'project/qi_managers.html', context)
 
 
 @login_required(login_url='login')
@@ -2669,12 +2761,11 @@ def untracked_projects(request):
 
 
 def add_stake_holders(request, pk):
+    facility_project = QI_Projects.objects.get(id=pk)
+
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
-    facility_project = QI_Projects.objects.get(id=pk)
-    print("facility_project.facility_name::::::::::")
-    print(facility_project.facility_name)
     if request.method == "POST":
         stakeholderform = StakeholderForm(request.POST)
         if stakeholderform.is_valid():
@@ -2682,7 +2773,8 @@ def add_stake_holders(request, pk):
 
             post.facility = Facilities.objects.get(facilities=facility_project.facility_name)
             post.save()
-            return HttpResponseRedirect(request.session['page_from'])
+            # return HttpResponseRedirect(request.session['page_from'])
+            return redirect(request.session['page_from'])
     else:
         stakeholderform = StakeholderForm()
     context = {"stakeholderform": stakeholderform,

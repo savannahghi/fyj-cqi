@@ -106,7 +106,7 @@
     					<th>QI team member level</th>
     					<th>Project Participation</th>
     					<th>Projects Created</th>
-    					<th></th>
+{#    					<th></th>#}
     				</tr>
     			</thead>
 
@@ -135,9 +135,9 @@
                                 {{ team.num_created_projects }}</a></strong>
 
                         </td>
-                    <td>
-                        <a href="{% url 'qi_team_involved' team.user__id %}" class="btn btn-secondary" role="button">View Projects</a>
-                    </td>
+{#                    <td>#}
+{#                        <a href="{% url 'qi_team_involved' team.user__id %}" class="btn btn-secondary" role="button">View Projects</a>#}
+{#                    </td>#}
 
                     </tr>
                 {% endfor %}

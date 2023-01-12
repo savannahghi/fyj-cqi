@@ -283,13 +283,26 @@ class MilestoneForm(ModelForm):
 
 
 class ActionPlanForm(ModelForm):
+    # Define the form fields and their properties
     class Meta:
-        model = ActionPlan
-        fields = "__all__"
-        exclude= ['facility','qi_project','created_by','progress','timeframe']
+        model = ActionPlan  # specify the model that the form is based on
+        fields = "__all__"  # include all fields from the model
+        exclude = ['facility', 'qi_project', 'created_by', 'progress',
+                   'timeframe']  # exclude these fields from the form
         widgets = {
-            'responsible': forms.CheckboxSelectMultiple
+            'responsible': forms.CheckboxSelectMultiple  # render the 'responsible' field as checkboxes
         }
+
+    def __init__(self, facility, qi_projects, *args, **kwargs):
+        # call the parent class's init method
+        super(ActionPlanForm, self).__init__(*args, **kwargs)
+        # filter the 'responsible' field's queryset based on the passed facility and qi_project
+        self.fields['responsible'].queryset = Qi_team_members.objects.filter(facility=facility, qi_project=qi_projects)
+        # check if an instance is passed to the form
+        if 'instance' in kwargs:
+            instance = kwargs.pop('instance')
+            # set the initial value of the 'responsible' field to the current values of the instance
+            self.fields['responsible'].initial = [tm.pk for tm in instance.responsible.all()]
 
     # def save(self, commit=True):
     #     instance = super().save(commit=False)

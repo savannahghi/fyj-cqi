@@ -525,7 +525,7 @@
                 </td>
                 <td>
                     {% for qi_member in action_plan.responsible.all %}
-                        {{ qi_member.first_name }} {{ qi_member.last_name }} ,
+                        {{ qi_member.user.first_name }} {{ qi_member.user.last_name }} ,
                     {% endfor %}
                     <br>
                     <br>

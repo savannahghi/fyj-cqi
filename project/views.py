@@ -1878,16 +1878,12 @@ def delete_qi_team_member(request, pk):
 
 @login_required(login_url='login')
 def update_qi_team_member(request, pk):
-    print("pk::::::::::::::::::::")
-    print(pk)
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Qi_team_members.objects.get(id=pk)
-    print("item::::::::::::::::::::")
-    print(item.qi_project_id)
     qi_project = QI_Projects.objects.get(id=item.qi_project_id)
     if request.method == "POST":
-        form = Qi_team_membersForm(request.POST, instance=item.id)
+        form = Qi_team_membersForm(request.POST, instance=item)
         if form.is_valid():
             form.save()
             return HttpResponseRedirect(request.session['page_from'])
@@ -2938,8 +2934,15 @@ def delete_milestone(request, pk):
 def add_corrective_action(request, pk):
     # facility_project = QI_Projects.objects.get(id=pk)
     facility_project = get_object_or_404(QI_Projects, id=pk)
+    print("facility_project.facility_name:::::::::")
+    print(facility_project.facility_name.id)
     qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
+    print(qi_team_members)
     qi_project = QI_Projects.objects.get(id=pk)
+
+    facility = facility_project.facility_name
+
+    qi_projects = facility_project
 
     today = timezone.now().date()
     # print("qi_project::::::::::::::::::::::")
@@ -2951,7 +2954,7 @@ def add_corrective_action(request, pk):
     if request.method == "POST":
         print("request.POST:::::::::::::::::::::::")
         print(request.POST)
-        form = ActionPlanForm(request.POST)
+        form = ActionPlanForm(facility,qi_projects,request.POST)
         if form.is_valid():
             print("form.cleaned_data:::::::::::::::::::")
             print(form.cleaned_data)
@@ -2970,7 +2973,7 @@ def add_corrective_action(request, pk):
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = ActionPlanForm()
+        form = ActionPlanForm(facility,qi_projects)
     context = {"form": form,
                "title": "Add Action Plan",
                "qi_team_members": qi_team_members,
@@ -2986,10 +2989,15 @@ def update_action_plan(request, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     action_plan = ActionPlan.objects.get(id=pk)
+    print(action_plan.facility)
+    print(action_plan)
+    facility = action_plan.facility
+    qi_projects = action_plan.qi_project
+
     qi_project = QI_Projects.objects.get(id=action_plan.qi_project_id)
     qi_team_members = Qi_team_members.objects.filter(qi_project=action_plan.qi_project)
     if request.method == "POST":
-        form = ActionPlanForm(request.POST, instance=action_plan)
+        form = ActionPlanForm(facility,qi_projects,request.POST, instance=action_plan)
         if form.is_valid():
             # responsible = form.cleaned_data['responsible']
             post = form.save(commit=False)
@@ -3003,7 +3011,7 @@ def update_action_plan(request, pk):
             form.save_m2m()
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = ActionPlanForm(instance=action_plan, initial={'responsible': action_plan.responsible.all()})
+        form = ActionPlanForm(facility,qi_projects,instance=action_plan)
     context = {
         "form": form,
         "qi_team_members": qi_team_members,

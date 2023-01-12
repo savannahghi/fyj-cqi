@@ -69,13 +69,17 @@
                         </div>
                   </form>
                 {% elif "Action Plan" in title %}
-                  <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                  <form class="row mt-5" method="POST"  enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
                         {% for field in form %}
                             {% if "comment" in field.html_name or "tested" in field.html_name|lower%}
                                 <div class="col-md-12 mt-4">
                                     {{ field|as_crispy_field }}
                                 </div>
+{#                            {% elif "responsible" in field.html_name|lower %}#}
+{#                                <div class="col-md-12 mt-4">#}
+{#                                    {{ field|as_crispy_field }}#}
+{#                                </div>#}
                             {% else %}
                                 <div class="col-md-6 mt-4">
                                     {{ field|as_crispy_field }}

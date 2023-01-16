@@ -39,6 +39,10 @@ urlpatterns = [
     path('canceled-projects/<str:pk>', canceled_projects, name="canceled_projects"),
     path('not-started/<str:pk>', not_started, name="not_started"),
     path('completed-closed/<str:pk>', completed_closed, name="completed_closed"),
+    path('add-lesson-learnt/<int:pk>', add_lesson_learnt, name="add_lesson_learnt"),
+    path('lesson-learnt/', lesson_learnt, name="lesson_learnt"),
+
+
     # path('archive-project/<int:project_id>', archive_project, name="archive_project"),
     # path('unarchive-project/<int:pk>', unarchive_project, name="unarchive_project"),
     path('unarchive-project/<int:project_id>', toggle_archive_project, name="toggle_archive_project"),
@@ -63,6 +67,7 @@ urlpatterns = [
     path('add-qi-team-member/<int:pk>', add_qi_team_member, name="add_qi_team_member"),
     path('add-project-milestone/<int:pk>', add_project_milestone, name="add_project_milestone"),
     path('add-corrective-action/<int:pk>', add_corrective_action, name="add_corrective_action"),
+    path('add-lesson-learnt/', add_lesson_learnt, name="add_lesson_learnt"),
 
     path('qi-projects-involved-in/<int:pk>', qi_team_involved, name="qi_team_involved"),
 

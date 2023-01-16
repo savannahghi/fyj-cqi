@@ -312,3 +312,45 @@ class ActionPlanForm(ModelForm):
     #     # Save many-to-many relationships
     #     self.save_m2m()
     #     return instance
+
+
+class Lesson_learnedForm(ModelForm):
+    # Define the form fields and their properties
+    class Meta:
+        model= Lesson_learned
+        fields = "__all__"
+        exclude = ['project_name','created_by','modified_by']
+        widgets = {
+
+            'key_successes': forms.Textarea(attrs={
+                'placeholder': "Describe the successes that were encountered during the project. This "
+                               "can help others understand what worked well, and how those lessons can be "
+                               "applied to future projects.",
+                'style': 'font-size: 14px;', }),
+
+            'challenges': forms.Textarea(attrs={
+                'placeholder': "Describe the challenges that were encountered during the project. This can"
+                               " help others understand what what didn't work well, and how those lessons can be "
+                               "applied to future projects.",
+                'style': 'font-size: 14px;', }),
+            'best_practices': forms.Textarea(attrs={
+                'placeholder': "Include any best practices or recommendations that were identified during the "
+                               "project. These can be used to improve the process in the future.",
+                'style': 'font-size: 14px;', }),
+            'resources': forms.Textarea(attrs={
+                'placeholder': "List any resources that were used during the project, such as templates, forms, "
+                               "or tools. This can help others access the same information and resources.",
+                'style': 'font-size: 14px;', }),
+            'future_plans': forms.Textarea(attrs={
+                'placeholder': "Describe any future improvement plans identified during the project and how they "
+                               "could be implemented.",
+                'style': 'font-size: 14px;', }),
+            'recommendations': forms.Textarea(attrs={
+                'placeholder': "List the recommendations here",
+                'style': 'font-size: 14px;', }),
+            'problem_or_opportunity': forms.Textarea(attrs={
+                'placeholder': "This field describes the problem or opportunity that the CQI project is addressing. "
+                               "Please provide a brief description of the problem or opportunity the CQI project aims "
+                               "to address, including any relevant goals, objectives, and desired outcomes.",
+                'style': 'font-size: 14px;', }),
+        }

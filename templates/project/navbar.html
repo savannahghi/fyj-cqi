@@ -10,6 +10,8 @@
 {% url "resources" as resources %}
 {% url "facilities_landing_page" as facilities_landing_page %}
 {% url "sub_counties_list" as sub_counties_list %}
+{% url "lesson_learnt" as lesson_learnt %}
+{% url 'completed_closed' pk='Completed-or-Closed' as completed_closed %}
 
 
 {% block nav %}
@@ -75,6 +77,18 @@
              <a class="nav-link {% if request.path == archived %} active{% endif %}" href="{% url 'archived' %}">
               <span data-feather="layers" class="align-text-bottom"></span>
               Archived Projects
+            </a>
+          </li>
+          <li class="nav-item">
+             <a class="nav-link {% if request.path == completed_closed %} active{% endif %}" href="{{ completed_closed }}">
+              <span data-feather="check-circle" class="align-text-bottom"></span>
+              Closed projects
+            </a>
+        </li>
+        <li class="nav-item">
+             <a class="nav-link {% if request.path == lesson_learnt %} active{% endif %}" href="{% url 'lesson_learnt' %}">
+              <span data-feather="info" class="align-text-bottom"></span>
+              Lesson Learnt
             </a>
           </li>
                   <li class="nav-item">

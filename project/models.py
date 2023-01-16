@@ -151,7 +151,7 @@ class QI_Projects(models.Model):
     team_member = models.ForeignKey('Qi_team_members', on_delete=models.CASCADE, null=True, blank=True)
     STATUS_CHOICES = (
         ('Started or Ongoing', 'STARTED OR ONGOING'),
-        ('Completed or Closed', 'COMPLETED OR CLOSED'),
+        ('Completed-or-Closed', 'COMPLETED OR CLOSED'),
         ('Canceled', 'CANCELED'),
         ('Not started', 'NOT STARTED'),
         ('Postponed', 'POSTPONED'),
@@ -860,3 +860,23 @@ class ActionPlan(models.Model):
 
     def __str__(self):
         return self.corrective_action + "-" + str(self.responsible)
+
+
+class Lesson_learned(models.Model):
+    project_name = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    problem_or_opportunity = models.TextField()
+    # goals_and_objectives = models.TextField()
+    # results = models.TextField()
+    key_successes = models.TextField()
+    challenges = models.TextField()
+    best_practices = models.TextField()
+    recommendations = models.TextField()
+    resources = models.TextField()
+    # contact_info = models.TextField()
+    created_by = models.ForeignKey(NewUser, on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                    default=None, on_delete=models.CASCADE, related_name='+')
+    future_plans = models.TextField()
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
+

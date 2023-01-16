@@ -5,6 +5,7 @@ import pandas as pd
 # from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 # from django.core.files.storage import FileSystemStorage
+from django.contrib import messages
 
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db import IntegrityError
@@ -21,7 +22,7 @@ from account.forms import UpdateUserForm
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
-    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm
+    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm
 from .filters import *
 
 import plotly.express as px
@@ -748,6 +749,7 @@ def update_project(request, pk):
             post = form.save(commit=False)
             # get clean data from the form
             facility_name = form.cleaned_data['facility_name']
+            measurement_status = form.cleaned_data['measurement_status']
 
             facility_id = Facilities.objects.get(facilities=facility_name)
             # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
@@ -765,8 +767,14 @@ def update_project(request, pk):
                     post.county = Counties.objects.get(id=county.counties_id)
             # save
             post.save()
-            # redirect back to the page the user was from after saving the form
-            return HttpResponseRedirect(request.session['page_from'])
+
+            print("CLEAN DATA:::::::::::::")
+            print(measurement_status)
+            if measurement_status == "Completed or Closed":
+                return redirect("lesson_learnt")
+            else:
+                # redirect back to the page the user was from after saving the form
+                return HttpResponseRedirect(request.session['page_from'])
     else:
         form = QI_ProjectsForm(instance=project)
     context = {"form": form}
@@ -1635,6 +1643,46 @@ def completed_closed(request, pk):
 
 
 @login_required(login_url='login')
+def lesson_learnt(request):
+    lesson_learnt = Lesson_learned.objects.all()
+    projects = lesson_learnt.select_related('project_name')
+
+    # facility_name = pk
+    context = {"lesson_learnt": lesson_learnt,
+               "projects": projects,
+
+               }
+    return render(request, "project/lesson_learnt.html", context)
+
+
+@login_required(login_url='login')
+def add_lesson_learnt(request, pk):
+    project = QI_Projects.objects.get(id=pk)
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = Lesson_learnedForm(request.POST)
+        if form.is_valid():
+            # form.save()
+            post = form.save(commit=False)
+            post.project_name = project
+            post.created_by = request.user
+            post.save()
+            messages.success(request, f"Lesson learnt for {post.project_name} added successfully.")
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = Lesson_learnedForm()
+    context = {"form": form,
+               "qi_project": project,
+               }
+
+    return render(request, "project/add_lesson_learnt.html", context)
+
+
+@login_required(login_url='login')
 def ongoing(request, pk):
     projects = QI_Projects.objects.filter(measurement_status=pk)
 
@@ -2060,7 +2108,7 @@ def qi_team_members_view(request):
     """
     team_members = Qi_team_members.objects.values(
         'user__first_name', 'user__last_name', 'user__email', 'user__phone_number', 'choose_qi_team_member_level',
-        'user__id','user__username',
+        'user__id', 'user__username',
     ).annotate(num_participating_projects=Count('qi_project'),
                num_created_projects=Count('created_by', filter=Q(created_by=F('user')))).order_by('user')
 
@@ -2090,7 +2138,6 @@ def qi_team_involved(request, pk):
 
                }
     return render(request, "project/qi_team_involved.html", context)
-
 
 
 # @login_required(login_url='login')
@@ -2954,7 +3001,7 @@ def add_corrective_action(request, pk):
     if request.method == "POST":
         print("request.POST:::::::::::::::::::::::")
         print(request.POST)
-        form = ActionPlanForm(facility,qi_projects,request.POST)
+        form = ActionPlanForm(facility, qi_projects, request.POST)
         if form.is_valid():
             print("form.cleaned_data:::::::::::::::::::")
             print(form.cleaned_data)
@@ -2973,7 +3020,7 @@ def add_corrective_action(request, pk):
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = ActionPlanForm(facility,qi_projects)
+        form = ActionPlanForm(facility, qi_projects)
     context = {"form": form,
                "title": "Add Action Plan",
                "qi_team_members": qi_team_members,
@@ -2997,7 +3044,7 @@ def update_action_plan(request, pk):
     qi_project = QI_Projects.objects.get(id=action_plan.qi_project_id)
     qi_team_members = Qi_team_members.objects.filter(qi_project=action_plan.qi_project)
     if request.method == "POST":
-        form = ActionPlanForm(facility,qi_projects,request.POST, instance=action_plan)
+        form = ActionPlanForm(facility, qi_projects, request.POST, instance=action_plan)
         if form.is_valid():
             # responsible = form.cleaned_data['responsible']
             post = form.save(commit=False)
@@ -3011,7 +3058,7 @@ def update_action_plan(request, pk):
             form.save_m2m()
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = ActionPlanForm(facility,qi_projects,instance=action_plan)
+        form = ActionPlanForm(facility, qi_projects, instance=action_plan)
     context = {
         "form": form,
         "qi_team_members": qi_team_members,

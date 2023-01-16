@@ -55,7 +55,8 @@
 {#            <h5 class="card-title">{{ facility_project.project_title}}</h5>#}
               <div class="row">
                   <div class="col-md-3">
-                  <p class="card-text"><strong>Created by : </strong>{{ facility_project.created_by|upper }}</p>
+                  <p class="card-text"><strong>Created by : </strong>{{ facility_project.created_by.first_name|upper }}
+                   {{ facility_project.created_by.last_name|upper }}</p>
               </div>
                   <div class="col-md-3">
                   <p class="card-text"><strong>Start date : </strong>{{ facility_project.start_date|date:"jS M Y" }}</p>

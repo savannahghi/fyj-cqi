@@ -21,6 +21,31 @@ class QI_ProjectsForm(ModelForm):
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone', 'county', 'sub_county',
                    'department'
                    ]
+        widgets = {
+            'problem_background': forms.Textarea(attrs={
+                'placeholder': 'Include current status, previous attempt, relevant research and studies, barriers, '
+                               'importance of the change you intend to make and the need for improvement. For '
+                               'example: The XYZ health center currently has a viral load uptake rate of 50%. '
+                               'Despite previous efforts to increase uptake, barriers such as lack of resources, '
+                               'education, and awareness among patients have hindered progress. Research has shown '
+                               'that viral load testing is crucial in monitoring the effectiveness of antiretroviral '
+                               'therapy (ART) and identifying potential resistance to ART. However, low viral load '
+                               'uptake at the health center may lead to poor health outcomes for patients living with '
+                               'HIV and hinder population-level HIV control. Given the importance of viral load '
+                               'testing and the need for improvement at the XYZ health center, this CQI project aims '
+                               'to increase viral load uptake from 50% to 100% by January 2023.'}),
+            'objective': forms.Textarea(attrs={
+                'placeholder': "A project objective is a clear and specific statement that defines the goal or "
+                               "outcome that the project is aiming to achieve. It should be a summary of the problem "
+                               "background and should indicate the gap between the current situation and the desired "
+                               "outcome. For example: To increase the viral load uptake from 50% to 100% by January "
+                               "2023, by implementing education and training for staff, providing better systems for "
+                               "patients to receive their test results in a timely manner and collaborating with other "
+                               "organizations to improve services."}),
+            'project_title': forms.TextInput(attrs={
+                'placeholder': "A project title is a brief, clear, and descriptive name for the project that "
+                               "summarizes the main focus or objective of the project. "}),
+        }
         # widgets = {
         #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
         #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
@@ -64,11 +89,11 @@ class QI_Projects_countyForm(ModelForm):
         model = County_qi_projects
         fields = "__all__"
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
-        widgets = {
-            'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
-                                                attrs={'class': 'form-control', 'placeholder': 'Select Date',
-                                                       'type': 'date', 'max': datetime.now().date}),
-        }
+        # widgets = {
+        #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
+        #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
+        #                                                'type': 'date', 'max': datetime.now().date}),
+        # }
 
     field_order = ['qi_manager']
 
@@ -78,11 +103,11 @@ class QI_Projects_hubForm(ModelForm):
         model = Hub_qi_projects
         fields = "__all__"
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
-        widgets = {
-            'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
-                                                attrs={'class': 'form-control', 'placeholder': 'Select Date',
-                                                       'type': 'date', 'max': datetime.now().date}),
-        }
+        # widgets = {
+        #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
+        #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
+        #                                                'type': 'date', 'max': datetime.now().date}),
+        # }
 
     field_order = ['qi_manager']
 

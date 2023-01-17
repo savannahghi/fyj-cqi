@@ -91,7 +91,7 @@
                                                 </div>
                                               </div>
                                             <a href="{% url 'single_project' qi.id %}" class="btn btn-primary">View project</a>
-                                            <a href="{% url 'qicreator_filter_project' qi.created_by %}" class="btn btn-secondary">Created by : {{ qi.created_by }}</a>
+                                            <a href="{% url 'qicreator_filter_project' qi.created_by.username %}" class="btn btn-secondary">Created by : {{ qi.created_by.username }}</a>
 
                                             <a href="{% url 'sub_county_filter_project' qi.sub_county.sub_counties %}" class="btn btn-secondary">Sub-county : {{ qi.sub_county.sub_counties }}</a>
                                           </div>

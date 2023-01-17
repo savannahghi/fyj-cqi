@@ -10,11 +10,32 @@
       <div class="container-fluid py-5">
 {#        <h1 class="display-5 fw-bold">FACILITY NAME</h1>#}
 {#        <p class="col-md-8 fs-4">COUNTY/SUBCOUNTY</p>#}
-        <form method="POST" class="mt-5" enctype='multipart/form-data'>
-        {% csrf_token %}
-        {{ form|crispy}}
-         <input class="btn btn-success mt-1" type="submit" value="Update">
-    </form>
+          {% if title == "Update sub counties" %}
+            <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                {% csrf_token %}
+
+                <div class="col-md-6">
+                    {{ form.sub_counties|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.counties|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.facilities|as_crispy_field }}
+                </div>
+                <div class="col-md-3 mt-4 pt-2">
+                    <input class="btn btn-success mt-1" type="submit" value="Submit">
+                </div>
+            </form>
+          {% else %}
+              <form method="POST" class="mt-5" enctype='multipart/form-data'>
+                    {% csrf_token %}
+                    {{ form|crispy}}
+                   <input class="btn btn-success mt-1" type="submit" value="Update">
+            </form>
+            {% endif %}
+
+
       </div>
     </div>
 {#<div class="container mt-3">#}

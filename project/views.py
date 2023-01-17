@@ -574,7 +574,7 @@ def update_sub_counties(request, pk):
     else:
         form = Sub_countiesForm(instance=sub_counties)
     context = {
-        "title": "Update QI manager details",
+        "title": "Update sub counties",
         "form": form
     }
 
@@ -1644,12 +1644,32 @@ def completed_closed(request, pk):
 
 @login_required(login_url='login')
 def lesson_learnt(request):
-    lesson_learnt = Lesson_learned.objects.all()
-    projects = lesson_learnt.select_related('project_name')
+    """
+    This view handles the display of all the lesson_learnt and their related qi_project information.
+    It uses the Lesson_learned model to retrieve all the lesson_learnt and annotates the queryset
+    to include the number of qi_team_members for each lesson_learnt using the Count() method.
+    The annotated queryset is then passed to the template as the context variable 'lesson_learnt'.
+    The template then renders this information in a table format displaying the project title and number of QI team
+    members per qi_project.
+
+    The annotate() method is then used to add an additional field to the queryset, called num_members.
+
+    The Count() function is used to count the number of related qi_team_members for each lesson_learnt. The argument
+    passed to the Count function is the related field name "project_name__qi_team_members" that is used to count the
+    number of related qi_team_members for each lesson_learnt.
+    """
+    # lesson_learnt = Lesson_learned.objects.all().order_by('-date_created')
+    # projects = lesson_learnt.select_related('project_name')
+
+    # Retrieve all the lesson_learnt from the Lesson_learned model and Create context variable 'lesson_learnt' with the
+    # annotated queryset
+    lesson_learnt = Lesson_learned.objects.annotate(num_members=Count('project_name__qi_team_members'))
 
     # facility_name = pk
     context = {"lesson_learnt": lesson_learnt,
-               "projects": projects,
+               # "projects": projects,
+               # "lesson_learnt":lesson_learnt,
+
 
                }
     return render(request, "project/lesson_learnt.html", context)
@@ -1672,14 +1692,61 @@ def add_lesson_learnt(request, pk):
             post.save()
             messages.success(request, f"Lesson learnt for {post.project_name} added successfully.")
             # redirect back to the page the user was from after saving the form
-            return HttpResponseRedirect(request.session['page_from'])
+            # return HttpResponseRedirect(request.session['page_from'])
+            return redirect("lesson_learnt")
     else:
         form = Lesson_learnedForm()
     context = {"form": form,
                "qi_project": project,
+               "title": "ADD",
                }
 
     return render(request, "project/add_lesson_learnt.html", context)
+
+
+@login_required(login_url='login')
+def update_lesson_learnt(request, pk):
+    lesson_learnt = Lesson_learned.objects.get(id=pk)
+    project = QI_Projects.objects.get(id=lesson_learnt.project_name_id)
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = Lesson_learnedForm(request.POST, instance=lesson_learnt)
+        if form.is_valid():
+            form.save()
+            # post = form.save(commit=False)
+            # post.project_name = project
+            # post.created_by = request.user
+            # post.save()
+            # messages.success(request, f"Lesson learnt for {post.project_name} added successfully.")
+            # redirect back to the page the user was from after saving the form
+            # return HttpResponseRedirect(request.session['page_from'])
+            return redirect("lesson_learnt")
+    else:
+        form = Lesson_learnedForm(instance=lesson_learnt)
+    context = {"form": form,
+               "qi_project": project,
+               "title": "UPDATE",
+               }
+
+    return render(request, "project/add_lesson_learnt.html", context)
+
+@login_required(login_url='login')
+def delete_lesson_learnt(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = Lesson_learned.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+        "test_of_changes": item
+    }
+    return render(request, 'project/delete_test_of_change.html', context)
 
 
 @login_required(login_url='login')

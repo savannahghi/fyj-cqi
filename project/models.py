@@ -148,7 +148,7 @@ class QI_Projects(models.Model):
 
     created_by = models.ForeignKey(NewUser, blank=True, null=True,
                                    default=None, on_delete=models.CASCADE)
-    team_member = models.ForeignKey('Qi_team_members', on_delete=models.CASCADE, null=True, blank=True)
+    # team_member = models.ForeignKey('Qi_team_members', on_delete=models.CASCADE, null=True, blank=True)
     STATUS_CHOICES = (
         ('Started or Ongoing', 'STARTED OR ONGOING'),
         ('Completed-or-Closed', 'COMPLETED OR CLOSED'),
@@ -167,7 +167,7 @@ class QI_Projects(models.Model):
         ('Annually', 'Annually'),
     )
     measurement_frequency = models.CharField(max_length=250, choices=FREQUENCY_CHOICES)
-    comments = models.TextField(blank=True)
+    # comments = models.TextField(blank=True)
 
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
@@ -177,7 +177,7 @@ class QI_Projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
-    first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
     class Meta:
@@ -274,7 +274,7 @@ class Subcounty_qi_projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
-    first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
     class Meta:
@@ -371,7 +371,7 @@ class County_qi_projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
-    first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
     class Meta:
@@ -468,7 +468,7 @@ class Hub_qi_projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
-    first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
     class Meta:
@@ -565,7 +565,7 @@ class Program_qi_projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
-    first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
+    # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
     class Meta:

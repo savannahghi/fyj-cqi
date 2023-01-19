@@ -83,6 +83,7 @@ urlpatterns = [
     path('update-sub-counties/<int:pk>/', update_sub_counties, name="update_sub_counties"),
     path('update-action-plan/<int:pk>/', update_action_plan, name="update_action_plan"),
     path('update-lesson-learnt/<int:pk>/', update_lesson_learnt, name="update_lesson_learnt"),
+    path('update-baseline/<int:pk>/', update_baseline, name="update_baseline"),
     path('update-fields', update_fields, name="update_fields"),
 
     path('delete-test-of-change/<int:pk>/', delete_test_of_change, name="delete_test_of_change"),

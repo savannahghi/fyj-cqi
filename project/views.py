@@ -2939,6 +2939,27 @@ def add_baseline_image(request, pk):
 
 
 @login_required(login_url='login')
+def update_baseline(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = Baseline.objects.get(qi_project__id=pk)
+    qi_project = QI_Projects.objects.get(id=pk)
+    if request.method == "POST":
+        form = BaselineForm(request.POST,request.FILES,instance=item)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = BaselineForm(instance=item)
+    context = {
+        "form": form,
+        "title": "Update baseline status",
+        "qi_project": qi_project,
+    }
+    return render(request, 'project/add_milestones.html', context)
+
+
+@login_required(login_url='login')
 def delete_project(request, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')

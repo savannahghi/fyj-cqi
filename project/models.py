@@ -136,6 +136,7 @@ class QI_Projects(models.Model):
     settings = models.CharField(max_length=250)
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
+
     objective = models.TextField()
     # participants = models.TextField()
     # responsible_people = models.TextField()
@@ -177,6 +178,7 @@ class QI_Projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
+
     # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
@@ -274,6 +276,7 @@ class Subcounty_qi_projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
+
     # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
@@ -371,6 +374,7 @@ class County_qi_projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
+
     # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
@@ -468,6 +472,7 @@ class Hub_qi_projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
+
     # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
@@ -565,6 +570,7 @@ class Program_qi_projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
+
     # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
@@ -778,7 +784,7 @@ class Qi_team_members(models.Model):
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
-    user = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE,related_name="team_member")
+    user = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE, related_name="team_member")
 
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
@@ -880,3 +886,18 @@ class Lesson_learned(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 
+
+class Baseline(models.Model):
+    baseline_status = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Baseline status"
+
+    def save(self, commit=True, *args, **kwargs):
+        if commit:
+            image_resize(self.baseline_status, 800, 500)
+        super().save(*args, **kwargs)

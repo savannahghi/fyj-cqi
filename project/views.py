@@ -1,4 +1,5 @@
 # import os.path
+from datetime import datetime, timezone
 from itertools import tee
 
 import pandas as pd
@@ -22,7 +23,8 @@ from account.forms import UpdateUserForm
 from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
-    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm
+    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm, \
+    BaselineForm
 from .filters import *
 
 import plotly.express as px
@@ -767,9 +769,6 @@ def update_project(request, pk):
                     post.county = Counties.objects.get(id=county.counties_id)
             # save
             post.save()
-
-            print("CLEAN DATA:::::::::::::")
-            print(measurement_status)
             if measurement_status == "Completed or Closed":
                 return redirect("lesson_learnt")
             else:
@@ -1641,7 +1640,6 @@ def completed_closed(request, pk):
                }
     return render(request, "project/department_projects.html", context)
 
-
 @login_required(login_url='login')
 def lesson_learnt(request):
     """
@@ -1669,7 +1667,6 @@ def lesson_learnt(request):
     context = {"lesson_learnt": lesson_learnt,
                # "projects": projects,
                # "lesson_learnt":lesson_learnt,
-
 
                }
     return render(request, "project/lesson_learnt.html", context)
@@ -1732,6 +1729,7 @@ def update_lesson_learnt(request, pk):
                }
 
     return render(request, "project/add_lesson_learnt.html", context)
+
 
 @login_required(login_url='login')
 def delete_lesson_learnt(request, pk):
@@ -2288,7 +2286,7 @@ def qi_managers_view(request):
     # Get a queryset of QI managers, annotated with the number of projects they are supervising
     # and ordered by the number of projects in descending order
     qi_managers = Qi_managers.objects.annotate(num_projects=Count('qi_projects')).order_by('-num_projects')
-    print(qi_managers)
+
 
     # Create the context variable to pass to the template
     context = {
@@ -2493,8 +2491,6 @@ def resources(request):
     my_filters = ResourcesFilter(request.GET, queryset=all_resources)
     qi_lists = my_filters.qs
     qi_list = pagination_(request, qi_lists)
-    print("qi_list::::::::::::::::::")
-    print(qi_lists)
 
     context = {"all_resources": all_resources, "my_filters": my_filters, "qi_lists": qi_lists, }
     return render(request, "project/resources.html", context)
@@ -2765,6 +2761,30 @@ def single_project(request, pk):
     action_plan = ActionPlan.objects.filter(qi_project__id=pk).order_by('-percent_completed', 'progress')
     action_plans = pagination_(request, action_plan)
 
+    # get baseline image for this project
+    try:
+        baseline = Baseline.objects.filter(qi_project__id=pk).latest('date_created')
+    except Baseline.DoesNotExist:
+        baseline = None
+
+    # if not baseline.baseline_status:
+    #     baseline.baseline_status = 'media/images/default.png'
+
+    # This work the same way
+    # baseline = Baseline.objects.filter(qi_project__id=pk).order_by('-date_created').first()
+
+    print(baseline)
+
+    today = datetime.now(timezone.utc).date()
+    action_plans = pagination_(request, action_plan)
+
+    # use date filter and get the timestamp first and then subtract the timestamps of both dates to get the difference
+    # in seconds and then convert it to days.
+    for plan in action_plans:
+        plan.progress = (plan.due_date - today).days
+
+
+
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
         stakeholderform = StakeholderForm(request.POST)
@@ -2845,7 +2865,7 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
-                   "milestones": milestones, "action_plans": action_plans, }
+                   "milestones": milestones, "action_plans": action_plans, "today": today,"baseline":baseline}
 
     else:
         project_performance = {}
@@ -2854,7 +2874,7 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
-                   "milestones": milestones, "action_plans": action_plans, }
+                   "milestones": milestones, "action_plans": action_plans, "today": today,"baseline":baseline,}
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -2891,6 +2911,31 @@ def add_stake_holders(request, pk):
 
                }
     return render(request, 'project/stakeholders.html', context)
+
+
+def add_baseline_image(request, pk):
+    facility_project = QI_Projects.objects.get(id=pk)
+
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        baselineform = BaselineForm(request.POST, request.FILES)
+        if baselineform.is_valid():
+            print(baselineform.cleaned_data['baseline_status'])
+            post = baselineform.save(commit=False)
+            #
+            post.facility = Facilities.objects.get(facilities=facility_project.facility_name)
+            post.qi_project = facility_project
+            post.save()
+            # return HttpResponseRedirect(request.session['page_from'])
+            return redirect(request.session['page_from'])
+    else:
+        baselineform = BaselineForm()
+    context = {"form": baselineform,
+
+               }
+    return render(request, 'project/baseline_images.html', context)
 
 
 @login_required(login_url='login')
@@ -3048,10 +3093,7 @@ def delete_milestone(request, pk):
 def add_corrective_action(request, pk):
     # facility_project = QI_Projects.objects.get(id=pk)
     facility_project = get_object_or_404(QI_Projects, id=pk)
-    print("facility_project.facility_name:::::::::")
-    print(facility_project.facility_name.id)
     qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
-    print(qi_team_members)
     qi_project = QI_Projects.objects.get(id=pk)
 
     facility = facility_project.facility_name
@@ -3059,19 +3101,13 @@ def add_corrective_action(request, pk):
     qi_projects = facility_project
 
     today = timezone.now().date()
-    # print("qi_project::::::::::::::::::::::")
-    # print(qi_project.fac)
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
     if request.method == "POST":
-        print("request.POST:::::::::::::::::::::::")
-        print(request.POST)
         form = ActionPlanForm(facility, qi_projects, request.POST)
         if form.is_valid():
-            print("form.cleaned_data:::::::::::::::::::")
-            print(form.cleaned_data)
             # form.save()
             post = form.save(commit=False)
             post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
@@ -3103,8 +3139,6 @@ def update_action_plan(request, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     action_plan = ActionPlan.objects.get(id=pk)
-    print(action_plan.facility)
-    print(action_plan)
     facility = action_plan.facility
     qi_projects = action_plan.qi_project
 

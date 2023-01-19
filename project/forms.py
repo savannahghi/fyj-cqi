@@ -342,9 +342,9 @@ class ActionPlanForm(ModelForm):
 class Lesson_learnedForm(ModelForm):
     # Define the form fields and their properties
     class Meta:
-        model= Lesson_learned
+        model = Lesson_learned
         fields = "__all__"
-        exclude = ['project_name','created_by','modified_by']
+        exclude = ['project_name', 'created_by', 'modified_by']
         widgets = {
 
             'key_successes': forms.Textarea(attrs={
@@ -379,3 +379,10 @@ class Lesson_learnedForm(ModelForm):
                                "to address, including any relevant goals, objectives, and desired outcomes.",
                 'style': 'font-size: 14px;', }),
         }
+
+
+class BaselineForm(ModelForm):
+    class Meta:
+        model = Baseline
+        fields = "__all__"
+        exclude = ['facility', 'qi_project']

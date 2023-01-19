@@ -21,6 +21,7 @@ admin.site.register(Qi_managers)
 admin.site.register(Qi_team_members)
 admin.site.register(ArchiveProject)
 admin.site.register(ActionPlan)
+admin.site.register(Baseline)
 
 # admin.site.register(QI_Projects, SimpleHistoryAdmin)
 # admin.site.register(TestedChange, SimpleHistoryAdmin)

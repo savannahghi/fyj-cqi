@@ -1,6 +1,7 @@
 {% extends 'project/index.html' %}
 {% load static %}
 {% load crispy_forms_tags %}
+{% load mathfilters %}
 
 {% block content %}
     <main>
@@ -84,6 +85,78 @@
         </div>
       </div>
     </div>
+    <h6 class="mt-2"><strong>BASELINE :</strong></h6>
+         <div class="d-flex justify-content-between">
+                        <div>
+                            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapserootcause" role="button" aria-expanded="false" aria-controls="collapserootcause">
+                        BASELINE IN BRIEF
+                        </a>
+                        </div>
+
+{#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                    </div>
+
+                <div class="collapse bg-light mt-2" id="collapserootcause">
+                    <p>The baseline section is an essential part of the CQI process, as it provides a starting point for
+                        measuring progress and identifying areas for improvement. This section of the dashboard is where
+                        you can view and track the current state of a process before quality improvement teams (QIT)
+                        make any modifications. It is also known as the pre-improvement state.
+                    </p>
+                    <p>
+                        In this section, you can view data in charts and tables. The data should be relevant and
+                        accurate, collected using consistent methods and tools. Data can include, but are not limited
+                        to:
+                    </p>
+
+                      <ol>
+                          <li>
+                              Process flow diagrams
+                          </li>
+                          <li>
+                              Statistical process control (SPC) charts
+                          </li>
+                          <li>
+                              Data collection forms
+                          </li>
+                          <li>
+                              Surveys
+                          </li>
+                          <li>
+                              Feedback forms
+                          </li>
+                      </ol>
+
+                      <p>
+                          The data can be used to identify areas for improvement, set performance targets, and measure
+                          the impact of changes made to the process. This information is important for determining the
+                          process's current performance level and identifying specific areas that need improvement.
+                      </p>
+                    <p>
+                        This section will be accessible to all stakeholders. It should be easy to understand and present
+                        information clearly and concisely, allowing everyone involved in the process improvement to
+                        understand the current state of the process and to track progress over time.
+                    </p>
+                    <p>
+                        By regularly monitoring the baseline section, you can ensure that the process is moving in the
+                        right direction and make any necessary adjustments to improve performance. This section should
+                        be used along with other sections, such as process improvement, sustainability, and control plan
+                        to ensure that the process improvement is ongoing and sustainable.
+                    </p>
+                </div>
+
+ <div class="container-fluid mt-2">
+          <div class="row">
+            <div class="col-12">
+             <a href="{% url 'add_baseline_image' facility_project.id %}" class="btn btn-success mb-3">Add Baseline status</a>
+            </div>
+          </div>
+        </div>
+{#<div class="mt-2">#}
+{#        <a href="{% url 'add_baseline_image' facility_project.id %}" class="btn btn-success mb-3">Add Baseline status</a>#}
+{#    </div>#}
+<div class="bg-image hover-zoom magnify" >
+        <img  class=".img-fluid" src="{{MEDIA_URL}}{{baseline.baseline_status.url }}" alt="">
+        </div>
     <h6 class="mt-2"><strong>PROBLEM STATEMENT :</strong></h6>
 <div class="d-flex justify-content-between">
     <div>
@@ -128,7 +201,7 @@
 
 {#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
                     </div>
-                </p>
+
                 <div class="collapse bg-light mt-2" id="collapserootcause">
                     <p>Root cause analysis is a process of identifying the underlying causes of a problem or issue, in
                         order to understand how it occurred and how to prevent it from happening again in the future.
@@ -253,9 +326,20 @@
                           the specific needs and goals of your organization.
                       </p>
                 </div>
-        <div class="bg-image hover-zoom">
-        <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}">
+
+        <div class="container-fluid mt-2">
+          <div class="row">
+            <div class="col-12">
+             <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}" alt="">
+            </div>
+          </div>
         </div>
+
+
+
+{#        <div class="bg-image hover-zoom mt-2">#}
+{#            <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}" alt="">#}
+{#        </div>#}
     {% endif %}
     <h6><strong>OBJECTIVE :</strong></h6>
 <div class="d-flex justify-content-between">
@@ -288,7 +372,6 @@
                             <li><strong>T</strong>IME BOUND: It should have a precise time frame, so that progress can be tracked and
                                 the project can be completed within a reasonable period.</li>
                         </ul>
-                      </p>
                     <p>
                         Overall, an objective is a critical element of a CQI project, as it helps to focus the
                         effort and to guide the development of a plan to achieve the desired outcomes. It should be
@@ -346,7 +429,6 @@
                                 healthcare organizations meet quality standards and requirements.
                             </li>
                         </ul>
-                      </p>
                     <p>
                         In a nutshell, stakeholders in CQI in healthcare may be internal or external to the organization
                         and may have a direct or indirect role in the CQI process. It is crucial to consider the
@@ -486,19 +568,11 @@
 <table class="table table-striped table-hover">
     <thead class="thead-dark">
         <th scope="col"></th>
-{#            {% for col in qi_mans.columns %}#}
-            <th scope="col">Corrective Actions</th>
-            {#              <th scope="col">Last Name</th>#}
-            <th scope="col">Resources</th>
-            <th scope="col">Responsible person(s)</th>
-            <th scope="col">constrains</th>
-
-{#            <th scope="col">start date</th>#}
-{#            <th scope="col">Due date</th>#}
-{#            <th scope="col">Timeframe</th>#}
-            <th scope="col">indicator</th>
-{#            <th scope="col">Percent completed</th>#}
-{#            <th scope="col">Last Update</th>#}
+        <th scope="col">Corrective Actions</th>
+        <th scope="col">Resources</th>
+        <th scope="col">Responsible person(s)</th>
+        <th scope="col">constrains</th>
+        <th scope="col">indicator</th>
 
     </thead>
     <tbody>
@@ -539,32 +613,19 @@
                     <span class="badge alert-warning">Last updated on: {{ action_plan.date_updated|date:"D j M Y H:i" }}</span>
 
                 </td>
-
-{#                <td>#}
-{#                    {{ action_plan.start_date|date:"jS M Y" }}#}
-{#                </td>#}
-{#                <td>#}
-{#                    {{ action_plan.due_date|date:"jS M Y" }}#}
-{#                </td>#}
-{#                <td>#}
-{#                    {{ action_plan.timeframe|add:"0" }} days#}
-{#                </td>#}
                 <td>
                     {{ action_plan.indicator }}
                     <br>
                     <br>
-                    {% if action_plan.progress >= 0 %}
+                    {% if action_plan.progress >= 0 and action_plan.percent_completed != 100 %}
                         <span class="badge alert-info">Remaining time: {{ action_plan.progress|add:"0" }} days</span>
-                        {% else %}
+                    {% elif action_plan.progress < 0 and action_plan.percent_completed != 100 %}
                         <span class="badge alert-danger">Overdue by: {{ action_plan.progress|add:"0" }} days</span>
+                    {% else %}
+                        <span class="badge alert-success">Achieved: {{ action_plan.progress|abs }} days ago</span>
+
                     {% endif %}
                 </td>
-{#                <td>#}
-{#                    {{ action_plan.percent_completed }}%#}
-{#                </td>#}
-{#                <td>#}
-{#                    {{ action_plan.date_updated|date:"jS M Y" }}#}
-{#                </td>#}
                 <td>
                   <a href="{% url 'update_action_plan' action_plan.id %}" class="btn btn-info" role="button">Update</a>
                 </td>
@@ -620,7 +681,6 @@
 
 {#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
                     </div>
-                </p>
                 <div class="collapse bg-light mt-2" id="collapsemilestone">
                     <p>The "Timelines and Milestones" section of a CQI (Continuous Quality Improvement) project workplan outlines
                       the key activities and milestones for the project. It provides a detailed roadmap for the project,
@@ -968,7 +1028,6 @@
                 <div class="d-flex justify-content-evenly">
                     <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
                 </div>
-            </p>
         {% endif %}
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
             <h6 class="d-flex justify-content-evenly">QI Thematic areas for {{ facility_project.facility_name|title }}.</h6>

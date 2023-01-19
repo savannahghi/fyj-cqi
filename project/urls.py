@@ -68,6 +68,7 @@ urlpatterns = [
     path('add-project-milestone/<int:pk>', add_project_milestone, name="add_project_milestone"),
     path('add-corrective-action/<int:pk>', add_corrective_action, name="add_corrective_action"),
     path('add-lesson-learnt/', add_lesson_learnt, name="add_lesson_learnt"),
+    path('add-baseline-image/<int:pk>', add_baseline_image, name="add_baseline_image"),
 
     path('qi-projects-involved-in/<int:pk>', qi_team_involved, name="qi_team_involved"),
 
@@ -93,5 +94,4 @@ urlpatterns = [
     path('delete-milestone/<int:pk>/', delete_milestone, name="delete_milestone"),
     path('delete-action-plan/<int:pk>/', delete_action_plan, name="delete_action_plan"),
     path('delete-lesson-learnt/<int:pk>/', delete_lesson_learnt, name="delete_lesson_learnt"),
-
 ]

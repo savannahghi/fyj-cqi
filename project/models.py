@@ -90,6 +90,7 @@ class Sub_counties(models.Model):
 
 
 class Department(models.Model):
+    # TODO: EXPLORE HOW TO SHARE QI PROJECTS
     department = models.CharField(max_length=250, unique=True)
 
     class Meta:
@@ -100,6 +101,7 @@ class Department(models.Model):
 
 
 class Category(models.Model):
+    # TODO: INCLUDE USER USAGE FOR THE ENTIRE APP (LOGINS AND PAGE VIEWS)
     category = models.CharField(max_length=250, unique=True)
 
     class Meta:
@@ -110,6 +112,8 @@ class Category(models.Model):
 
 
 class QI_Projects(models.Model):
+    # TODO: INCLUDE SIMS REPORTS,DQAs AND CBS REPORTS SHOWING AREAS OF IMPROVEMENT (SHARED EVERY 2 WEEKS) care&rx,
+    #  covid,etc
     FACILITY_CHOICES = read_txt(file_)
     SUB_COUNTY_CHOICES = read_txt(sub_county_file)
     COUNTY_CHOICES = read_txt(county_file)
@@ -869,6 +873,7 @@ class ActionPlan(models.Model):
 
 
 class Lesson_learned(models.Model):
+    # TODO: INCLUDE CONTROL PLAN MODEL
     project_name = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
     problem_or_opportunity = models.TextField()
     # goals_and_objectives = models.TextField()
@@ -888,9 +893,9 @@ class Lesson_learned(models.Model):
 
 
 class Baseline(models.Model):
-    baseline_status = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
-    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
-    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    baseline_status = models.ImageField(upload_to='images', default="images/baseline.png", null=True, blank=True)
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE, null=True, blank=True)
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 

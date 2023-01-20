@@ -433,8 +433,13 @@ def add_project_facility(request):
                     post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
                     sub_county_list.append(sub_county.sub_counties_id)
             for county in all_counties:
-                if sub_county_list[0] == county.sub_counties_id:
-                    post.county = Counties.objects.get(id=county.counties_id)
+                try:
+                    if sub_county_list[0] == county.sub_counties_id:
+                        post.county = Counties.objects.get(id=county.counties_id)
+                except IndexError as e:
+                    text = f"""<h1 class="display-5 fw-bold text-primary" >Kindly update sub county for {facility_name}!</h1>"""
+                    return HttpResponse(text)
+
             # save
             post.save()
             # redirect back to the page the user was from after saving the form
@@ -592,6 +597,7 @@ def add_facility(request):
 
     if request.method == "POST":
         form = FacilitiesForm(request.POST)
+
         try:
             if form.is_valid():
                 form.save()
@@ -1640,6 +1646,7 @@ def completed_closed(request, pk):
                }
     return render(request, "project/department_projects.html", context)
 
+
 @login_required(login_url='login')
 def lesson_learnt(request):
     """
@@ -2287,7 +2294,6 @@ def qi_managers_view(request):
     # and ordered by the number of projects in descending order
     qi_managers = Qi_managers.objects.annotate(num_projects=Count('qi_projects')).order_by('-num_projects')
 
-
     # Create the context variable to pass to the template
     context = {
         'qi_managers': qi_managers
@@ -2395,19 +2401,18 @@ def update_resource(request, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Resources.objects.get(id=pk)
-    form = ResourcesForm(instance=item)
     if request.method == "POST":
         form = ResourcesForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
             return HttpResponseRedirect(request.session['page_from'])
-    # else:
-    #     form = ResourcesForm(instance=item)
+    else:
+        form = ResourcesForm(instance=item)
     context = {
         "form": form,
         "title": "Update Resource",
     }
-    return render(request, 'project/update_resource.html', context)
+    return render(request, 'project/update.html', context)
 
 
 @login_required(login_url='login')
@@ -2783,8 +2788,6 @@ def single_project(request, pk):
     for plan in action_plans:
         plan.progress = (plan.due_date - today).days
 
-
-
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
         stakeholderform = StakeholderForm(request.POST)
@@ -2865,7 +2868,7 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
-                   "milestones": milestones, "action_plans": action_plans, "today": today,"baseline":baseline}
+                   "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline}
 
     else:
         project_performance = {}
@@ -2874,7 +2877,7 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
-                   "milestones": milestones, "action_plans": action_plans, "today": today,"baseline":baseline,}
+                   "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline, }
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -2945,7 +2948,7 @@ def update_baseline(request, pk):
     item = Baseline.objects.get(qi_project__id=pk)
     qi_project = QI_Projects.objects.get(id=pk)
     if request.method == "POST":
-        form = BaselineForm(request.POST,request.FILES,instance=item)
+        form = BaselineForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
             return HttpResponseRedirect(request.session['page_from'])

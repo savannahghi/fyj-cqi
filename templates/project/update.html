@@ -26,6 +26,26 @@
                 <div class="col-md-3 mt-4 pt-2">
                     <input class="btn btn-success mt-1" type="submit" value="Submit">
                 </div>
+               </form>
+            {% elif title == "Update Resource" %}
+                <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                {% csrf_token %}
+
+                <div class="col-md-9">
+                    {{ form.resource_name|as_crispy_field }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.resource_type|as_crispy_field }}
+                </div>
+                <div class="col-md-12">
+                    {{ form.resource|as_crispy_field }}
+                </div>
+                <div class="col-md-12">
+                    {{ form.description|as_crispy_field }}
+                </div>
+                <div class="col-md-3 mt-4 pt-2">
+                    <input class="btn btn-success mt-1" type="submit" value="Submit">
+                </div>
             </form>
           {% else %}
               <form method="POST" class="mt-5" enctype='multipart/form-data'>

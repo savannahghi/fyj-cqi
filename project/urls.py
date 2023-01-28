@@ -41,6 +41,8 @@ urlpatterns = [
     path('completed-closed/<str:pk>', completed_closed, name="completed_closed"),
     path('add-lesson-learnt/<int:pk>', add_lesson_learnt, name="add_lesson_learnt"),
     path('lesson-learnt/', lesson_learnt, name="lesson_learnt"),
+    path('show-comments/<int:pk>', show_project_comments, name="show_project_comments"),
+    path('like-dislike/<int:pk>', like_dislike, name="like_dislike"),
 
 
     # path('archive-project/<int:project_id>', archive_project, name="archive_project"),
@@ -69,6 +71,7 @@ urlpatterns = [
     path('add-corrective-action/<int:pk>', add_corrective_action, name="add_corrective_action"),
     path('add-lesson-learnt/', add_lesson_learnt, name="add_lesson_learnt"),
     path('add-baseline-image/<int:pk>', add_baseline_image, name="add_baseline_image"),
+    path('create-comment/<int:pk>', create_comment, name="create_comment"),
 
     path('qi-projects-involved-in/<int:pk>', qi_team_involved, name="qi_team_involved"),
 
@@ -86,6 +89,8 @@ urlpatterns = [
     path('update-baseline/<int:pk>/', update_baseline, name="update_baseline"),
     path('update-fields', update_fields, name="update_fields"),
 
+    path('update-comments/<int:pk>/', update_comments, name="update_comments"),
+
     path('delete-test-of-change/<int:pk>/', delete_test_of_change, name="delete_test_of_change"),
     path('delete-project/<int:pk>', delete_project, name="delete_project"),
     path('delete-commment/<int:pk>/', delete_comment, name="delete_comment"),
@@ -95,4 +100,5 @@ urlpatterns = [
     path('delete-milestone/<int:pk>/', delete_milestone, name="delete_milestone"),
     path('delete-action-plan/<int:pk>/', delete_action_plan, name="delete_action_plan"),
     path('delete-lesson-learnt/<int:pk>/', delete_lesson_learnt, name="delete_lesson_learnt"),
+    path('delete-comments/<int:pk>/', delete_comments, name="delete_comments"),
 ]

@@ -1018,22 +1018,30 @@
                         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
                         Yes
                         </a>
-                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
+{#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                        <a href="{% url 'show_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
                     </div>
                 </p>
                 <div class="collapse" id="collapseExampleTwo">
-                    <form action="" method="POST">
-                        {% csrf_token %}
-                        {{ form|crispy }}
-                        <input type="submit" class="btn btn-success mt-3">
-                    </form>
+                <form action="{% url 'create_comment' facility_project.id %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent" value="{{ facility_project.id }}">
+                            <textarea name="content" class="form-control" style="width: 100%;"></textarea>
+                            <button class="btn btn-secondary mt-2" type="submit" >Reply</button>
+                        </form>
+{#                    <form action="{% url 'create_comment' facility_project.id %}" method="POST">#}
+{#                        {% csrf_token %}#}
+{#                        {{ form|crispy }}#}
+{#                        <input type="submit" class="btn btn-success mt-3">#}
+{#                    </form>#}
                 </div>
            {% endif %}
         {% endif %}
         {% if user.id == facility_project.created_by_id %}
             <p>
                 <div class="d-flex justify-content-evenly">
-                    <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
+{#                    <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                    <a href="{% url "show_project_comments" facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
                 </div>
         {% endif %}
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">

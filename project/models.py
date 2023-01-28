@@ -637,6 +637,26 @@ class TestedChange(models.Model):
         super().save(*args, **kwargs)
 
 
+class Comment(models.Model):
+    content = models.TextField()
+    author = models.ForeignKey(NewUser, on_delete=models.CASCADE)
+    qi_project_title = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
+    likes = models.IntegerField(default=0)
+    dislikes = models.IntegerField(default=0)
+    comment_date = models.DateTimeField(auto_now_add=True, auto_now=False)
+    comment_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+
+
+class LikeDislike(models.Model):
+    user = models.ForeignKey(NewUser, on_delete=models.CASCADE)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    # is_like = models.BooleanField(default=True)
+    like = models.BooleanField(default=False)
+    dislike = models.BooleanField(default=False)
+
+
 class ProjectComments(models.Model):
     qi_project_title = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
     commented_by = models.ForeignKey(NewUser, blank=True, null=True,
@@ -786,7 +806,7 @@ class Qi_team_members(models.Model):
     impact = models.TextField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
-    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, related_name="qi_team_members")
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
     user = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE, related_name="team_member")
 
@@ -796,6 +816,7 @@ class Qi_team_members(models.Model):
     class Meta:
         # ordering = ['first_name']
         verbose_name_plural = "qi team members"
+        ordering = ['created_by__first_name']
 
     def __str__(self):
         return self.user.first_name + " " + self.user.last_name

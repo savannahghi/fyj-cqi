@@ -56,8 +56,13 @@
                   <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by.username %}">{{ comment.commented_by.username|title }}</a></li>
                   <li>Facility :  {{ comment.qi_project_title.facility|title }}</li>
 
-                  <li>CQI Project created by : <a href="{% url 'qi_creators' comment.qi_project_title.created_by %}">{{ comment.qi_project_title.created_by|title }}</a> ({{ comment.commented_by.phone_number }})</li>
+                  <li>CQI Project created by : <a href="{% url 'qi_creators' comment.qi_project_title.created_by.username %}">{{ comment.qi_project_title.created_by.username|title }}</a> ({{ comment.commented_by.phone_number }})</li>
                   <li>QI Responsible people : {{ comment.qi_project_title.responsible_people }}</li>
+                  <li>QI Responsible people :
+                      {% for team_member in comment.qi_project_title.qi_team_members.all %}
+                        {{ team_member.user.first_name|title }} {{ team_member.user.last_name|title }},
+                    {% endfor %}
+                  </li>
               </ul>
           <div class="d-flex justify-content-evenly">
                 {% if comment.id not in all_responses and user.id == comment.qi_project_title.created_by_id %}

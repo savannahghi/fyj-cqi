@@ -136,6 +136,24 @@
   position: sticky;
   top: 56px; /* this will make the table header stick 56px below the navbar */
 }
+      {#.gradient-custom { /* fallback for old browsers */ background: #4facfe; /* Chrome 10-25,#}
+      {#  Safari 5.1-6 */ background: -webkit-linear-gradient(to bottom right, rgba(79, 172, 254,#}
+      {#  1), rgba(0, 242, 254, 1)); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+,#}
+      {#  Safari 7+ */ background: linear-gradient(to bottom right, rgba(79, 172, 254, 1), rgba(0,#}
+      {#  242, 254, 1)) }#}
+
+      .comments-card {
+  max-width: 100%;
+  {#margin: auto;#}
+}
+      .sub-reply {
+    padding-left: 100px;
+}
+
+.full-width-input {
+    width: 100%;
+}
+
 {##}
 {#@media (max-width: 1200px) {#}
 {#    table {#}
@@ -458,6 +476,10 @@
     let table = document.getElementsByClassName("my-table")[0];
     table.style.marginTop = navbarHeight + 'px';
 </script>
+
+
+
+
 
   </body>
 

@@ -386,3 +386,16 @@ class BaselineForm(ModelForm):
         model = Baseline
         fields = "__all__"
         exclude = ['facility', 'qi_project']
+
+
+class CommentForm(ModelForm):
+    # content = forms.CharField()
+    content = forms.CharField(widget=forms.TextInput(attrs={'class': 'full-width-input'}))
+
+    # content = forms.CharField(widget=forms.Textarea(attrs={'rows': 10, 'cols': 120}))
+
+    class Meta:
+        model = Comment
+        fields = ['content']
+        exclude=['author','parent','parent_id','likes','dislikes']
+

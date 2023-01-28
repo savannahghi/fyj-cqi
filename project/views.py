@@ -7,13 +7,15 @@ import pandas as pd
 from django.contrib.auth.decorators import login_required
 # from django.core.files.storage import FileSystemStorage
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 # from django.db.models import Count, Q
 # from django.forms import forms
 from django.db.models import Count, Q, F
 # from django.utils import timezone
+from django.db.transaction import atomic
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -24,7 +26,7 @@ from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, Proje
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
     ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm, \
-    BaselineForm
+    BaselineForm, CommentForm
 from .filters import *
 
 import plotly.express as px
@@ -2310,7 +2312,10 @@ def audit_trail(request):
 
 @login_required(login_url='login')
 def comments(request):
-    all_comments = ProjectComments.objects.all().order_by('-comment_updated')
+    # all_comments = ProjectComments.objects.all().order_by('-comment_updated')
+    all_comments = ProjectComments.objects.all().prefetch_related('qi_project_title__qi_team_members').order_by(
+        '-comment_updated')
+
     all_responses = ProjectResponses.objects.values_list('comment_id', flat=True)
     context = {
         "all_comments": all_comments,
@@ -2343,25 +2348,21 @@ def comments_with_response(request):
 
 @login_required(login_url='login')
 def single_project_comments(request, pk):
-    all_comments = ProjectComments.objects.filter(qi_project_title__id=pk).order_by('-comment_updated')
-
-    all_responses = ProjectResponses.objects.filter(comment__qi_project_title_id=pk).order_by('-response_updated_date')
-
-    all_responses_ids = ProjectResponses.objects.values_list('comment_id', flat=True)
+    #  retrieve all related ProjectResponses for each comment along with the comment, in a single query and you can
+    #  access the responses directly from the comment obj.
+    all_comments = ProjectComments.objects.filter(
+        qi_project_title__id=pk).prefetch_related('projectresponses_set').select_related(
+        'qi_project_title', 'commented_by').order_by('-comment_updated')
 
     facility_project = QI_Projects.objects.get(id=pk)
 
-    pro_owner = facility_project.projectcomments_set.all()
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
         if form.is_valid():
             post = form.save(commit=False)
-            # get project primary key
-            post.qi_project_title = QI_Projects.objects.get(project_title=facility_project.project_title)
-            post.commented_by = NewUser.objects.get(username=request.user)
-            # save
+            post.qi_project_title = facility_project
+            post.commented_by = request.user
             post.save()
-            # show empty form
             form = ProjectCommentsForm()
     else:
         form = ProjectCommentsForm()
@@ -2369,12 +2370,44 @@ def single_project_comments(request, pk):
     context = {
         "all_comments": all_comments,
         "form": form,
-        "all_responses": all_responses,
-        "facility_project": facility_project,
-        "all_responses_ids": all_responses_ids,
-
+        "facility_project": facility_project
     }
     return render(request, "project/single_comment.html", context)
+
+
+# def single_project_comments(request, pk):
+#     all_comments = ProjectComments.objects.filter(qi_project_title__id=pk).order_by('-comment_updated')
+#
+#     all_responses = ProjectResponses.objects.filter(comment__qi_project_title_id=pk).order_by('-response_updated_date')
+#
+#     all_responses_ids = ProjectResponses.objects.values_list('comment_id', flat=True)
+#
+#     facility_project = QI_Projects.objects.get(id=pk)
+#
+#     # pro_owner = facility_project.projectcomments_set.all()
+#     if request.method == "POST":
+#         form = ProjectCommentsForm(request.POST)
+#         if form.is_valid():
+#             post = form.save(commit=False)
+#             # get project primary key
+#             post.qi_project_title = QI_Projects.objects.get(project_title=facility_project.project_title)
+#             post.commented_by = NewUser.objects.get(username=request.user)
+#             # save
+#             post.save()
+#             # show empty form
+#             form = ProjectCommentsForm()
+#     else:
+#         form = ProjectCommentsForm()
+#
+#     context = {
+#         "all_comments": all_comments,
+#         "form": form,
+#         "all_responses": all_responses,
+#         "facility_project": facility_project,
+#         "all_responses_ids": all_responses_ids,
+#
+#     }
+#     return render(request, "project/single_comment.html", context)
 
 
 @login_required(login_url='login')
@@ -2778,7 +2811,7 @@ def single_project(request, pk):
     # This work the same way
     # baseline = Baseline.objects.filter(qi_project__id=pk).order_by('-date_created').first()
 
-    print(baseline)
+    # print(baseline)
 
     today = datetime.now(timezone.utc).date()
     action_plans = pagination_(request, action_plan)
@@ -2790,19 +2823,19 @@ def single_project(request, pk):
 
     if request.method == "POST":
         form = ProjectCommentsForm(request.POST)
-        stakeholderform = StakeholderForm(request.POST)
-        if form.is_valid() and stakeholderform.is_valid():
+        # stakeholderform = StakeholderForm(request.POST)
+        if form.is_valid():
             post = form.save(commit=False)
             # get project primary key
             post.qi_project_title = QI_Projects.objects.get(project_title=facility_project.project_title)
-            post.commented_by = NewUser.objects.get(username=request.user)
+            post.commented_by = NewUser.objects.get(username=request.user.username)
             # save
             post.save()
             # show empty form
             form = ProjectCommentsForm()
     else:
         form = ProjectCommentsForm()
-        stakeholderform = StakeholderForm()
+        # stakeholderform = StakeholderForm()
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
@@ -2867,7 +2900,9 @@ def single_project(request, pk):
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
-                   "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
+                   "all_archived": all_archived,
+                   # "stakeholderform": stakeholderform,
+                   "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline}
 
     else:
@@ -2876,7 +2911,9 @@ def single_project(request, pk):
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
-                   "all_archived": all_archived, "stakeholderform": stakeholderform, "qi_teams": qi_teams,
+                   "all_archived": all_archived,
+                   # "stakeholderform": stakeholderform,
+                   "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline, }
 
     return render(request, "project/individual_qi_project.html", context)
@@ -2925,7 +2962,6 @@ def add_baseline_image(request, pk):
     if request.method == "POST":
         baselineform = BaselineForm(request.POST, request.FILES)
         if baselineform.is_valid():
-            print(baselineform.cleaned_data['baseline_status'])
             post = baselineform.save(commit=False)
             #
             post.facility = Facilities.objects.get(facilities=facility_project.facility_name)
@@ -3207,3 +3243,176 @@ def delete_action_plan(request, pk):
         "test_of_changes": item
     }
     return render(request, 'project/delete_test_of_change.html', context)
+
+
+# Atomic will ensure data consistency, concurrency control, isolation and performance
+
+@login_required(login_url='login')
+def create_comment(request, pk):
+    # set comment as none
+    comment = None
+    try:
+        # this will allow creating a reply from show comments page
+        comment = Comment.objects.get(id=pk)
+    except ObjectDoesNotExist:
+        # this will allow creating a comment from show single project page
+        qi_project = QI_Projects.objects.get(id=pk)
+    if request.method == "POST":
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            content = form.cleaned_data['content']
+            parent_id = form.cleaned_data.get('parent_id')
+            try:
+                with transaction.atomic():
+                    if parent_id:
+                        parent_comment = Comment.objects.get(id=parent_id)
+                        Comment.objects.create(content=content, parent=parent_comment,
+                                               parent_id=request.POST.get('parent'))
+                    else:
+                        if comment is not None:
+                            Comment.objects.create(content=content, author=request.user,
+                                                   parent_id=request.POST.get('parent'),
+                                                   qi_project_title=comment.qi_project_title)
+                        else:
+                            Comment.objects.create(content=content, author=request.user,
+                                                   qi_project_title=qi_project)
+
+            except ObjectDoesNotExist:
+                form.add_error('parent_id', 'Parent comment does not exist')
+            except PermissionDenied:
+                form.add_error(None, 'You do not have permission to create a comment')
+            else:
+                # try:
+                # return redirect("show_project_comments", pk=pk)
+                return redirect(request.META.get('HTTP_REFERER'))
+    else:
+        form = CommentForm()
+    return render(request, 'project/create_comment.html', {'form': form})
+
+
+def update_comments(request, pk):
+    comment = Comment.objects.get(id=pk)
+    project = QI_Projects.objects.get(id=comment.qi_project_title_id)
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = CommentForm(request.POST, instance=comment)
+        if form.is_valid():
+            form.save()
+            # post = form.save(commit=False)
+            # post.project_name = project
+            # post.created_by = request.user
+            # post.save()
+            # messages.success(request, f"Lesson learnt for {post.project_name} added successfully.")
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+            # return redirect("lesson_learnt")
+    else:
+        form = CommentForm(instance=comment)
+    context = {"form": form,
+               "qi_project": project,
+               # "title": "UPDATE",
+               }
+
+    return render(request, "project/add_lesson_learnt.html", context)
+
+
+def delete_comments(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = Comment.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+        "test_of_changes": item
+    }
+    return render(request, 'project/delete_test_of_change.html', context)
+
+
+def show_project_comments(request, pk):
+    project = QI_Projects.objects.filter(id=pk).first()
+    try:
+        comments = Comment.objects.filter(qi_project_title_id=pk, parent_id=None).order_by('-created_at')
+    except:
+        comments = None
+
+    if not comments:
+        comments = Comment.objects.filter(id=pk).order_by('-created_at')
+    context = {'all_comments': comments,"title":"COMMENTS","qi_project":project,}
+    return render(request, 'project/comments_trial.html', context)
+
+
+# def like_dislike(request, pk):
+#     if request.method == "GET":
+#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+#     comment = Comment.objects.get(id=pk)
+#     if request.user == comment.author:
+#         return HttpResponse("You cannot like or dislike your own comment.")
+#     if request.method == 'POST':
+#         if 'like' in request.POST:
+#             comment.likes += 1
+#         elif 'dislike' in request.POST:
+#             comment.dislikes += 1
+#         comment.save()
+#         return redirect(request.META.get('HTTP_REFERER'))
+#         # return redirect('show_project_comments', pk=pk)
+#     else:
+#         # return redirect('show_project_comments',pk=pk)
+#         return HttpResponseRedirect(request.session['page_from'])
+
+
+def like_dislike(request, pk):
+    """
+    A view function that handles the liking and disliking of a comment.
+    When a user clicks the "like" or "dislike" button on a comment, a POST request is sent to this view.
+    The view then increments the appropriate field on the comment (likes or dislikes) and saves the comment.
+    It then redirects the user back to the previous page.
+    If the request is not a POST request, the user is redirected back to the previous page.
+    """
+    # Get the comment that is being liked/disliked
+    comment = Comment.objects.get(id=pk)
+
+    # Check if the request is a POST request
+    if request.method == 'POST':
+        # check if the user has already liked or disliked the comment
+        like_dislike = LikeDislike.objects.filter(user=request.user, comment=comment).first()
+        if like_dislike:
+            if like_dislike.like:
+                comment.likes -= 1
+                comment.save()
+                like_dislike.delete()
+                messages.info(request, 'Removed your like')
+            else:
+                comment.dislikes -= 1
+                comment.save()
+                like_dislike.delete()
+                messages.info(request, 'Removed your dislike')
+
+            return redirect(request.META.get('HTTP_REFERER'))
+
+        # check if the request user is the author of the comment
+        if request.user.id == comment.author.id:
+            messages.info(request, 'You can not like or dislike your own comment')
+            return redirect(request.META.get('HTTP_REFERER'))
+
+        # check if the user has already liked or disliked the comment
+        if LikeDislike.objects.filter(user=request.user, comment=comment).exists():
+            messages.info(request, 'You have already liked or disliked this comment')
+            return redirect(request.META.get('HTTP_REFERER'))
+        else:
+            if 'like' in request.POST:
+                LikeDislike.objects.create(user=request.user, comment=comment, like=True)
+                comment.likes += 1
+            elif 'dislike' in request.POST:
+                LikeDislike.objects.create(user=request.user, comment=comment, like=False)
+                comment.dislikes += 1
+            comment.save()
+            return redirect(request.META.get('HTTP_REFERER'))
+    else:
+        return redirect(request.META.get('HTTP_REFERER'))
+

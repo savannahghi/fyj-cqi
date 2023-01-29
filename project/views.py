@@ -2310,40 +2310,52 @@ def audit_trail(request):
     return render(request, "project/audit_trail.html")
 
 
-@login_required(login_url='login')
-def comments(request):
-    # all_comments = ProjectComments.objects.all().order_by('-comment_updated')
-    all_comments = ProjectComments.objects.all().prefetch_related('qi_project_title__qi_team_members').order_by(
-        '-comment_updated')
+# @login_required(login_url='login')
+# def comments(request):
+#     # all_comments = ProjectComments.objects.all().order_by('-comment_updated')
+#     all_comments = ProjectComments.objects.all().prefetch_related('qi_project_title__qi_team_members').order_by(
+#         '-comment_updated')
+#
+#     all_responses = ProjectResponses.objects.values_list('comment_id', flat=True)
+#     context = {
+#         "all_comments": all_comments,
+#         "all_responses": all_responses,
+#     }
+#     return render(request, "project/comments.html", context)
 
-    all_responses = ProjectResponses.objects.values_list('comment_id', flat=True)
+
+@login_required(login_url='login')
+def comments_no_response(request):
+    """
+    This view retrieves all comments that are either parent comments or comments that don't have any parent comment.
+    It uses the Comment model and filters out comments that have a parent comment. The filtered comments are then
+    returned to the 'project/comments_no_response.html' template to be displayed.
+    """
+    # Get all comments that have a parent_id of None or are null and exclude any comments whose id is in the list of
+    # parent_id of comments that have a parent_id that is not None or null.
+    all_comments = Comment.objects.filter(Q(parent_id=None) | Q(parent_id__isnull=True)).exclude(
+        id__in=Comment.objects.filter(~Q(parent_id=None) & ~Q(parent_id__isnull=True)).values_list("parent_id",
+                                                                                                   flat=True))
+
+
+
     context = {
         "all_comments": all_comments,
-        "all_responses": all_responses,
+        "title": "Comments without responses"
     }
     return render(request, "project/comments.html", context)
 
 
 @login_required(login_url='login')
-def comments_no_response(request):
-    all_comments = ProjectComments.objects.all().order_by('-comment_updated')
-    all_responses = ProjectResponses.objects.values_list('comment_id', flat=True)
-    context = {
-        "all_comments": all_comments,
-        "all_responses": all_responses,
-    }
-    return render(request, "project/comments_no_response.html", context)
-
-
-@login_required(login_url='login')
 def comments_with_response(request):
-    all_comments = ProjectComments.objects.all().order_by('-comment_updated')
-    all_responses = ProjectResponses.objects.values_list('comment_id', flat=True)
+    all_comments = Comment.objects.filter(
+        id__in=Comment.objects.exclude(parent_id=None).values_list("parent_id", flat=True)
+    ).prefetch_related('qi_project_title__qi_team_members').order_by('-comment_updated')
     context = {
         "all_comments": all_comments,
-        "all_responses": all_responses,
+        "title":"Comments with responses"
     }
-    return render(request, "project/comments_with_response.html", context)
+    return render(request, "project/comments.html", context)
 
 
 @login_required(login_url='login')
@@ -3245,7 +3257,7 @@ def delete_action_plan(request, pk):
     return render(request, 'project/delete_test_of_change.html', context)
 
 
-# Atomic will ensure data consistency, concurrency control, isolation and performance
+
 
 @login_required(login_url='login')
 def create_comment(request, pk):
@@ -3263,6 +3275,7 @@ def create_comment(request, pk):
             content = form.cleaned_data['content']
             parent_id = form.cleaned_data.get('parent_id')
             try:
+                # Atomic will ensure data consistency, concurrency control, isolation and performance
                 with transaction.atomic():
                     if parent_id:
                         parent_comment = Comment.objects.get(id=parent_id)
@@ -3347,23 +3360,21 @@ def show_project_comments(request, pk):
     return render(request, 'project/comments_trial.html', context)
 
 
-# def like_dislike(request, pk):
-#     if request.method == "GET":
-#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-#     comment = Comment.objects.get(id=pk)
-#     if request.user == comment.author:
-#         return HttpResponse("You cannot like or dislike your own comment.")
-#     if request.method == 'POST':
-#         if 'like' in request.POST:
-#             comment.likes += 1
-#         elif 'dislike' in request.POST:
-#             comment.dislikes += 1
-#         comment.save()
-#         return redirect(request.META.get('HTTP_REFERER'))
-#         # return redirect('show_project_comments', pk=pk)
-#     else:
-#         # return redirect('show_project_comments',pk=pk)
-#         return HttpResponseRedirect(request.session['page_from'])
+def show_all_comments(request):
+    # all_comments = ProjectComments.objects.all().order_by('-comment_updated')
+    all_comments = Comment.objects.filter(parent_id=None).prefetch_related('qi_project_title__qi_team_members').order_by(
+        '-comment_updated')
+
+
+
+
+    print(all_comments)
+
+    context = {
+        "all_comments": all_comments,
+        "title": "All comments"
+    }
+    return render(request, "project/comments.html", context)
 
 
 def like_dislike(request, pk):

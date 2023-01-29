@@ -3,19 +3,15 @@
 {% block content %}
 {% load crispy_forms_tags %}
 
+
+<!-- Dynamically add active class to the links -->
+{% url "comments" as comments %}
+{% url "comments_with_response" as comments_with_response %}
+{% url "comments_no_response" as comments_no_response %}
+
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h4>Comments</h4>
-{#        <div class="btn-toolbar mb-2 mb-md-0">#}
-{#          <div class="btn-group me-2">#}
-{#            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>#}
-{#            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>#}
-{#          </div>#}
-{#          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">#}
-{#            <span data-feather="calendar" class="align-text-bottom"></span>#}
-{#            This week#}
-{#          </button>#}
-{#        </div>#}
+        <h4>{{ title }}</h4>
       </div>
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
             <div>
@@ -28,11 +24,9 @@
                 <h5 class="d-flex justify-content-evenly">You are viewing comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>
             {% endif %}
         <div class="d-flex justify-content-evenly">
-            <a class="btn btn-outline-success btn-sm" href="{% url 'comments' %}">ALL COMMENTS</a>
-            <a class="btn btn-outline-secondary btn-sm" href="{% url 'comments_with_response' %}">COMMENTS WITH RESPONSES</a>
-            <a class="btn btn-outline-danger btn-sm" href="{% url 'comments_no_response' %}">COMMENTS WITHOUT RESPONSES</a>
-
-
+            <a class="btn btn-outline-success btn-sm {% if request.path == comments %} active{% endif %}" href="{% url 'comments' %}">ALL COMMENTS</a>
+            <a class="btn btn-outline-secondary btn-sm {% if request.path == comments_with_response %} active{% endif %}" href="{% url 'comments_with_response' %}">COMMENTS WITH RESPONSES</a>
+            <a class="btn btn-outline-danger btn-sm {% if request.path == comments_no_response %} active{% endif %}" href="{% url 'comments_no_response' %}">COMMENTS WITHOUT RESPONSES</a>
         </div>
         <div class="collapse" id="collapseExample">
         <form action="" method="POST">
@@ -50,23 +44,23 @@
     {% for comment in all_comments %}
     <div class="card mt-3">
           <div class="card-body">
-            <h6 class="card-title"> {{ forloop.counter }}. <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.qi_project_title.project_title|title }}</a></h6>
+{#            <h6 class="card-title"> {{ forloop.counter }}. <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.qi_project_title.project_title|title }}</a></h6>#}
               <ul>
-                  <li><strong>Comment : <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.comment }}</a></strong></li>
-                  <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by.username %}">{{ comment.commented_by.username|title }}</a></li>
-                  <li>Facility :  {{ comment.qi_project_title.facility|title }}</li>
+                  <li><strong>Comment : <a href="{% url 'show_project_comments' comment.qi_project_title.id %}">{{ comment.id }}{{ comment.content }}</a></strong></li>
+{#                  <li><strong>Comment : <a href="#">{{ comment.content }}</a></strong></li>#}
+{#                  <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by.username %}">{{ comment.commented_by.username|title }}</a></li>#}
+                  <li>Facility :  {{ comment.qi_project_title.facility_name|title }}</li>
+                  <li>CQI Project created by : <a href="{% url 'qi_creators' comment.author.username %}">{{ comment.author.username|title }}</a> ({{ comment.author.phone_number }})</li>
 
-                  <li>CQI Project created by : <a href="{% url 'qi_creators' comment.qi_project_title.created_by.username %}">{{ comment.qi_project_title.created_by.username|title }}</a> ({{ comment.commented_by.phone_number }})</li>
-                  <li>QI Responsible people : {{ comment.qi_project_title.responsible_people }}</li>
                   <li>QI Responsible people :
                       {% for team_member in comment.qi_project_title.qi_team_members.all %}
-                        {{ team_member.user.first_name|title }} {{ team_member.user.last_name|title }},
+                        {{ team_member.user.first_name|title }} {{ team_member.user.name|title }},
                     {% endfor %}
                   </li>
               </ul>
           <div class="d-flex justify-content-evenly">
                 {% if comment.id not in all_responses and user.id == comment.qi_project_title.created_by_id %}
-                    <a class="btn btn-secondary btn-sm" href="{% url 'comments_response' comment.id %}">NO RESPONSE YET</a>
+{#                    <a class="btn btn-secondary btn-sm" href="{% url 'comments_response' comment.id %}">NO RESPONSE YET</a>#}
                 {% endif %}
 
 
@@ -91,8 +85,9 @@
 
 
           </div>
-          <div class="card-footer">
+          <div class="card-footer d-flex justify-content-lg-around">
             <small class="text-muted">Comment done on {{ comment.comment_date }}</small>
+            <small class="text-muted">Last update {{ comment.created_at|timesince }} ago</small>
           </div>
         </div>
     {% endfor %}

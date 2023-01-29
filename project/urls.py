@@ -15,7 +15,8 @@ urlpatterns = [
     path('qi-managers/', qi_managers_view, name="qi_managers"),
     path('archived/', archived, name="archived"),
     path('audit-trail/', audit_trail, name="audit_trail"),
-    path('comments/', comments, name="comments"),
+    # path('comments/', comments, name="comments"),
+    path('show_all_comments/', show_all_comments, name="comments"),
     path('comments-no-response/', comments_no_response, name="comments_no_response"),
     path('comments-with-response/', comments_with_response, name="comments_with_response"),
     path('single-project-comments/<int:pk>/', single_project_comments, name="single_project_comments"),
@@ -41,7 +42,7 @@ urlpatterns = [
     path('completed-closed/<str:pk>', completed_closed, name="completed_closed"),
     path('add-lesson-learnt/<int:pk>', add_lesson_learnt, name="add_lesson_learnt"),
     path('lesson-learnt/', lesson_learnt, name="lesson_learnt"),
-    path('show-comments/<int:pk>', show_project_comments, name="show_project_comments"),
+    path('show-qi-project-comments/<int:pk>', show_project_comments, name="show_project_comments"),
     path('like-dislike/<int:pk>', like_dislike, name="like_dislike"),
 
 

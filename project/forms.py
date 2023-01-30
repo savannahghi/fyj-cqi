@@ -438,46 +438,50 @@ class SustainmentPlanForm(ModelForm):
                                "to achieve and what results are expected.",
                 'style': 'font-size: 14px;', }),
             'metrics': forms.Textarea(attrs={
-                'placeholder': "The metrics and KPIs that will be used to monitor and evaluate the progress "
+                'placeholder': "Enter the metrics and KPIs that will be used to monitor and evaluate the progress "
                                "of the sustainment plan,",
                 'style': 'font-size: 14px;', }),
             'start_date': forms.TextInput(attrs={
-                'placeholder': "The start date for implementing the sustainment plan",
+                'placeholder': "Enter the start date for implementing the sustainment plan",
                 'style': 'font-size: 14px;', }),
             'end_date': forms.TextInput(attrs={
-                'placeholder': "The end date for implementing the sustainment plan",
+                'placeholder': "Enter the end date for implementing the sustainment plan",
                 'style': 'font-size: 14px;', }),
             'communication_plan': forms.Textarea(attrs={
-                'placeholder': "communication plan for ensuring all stakeholders are aware of the sustainment plan "
-                               "and its progress",
+                'placeholder': "Write a brief communication plan for ensuring all stakeholders are aware of the "
+                               "sustainment plan and its progress",
                 'style': 'font-size: 14px;', }),
-            'responsible_people': forms.Textarea(attrs={
-                'placeholder': "Capture the names and roles of the individuals responsible for implementing and "
-                               "managing the sustainment plan. This information will be used to clearly define "
-                               "accountability and ensure that the sustainment plan is effectively executed.",
-                'style': 'font-size: 14px;', }),
+            # 'responsible_people': forms.Textarea(attrs={
+            #     'placeholder': "Capture the names and roles of the individuals responsible for implementing and "
+            #                    "managing the sustainment plan. This information will be used to clearly define "
+            #                    "accountability and ensure that the sustainment plan is effectively executed.",
+            #     'style': 'font-size: 14px;', }),
             'budget': forms.Textarea(attrs={
                 'placeholder': "The budget allocated for the sustainment plan, including any costs associated with "
                                "implementing and maintaining the improvements made during the QI project.",
                 'style': 'font-size: 14px;', }),
             'risks': forms.Textarea(attrs={
-                'placeholder': "capture any potential risks associated with the sustainment plan",
+                'placeholder': "Capture any potential risks associated with the sustainment plan",
                 'style': 'font-size: 14px;', }),
             'mitigation': forms.Textarea(attrs={
-                'placeholder': "capture the steps that will be taken to mitigate the risks",
+                'placeholder': "Capture the steps that will be taken to mitigate the risks",
                 'style': 'font-size: 14px;', }),
             'training_and_support': forms.Textarea(attrs={
-                'placeholder': "the training and support that will be provided to staff to ensure they are equipped "
+                'placeholder': "The training and support that will be provided to staff to ensure they are equipped "
                                "to maintain the improvements made during the QI project",
                 'style': 'font-size: 14px;', }),
             'feedback_mechanisms': forms.Textarea(attrs={
-                'placeholder': "capture the mechanisms in place for receiving feedback from staff, patients, "
+                'placeholder': "Capture the mechanisms in place for receiving feedback from staff, patients, "
                                "and other stakeholders about the sustainability of the improvements",
                 'style': 'font-size: 14px;', }),
             'reaction_plan': forms.Textarea(attrs={
-                'placeholder': "capture the steps that will be taken if the sustainment plan fails to achieve its "
+                'placeholder': "Capture the steps that will be taken if the sustainment plan fails to achieve its "
                                "objectives",
                 'style': 'font-size: 14px;', }),
+            'responsible': forms.CheckboxSelectMultiple,
+            'accountable': forms.CheckboxSelectMultiple,
+            'consulted': forms.CheckboxSelectMultiple,
+            'informed': forms.CheckboxSelectMultiple,
         }
 #         # exclude = [''
 #         #            ]

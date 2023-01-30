@@ -959,7 +959,26 @@ class Baseline(models.Model):
         super().save(*args, **kwargs)
 
 
-from django.db import models
+# class RACI(models.Model):
+#     # objective = models.CharField(max_length=100)
+#     # Field to specify the user responsible for the objective
+#     responsible = models.ManyToManyField(NewUser, related_name='raci_responsible')
+#     # Field to specify the user accountable for the objective
+#     accountable = models.ManyToManyField(NewUser, related_name='raci_accountable')
+#     # Field to specify the user consulted for the objective
+#     consulted = models.ManyToManyField(NewUser, related_name='raci_consulted')
+#     # Field to specify the user informed about the objective
+#     informed = models.ManyToManyField(NewUser, related_name='raci_informed')
+# class RACI(models.Model):
+#     RESPONSIBILITY_CHOICES = (
+#         ('R', 'Responsible'),
+#         ('A', 'Accountable'),
+#         ('C', 'Consulted'),
+#         ('I', 'Informed'),
+#     )
+#     element = models.CharField(max_length=200)
+#     responsibility = models.CharField(max_length=1, choices=RESPONSIBILITY_CHOICES)
+#     newuser = models.ForeignKey(NewUser, on_delete=models.CASCADE)
 
 
 class SustainmentPlan(models.Model):
@@ -979,9 +998,9 @@ class SustainmentPlan(models.Model):
     # Field to capture the communication plan for ensuring all stakeholders are aware of the sustainment plan and its
     # progress
     communication_plan = models.TextField()
-    # Field to capture the names and roles of the individuals responsible for implementing and managing the
-    # sustainment plan
-    responsible_people = models.TextField()
+    # # Field to capture the names and roles of the individuals responsible for implementing and managing the
+    # # sustainment plan
+    # responsible_people = models.TextField()
     # Field to capture the budget allocated for the sustainment plan
     budget = models.TextField()
     # Field to capture any potential risks associated with the sustainment plan and the steps that will be taken to
@@ -996,8 +1015,17 @@ class SustainmentPlan(models.Model):
     feedback_mechanisms = models.TextField()
     # Field to capture the steps that will be taken if the sustainment plan fails to achieve its objectives
     reaction_plan = models.TextField()
+    # Field to specify the user responsible for the objective
+    responsible = models.ManyToManyField(NewUser, related_name='raci_responsible')
+
+    # Field to specify the user accountable for the objective
+    accountable = models.ManyToManyField(NewUser, related_name='raci_accountable')
+    # Field to specify the user consulted for the objective
+    consulted = models.ManyToManyField(NewUser, related_name='raci_consulted')
+    # Field to specify the user informed about the objective
+    informed = models.ManyToManyField(NewUser, related_name='raci_informed')
+
+    # raci = models.ManyToManyField(RACI)
 
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
-
-

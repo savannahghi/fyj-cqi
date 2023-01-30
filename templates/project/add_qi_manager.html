@@ -30,6 +30,31 @@
 {#              </div>#}
           </div>
       {% endif %}
+      {% if lesson_learnt %}
+          <div class="row mb-4">
+{#              <div class="col d-flex justify-content-between">#}
+
+                <div class="col-md-12">
+                    {% for lesson in lesson_learnt %}
+                        <strong>FUTURE PLANS: </strong>{{ lesson.future_plans }}
+
+                    {% endfor %}
+
+
+                  </div>
+{#                  <div class="col-md-6">#}
+{#                       <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}#}
+{#                  </div>#}
+{#                  <div class="col-md-6">#}
+{#                       <strong>NUMERATOR: </strong> {{ qi_project.numerator }}#}
+{#                  </div>#}
+{#                  <div class="col-md-6">#}
+{#                       <strong>DENOMINATOR: </strong>{{ qi_project.denominator }}#}
+{#                  </div>#}
+{#              </div>#}
+          </div>
+
+      {% endif %}
 
 
             {% if "ADD RESOURCES" in title %}
@@ -107,12 +132,19 @@
                         <div class="col-md-6 mt-4">
                             {{ form.communication_plan|as_crispy_field }}
                         </div>
-                        <div class="col-md-6 mt-4">
-                            {{ form.responsible_people|as_crispy_field }}
-                        </div>
-                        <div class="col-md-6 mt-4">
-                            {{ form.budget|as_crispy_field }}
-                        </div>
+
+{#                      <div class="col-md-6 mt-4">#}
+{#                            {{ form.responsible_people|as_crispy_field }}#}
+{#                        </div>#}
+{#                      <div class="col-md-6 mt-4">#}
+{#                            {{ form.accountable|as_crispy_field }}#}
+{#                        </div>#}
+{#                      <div class="col-md-6 mt-4">#}
+{#                            {{ form.consulted|as_crispy_field }}#}
+{#                        </div>#}
+{#                        <div class="col-md-6 mt-4">#}
+{#                            {{ form.informed|as_crispy_field }}#}
+{#                        </div>#}
                         <div class="col-md-6 mt-4">
                             {{ form.risks|as_crispy_field }}
                         </div>
@@ -127,6 +159,27 @@
                         </div>
                         <div class="col-md-6 mt-4">
                             {{ form.reaction_plan|as_crispy_field }}
+                        </div>
+                       <div class="col-md-6 mt-4">
+                           <p>Tick the name of the person responsible for this specific task.</p>
+                            {{ form.responsible|as_crispy_field }}
+                        </div>
+                       <div class="col-md-6 mt-4">
+                           <p>Tick the name of the name person who is accountable for ensuring the task is completed
+                               successfully.
+                           </p>
+                            {{ form.accountable|as_crispy_field }}
+                        </div>
+                       <div class="col-md-6 mt-4">
+                           <p>Tick the name of any individuals or groups who should be consulted
+                               in the decision-making process.
+                           </p>
+                            {{ form.consulted|as_crispy_field }}
+                        </div>
+                       <div class="col-md-6 mt-4">
+                           <p>Tick the names of any individuals or groups who should be kept informed of
+                               the task progress and outcome.</p>
+                            {{ form.informed|as_crispy_field }}
                         </div>
                         <div class="col-md-12 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">

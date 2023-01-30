@@ -16,7 +16,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, F
 # from django.utils import timezone
 from django.db.transaction import atomic
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 
 from account.forms import UpdateUserForm
@@ -3489,7 +3489,14 @@ def like_dislike(request, pk):
 
 
 @login_required(login_url='login')
-def add_sustainmentplan(request):
+def add_sustainmentplan(request,pk):
+    # qi_project=QI_Projects.objects.get(id=pk)
+    # lesson=Lesson_learned.objects.filter(project_name=qi_project)
+    qi_project = QI_Projects.objects.filter(id=pk).first()
+    if not qi_project:
+        raise Http404("Project does not exist")
+    lesson = Lesson_learned.objects.filter(project_name=qi_project)
+
     title = "ADD SUSTAINMENT PLAN"
     # check the page user is from
     if request.method == "GET":
@@ -3502,12 +3509,8 @@ def add_sustainmentplan(request):
         if form.is_valid():
             form.save()
             return HttpResponseRedirect(request.session['page_from'])
-                # form = Qi_managersForm(prefix='expected')
-        # except IntegrityError as e:
-        #     text = """<h1 class="display-5 fw-bold text-primary" >Facility already exist!</h1>"""
-        #     return HttpResponse(text)
     else:
         form = SustainmentPlanForm()
-    context = {"form": form, "title": title}
+    context = {"form": form, "title": title,"qi_project":qi_project,"lesson_learnt":lesson,}
     return render(request, "project/add_qi_manager.html", context)
 

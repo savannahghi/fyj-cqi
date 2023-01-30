@@ -72,7 +72,7 @@ urlpatterns = [
     path('add-project-milestone/<int:pk>', add_project_milestone, name="add_project_milestone"),
     path('add-corrective-action/<int:pk>', add_corrective_action, name="add_corrective_action"),
     path('add-lesson-learnt/', add_lesson_learnt, name="add_lesson_learnt"),
-    path('add-sustainment-plan/', add_sustainmentplan, name="add_sustainmentplan"),
+    path('add-sustainment-plan/<int:pk>', add_sustainmentplan, name="add_sustainmentplan"),
     path('add-baseline-image/<int:pk>', add_baseline_image, name="add_baseline_image"),
     path('create-comment/<int:pk>', create_comment, name="create_comment"),
 

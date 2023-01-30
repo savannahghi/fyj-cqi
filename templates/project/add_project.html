@@ -16,27 +16,31 @@
         <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
             {% csrf_token %}
 {#            {{ form|crispy}}#}
-            <div class="col-md-2 mt-4">
+            <div class="col-md-4 mt-4">
                 {{ form.qi_manager|as_crispy_field }}
                 <a href="{% url 'add_qi_manager' %}" class="btn btn-success mt-4 btn-block" role="button">ADD QI MANAGER</a>
             </div>
-            <div class="col-md-2 mt-4">
+            <div class="col-md-4 mt-4">
                 {{ form.departments|as_crispy_field }}
                 <a href="{% url 'add_department' %}" class="btn btn-success mt-4 btn-block" role="button">ADD DEPARTMENT</a>
             </div>
-            <div class="col-md-2 mt-4">
+            <div class="col-md-4 mt-4">
                 {{ form.project_category|as_crispy_field }}
                 <a href="{% url 'add_category' %}" class="btn btn-success mt-4 btn-block" role="button">ADD PROJECT CATEGORY</a>
             </div>
-            <div class="col-md-2 mt-4">
+            <div class="col-md-4 mt-4">
                 {{ form.facility_name|as_crispy_field }}
                 <a href="{% url 'add_facility' %}" class="btn btn-success mt-4 btn-block" role="button">ADD FACILITY</a>
             </div>
-            <div class="col-md-2 mt-4">
+            <div class="col-md-4 mt-4">
                 {{ county_form.county|as_crispy_field }}
                 <a href="{% url 'add_county' %}" class="btn btn-success mt-4 btn-block" role="button">ADD COUNTY</a>
             </div>
-            <div class="col-md-2 mt-4">
+            <div class="col-md-4 mt-4">
+                {{ form.hub|as_crispy_field }}
+                <a href="{% url 'add_hub' %}" class="btn btn-success mt-4 btn-block" role="button">ADD HUB</a>
+            </div>
+            <div class="col-md-4 mt-4">
                 {{ form.sub_county|as_crispy_field }}
                 <a href="{% url 'add_subcounty' %}" class="btn btn-success mt-4 btn-block" role="button">ADD SUBCOUNTY</a>
             </div>
@@ -46,7 +50,12 @@
               <a href="{% url 'update_fields' %}" class="btn btn-warning" role="button">Update</a>
           </div>
           <div class="col-md-3 mt-4 pt-2">
-            <a href="{% url 'choose_project_level' %}" class="btn btn-secondary" role="button">CONTINUE</a>
+{#            <a href="{% url 'choose_project_level' %}" <i class="btn btn-secondary fa fa-step-forward" aria-hidden="true"></i>role="button">CONTINUE</a>#}
+              <a href="{% url 'choose_project_level' %}" role="button">
+
+                  <i class="btn btn-secondary fa fa-step-forward" aria-hidden="true"> CONTINUE</i>
+                </a>
+
         </div>
       </div>
     </div>

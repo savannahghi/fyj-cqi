@@ -80,6 +80,36 @@
                   <div class="col-md-3">
                   <p class="card-text"><strong>QI manager : </strong>{{ facility_project.qi_manager }}</p>
               </div>
+              <div class="col-md-3">
+                  {% if facility_project.triggers.count > 1 %}
+                      <p class="card-text"><strong>Triggers : </strong>
+                          {% for trigger in facility_project.triggers.all %}
+                              {{ trigger }},
+                          {% endfor %}
+                      </p>
+                  {% elif facility_project.triggers.count == 1 %}
+                      <p class="card-text"><strong>Trigger : </strong>
+                          {% for trigger in facility_project.triggers.all %}
+                              {{ trigger }},
+                          {% endfor %}
+                      </p>
+
+                  {% else %}
+                      <p class="card-text"><strong>Trigger : </strong>
+                          Not specified
+                      </p>
+                  {% endif %}
+                </div>
+                  <div class="col-md-3">
+                  <p class="card-text"><strong>County : </strong>{{ facility_project.county }}</p>
+              </div>
+                  <div class="col-md-3">
+                  <p class="card-text"><strong>Sub-county : </strong>{{ facility_project.sub_county }}</p>
+              </div>
+                  <div class="col-md-3">
+                  <p class="card-text"><strong>Hub : </strong>{{ facility_project.hub }}</p>
+              </div>
+
               </div>
           </div>
         </div>
@@ -984,15 +1014,15 @@
                             <td>{{ change.comments }}</td>
                             <td >{{ change.numerator}}</td>
                             <td>{{ change.denominator }}</td>
-                            {% if change.numerator >= 90 %}
+                            {% if change.achievements >= 90 %}
                                 <td class="text-center text-white" style="background-color: green">
                                     <strong>{{ change.achievements}}%</strong>
                                 </td>
-                            {% elif change.numerator > 50  and change.numerator < 75 %}
+                            {% elif change.achievements > 50  and change.achievements < 75 %}
                                 <td class="text-center text-black" style="background-color: yellow">
                                     <strong>{{ change.achievements}}%</strong>
                                 </td>
-                            {% elif change.numerator < 50 %}
+                            {% elif change.achievements < 50 %}
                                 <td class="text-center text-white" style="background-color: red">
                                     <strong>{{ change.achievements}}%</strong>
                                 </td>

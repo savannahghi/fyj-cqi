@@ -58,7 +58,10 @@
                         <div>
                           <div class="d-flex justify-content-between align-items-center">
                             <p class="mb-1">
-                              {{ comment.author.first_name|title }} {{ comment.author.last_name|title }} <span class="small text-success">- Last update {{ comment.created_at|timesince }} ago</span>
+                              {{ comment.author.first_name|title }} {{ comment.author.last_name|title }}
+                                <span class="small text-success">- Comment posted on {{ comment.created_at|date:"D j M Y H:i" }}
+                                    (Last update {{ comment.created_at|timesince }} ago)
+                                </span>
                             </p>
                           </div>
                           <p class="small mb-0">
@@ -107,7 +110,7 @@
                            </form>
                         </div>
                         <div class="collapse" id="collapseExample{{ comment.id }}">
-                            {{ comment.id }}
+
                             <form action="{% url 'create_comment' comment.id %}" method="post">
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ comment.id }}">

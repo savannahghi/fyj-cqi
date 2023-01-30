@@ -13,7 +13,8 @@
               </div>
               <div class="col-6 mt-3">
                   <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
-                  <a href="{% url 'sub_counties_list' %}" class="btn btn-success" role="button">UPDATE SUB-COUNTY</a>
+                  <a href="{% url 'sub_counties_list' %}" class="btn btn-success" role="button">ADD SUB-COUNTY</a>
+                  <a href="{% url 'add_hub' %}" class="btn btn-success" role="button">ADD HUB</a>
               </div>
           </div>
 
@@ -24,11 +25,14 @@
             <div class="col-md-12 mt-4">
                 {{ form.sub_counties|as_crispy_field }}
             </div>
-            <div class="col-md-6 mt-4">
+            <div class="col-md-4 mt-4">
                 {{ form.counties|as_crispy_field }}
             </div>
-            <div class="col-md-6 mt-4">
+            <div class="col-md-4 mt-4">
                 {{ form.facilities|as_crispy_field }}
+            </div>
+            <div class="col-md-4 mt-4">
+                {{ form.hub|as_crispy_field }}
             </div>
             <div class="col-md-3 mt-4">
                 <input class="btn btn-success mt-1" type="submit" value="Submit">

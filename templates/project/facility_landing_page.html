@@ -192,7 +192,7 @@
                           {% elif qi.measurement_status == 'Not started' %}
                         <a href="{% url 'not_started' qi.measurement_status %}" class="btn btn-info">{{ qi.measurement_status }}</a>
                           {% else %}
-                          <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">{{ qi.measurement_status }}</a>
+                          <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">Ongoing</a>
                       {% endif %}
 
 

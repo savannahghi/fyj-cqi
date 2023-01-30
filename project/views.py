@@ -26,7 +26,7 @@ from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, Proje
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
     ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm, \
-    BaselineForm, CommentForm
+    BaselineForm, CommentForm, HubForm, SustainmentPlanForm
 from .filters import *
 
 import plotly.express as px
@@ -395,6 +395,7 @@ def add_project(request):
             # save
             post.save()
             county_form.save()
+
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
@@ -444,6 +445,9 @@ def add_project_facility(request):
 
             # save
             post.save()
+
+            # Save many-to-many relationships
+            form.save_m2m()
             # redirect back to the page the user was from after saving the form
             # return HttpResponseRedirect(request.session['page_from'])
             return redirect("facilities_landing_page")
@@ -547,6 +551,7 @@ def add_subcounty(request):
 
 
 def sub_counties_list(request):
+    # TODO: add other insights like number of ongoing projects,
     sub_counties = Sub_counties.objects.all().order_by('counties__county_name')
     context = {'sub_counties': sub_counties}
     return render(request, 'project/sub_counties_list.html', context)
@@ -579,11 +584,37 @@ def update_sub_counties(request, pk):
     if request.method == 'POST':
         if form.is_valid():
             form.save()
+
+            # Save many-to-many relationships
+            form.save_m2m()
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = Sub_countiesForm(instance=sub_counties)
     context = {
         "title": "Update sub counties",
+        "form": form
+    }
+
+    return render(request, 'project/update.html', context)
+
+@login_required(login_url='login')
+def update_hub(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    hub = get_object_or_404(Hub, pk=pk)
+    form = HubForm(request.POST or None, instance=hub)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+
+            # Save many-to-many relationships
+            form.save_m2m()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = HubForm(instance=hub)
+    context = {
+        "title": "Update hub",
         "form": form
     }
 
@@ -610,6 +641,29 @@ def add_facility(request):
             return HttpResponse(text)
     else:
         form = FacilitiesForm()
+    context = {"form": form, "title": title}
+    return render(request, "project/add_qi_manager.html", context)
+
+
+def add_hub(request):
+    title = "ADD HUB"
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = HubForm(request.POST)
+
+        try:
+            if form.is_valid():
+                form.save()
+                return HttpResponseRedirect(request.session['page_from'])
+                # form = Qi_managersForm(prefix='expected')
+        except IntegrityError as e:
+            text = """<h1 class="display-5 fw-bold text-primary" >Facility already exist!</h1>"""
+            return HttpResponse(text)
+    else:
+        form = HubForm()
     context = {"form": form, "title": title}
     return render(request, "project/add_qi_manager.html", context)
 
@@ -777,6 +831,10 @@ def update_project(request, pk):
                     post.county = Counties.objects.get(id=county.counties_id)
             # save
             post.save()
+
+            # Save many-to-many relationships
+            form.save_m2m()
+
             if measurement_status == "Completed or Closed":
                 return redirect("lesson_learnt")
             else:
@@ -906,6 +964,7 @@ def archived(request):
                "dicts": dicts,
                }
     return render(request, "project/archived.html", context)
+    # return render(request, "project/closed_trial.html", context)
 
 
 def pair_iterable_for_delta_changes(iterable):
@@ -3426,4 +3485,29 @@ def like_dislike(request, pk):
             return redirect(request.META.get('HTTP_REFERER'))
     else:
         return redirect(request.META.get('HTTP_REFERER'))
+
+
+
+@login_required(login_url='login')
+def add_sustainmentplan(request):
+    title = "ADD SUSTAINMENT PLAN"
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = SustainmentPlanForm(request.POST)
+
+        # try:
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+                # form = Qi_managersForm(prefix='expected')
+        # except IntegrityError as e:
+        #     text = """<h1 class="display-5 fw-bold text-primary" >Facility already exist!</h1>"""
+        #     return HttpResponse(text)
+    else:
+        form = SustainmentPlanForm()
+    context = {"form": form, "title": title}
+    return render(request, "project/add_qi_manager.html", context)
 

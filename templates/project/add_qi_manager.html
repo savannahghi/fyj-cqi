@@ -76,16 +76,58 @@
                                 <div class="col-md-12 mt-4">
                                     {{ field|as_crispy_field }}
                                 </div>
-{#                            {% elif "responsible" in field.html_name|lower %}#}
-{#                                <div class="col-md-12 mt-4">#}
-{#                                    {{ field|as_crispy_field }}#}
-{#                                </div>#}
                             {% else %}
                                 <div class="col-md-6 mt-4">
                                     {{ field|as_crispy_field }}
                                 </div>
                             {% endif %}
                         {% endfor %}
+                        <div class="col-md-12 mt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                  </form>
+                {% elif "SUSTAINMENT PLAN" in title %}
+                  <form class="row mt-5" method="POST"  enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        <div class="col-md-12 mt-4">
+                            {{ form.qi_project|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.start_date|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.end_date|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.objectives|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.metrics|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.communication_plan|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.responsible_people|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.budget|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.risks|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.mitigation|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.training_and_support|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.feedback_mechanisms|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.reaction_plan|as_crispy_field }}
+                        </div>
                         <div class="col-md-12 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>

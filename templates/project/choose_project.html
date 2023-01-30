@@ -14,7 +14,11 @@
               <a href="{% url 'add_project_program' %}" class="btn btn-secondary mt-1">Program</a>
           </div>
             <div class="col-md-3 mt-4 pt-2">
-            <a href="{% url 'add_project' %}" class="btn btn-info" role="button">BACK</a>
+{#            <a href="{% url 'add_project' %}" class="btn btn-info" role="button">BACK</a>#}
+                <a href="{% url 'add_project' %}" role="button">
+
+                  <i class="btn btn-info fa fa-step-backward" aria-hidden="true"> BACK</i>
+                </a>
         </div>
         </div>
     </div>

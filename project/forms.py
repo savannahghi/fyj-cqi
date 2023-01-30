@@ -21,6 +21,9 @@ class QI_ProjectsForm(ModelForm):
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone', 'county', 'sub_county',
                    'department'
                    ]
+        labels = {
+            'measurement_frequency': 'Monitoring frequency',
+        }
         widgets = {
             'problem_background': forms.Textarea(attrs={
                 'placeholder': 'Include current status, previous attempt, relevant research and studies, barriers, '
@@ -45,7 +48,13 @@ class QI_ProjectsForm(ModelForm):
             'project_title': forms.TextInput(attrs={
                 'placeholder': "A project title is a brief, clear, and descriptive name for the project that "
                                "summarizes the main focus or objective of the project. "}),
+            'numerator': forms.TextInput(attrs={
+                'placeholder': "eg: The number of eligible patients with a valid viral load sample taken."}),
+            'denominator': forms.TextInput(attrs={
+                'placeholder': "eg: The total number of eligible patients for viral load."}),
+            'triggers': forms.CheckboxSelectMultiple,
         }
+
         # widgets = {
         #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
         #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
@@ -145,7 +154,19 @@ class TestedChangeForm(ModelForm):
             'tested_change': forms.TextInput(attrs={
                 'placeholder': 'The specific change or improvement that was tested.',
                 'style': 'font-size: 14px;',
-            })
+            }),
+            'denominator': forms.TextInput(attrs={
+                'placeholder': 'Quantifiable projected outcome (Absolute number or %)',
+                'style': 'font-size: 14px;',
+            }),
+            'numerator': forms.TextInput(attrs={
+                'placeholder': 'Quantifiable current performance (Absolute number or %)',
+                'style': 'font-size: 14px;',
+            }),
+            'month_year': forms.TextInput(attrs={
+                'placeholder': 'Date for the current performance',
+                'style': 'font-size: 14px;',
+            }),
             # 'notes': forms.Textarea(attrs={'placeholder': 'Any additional notes or comments about the stakeholder, '
             #                                               'such as any specific expertise or experience he/she brings '
             #                                               'to the project.'}),
@@ -220,8 +241,15 @@ class Sub_countiesForm(ModelForm):
         widgets = {
             'counties': forms.CheckboxSelectMultiple,
             # 'counties': forms.RadioSelect,
-            'facilities': forms.CheckboxSelectMultiple
+            'facilities': forms.CheckboxSelectMultiple,
+            'hub': forms.CheckboxSelectMultiple,
         }
+
+
+class HubForm(ModelForm):
+    class Meta:
+        model = Hub
+        fields = "__all__"
 
 
 class FacilitiesForm(ModelForm):
@@ -397,5 +425,61 @@ class CommentForm(ModelForm):
     class Meta:
         model = Comment
         fields = ['content']
-        exclude=['author','parent','parent_id','likes','dislikes']
+        exclude = ['author', 'parent', 'parent_id', 'likes', 'dislikes']
 
+
+class SustainmentPlanForm(ModelForm):
+    class Meta:
+        model = SustainmentPlan
+        fields = "__all__"
+        widgets={
+            'objectives': forms.Textarea(attrs={
+                'placeholder': "Captures the overall objectives of the sustainment plan, including what the plan aims "
+                               "to achieve and what results are expected.",
+                'style': 'font-size: 14px;', }),
+            'metrics': forms.Textarea(attrs={
+                'placeholder': "The metrics and KPIs that will be used to monitor and evaluate the progress "
+                               "of the sustainment plan,",
+                'style': 'font-size: 14px;', }),
+            'start_date': forms.TextInput(attrs={
+                'placeholder': "The start date for implementing the sustainment plan",
+                'style': 'font-size: 14px;', }),
+            'end_date': forms.TextInput(attrs={
+                'placeholder': "The end date for implementing the sustainment plan",
+                'style': 'font-size: 14px;', }),
+            'communication_plan': forms.Textarea(attrs={
+                'placeholder': "communication plan for ensuring all stakeholders are aware of the sustainment plan "
+                               "and its progress",
+                'style': 'font-size: 14px;', }),
+            'responsible_people': forms.Textarea(attrs={
+                'placeholder': "Capture the names and roles of the individuals responsible for implementing and "
+                               "managing the sustainment plan. This information will be used to clearly define "
+                               "accountability and ensure that the sustainment plan is effectively executed.",
+                'style': 'font-size: 14px;', }),
+            'budget': forms.Textarea(attrs={
+                'placeholder': "The budget allocated for the sustainment plan, including any costs associated with "
+                               "implementing and maintaining the improvements made during the QI project.",
+                'style': 'font-size: 14px;', }),
+            'risks': forms.Textarea(attrs={
+                'placeholder': "capture any potential risks associated with the sustainment plan",
+                'style': 'font-size: 14px;', }),
+            'mitigation': forms.Textarea(attrs={
+                'placeholder': "capture the steps that will be taken to mitigate the risks",
+                'style': 'font-size: 14px;', }),
+            'training_and_support': forms.Textarea(attrs={
+                'placeholder': "the training and support that will be provided to staff to ensure they are equipped "
+                               "to maintain the improvements made during the QI project",
+                'style': 'font-size: 14px;', }),
+            'feedback_mechanisms': forms.Textarea(attrs={
+                'placeholder': "capture the mechanisms in place for receiving feedback from staff, patients, "
+                               "and other stakeholders about the sustainability of the improvements",
+                'style': 'font-size: 14px;', }),
+            'reaction_plan': forms.Textarea(attrs={
+                'placeholder': "capture the steps that will be taken if the sustainment plan fails to achieve its "
+                               "objectives",
+                'style': 'font-size: 14px;', }),
+        }
+#         # exclude = [''
+#         #            ]
+#
+#     # field_order = ['qi_manager']

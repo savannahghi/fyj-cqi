@@ -39,6 +39,22 @@ def read_txt(file_):
     return FACILITY_CHOICES
 
 
+class Hub(models.Model):
+    hub = models.CharField(max_length=250, unique=True)
+
+    class Meta:
+        verbose_name_plural = 'Hubs'
+        ordering = ['hub']
+
+    def __str__(self):
+        return self.hub
+
+    def save(self, *args, **kwargs):
+        """Ensure hub name is in title case"""
+        self.hub = self.hub.upper().strip()
+        super().save(*args, **kwargs)
+
+
 class Facilities(models.Model):
     # FACILITY_CHOICES = read_txt(file_)
     # facilities = models.CharField(max_length=250, choices=FACILITY_CHOICES, unique=True)
@@ -71,7 +87,7 @@ class Counties(models.Model):
         return self.county_name
 
     def save(self, *args, **kwargs):
-        """Ensure manager name is in title case"""
+        """Ensure County name is in title case"""
         self.county_name = self.county_name.upper()
         super().save(*args, **kwargs)
 
@@ -80,6 +96,7 @@ class Sub_counties(models.Model):
     sub_counties = models.CharField(max_length=250, unique=True)
     counties = models.ManyToManyField(Counties)
     facilities = models.ManyToManyField(Facilities)
+    hub = models.ManyToManyField(Hub)
 
     class Meta:
         verbose_name_plural = 'sub-counties'
@@ -87,6 +104,16 @@ class Sub_counties(models.Model):
 
     def __str__(self):
         return self.sub_counties
+
+
+class Trigger(models.Model):
+    name = models.CharField(max_length=200)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
 
 
 class Department(models.Model):
@@ -135,6 +162,7 @@ class QI_Projects(models.Model):
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
     county = models.ForeignKey(Counties, on_delete=models.CASCADE)
     sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
+    hub = models.ForeignKey(Hub, null=True, blank=True, on_delete=models.CASCADE)
     # sub_county = models.CharField(max_length=250, choices=SUB_COUNTY_CHOICES)
     # county = models.CharField(max_length=250, choices=COUNTY_CHOICES)
     settings = models.CharField(max_length=250)
@@ -155,7 +183,7 @@ class QI_Projects(models.Model):
                                    default=None, on_delete=models.CASCADE)
     # team_member = models.ForeignKey('Qi_team_members', on_delete=models.CASCADE, null=True, blank=True)
     STATUS_CHOICES = (
-        ('Started or Ongoing', 'STARTED OR ONGOING'),
+        ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed-or-Closed', 'COMPLETED OR CLOSED'),
         ('Canceled', 'CANCELED'),
         ('Not started', 'NOT STARTED'),
@@ -182,12 +210,14 @@ class QI_Projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
+    triggers = models.ManyToManyField(Trigger, blank=True)
 
     # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
     # Django fix Admin plural
     class Meta:
         verbose_name_plural = "QI_Projects"
+        ordering = ['facility_name']
 
     # def save(self, *args, **kwargs):
     #     if not self.sales:
@@ -253,7 +283,7 @@ class Subcounty_qi_projects(models.Model):
     created_by = models.ForeignKey(NewUser, blank=True, null=True,
                                    default=None, on_delete=models.CASCADE)
     STATUS_CHOICES = (
-        ('Started or Ongoing', 'STARTED OR ONGOING'),
+        ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed or Closed', 'COMPLETED OR CLOSED'),
         ('Canceled', 'CANCELED'),
         ('Not started', 'NOT STARTED'),
@@ -351,7 +381,7 @@ class County_qi_projects(models.Model):
     created_by = models.ForeignKey(NewUser, blank=True, null=True,
                                    default=None, on_delete=models.CASCADE)
     STATUS_CHOICES = (
-        ('Started or Ongoing', 'STARTED OR ONGOING'),
+        ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed or Closed', 'COMPLETED OR CLOSED'),
         ('Canceled', 'CANCELED'),
         ('Not started', 'NOT STARTED'),
@@ -449,7 +479,7 @@ class Hub_qi_projects(models.Model):
     created_by = models.ForeignKey(NewUser, blank=True, null=True,
                                    default=None, on_delete=models.CASCADE)
     STATUS_CHOICES = (
-        ('Started or Ongoing', 'STARTED OR ONGOING'),
+        ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed or Closed', 'COMPLETED OR CLOSED'),
         ('Canceled', 'CANCELED'),
         ('Not started', 'NOT STARTED'),
@@ -547,7 +577,7 @@ class Program_qi_projects(models.Model):
     created_by = models.ForeignKey(NewUser, blank=True, null=True,
                                    default=None, on_delete=models.CASCADE)
     STATUS_CHOICES = (
-        ('Started or Ongoing', 'STARTED OR ONGOING'),
+        ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed or Closed', 'COMPLETED OR CLOSED'),
         ('Canceled', 'CANCELED'),
         ('Not started', 'NOT STARTED'),
@@ -625,7 +655,7 @@ class TestedChange(models.Model):
     denominator = models.IntegerField()
     data_sources = models.CharField(max_length=250)
     tested_change = models.CharField(max_length=1000)
-    comments = models.TextField(blank=True, null=True)
+    comments = models.TextField()
     achievements = models.FloatField(null=True, blank=True)
 
     def __str__(self):
@@ -803,8 +833,8 @@ class Qi_team_members(models.Model):
     department = models.CharField(max_length=250, null=True, blank=True)
     choose_qi_team_member_level = models.CharField(max_length=250, choices=TEAM_MEMBER_LEVEL_CHOICES)
     # responsibility = models.CharField(max_length=1000, blank=True, null=True)
-    impact = models.TextField(blank=True, null=True)
-    notes = models.TextField(blank=True, null=True)
+    impact = models.TextField()
+    notes = models.TextField()
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, related_name="qi_team_members")
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
@@ -873,7 +903,7 @@ class ActionPlan(models.Model):
     corrective_action = models.TextField()
     resources_required = models.TextField()
     responsible = models.ManyToManyField(Qi_team_members)
-    constraints = models.TextField(blank=True, null=True)
+    constraints = models.TextField()
     indicator = models.CharField(max_length=250)
     percent_completed = models.IntegerField()
     start_date = models.DateField()
@@ -927,3 +957,47 @@ class Baseline(models.Model):
         if commit:
             image_resize(self.baseline_status, 800, 500)
         super().save(*args, **kwargs)
+
+
+from django.db import models
+
+
+class SustainmentPlan(models.Model):
+    # TODO: HAVE DASHBOARDS AND REPORTS TO TRACK HOW THE PROJECT IS DOING DURING SUSTAINMENT PHASE. EXPLORE HOW GANNT
+    #  CHART AND RACI MATRIX CHART CAN BE INCORPORATED
+
+    # ForeignKey to link the SustainmentPlan to the QIProject it is associated with
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    # Field to capture the objectives of the sustainment plan
+    objectives = models.TextField()
+    # Field to capture the metrics that will be used to measure the success of the sustainment plan
+    metrics = models.TextField()
+    # Field to capture the start date for implementing the sustainment plan
+    start_date = models.DateTimeField()
+    # Field to capture the end date for implementing the sustainment plan
+    end_date = models.DateTimeField()
+    # Field to capture the communication plan for ensuring all stakeholders are aware of the sustainment plan and its
+    # progress
+    communication_plan = models.TextField()
+    # Field to capture the names and roles of the individuals responsible for implementing and managing the
+    # sustainment plan
+    responsible_people = models.TextField()
+    # Field to capture the budget allocated for the sustainment plan
+    budget = models.TextField()
+    # Field to capture any potential risks associated with the sustainment plan and the steps that will be taken to
+    # mitigate these risks
+    risks = models.TextField()
+    mitigation = models.TextField()
+    # Field to capture the training and support that will be provided to staff to ensure they are equipped to
+    # maintain the improvements made during the QI project
+    training_and_support = models.TextField()
+    # Field to capture the mechanisms in place for receiving feedback from staff, patients, and other stakeholders
+    # about the sustainability of the improvements
+    feedback_mechanisms = models.TextField()
+    # Field to capture the steps that will be taken if the sustainment plan fails to achieve its objectives
+    reaction_plan = models.TextField()
+
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
+
+

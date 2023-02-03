@@ -36,7 +36,7 @@ admin.site.register(Comment)
 admin.site.register(Trigger)
 admin.site.register(Hub)
 admin.site.register(SustainmentPlan)
-# admin.site.register(RACI)
+admin.site.register(Program)
 
 # admin.site.register(QI_Projects, SimpleHistoryAdmin)
 # admin.site.register(TestedChange, SimpleHistoryAdmin)

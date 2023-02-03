@@ -2,7 +2,8 @@ from datetime import datetime
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Field
-from django.forms import ModelForm, CheckboxSelectMultiple
+
+from django.forms import ModelForm, CheckboxSelectMultiple, Select
 # from django.contrib.auth.forms import UserCreationForm
 
 # from account.models import Account
@@ -23,6 +24,7 @@ class QI_ProjectsForm(ModelForm):
                    ]
         labels = {
             'measurement_frequency': 'Monitoring frequency',
+            'project_category': 'Component',
         }
         widgets = {
             'problem_background': forms.Textarea(attrs={
@@ -71,6 +73,10 @@ class QI_ProjectsConfirmForm(ModelForm):
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone',
                    'department'
                    ]
+        labels = {
+
+            'project_category': 'Component',
+        }
 
     field_order = ['qi_manager']
 
@@ -126,6 +132,44 @@ class QI_Projects_programForm(ModelForm):
         model = Program_qi_projects
         fields = "__all__"
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
+        # exclude = ['created_by', 'modified_by', 'remote_addr', 'phone', 'county', 'sub_county',
+        #            'department'
+        #            ]
+        labels = {
+            'measurement_frequency': 'Monitoring frequency',
+            'project_category':'Component',
+        }
+        widgets = {
+            'problem_background': forms.Textarea(attrs={
+                'placeholder': 'Include current status, previous attempt, relevant research and studies, barriers, '
+                               'importance of the change you intend to make and the need for improvement. For '
+                               'example: The XYZ health center currently has a viral load uptake rate of 50%. '
+                               'Despite previous efforts to increase uptake, barriers such as lack of resources, '
+                               'education, and awareness among patients have hindered progress. Research has shown '
+                               'that viral load testing is crucial in monitoring the effectiveness of antiretroviral '
+                               'therapy (ART) and identifying potential resistance to ART. However, low viral load '
+                               'uptake at the health center may lead to poor health outcomes for patients living with '
+                               'HIV and hinder population-level HIV control. Given the importance of viral load '
+                               'testing and the need for improvement at the XYZ health center, this CQI project aims '
+                               'to increase viral load uptake from 50% to 100% by January 2023.'}),
+            'objective': forms.Textarea(attrs={
+                'placeholder': "A project objective is a clear and specific statement that defines the goal or "
+                               "outcome that the project is aiming to achieve. It should be a summary of the problem "
+                               "background and should indicate the gap between the current situation and the desired "
+                               "outcome. For example: To increase the viral load uptake from 50% to 100% by January "
+                               "2023, by implementing education and training for staff, providing better systems for "
+                               "patients to receive their test results in a timely manner and collaborating with other "
+                               "organizations to improve services."}),
+            'project_title': forms.TextInput(attrs={
+                'placeholder': "A project title is a brief, clear, and descriptive name for the project that "
+                               "summarizes the main focus or objective of the project. "}),
+            'numerator': forms.TextInput(attrs={
+                'placeholder': "eg: The number of eligible patients with a valid viral load sample taken."}),
+            'denominator': forms.TextInput(attrs={
+                'placeholder': "eg: The total number of eligible patients for viral load."}),
+            'triggers': forms.CheckboxSelectMultiple,
+        }
+
         # widgets = {
         #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
         #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
@@ -133,6 +177,9 @@ class QI_Projects_programForm(ModelForm):
         # }
 
     field_order = ['qi_manager']
+
+
+field_order = ['qi_manager']
 
 
 class Close_projectForm(ModelForm):
@@ -156,15 +203,15 @@ class TestedChangeForm(ModelForm):
                 'style': 'font-size: 14px;',
             }),
             'denominator': forms.TextInput(attrs={
-                'placeholder': 'Quantifiable projected outcome (Absolute number or %)',
+                'placeholder': 'Quantifiable projected outcome for QI project (Absolute number or %)',
                 'style': 'font-size: 14px;',
             }),
             'numerator': forms.TextInput(attrs={
-                'placeholder': 'Quantifiable current performance (Absolute number or %)',
+                'placeholder': 'Quantifiable current project performance (Absolute number or %)',
                 'style': 'font-size: 14px;',
             }),
             'month_year': forms.TextInput(attrs={
-                'placeholder': 'Date for the current performance',
+                'placeholder': 'Date for the current project performance',
                 'style': 'font-size: 14px;',
             }),
             # 'notes': forms.Textarea(attrs={'placeholder': 'Any additional notes or comments about the stakeholder, '
@@ -416,6 +463,12 @@ class BaselineForm(ModelForm):
         exclude = ['facility', 'qi_project']
 
 
+class ProgramForm(ModelForm):
+    class Meta:
+        model = Program
+        fields = "__all__"
+
+
 class CommentForm(ModelForm):
     # content = forms.CharField()
     content = forms.CharField(widget=forms.TextInput(attrs={'class': 'full-width-input'}))
@@ -432,6 +485,7 @@ class SustainmentPlanForm(ModelForm):
     class Meta:
         model = SustainmentPlan
         fields = "__all__"
+        exclude=['created_by']
         widgets={
             'objectives': forms.Textarea(attrs={
                 'placeholder': "Captures the overall objectives of the sustainment plan, including what the plan aims "
@@ -448,8 +502,8 @@ class SustainmentPlanForm(ModelForm):
                 'placeholder': "Enter the end date for implementing the sustainment plan",
                 'style': 'font-size: 14px;', }),
             'communication_plan': forms.Textarea(attrs={
-                'placeholder': "Write a brief communication plan for ensuring all stakeholders are aware of the "
-                               "sustainment plan and its progress",
+                'placeholder': "Please write a brief communication plan to ensure all stakeholders know about the "
+                               "sustainment plan and its progress. ",
                 'style': 'font-size: 14px;', }),
             # 'responsible_people': forms.Textarea(attrs={
             #     'placeholder': "Capture the names and roles of the individuals responsible for implementing and "
@@ -461,7 +515,12 @@ class SustainmentPlanForm(ModelForm):
                                "implementing and maintaining the improvements made during the QI project.",
                 'style': 'font-size: 14px;', }),
             'risks': forms.Textarea(attrs={
-                'placeholder': "Capture any potential risks associated with the sustainment plan",
+                'placeholder': "Capture any potential risks associated with the sustainment plan. For example. "
+                               "Resource Constraints: A lack of resources such as funding, personnel, or equipment "
+                               "could negatively impact the sustained implementation of the project.Adherence to "
+                               "Protocol: The risk of healthcare providers not adhering to the established protocol "
+                               "could lead to inaccurate results and undermine the success of "
+                               "the project.",
                 'style': 'font-size: 14px;', }),
             'mitigation': forms.Textarea(attrs={
                 'placeholder': "Capture the steps that will be taken to mitigate the risks",
@@ -478,10 +537,31 @@ class SustainmentPlanForm(ModelForm):
                 'placeholder': "Capture the steps that will be taken if the sustainment plan fails to achieve its "
                                "objectives",
                 'style': 'font-size: 14px;', }),
-            'responsible': forms.CheckboxSelectMultiple,
-            'accountable': forms.CheckboxSelectMultiple,
-            'consulted': forms.CheckboxSelectMultiple,
-            'informed': forms.CheckboxSelectMultiple,
+            'responsible': forms.Textarea(attrs={
+                'placeholder': "Capture the name of the person responsible for this specific task.",
+                'style': 'font-size: 14px;', }),
+            'accountable': forms.Textarea(attrs={
+                'placeholder': "Capture the name of the name person who is accountable for ensuring the task is "
+                               "completed successfully.",
+                'style': 'font-size: 14px;', }),
+            'consulted': forms.Textarea(attrs={
+                'placeholder': "Capture the name of any individuals or groups who should be consulted in the "
+                               "decision-making process.",
+                'style': 'font-size: 14px;', }),
+            'informed': forms.Textarea(attrs={
+                'placeholder': "Capture the names of any individuals or groups who should be kept informed of the task "
+                               "progress and outcome.",
+                'style': 'font-size: 14px;', }),
+            # 'responsible': Select(),
+            # 'accountable': Select(),
+            # 'consulted': Select(),
+            # 'informed': Select(),
+            # 'responsible': forms.CheckboxSelectMultiple,
+            # 'accountable': forms.CheckboxSelectMultiple,
+            # 'consulted': forms.CheckboxSelectMultiple,
+            # 'informed': forms.CheckboxSelectMultiple,
+
+            # 'informed': autocomplete.ModelSelect2(url='newuser-autocomplete'),
         }
 #         # exclude = [''
 #         #            ]

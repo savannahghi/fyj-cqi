@@ -46,6 +46,11 @@
             <div class="col-md-4 mt-4">
                 <input class="btn btn-success mt-1" type="submit" value="Submit">
             </div>
+        {% if form.errors %}
+                    <div class="alert alert-danger mt-4">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
 
         </form>
       </div>

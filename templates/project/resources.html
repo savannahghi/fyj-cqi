@@ -32,7 +32,7 @@
             increase efficiency.</p>
 
         <p>We hope that these resources will help you to learn more about CQI and how it can be applied to improve the
-            quality of healthcare in your organization. Whether you are new to CQI or an experienced practitioner in the
+            quality of healthcare. Whether you are new to CQI or an experienced practitioner in the
             healthcare industry, we hope that you will find something of value in these resources.</p>
         <p>Thank you for visiting our page, and we hope that you find it useful.</p>
     </div>
@@ -129,9 +129,13 @@
                       {{ resource.description }}
                   </div>
                   <div class="card-footer d-flex justify-content-between">
-                    <small class="text-muted">Uploaded on {{ resource.upload_date_updated|date:"M d, Y" }}</small>
+                    <small class="text-muted">Uploaded on {{ resource.upload_date_updated|date:"M d, Y" }}
+                        ({{ resource.upload_date_updated|timesince }}) ago
+                    </small>
                     <small class="text-muted">Resource type : {{ resource.resource_type|title }}</small>
-                    <small class="text-muted">Uploaded by {{ resource.uploaded_by|upper }}</small>
+                    <small class="text-muted">Uploaded by {{ resource.uploaded_by.first_name|title }}
+                    {{ resource.uploaded_by.last_name|title }}
+                    </small>
                   </div>
                 </div>
               </div>

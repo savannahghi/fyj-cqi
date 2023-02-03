@@ -1,0 +1,173 @@
+{% extends 'project/index.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
+<div class="p-5 mb-4 bg-light rounded-3">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h4>SUSTAINMENT PLAN</h4>
+    </div>
+    <div>
+        <p>Ensuring the longevity of the improvements made during a quality improvement project is a part
+                        of the sustainment plan. The plan captures all the vital information needed to maintain progress
+                        , including objectives, metrics for measuring success, communication plan, budget, risks,
+                        training and support, feedback mechanisms, and reaction plan.
+                    </p>
+                    <p>
+                        The RACI matrix outlines the roles and responsibilities of each person involved in the
+                        sustainment plan, helping to ensure that everyone is aware of their part in maintaining the
+                        improvements. This information will help track the progress of the sustainment plan and keep all
+                        stakeholders informed of their responsibilities.
+                    </p>
+
+
+
+                      <p>
+                          This section will provide you with a comprehensive understanding of the key elements of a
+                          successful Sustainment Plan and its critical role in ensuring the sustainability of
+                          improvements made during a quality improvement project.
+                      </p>
+                <p>
+                    The information captured in the Sustainment Plan serves as a guide to ensure that we take all
+                    necessary steps to maintain progress and overcome any challenges that may arise during the
+                    sustainment phase. By planning and documenting all aspects of the sustainment plan carefully,
+                    you increase the likelihood of success and ensure the long-term sustainability of your quality
+                    improvement project.
+                </p>
+        <p>Thank you for visiting our page, and we hope that you find it useful.</p>
+    </div>
+      </div>
+
+
+
+
+
+{% if plan %}
+        <div class="sticky-top" style="z-index:10">
+<table class="table table-striped table-hover my-table">
+    <thead class="bg-light">
+        <th scope="col"></th>
+        <th scope="col">QI project</th>
+        <th scope="col">objective</th>
+{#        <th scope="col">Objectives</th>#}
+        <th scope="col">metrics</th>
+        <th scope="col">communication plan</th>
+
+        <th scope="col">Risks</th>
+        <th scope="col">Mitigation</th>
+        <th scope="col">training and support</th>
+        <th scope="col">feedback mechanisms</th>
+        <th scope="col">Reaction plan</th>
+    </thead>
+    <tbody>
+        {% for field in plan %}
+          <tr>
+              <th scope="row">{{ forloop.counter }}</th>
+                <td>
+                    <a href="#">{{ field.qi_project }}</a>
+
+                    <strong class="badge mt-2"><a href="#" >
+                        Project created by: {{ field.created_by.first_name|title }}</a></strong>
+                    <br>
+                    <strong class="badge alert-warning mt-2">{{ field.created_by.phone_number }}</strong>
+                    <br>
+                    <strong class="badge alert-info mt-2">{{ field.facility_name.facilities}}</strong>
+                    <br>
+                        <strong class="badge alert-warning mt-2">Number of QIT/WIT: {{ field.num_members }}</strong>
+                    <br>
+                    <strong class="badge alert-warning mt-2">QI manager: {{ field.qi_manager}}</strong>
+                    <br>
+                    <strong class="badge alert-warning mt-2">Started: {{ field.start_date|date }}</strong>
+                    <br>
+                <strong class="badge alert-warning mt-2">End date: {{ field.end_date|date }}</strong>
+                    <br>
+
+                <div class="mt-2 d-flex justify-content-evenly" style="display:inline-block;">
+                    <a href="{% url 'update_sustainable_plan' field.id %}" class="btn btn-info" role="button" >Update</a>
+                    <a href="{% url 'delete_sustainable_plan' field.id %}" class="btn btn-danger" role="button">Delete</a>
+                </div>
+
+                </td>
+{#          <td>#}
+{#                {{ field.objectives }}#}
+              <td>
+                    {{ field.objectives }}
+                  <br>
+                <strong class="badge alert-warning mt-2">RACI MATRIX</strong>
+                  <br>
+                <strong class="badge alert-warning mt-2">Responsible: {{ field.responsible }}</strong>
+                    <br>
+                <strong class="badge alert-warning mt-2">Accountable: {{ field.accountable }}</strong>
+                  <br>
+                <strong class="badge alert-warning mt-2">Consulted: {{ field.consulted }}</strong>
+                  <br>
+                <strong class="badge alert-warning mt-2">Informed: {{ field.informed }}</strong>
+                </td>
+                <td>
+                    {{ field.metrics }}
+                </td>
+
+                </td>
+                <td>
+                    {{ field.communication_plan }}
+                </td>
+
+                </td>
+                <td>
+                    {{ field.risks }}
+                </td>
+                </td>
+                <td>
+                    {{ field.mitigation }}
+                </td>
+                </td>
+                <td>
+                    <a href="#" >
+                        {{ field.training_and_support }}</a>
+
+                </td>
+                </td>
+                <td>
+                    {{ field.feedback_mechanisms }}
+
+                </td>
+                </td>
+          <td>
+              {{ field.reaction_plan }}
+
+                </td>
+          </td>
+          </tr>
+        {% endfor %}
+    </tbody>
+</table>
+        </div>
+     <!-- Display the pagination links -->
+          <div class="mt-3">
+          {% if qi_teams.has_other_pages %}
+                    <ul class="pagination justify-content-end">
+                   {% if qi_teams.has_previous %}
+                     <li class="page-item"><a class="page-link" href="?page={{ qi_teams.previous_page_number }}">Prev</a></li>
+                   {% else %}
+                     <li class="disabled"><span class="page-link" >Prev</span></li>
+                   {% endif %}
+                   {% for i in qi_teams.paginator.page_range %}
+                     {% if qi_teams.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only">(current)</span></span></li>
+                     {% else %}
+                        <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a></li>
+                     {% endif %}
+                   {% endfor %}
+                   {% if qi_teams.has_next %}
+                     <li class="page-item"><a class="page-link" href="?page={{ qi_teams.next_page_number }}">Next</a></li>
+                   {% else %}
+                     <li class="disabled page-item"><span class="page-link">Next</span></li>
+                   {% endif %}
+                    </ul>
+                {% endif %}
+          </div>
+{% endif %}
+
+    </main>
+{% endblock %}

@@ -18,17 +18,75 @@
               {% else %}
                   <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
                   <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
-                  <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT CATEGORY</a>
-                  <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>
-                  <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>
+                  <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>
+                  <a href="{% url 'add_program' %}" class="btn btn-success" role="button">ADD PROGRAM</a>
+{#                  <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
               {% endif %}
           </div>
 
 
-        <form method="POST" class="mt-5" enctype='multipart/form-data'>
+        <form method="POST" class="row g-3" enctype='multipart/form-data'>
             {% csrf_token %}
-            {{ form|crispy}}
-            <input class="btn btn-success mt-1" type="submit" value="Submit">
+{#            {{ form|crispy}}#}
+{#            <input class="btn btn-success mt-1" type="submit" value="Submit">#}
+            <div class="col-md-3 mt-4">
+                {{ form.program|as_crispy_field }}
+            </div>
+            <div class="col-md-3 mt-4">
+                {{ form.qi_manager|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-4">
+                {{ form.department|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-4">
+                {{ form.project_category|as_crispy_field }}
+            </div>
+
+         <div class="col-md-2 mt-4">
+                {{ form.settings|as_crispy_field }}
+            </div>
+
+            <div class="col-md-12">
+                {{ form.project_title|as_crispy_field }}
+            </div>
+            <div class="col-md-6">
+                {{ form.problem_background|as_crispy_field }}
+            </div>
+            <div class="col-md-6">
+                {{ form.objective|as_crispy_field }}
+            </div>
+
+
+            <div class="col-md-6">
+                {{ form.numerator|as_crispy_field }}
+            </div>
+            <div class="col-md-6">
+                {{ form.denominator|as_crispy_field }}
+            </div>
+            <div class="col-md-4">
+                {{ form.process_analysis|as_crispy_field }}
+            </div>
+
+
+             <div class="col-md-4">
+                {{ form.measurement_frequency|as_crispy_field }}
+            </div>
+            <div class="col-md-4">
+                {{ form.measurement_status|as_crispy_field }}
+            </div>
+
+            <div class="col-md-12">
+                <p>What triggered the creation of this QI Initiative?</p>
+                  {% for checkbox in form.triggers %}
+                    <label class="form-check-inline">
+                      {{ checkbox.tag }}
+                      {{ checkbox.choice_label }}
+                    </label>
+                  {% endfor %}
+            </div>
+            <div class="col-md-3 mt-4 pt-2">
+                <input class="btn btn-success mt-1" type="submit" value="Submit">
+            </div>
         </form>
       </div>
     </div>

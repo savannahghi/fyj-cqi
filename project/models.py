@@ -1,5 +1,5 @@
 # from django.contrib.auth.models import User
-
+from django.core.exceptions import ValidationError
 from django.db import models
 from crum import get_current_user, get_current_request
 # from phonenumber_field.modelfields import PhoneNumberField
@@ -11,6 +11,7 @@ from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
 
 from account.models import NewUser
+
 from project.utils import image_resize
 
 import os
@@ -37,6 +38,24 @@ def read_txt(file_):
     # Make a tuple
     FACILITY_CHOICES = tuple((choice, choice) for choice in facility_list)
     return FACILITY_CHOICES
+
+
+class Program(models.Model):
+    program = models.CharField(max_length=250, unique=True)
+
+    # cooperative_agreement_number = models.IntegerField()
+
+    class Meta:
+        verbose_name_plural = 'Programs'
+        ordering = ['program']
+
+    def __str__(self):
+        return self.program
+
+    def save(self, *args, **kwargs):
+        """Ensure hub name is in title case"""
+        self.program = self.program.upper().strip()
+        super().save(*args, **kwargs)
 
 
 class Hub(models.Model):
@@ -70,7 +89,7 @@ class Facilities(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure manager name is in title case"""
-        self.facilities = self.facilities.upper().strip()
+        self.facilities = self.facilities.title().strip()
         super().save(*args, **kwargs)
 
 
@@ -104,6 +123,11 @@ class Sub_counties(models.Model):
 
     def __str__(self):
         return self.sub_counties
+
+    def save(self, *args, **kwargs):
+        """Ensure County name is in title case"""
+        self.sub_counties = self.sub_counties.title()
+        super().save(*args, **kwargs)
 
 
 class Trigger(models.Model):
@@ -141,6 +165,7 @@ class Category(models.Model):
 class QI_Projects(models.Model):
     # TODO: INCLUDE SIMS REPORTS,DQAs AND CBS REPORTS SHOWING AREAS OF IMPROVEMENT (SHARED EVERY 2 WEEKS) care&rx,
     #  covid,etc
+    # TODO: TRACK USAGE
     FACILITY_CHOICES = read_txt(file_)
     SUB_COUNTY_CHOICES = read_txt(sub_county_file)
     COUNTY_CHOICES = read_txt(county_file)
@@ -238,6 +263,7 @@ class QI_Projects(models.Model):
         if commit:
             image_resize(self.process_analysis, 800, 500)
             super().save(*args, **kwargs)
+        self.project_title = self.project_title.title()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -556,8 +582,9 @@ class Program_qi_projects(models.Model):
     project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
     # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
-    # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
-    program = models.CharField(max_length=250)
+    # program_name = models.ForeignKey(Program, on_delete=models.CASCADE)
+    # program = models.CharField(max_length=250)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
     # sub_county = models.ForeignKey(Sub_counties,on_delete=models.CASCADE)
     # sub_counties = MultiSelectField(choices=SUB_COUNTY_CHOICES)
     # county = models.CharField(max_length=250, choices=COUNTY_CHOICES)
@@ -604,6 +631,7 @@ class Program_qi_projects(models.Model):
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
+    triggers = models.ManyToManyField(Trigger, blank=True)
 
     # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
 
@@ -733,6 +761,9 @@ class Resources(models.Model):
 
     uploaded_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     upload_date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+
+    class Meta:
+        ordering = ['-upload_date_updated']
 
     def __str__(self):
         return self.resource_name
@@ -898,6 +929,18 @@ class Milestone(models.Model):
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
 
+    def clean(self):
+        if self.start_date > self.end_date:
+            raise ValidationError('Start date cannot be greater than end date')
+        elif self.end_date < self.start_date:
+            raise ValidationError('Due date cannot be less than start date')
+        elif self.end_date == self.start_date:
+            raise ValidationError('Due date cannot be the same as start date')
+
+    # def clean(self):
+    #     if self.due_date < timezone.now().date():
+    #         raise ValidationError('Due date cannot be a past date')
+
 
 class ActionPlan(models.Model):
     corrective_action = models.TextField()
@@ -918,6 +961,14 @@ class ActionPlan(models.Model):
 
     class Meta:
         verbose_name_plural = "Action plans"
+
+    def clean(self):
+        if self.start_date > self.due_date:
+            raise ValidationError('Start date cannot be greater than due date')
+        elif self.due_date < self.start_date:
+            raise ValidationError('Due date cannot be less than start date')
+        elif self.due_date == self.start_date:
+            raise ValidationError('Due date cannot be the same as start date')
 
     def __str__(self):
         return self.corrective_action + "-" + str(self.responsible)
@@ -1000,7 +1051,7 @@ class SustainmentPlan(models.Model):
     communication_plan = models.TextField()
     # # Field to capture the names and roles of the individuals responsible for implementing and managing the
     # # sustainment plan
-    # responsible_people = models.TextField()
+    # responsible = models.TextField()
     # Field to capture the budget allocated for the sustainment plan
     budget = models.TextField()
     # Field to capture any potential risks associated with the sustainment plan and the steps that will be taken to
@@ -1015,17 +1066,15 @@ class SustainmentPlan(models.Model):
     feedback_mechanisms = models.TextField()
     # Field to capture the steps that will be taken if the sustainment plan fails to achieve its objectives
     reaction_plan = models.TextField()
-    # Field to specify the user responsible for the objective
-    responsible = models.ManyToManyField(NewUser, related_name='raci_responsible')
-
+    # # Field to specify the user responsible for the objective
+    responsible = models.TextField()
     # Field to specify the user accountable for the objective
-    accountable = models.ManyToManyField(NewUser, related_name='raci_accountable')
+    accountable = models.TextField()
     # Field to specify the user consulted for the objective
-    consulted = models.ManyToManyField(NewUser, related_name='raci_consulted')
+    consulted = models.TextField()
     # Field to specify the user informed about the objective
-    informed = models.ManyToManyField(NewUser, related_name='raci_informed')
-
-    # raci = models.ManyToManyField(RACI)
+    informed = models.TextField()
+    created_by = models.ForeignKey(NewUser, on_delete=models.CASCADE)
 
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)

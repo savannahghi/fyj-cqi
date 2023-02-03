@@ -1,4 +1,6 @@
 from django.urls import path
+
+
 from project.views import *
 
 urlpatterns = [
@@ -44,6 +46,7 @@ urlpatterns = [
     path('lesson-learnt/', lesson_learnt, name="lesson_learnt"),
     path('show-qi-project-comments/<int:pk>', show_project_comments, name="show_project_comments"),
     path('like-dislike/<int:pk>', like_dislike, name="like_dislike"),
+    path('show-sustainmentPlan/', show_sustainmentPlan, name="show_sustainmentPlan"),
 
 
     # path('archive-project/<int:project_id>', archive_project, name="archive_project"),
@@ -75,6 +78,8 @@ urlpatterns = [
     path('add-sustainment-plan/<int:pk>', add_sustainmentplan, name="add_sustainmentplan"),
     path('add-baseline-image/<int:pk>', add_baseline_image, name="add_baseline_image"),
     path('create-comment/<int:pk>', create_comment, name="create_comment"),
+    path('add-program/', add_program, name="add_program"),
+
 
     path('qi-projects-involved-in/<int:pk>', qi_team_involved, name="qi_team_involved"),
 
@@ -92,6 +97,7 @@ urlpatterns = [
     path('update-lesson-learnt/<int:pk>/', update_lesson_learnt, name="update_lesson_learnt"),
     path('update-baseline/<int:pk>/', update_baseline, name="update_baseline"),
     path('update-fields', update_fields, name="update_fields"),
+    path('update-sustainable-plan/<int:pk>', update_sustainable_plan, name="update_sustainable_plan"),
 
     path('update-comments/<int:pk>/', update_comments, name="update_comments"),
 
@@ -105,4 +111,12 @@ urlpatterns = [
     path('delete-action-plan/<int:pk>/', delete_action_plan, name="delete_action_plan"),
     path('delete-lesson-learnt/<int:pk>/', delete_lesson_learnt, name="delete_lesson_learnt"),
     path('delete-comments/<int:pk>/', delete_comments, name="delete_comments"),
+    path('delete-sustainable-plan/<int:pk>/', delete_sustainable_plan, name="delete_sustainable_plan"),
+
+    # DOWNLOADS
+
+    path('download_lessons', download_lessons, name="download_lessons"),
+    path('download_pdf', download_pdf, name="download_pdf"),
+
+
 ]

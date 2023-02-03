@@ -34,7 +34,7 @@
           <div class="row mb-4">
 {#              <div class="col d-flex justify-content-between">#}
 
-                <div class="col-md-12">
+                <div class="col-md-12 text-primary">
                     {% for lesson in lesson_learnt %}
                         <strong>FUTURE PLANS: </strong>{{ lesson.future_plans }}
 
@@ -58,6 +58,7 @@
 
 
             {% if "ADD RESOURCES" in title %}
+
                   <form class="row " method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
                         {% for field in form %}
@@ -74,7 +75,13 @@
                         <div class="col-md-4 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
+                  {% if form.errors %}
+                    <div class="alert alert-danger mt-4">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
                   </form>
+
                 {% elif "test of change" in title %}
                   <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
@@ -92,7 +99,13 @@
                         <div class="col-md-4 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
+                  {% if form.errors %}
+                    <div class="alert alert-danger mt-4">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
                   </form>
+
                 {% elif "Action Plan" in title %}
                   <form class="row mt-5" method="POST"  enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
@@ -110,19 +123,67 @@
                         <div class="col-md-12 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
+                  {% if form.errors %}
+                    <div class="alert alert-danger mt-4">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
                   </form>
+
                 {% elif "SUSTAINMENT PLAN" in title %}
+                 <div class="d-flex justify-content-between">
+                        <div>
+                            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapserootcause" role="button" aria-expanded="false" aria-controls="collapserootcause">
+                        SUSTAINMENT PLAN IN BRIEF
+                        </a>
+                        </div>
+
+{#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                    </div>
+
+                <div class="collapse bg-light mt-2" id="collapserootcause">
+                    <p>Ensuring the longevity of the improvements made during a quality improvement project is a part
+                        of the sustainment plan. The plan captures all the vital information needed to maintain progress
+                        , including objectives, metrics for measuring success, communication plan, budget, risks,
+                        training and support, feedback mechanisms, and reaction plan.
+                    </p>
+                    <p>
+                        The RACI matrix outlines the roles and responsibilities of each person involved in the
+                        sustainment plan, helping to ensure that everyone is aware of their part in maintaining the
+                        improvements. This information will help track the progress of the sustainment plan and keep all
+                        stakeholders informed of their responsibilities.
+                    </p>
+
+
+
+                      <p>
+                          This section will provide you with a comprehensive understanding of the key elements of a
+                          successful Sustainment Plan and its critical role in ensuring the sustainability of
+                          improvements made during a quality improvement project.
+                      </p>
+                <p>
+                    The information captured in the Sustainment Plan serves as a guide to ensure that we take all
+                    necessary steps to maintain progress and overcome any challenges that may arise during the
+                    sustainment phase. By planning and documenting all aspects of the sustainment plan carefully,
+                    you increase the likelihood of success and ensure the long-term sustainability of your quality
+                    improvement project.
+                </p>
+
+                </div>
                   <form class="row mt-5" method="POST"  enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
                         <div class="col-md-12 mt-4">
                             {{ form.qi_project|as_crispy_field }}
                         </div>
-                        <div class="col-md-6 mt-4">
-                            {{ form.start_date|as_crispy_field }}
+                        <div class="col-md-6 mt-4 mb-5">
+                            <div class="col-md-12 mt-4">
+                                {{ form.start_date|as_crispy_field }}
+                            </div>
+                                <div class="col-md-12 mt-5">
+                                 {{ form.end_date|as_crispy_field }}
+                            </div>
                         </div>
-                        <div class="col-md-6 mt-4">
-                            {{ form.end_date|as_crispy_field }}
-                        </div>
+
                         <div class="col-md-6 mt-4">
                             {{ form.objectives|as_crispy_field }}
                         </div>
@@ -132,21 +193,11 @@
                         <div class="col-md-6 mt-4">
                             {{ form.communication_plan|as_crispy_field }}
                         </div>
-
-{#                      <div class="col-md-6 mt-4">#}
-{#                            {{ form.responsible_people|as_crispy_field }}#}
-{#                        </div>#}
-{#                      <div class="col-md-6 mt-4">#}
-{#                            {{ form.accountable|as_crispy_field }}#}
-{#                        </div>#}
-{#                      <div class="col-md-6 mt-4">#}
-{#                            {{ form.consulted|as_crispy_field }}#}
-{#                        </div>#}
-{#                        <div class="col-md-6 mt-4">#}
-{#                            {{ form.informed|as_crispy_field }}#}
-{#                        </div>#}
                         <div class="col-md-6 mt-4">
                             {{ form.risks|as_crispy_field }}
+                        </div>
+                      <div class="col-md-6 mt-4">
+                            {{ form.budget|as_crispy_field }}
                         </div>
                         <div class="col-md-6 mt-4">
                             {{ form.mitigation|as_crispy_field }}
@@ -161,30 +212,37 @@
                             {{ form.reaction_plan|as_crispy_field }}
                         </div>
                        <div class="col-md-6 mt-4">
-                           <p>Tick the name of the person responsible for this specific task.</p>
+{#                           <p>Tick the name of the person responsible for this specific task.</p>#}
                             {{ form.responsible|as_crispy_field }}
                         </div>
                        <div class="col-md-6 mt-4">
-                           <p>Tick the name of the name person who is accountable for ensuring the task is completed
-                               successfully.
-                           </p>
+{#                           <p>Tick the name of the name person who is accountable for ensuring the task is completed#}
+{#                               successfully.#}
+{#                           </p>#}
                             {{ form.accountable|as_crispy_field }}
                         </div>
                        <div class="col-md-6 mt-4">
-                           <p>Tick the name of any individuals or groups who should be consulted
-                               in the decision-making process.
-                           </p>
+{#                           <p>Tick the name of any individuals or groups who should be consulted#}
+{#                               in the decision-making process.#}
+{#                           </p>#}
                             {{ form.consulted|as_crispy_field }}
                         </div>
+
                        <div class="col-md-6 mt-4">
-                           <p>Tick the names of any individuals or groups who should be kept informed of
-                               the task progress and outcome.</p>
+{#                           <p>Tick the names of any individuals or groups who should be kept informed of#}
+{#                               the task progress and outcome.</p>#}
                             {{ form.informed|as_crispy_field }}
                         </div>
                         <div class="col-md-12 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
+                  {% if form.errors %}
+                    <div class="alert alert-danger mt-4">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
                   </form>
+
             {% else %}
                 <form method="POST" class="mt-5" enctype='multipart/form-data'>
                     {% csrf_token %}
@@ -192,7 +250,8 @@
                      <input class="btn btn-success mt-1" type="submit" value="Submit">
                 </form>
             
-            {% endif %} 
+            {% endif %}
+
 
 
       </div>

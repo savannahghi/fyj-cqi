@@ -4,9 +4,7 @@
 {% load crispy_forms_tags %}
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
-{#      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">#}
-{#        <h4>Comments</h4>#}
-{#      </div>#}
+{% if "All comments" not in title %}
 <div class="p-5 mb-4 bg-light rounded-3">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
 {#        <h4>ADD LESSON LEARNT</h4>#}
@@ -37,8 +35,7 @@
           </div>
 
       </div>
-{#<section class="gradient-custom">#}
-  <div class="container my-5 py-5">
+    <div class="container my-5 py-5">
   <div class="container" >
     <div class="row d-flex justify-content-center">
 {#      <div class="col-md-12 col-lg-10 col-xl-8">#}
@@ -254,12 +251,228 @@
     </div>
   </div>
 </div>
-    </main>
+{% endif %}
+  <div class="container my-5 py-5">
+  <div class="container" >
+    <div class="row d-flex justify-content-center">
+{#      <div class="col-md-12 col-lg-10 col-xl-8">#}
+      <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+      <div class="col-md-12">
+        <div class="card comments-card">
+          <div class="card-body p-4">
+            <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comments for {{ qi_project.project_title}} QI project</h4>
+            <div class="row">
+              <div class="col">
+                 {% for comment in all_comments %}
+                    <div class="d-flex flex-start mb-4">
+                      <img class="rounded-circle shadow-1-strong me-3"
+                        src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/img%20(10).webp" alt="avatar" width="65"
+                        height="65" />
+                      <div class="flex-grow-1 flex-shrink-1">
+                        <div>
+{#                        <p>{{ comment.qi_project_title.project_title }}</p>#}
+                          <div >
+                            <p class="mb-1">
+                              {{ comment.author.first_name|title }} {{ comment.author.last_name|title }}
+                                <span class="small text-success">- Comment posted on {{ comment.created_at|date:"D j M Y H:i" }}
+                                    (Last update {{ comment.created_at|timesince }} ago)
+                                </span>
+                            </p>
+                           <p class="mb-1">
+                               <a href="{% url 'single_project' comment.qi_project_title.id %}">
+                                   {{ comment.qi_project_title.project_title }}
+                               </a>
+                           </p>
+                          </div>
+                          <p class="small mb-0">
+                            {{ comment.content }}
+                          </p>
+                        <div class="d-flex justify-content-evenly">
+                            <p>Likes : {{ comment.likes }}</p>
+                            <p>Dislikes : {{ comment.dislikes }}</p>
 
-{#    <script src="{% static 'assets/js/jquery-3.3.1.min.js' %}"></script>#}
-{#    <script src="{% static 'assets/js/popper.min.js' %}"></script>#}
-{#    <script src="{% static 'assets/js/bootstrap.min.js' %}"></script>#}
-{#    <script src="{% static 'assets/js/rome.js' %}"></script>#}
-{##}
-{#    <script src="{% static 'assets/js/main.js' %}"></script>#}
+                            {% if comment.comment_set.exists %}
+                                    {% if comment.comment_set.count == 1 %}
+                                        <a data-bs-toggle="collapse" href="#collapsereplies{{ comment.id }}"  aria-expanded="false" aria-controls="collapsereplies{{ comment.id }}">
+                                        <span class="small"> <i class="fa fa-eye"></i></span> 1 Reply</a>
+                                    {% elif comment.comment_set.count > 1 %}
+                                        <a data-bs-toggle="collapse" href="#collapsereplies{{ comment.id }}"  aria-expanded="false" aria-controls="collapsereplies{{ comment.id }}">
+                                        <span class="small"> <i class="fa fa-eye"></i></span> {{ comment.comment_set.count }} Replies</a>
+                                    {% else %}
+                                         0 Replies
+                                    {% endif %}
+                            {% else %}
+                                    0 Replies
+                            {% endif %}
+                            {% if comment.author.id != request.user.id  %}
+                                <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ comment.id }}"  aria-expanded="false" aria-controls="collapseExample{{ comment.id }}">
+                                <span class="small"> reply</span>
+                            </a>
+                            {% endif %}
+
+
+                             {% if comment.comment_set.count == 0 %}
+                                <a href="{% url 'update_comments' comment.id %}"><i class="fas fa-pen-square mr-4"></i></a>
+                                <a href="{% url 'delete_comments' comment.id %}"><i class="fas fa-trash mr-1"></i></a>
+                            {% endif %}
+                            <form action="{% url 'like_dislike' comment.id %}" method="post">
+                              {% csrf_token %}
+                                <button class="btn btn-primary" type="submit" name="like"><i class="fas fa-thumbs-up"></i> Likes </button>
+                                <button class="btn btn-secondary" type="submit" name="dislike"><i class="fas fa-thumbs-down"></i> Dislikes</button>
+                                {% if messages %}
+                                  <ul class="messages">
+                                    {% for message in messages %}
+                                      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                                    {% endfor %}
+                                  </ul>
+                                {% endif %}
+
+                           </form>
+                        </div>
+                        <div class="collapse" id="collapseExample{{ comment.id }}">
+
+                            <form action="{% url 'create_comment' comment.id %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="parent" value="{{ comment.id }}">
+                                <textarea name="content" class="form-control" style="width: 100%;"></textarea>
+                                <button class="btn btn-secondary mt-2" type="submit" >Reply</button>
+                            </form>
+                        </div>
+                        </div>
+                          <div class="d-flex justify-content-evenly">
+                           </div>
+                            <div class="collapse" id="collapsereplies{{ comment.id }}">
+                                {% for reply in comment.comment_set.all %}
+                                    <div class="d-flex flex-start mt-4">
+                                      <a class="me-3" href="#">
+                                        <img class="rounded-circle shadow-1-strong"
+                                          src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/img%20(11).webp" alt="avatar"
+                                          width="65" height="65" />
+                                      </a>
+                                      <div class="flex-grow-1 flex-shrink-1">
+                                        <div>
+                                          <div class="d-flex justify-content-between align-items-center">
+                                            <p class="mb-1">
+                                              {{ reply.author.first_name|title }} {{ reply.author.last_name|title }} <span class="small text-info">- Last update: {{ reply.created_at|timesince }} ago </span>
+                                            </p>
+                                          </div>
+                                          <p class="small mb-0">
+                                             {{ reply.content }}
+                                          </p>
+                                        <div class="d-flex justify-content-evenly">
+                                            <p> Likes : {{ reply.likes }} </p>
+                                            <p> Dislikes : {{ reply.dislikes }} </p>
+                                        {% if comment.comment_set.exists %}
+                                            {% if reply.comment_set.count == 1 %}
+                                                <a data-bs-toggle="collapse" href="#collapsesubreplies{{ comment.id }}"  aria-expanded="false" aria-controls="collapsesubreplies{{ comment.id }}">
+                                                    <span class="small"> <i class="fa fa-eye"></i></span> 1 Reply </a>
+                                            {% elif reply.comment_set.count > 1 %}
+                                                <a data-bs-toggle="collapse" href="#collapsesubreplies{{ comment.id }}"  aria-expanded="false" aria-controls="collapsesubreplies{{ comment.id }}">
+                                                    <span class="small"> <i class="fa fa-eye"></i></span> {{ reply.comment_set.count }} Replies </a>
+                                            {% else %}
+                                                 0 Replies
+                                            {% endif %}
+                                        {% else %}
+                                                0 Replies
+                                        {% endif %}
+
+                                        {% if reply.author.id != request.user.id  %}
+                                            <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ reply.id }}"  aria-expanded="false" aria-controls="collapseExample{{ reply.id }}">
+                                                <span class="small"> reply</span>
+                                            </a>
+                                        {% endif %}
+
+                                            {% if reply.comment_set.count == 0 %}
+                                                <a href="{% url 'update_comments' reply.id %}"><i class="fas fa-pen-square mr-1"></i>Edit</a>
+                                                <a href="{% url 'delete_comments' reply.id %}"><i class="fas fa-trash mr-1"></i></a>
+                                            {% endif %}
+
+                                            <form action="{% url 'like_dislike' reply.id %}" method="post">
+                                                {% csrf_token %}
+                                                <button class="btn btn-primary" type="submit" name="like">Likes</button>
+                                                <button class="btn btn-info" type="submit" name="dislike">Dislike</button>
+                                                {% if messages %}
+                                                  <ul class="messages">
+                                                    {% for message in messages %}
+                                                      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                                                    {% endfor %}
+                                                  </ul>
+                                                {% endif %}
+                                            </form>
+                                        </div>
+                                        {% if user.is_authenticated %}
+                                {#            {% if user.id != facility_project.created_by_id %}#}
+                                                <div class="collapse" id="collapseExample{{ reply.id }}">
+                                                    <form action="{% url 'create_comment' reply.id %}" method="post">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="parent" value="{{ reply.id }}">
+                                                        <textarea name="content" class="form-control" style="width: 100%;"></textarea>
+                                {#                        <input class="mt-2" type="submit" value="Reply">#}
+                                                        <button class="btn btn-info mt-2" type="submit" >Reply</button>
+                                                    </form>
+                                                </div>
+                                {#           {% endif %}#}
+                                        {% endif %}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="collapse" id="collapsesubreplies{{ comment.id }}">
+                              {% for sub_reply in reply.comment_set.all %}
+                                  <div class="sub-reply">
+                                    <div class="d-flex flex-start mt-4">
+                                      <a class="me-3" href="#">
+                                        <img class="rounded-circle shadow-1-strong"
+                                          src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/img%20(32).webp" alt="avatar"
+                                          width="65" height="65" />
+                                      </a>
+                                      <div class="flex-grow-1 flex-shrink-1">
+                                        <div>
+                                          <div class="d-flex justify-content-between align-items-center">
+                                            <p class="mb-1">
+                                              {{ sub_reply.author.first_name|title }} {{ sub_reply.author.last_name|title }} <span class="small text-info">- Last update: {{ comment.created_at|timesince }} ago </span>
+                                            </p>
+                                          </div>
+                                          <p class="small mb-0">
+                                            {{ sub_reply.content }}
+                                          </p>
+                                           <div class="d-flex justify-content-evenly">
+                                                <p>Likes : {{ sub_reply.likes }}</p>
+                                                <p>Dislikes : {{ sub_reply.dislikes }}</p>
+                                                <a href="{% url 'update_comments' sub_reply.id %}"><i class="fas fa-pen-square mr-1"></i>Edit</a>
+                                                <a href="{% url 'delete_comments' sub_reply.id %}"><i class="fas fa-trash mr-1"></i></a>
+                                                <form action="{% url 'like_dislike' sub_reply.id %}" method="post">
+                                                  {% csrf_token %}
+                                                  <button class="btn btn-outline-primary" type="submit" name="like"><i class="fas fa-thumbs-up"></i> Likes</button>
+                                                    <button class="btn btn-outline-success" type="submit" name="dislike"><i class="fas fa-thumbs-down"></i> Dislikes</button>
+                                                    {% if messages %}
+                                                      <ul class="messages">
+                                                        {% for message in messages %}
+                                                          <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                                                        {% endfor %}
+                                                      </ul>
+                                                {% endif %}
+
+                                               </form>
+                                           </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                              {% endfor %}
+                            </div>
+                                {% endfor %}
+                                </div>
+                          </div>
+                        </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>
+    </main>
 {% endblock %}

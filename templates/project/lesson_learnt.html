@@ -33,7 +33,11 @@
 
 
 
+<div class="mt-2 " style="display:inline-block;">
+                    <a href="{% url 'download_lessons' %}" class="btn btn-info mb-4" role="button" >Download CSV</a>
+                    <a href="{% url 'download_pdf' %}" class="btn btn-info mb-4" role="button" >Download PDF</a>
 
+                </div>
 {% if lesson_learnt %}
         <div class="sticky-top" style="z-index:10">
 <table class="table table-striped table-hover my-table">
@@ -80,6 +84,7 @@
                 </td>
           <td>
                 {{ field.problem_or_opportunity }}
+
                 <td>
                     {{ field.key_successes }}
 

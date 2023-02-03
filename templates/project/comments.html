@@ -95,34 +95,10 @@
 
 
       </div>
-{#{% else %}#}
-{#        <p>Do you have any comments regarding the above QI Initiative? Click the button below to send your comment to#}
-{#            the QI team members implementing this QI initiative.#}
-{#        </p>#}
-{#        <p>#}
-{#            <div class="d-flex justify-content-evenly">#}
-{#            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
-{#                Yes#}
-{#            </a>#}
-{#            </div>#}
-{#        </p>#}
-{#        <div class="collapse" id="collapseExample">#}
-{#            <form action="" method="POST">#}
-{#                {% csrf_token %}#}
-{#                {{ form|crispy }}#}
-{#                <input type="submit" class="btn btn-success">#}
-{#            </form>#}
-{#        </div>#}
 {% endif %}
 
 </div>
 </div>
 
     </main>
-{#    <script src="{% static 'assets/js/jquery-3.3.1.min.js' %}"></script>#}
-{#    <script src="{% static 'assets/js/popper.min.js' %}"></script>#}
-{#    <script src="{% static 'assets/js/bootstrap.min.js' %}"></script>#}
-{#    <script src="{% static 'assets/js/rome.js' %}"></script>#}
-{##}
-{#    <script src="{% static 'assets/js/main.js' %}"></script>#}
 {% endblock %}

@@ -1,5 +1,0 @@
----
-deployment:
-  tasks:
-    - export DEPLOYPATH=/home/kishuapc/cqi_petermaina
-    - /bin/cp * $DEPLOYPATH

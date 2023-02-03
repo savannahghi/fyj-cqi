@@ -1,4 +1,5 @@
 # import os.path
+import csv
 from datetime import datetime, timezone
 from itertools import tee
 
@@ -26,13 +27,83 @@ from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, Proje
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
     ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm, \
-    BaselineForm, CommentForm, HubForm, SustainmentPlanForm
+    BaselineForm, CommentForm, HubForm, SustainmentPlanForm, ProgramForm
 from .filters import *
 
 import plotly.express as px
-
+from django.http import FileResponse
+from io import BytesIO
+from reportlab.pdfgen import canvas
 
 # Create your views here.
+def download_pdf(request):
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="lessons.pdf"'
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer)
+    p.setTitle('Lessons Learned Report')
+    p.setFont('Helvetica', 24)
+    p.drawString(100, 750, 'Lessons Learned Report')
+
+    p.setFont('Helvetica', 14)
+    p.drawString(100, 700, 'Project Name')
+    p.drawString(300, 700, 'Problem or Opportunity')
+    p.drawString(100, 650, 'Key Successes')
+    p.drawString(300, 650, 'Challenges')
+    p.drawString(100, 600, 'Best Practices')
+    p.drawString(300, 600, 'Recommendations')
+    p.drawString(100, 550, 'Resources')
+    p.drawString(300, 550, 'Created By')
+    p.drawString(100, 500, 'Modified By')
+    p.drawString(300, 500, 'Future Plans')
+    p.drawString(100, 450, 'Date Created')
+    p.drawString(300, 450, 'Date Modified')
+
+    p.setFont('Helvetica', 12)
+    lessons = Lesson_learned.objects.all()
+    y = 400
+    for lesson in lessons:
+        p.drawString(100, y, str(lesson.project_name).encode('utf-8'))
+        p.drawString(300, y, str(lesson.problem_or_opportunity).encode('utf-8'))
+        p.drawString(100, y - 50, str(lesson.key_successes).encode('utf-8'))
+        p.drawString(300, y - 50, str(lesson.challenges).encode('utf-8'))
+        p.drawString(100, y - 100, str(lesson.best_practices).encode('utf-8'))
+        p.drawString(300, y - 100, str(lesson.recommendations).encode('utf-8'))
+        p.drawString(100, y - 150, str(lesson.resources).encode('utf-8'))
+        p.drawString(300, y - 150, str(lesson.created_by).encode('utf-8'))
+        p.drawString(100, y - 200, str(lesson.modified_by).encode('utf-8'))
+        p.drawString(300, y - 200, str(lesson.future_plans).encode('utf-8'))
+        p.drawString(100, y - 250, str(lesson.date_created).encode('utf-8'))
+        p.drawString(300, y - 250, str(lesson.date_modified).encode('utf-8'))
+        y -= 300
+
+    p.showPage()
+    p.save()
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+    return response
+
+
+def download_lessons(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="lessons.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Project Name', 'Problem or Opportunity', 'Key Successes',
+                     'Challenges', 'Best Practices', 'Recommendations',
+                     'Resources', 'Created By', 'Modified By',
+                     'Future Plans', 'Date Created', 'Date Modified'])
+
+    lessons = Lesson_learned.objects.all()
+    for lesson in lessons:
+        writer.writerow([lesson.project_name, lesson.problem_or_opportunity,
+                         lesson.key_successes, lesson.challenges,
+                         lesson.best_practices, lesson.recommendations,
+                         lesson.resources, lesson.created_by, lesson.modified_by,
+                         lesson.future_plans, lesson.date_created, lesson.date_modified])
+
+    return response
 
 def pagination_(request, item_list, item_number=10):
     page = request.GET.get('page', 1)
@@ -109,8 +180,13 @@ def prepare_bar_chart_from_df(list_of_projects, col, title, projects=None):
     list_of_projects = list_of_projects.iloc[1:]
     if projects is not None:
         list_of_projects['All QI projects'] = projects
-    list_of_projects = list_of_projects.T.reset_index().sort_values("counts")
-    facility_proj_performance = bar_chart(list_of_projects, col, "counts", title)
+    list_of_projects = list_of_projects.T.reset_index().sort_values("counts", ascending=False)
+
+    if "facility" in list_of_projects.columns:
+        # filter top 20 facilities
+        facility_proj_performance = bar_chart(list_of_projects.head(20), col, "counts", title)
+    else:
+        facility_proj_performance = bar_chart(list_of_projects, col, "counts", title)
     return facility_proj_performance
 
 
@@ -233,18 +309,39 @@ def dashboard(request):
         list_of_projects_fac['facility'] = list_of_projects_fac['facility'].astype(str).str.split(" ").str[0]
 
         list_of_projects = pd.concat([list_of_projects_fac, list_of_projects_sub, list_of_projects_county])
+        print("list_of_projects_fac::::::")
+        print(list_of_projects_fac)
 
-        facility_qi_projects = prepare_bar_chart_from_df(list_of_projects_fac, 'facility',
-                                                         f"{len(list_of_projects_fac['facility'].unique())} "
-                                                         f"Facilities implementing QI initiatives")
+        if len(list_of_projects_fac['facility'].unique()) > 20:
+            facility_qi_projects = prepare_bar_chart_from_df(list_of_projects_fac, 'facility',
+                                                             f"Top 20 facilities out of "
+                                                             f"{len(list_of_projects_fac['facility'].unique())} "
+                                                             f"implementing QI initiatives")
+        elif len(list_of_projects_fac['facility'].unique()) > 1:
+            facility_qi_projects = prepare_bar_chart_from_df(list_of_projects_fac, 'facility',
+                                                             f"{len(list_of_projects_fac['facility'].unique())} "
+                                                             f"facilities implementing QI initiatives")
+        else:
+            facility_qi_projects = prepare_bar_chart_from_df(list_of_projects_fac, 'facility',
+                                                             f"{len(list_of_projects_fac['facility'].unique())} "
+                                                             f"facility implementing QI initiatives")
+        if len(list_of_projects['subcounty'].unique()) > 1:
+            subcounty_qi_projects = prepare_bar_chart_from_df(list_of_projects, 'subcounty',
+                                                              f"{len(list_of_projects['subcounty'].unique())} "
+                                                              f"subcounties implementing QI initiatives")
+        else:
+            subcounty_qi_projects = prepare_bar_chart_from_df(list_of_projects, 'subcounty',
+                                                              f"{len(list_of_projects['subcounty'].unique())} "
+                                                              f"subcounty implementing QI initiatives")
+        if len(list_of_projects['county'].unique()) > 1:
+            county_qi_projects = prepare_bar_chart_from_df(list_of_projects, 'county',
+                                                           f"{len(list_of_projects['county'].unique())} "
+                                                           f"counties implementing QI initiatives")
+        else:
+            county_qi_projects = prepare_bar_chart_from_df(list_of_projects, 'county',
+                                                           f"{len(list_of_projects['county'].unique())} "
+                                                           f"county implementing QI initiatives")
 
-        subcounty_qi_projects = prepare_bar_chart_from_df(list_of_projects, 'subcounty',
-                                                          f"{len(list_of_projects['subcounty'].unique())} "
-                                                          f"Subcounties implementing QI initiatives")
-
-        county_qi_projects = prepare_bar_chart_from_df(list_of_projects, 'county',
-                                                       f"{len(list_of_projects['county'].unique())} "
-                                                       f"Counties implementing QI initiatives")
         department_qi_projects = prepare_bar_chart_from_df(list_of_projects, 'department',
                                                            "Number of departments implementing specific QI initiatives")
     else:
@@ -506,7 +603,7 @@ def add_department(request):
 
 @login_required(login_url='login')
 def add_category(request):
-    title = "ADD PROJECT CATEGORY"
+    title = "ADD PROJECT COMPONENT"
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -596,6 +693,7 @@ def update_sub_counties(request, pk):
     }
 
     return render(request, 'project/update.html', context)
+
 
 @login_required(login_url='login')
 def update_hub(request, pk):
@@ -795,6 +893,25 @@ def add_project_program(request):
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = QI_Projects_programForm()
+    context = {"form": form}
+    return render(request, "project/add_program_project.html", context)
+
+
+@login_required(login_url='login')
+def add_program(request):
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = ProgramForm(request.POST)
+        if form.is_valid():
+            form.save()
+
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = ProgramForm()
     context = {"form": form}
     return render(request, "project/add_program_project.html", context)
 
@@ -2396,8 +2513,6 @@ def comments_no_response(request):
         id__in=Comment.objects.filter(~Q(parent_id=None) & ~Q(parent_id__isnull=True)).values_list("parent_id",
                                                                                                    flat=True))
 
-
-
     context = {
         "all_comments": all_comments,
         "title": "Comments without responses"
@@ -2412,7 +2527,7 @@ def comments_with_response(request):
     ).prefetch_related('qi_project_title__qi_team_members').order_by('-comment_updated')
     context = {
         "all_comments": all_comments,
-        "title":"Comments with responses"
+        "title": "Comments with responses"
     }
     return render(request, "project/comments.html", context)
 
@@ -2867,7 +2982,7 @@ def single_project(request, pk):
     # get milestones for this project
     milestones = Milestone.objects.filter(qi_project__id=pk)
     # # get action plan for this project
-    action_plan = ActionPlan.objects.filter(qi_project__id=pk).order_by('-percent_completed', 'progress')
+    action_plan = ActionPlan.objects.filter(qi_project__id=pk).order_by('progress')
     action_plans = pagination_(request, action_plan)
 
     # get baseline image for this project
@@ -3316,8 +3431,6 @@ def delete_action_plan(request, pk):
     return render(request, 'project/delete_test_of_change.html', context)
 
 
-
-
 @login_required(login_url='login')
 def create_comment(request, pk):
     # set comment as none
@@ -3415,17 +3528,15 @@ def show_project_comments(request, pk):
 
     if not comments:
         comments = Comment.objects.filter(id=pk).order_by('-created_at')
-    context = {'all_comments': comments,"title":"COMMENTS","qi_project":project,}
+    context = {'all_comments': comments, "title": "COMMENTS", "qi_project": project, }
     return render(request, 'project/comments_trial.html', context)
 
 
 def show_all_comments(request):
     # all_comments = ProjectComments.objects.all().order_by('-comment_updated')
-    all_comments = Comment.objects.filter(parent_id=None).prefetch_related('qi_project_title__qi_team_members').order_by(
+    all_comments = Comment.objects.filter(parent_id=None).prefetch_related(
+        'qi_project_title__qi_team_members').order_by(
         '-comment_updated')
-
-
-
 
     print(all_comments)
 
@@ -3433,7 +3544,7 @@ def show_all_comments(request):
         "all_comments": all_comments,
         "title": "All comments"
     }
-    return render(request, "project/comments.html", context)
+    return render(request, "project/comments_trial.html", context)
 
 
 def like_dislike(request, pk):
@@ -3487,9 +3598,8 @@ def like_dislike(request, pk):
         return redirect(request.META.get('HTTP_REFERER'))
 
 
-
 @login_required(login_url='login')
-def add_sustainmentplan(request,pk):
+def add_sustainmentplan(request, pk):
     # qi_project=QI_Projects.objects.get(id=pk)
     # lesson=Lesson_learned.objects.filter(project_name=qi_project)
     qi_project = QI_Projects.objects.filter(id=pk).first()
@@ -3503,14 +3613,66 @@ def add_sustainmentplan(request,pk):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
     if request.method == "POST":
-        form = SustainmentPlanForm(request.POST)
+        form = SustainmentPlanForm(request.POST, request.FILES)
 
         # try:
         if form.is_valid():
-            form.save()
+            # TODO: ENSURE ALL FORMS CAN SHOW FORM ERRORS
+            print(form.cleaned_data['consulted'])
+            post = form.save(commit=False)
+            post.created_by = request.user
+            post.save()
             return HttpResponseRedirect(request.session['page_from'])
+        else:
+            print("form not valid")
     else:
         form = SustainmentPlanForm()
-    context = {"form": form, "title": title,"qi_project":qi_project,"lesson_learnt":lesson,}
+    context = {"form": form, "title": title, "qi_project": qi_project, "lesson_learnt": lesson, }
     return render(request, "project/add_qi_manager.html", context)
 
+
+def show_sustainmentPlan(request):
+    plan = SustainmentPlan.objects.all()
+
+    context = {
+        "plan": plan
+    }
+    return render(request, "project/sustainment_plan.html", context)
+
+
+def update_sustainable_plan(request, pk):
+    plan = SustainmentPlan.objects.get(id=pk)
+    # project = QI_Projects.objects.get(id=lesson_learnt.project_name_id)
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = SustainmentPlanForm(request.POST, instance=plan)
+        if form.is_valid():
+            form.save()
+            return redirect("show_sustainmentPlan")
+    else:
+        form = SustainmentPlanForm(instance=plan)
+    context = {"form": form,
+               # "qi_project": project,
+               "title": "UPDATE SUSTAINMENT PLAN",
+               }
+
+    return render(request, "project/add_qi_manager.html", context)
+
+
+@login_required(login_url='login')
+def delete_sustainable_plan(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = SustainmentPlan.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+        "test_of_changes": item
+    }
+    return render(request, 'project/delete_test_of_change.html', context)

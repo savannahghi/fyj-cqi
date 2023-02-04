@@ -471,7 +471,8 @@ class ProgramForm(ModelForm):
 
 class CommentForm(ModelForm):
     # content = forms.CharField()
-    content = forms.CharField(widget=forms.TextInput(attrs={'class': 'full-width-input'}))
+    # content = forms.CharField(widget=forms.TextInput(attrs={'class': 'full-width-input'}))
+    content = forms.Textarea()
 
     # content = forms.CharField(widget=forms.Textarea(attrs={'rows': 10, 'cols': 120}))
 

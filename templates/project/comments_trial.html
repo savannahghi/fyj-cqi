@@ -43,7 +43,12 @@
       <div class="col-md-12">
         <div class="card comments-card">
           <div class="card-body p-4">
-            <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comments for {{ qi_project.project_title}} QI project</h4>
+          {% if all_comments|length > 1 %}
+               <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comments for {{ qi_project.project_title}} QI project</h4>
+              {% else %}
+           <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comment for {{ qi_project.project_title}} QI project</h4>
+          {% endif %}
+
             <div class="row">
               <div class="col">
                  {% for comment in all_comments %}
@@ -251,7 +256,7 @@
     </div>
   </div>
 </div>
-{% endif %}
+{% else %}
   <div class="container my-5 py-5">
   <div class="container" >
     <div class="row d-flex justify-content-center">
@@ -260,7 +265,11 @@
       <div class="col-md-12">
         <div class="card comments-card">
           <div class="card-body p-4">
-            <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comments for {{ qi_project.project_title}} QI project</h4>
+            {% if all_comments|length > 1 %}
+               <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comments for {{ qi_project.project_title}} QI project</h4>
+              {% else %}
+           <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comment for {{ qi_project.project_title}} QI project</h4>
+          {% endif %}
             <div class="row">
               <div class="col">
                  {% for comment in all_comments %}
@@ -474,5 +483,6 @@
     </div>
   </div>
 </div>
+{% endif %}
     </main>
 {% endblock %}

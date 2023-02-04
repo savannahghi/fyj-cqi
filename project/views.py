@@ -5,6 +5,7 @@ from itertools import tee
 
 import pandas as pd
 # from django.contrib.auth import get_user_model
+from django import template
 from django.contrib.auth.decorators import login_required
 # from django.core.files.storage import FileSystemStorage
 from django.contrib import messages
@@ -34,6 +35,7 @@ import plotly.express as px
 from django.http import FileResponse
 from io import BytesIO
 from reportlab.pdfgen import canvas
+
 
 # Create your views here.
 def download_pdf(request):
@@ -104,6 +106,7 @@ def download_lessons(request):
                          lesson.future_plans, lesson.date_created, lesson.date_modified])
 
     return response
+
 
 def pagination_(request, item_list, item_number=10):
     page = request.GET.get('page', 1)
@@ -309,8 +312,6 @@ def dashboard(request):
         list_of_projects_fac['facility'] = list_of_projects_fac['facility'].astype(str).str.split(" ").str[0]
 
         list_of_projects = pd.concat([list_of_projects_fac, list_of_projects_sub, list_of_projects_county])
-        print("list_of_projects_fac::::::")
-        print(list_of_projects_fac)
 
         if len(list_of_projects_fac['facility'].unique()) > 20:
             facility_qi_projects = prepare_bar_chart_from_df(list_of_projects_fac, 'facility',
@@ -682,8 +683,8 @@ def update_sub_counties(request, pk):
         if form.is_valid():
             form.save()
 
-            # Save many-to-many relationships
-            form.save_m2m()
+            # # Save many-to-many relationships
+            # form.save_m2m()
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = Sub_countiesForm(instance=sub_counties)
@@ -2470,7 +2471,8 @@ def qi_managers_view(request):
     """
     # Get a queryset of QI managers, annotated with the number of projects they are supervising
     # and ordered by the number of projects in descending order
-    qi_managers = Qi_managers.objects.annotate(num_projects=Count('qi_projects')).order_by('-num_projects')
+    qi_managers = Qi_managers.objects.annotate(num_projects=Count('qi_projects')).order_by('-num_projects',
+                                                                                           'date_created')
 
     # Create the context variable to pass to the template
     context = {
@@ -2961,6 +2963,7 @@ def prepare_trends_big_size(df, title=""):
 
 @login_required(login_url='login')
 def single_project(request, pk):
+    # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
     try:
         all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id', flat=True)
     except:
@@ -2990,14 +2993,6 @@ def single_project(request, pk):
         baseline = Baseline.objects.filter(qi_project__id=pk).latest('date_created')
     except Baseline.DoesNotExist:
         baseline = None
-
-    # if not baseline.baseline_status:
-    #     baseline.baseline_status = 'media/images/default.png'
-
-    # This work the same way
-    # baseline = Baseline.objects.filter(qi_project__id=pk).order_by('-date_created').first()
-
-    # print(baseline)
 
     today = datetime.now(timezone.utc).date()
     action_plans = pagination_(request, action_plan)
@@ -3087,7 +3082,6 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived,
-                   # "stakeholderform": stakeholderform,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline}
 
@@ -3098,7 +3092,6 @@ def single_project(request, pk):
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
                    "all_archived": all_archived,
-                   # "stakeholderform": stakeholderform,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline, }
 
@@ -3538,8 +3531,6 @@ def show_all_comments(request):
         'qi_project_title__qi_team_members').order_by(
         '-comment_updated')
 
-    print(all_comments)
-
     context = {
         "all_comments": all_comments,
         "title": "All comments"
@@ -3618,13 +3609,10 @@ def add_sustainmentplan(request, pk):
         # try:
         if form.is_valid():
             # TODO: ENSURE ALL FORMS CAN SHOW FORM ERRORS
-            print(form.cleaned_data['consulted'])
             post = form.save(commit=False)
             post.created_by = request.user
             post.save()
             return HttpResponseRedirect(request.session['page_from'])
-        else:
-            print("form not valid")
     else:
         form = SustainmentPlanForm()
     context = {"form": form, "title": title, "qi_project": qi_project, "lesson_learnt": lesson, }

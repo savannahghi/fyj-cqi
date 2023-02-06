@@ -51,7 +51,16 @@
                                 </ul>
                             </div>
                         {% endfor %}
-                    </div>
+{#                    {% for project in program_projects %}#}
+{#                            <div>#}
+{#                                <ul>#}
+{#                                    {% if project.id not in projects_tracked %}#}
+{#                                        <li><a href="{% url 'single_project_program' project.id %}">{{ project.project_title }}</a></li>#}
+{#                                    {% endif %}#}
+{#                                </ul>#}
+{#                            </div>#}
+{#                        {% endfor %}#}
+{#                    </div>#}
             </div>
         {% else%}
             <div class="container">
@@ -94,6 +103,25 @@
                                             <a href="{% url 'qicreator_filter_project' qi.created_by.username %}" class="btn btn-secondary">Created by : {{ qi.created_by.username }}</a>
 
                                             <a href="{% url 'sub_county_filter_project' qi.sub_county.sub_counties %}" class="btn btn-secondary">Sub-county : {{ qi.sub_county.sub_counties }}</a>
+                                          </div>
+                                      {% endif %}
+                                {% endfor %}
+                            {% for qi in program_projects %}
+                                      {% if qi.id == key %}
+                                          <div class="card-body">
+                                              <div class="container">
+                                                <div class="col">
+                                                    <a href="{% url 'facility_filter_project' qi.program.program %}" class="btn btn-primary text-sm-start">FACILITY: {{ qi.program.program }}</a>
+                                                    <br>
+{#                                                    <a href="{% url 'county_filter_project' qi.county.county_name %}" class="btn btn-secondary mt-1">County : {{ qi.county.county_name }}</a>#}
+                                                    <a href="{% url 'single_project_program' qi.id %}" class="btn btn-success mt-1 text-sm-start">PROJECT: {{ qi.project_title }}</a>
+                                                    {{ values|safe }}
+                                                </div>
+                                              </div>
+                                            <a href="{% url 'single_project_program' qi.id %}" class="btn btn-primary">View project</a>
+                                            <a href="{% url 'qicreator_filter_project' qi.created_by.username %}" class="btn btn-secondary">Created by : {{ qi.created_by.username }}</a>
+
+{#                                            <a href="{% url 'sub_county_filter_project' qi.sub_county.sub_counties %}" class="btn btn-secondary">Sub-county : {{ qi.sub_county.sub_counties }}</a>#}
                                           </div>
                                       {% endif %}
                                 {% endfor %}

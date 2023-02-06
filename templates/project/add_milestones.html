@@ -8,7 +8,11 @@
     <div class="p-5 mb-4 bg-light rounded-3">
       <div class="container-fluid py-5">
         <h1 class="display-6 fw-bold text-primary">{{ title }} </h1>
+      {% if "facility" in level %}
       <h4 class="display-6">FACILITY: {{ qi_project.facility_name}}</h4>
+      {% elif "program" in level %}
+      <h4 class="display-6">PROGRAM: {{ qi_project.program}}</h4>
+      {% endif %}
           <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
 {#          {% endfor %}#}
           <div class="row">

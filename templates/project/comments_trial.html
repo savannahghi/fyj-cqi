@@ -62,7 +62,7 @@
                             <p class="mb-1">
                               {{ comment.author.first_name|title }} {{ comment.author.last_name|title }}
                                 <span class="small text-success">- Comment posted on {{ comment.created_at|date:"D j M Y H:i" }}
-                                    (Last update {{ comment.created_at|timesince }} ago)
+                                    (Last update {{ comment.comment_updated|timesince }} ago)
                                 </span>
                             </p>
                           </div>
@@ -93,7 +93,7 @@
                             {% endif %}
 
 
-                             {% if comment.comment_set.count == 0 %}
+                             {% if comment.comment_set.count == 0 and comment.author.id == request.user.id%}
                                 <a href="{% url 'update_comments' comment.id %}"><i class="fas fa-pen-square mr-4"></i></a>
                                 <a href="{% url 'delete_comments' comment.id %}"><i class="fas fa-trash mr-1"></i></a>
                             {% endif %}
@@ -135,7 +135,7 @@
                                         <div>
                                           <div class="d-flex justify-content-between align-items-center">
                                             <p class="mb-1">
-                                              {{ reply.author.first_name|title }} {{ reply.author.last_name|title }}<span class="small text-info">- Last update: {{ reply.created_at|timesince }} ago</span>
+                                              {{ reply.author.first_name|title }} {{ reply.author.last_name|title }}<span class="small text-info">- Last update: {{ reply.comment_updated|timesince }} ago</span>
                                             </p>
                                           </div>
                                           <p class="small mb-0">
@@ -164,10 +164,11 @@
                                             </a>
                                         {% endif %}
 
-                                            {% if reply.comment_set.count == 0 %}
+                                            {% if reply.comment_set.count == 0 and reply.author.id == request.user.id %}
                                                 <a href="{% url 'update_comments' reply.id %}"><i class="fas fa-pen-square mr-1"></i>Edit</a>
                                                 <a href="{% url 'delete_comments' reply.id %}"><i class="fas fa-trash mr-1"></i></a>
                                             {% endif %}
+
 
                                             <form action="{% url 'like_dislike' reply.id %}" method="post">
                                                 {% csrf_token %}
@@ -211,7 +212,7 @@
                                         <div>
                                           <div class="d-flex justify-content-between align-items-center">
                                             <p class="mb-1">
-                                              {{ sub_reply.author.first_name|title }} {{ sub_reply.author.last_name|title }}<span class="small text-info">- Last update: {{ comment.created_at|timesince }} ago</span>
+                                              {{ sub_reply.author.first_name|title }} {{ sub_reply.author.last_name|title }}<span class="small text-info">- Last update: {{ comment.comment_updated|timesince }} ago</span>
                                             </p>
                                           </div>
                                           <p class="small mb-0">
@@ -220,8 +221,13 @@
                                            <div class="d-flex justify-content-evenly">
                                                 <p>Likes : {{ sub_reply.likes }}</p>
                                                 <p>Dislikes : {{ sub_reply.dislikes }}</p>
+                                           {% if sub_reply.author.id == request.user.id %}
+
                                                 <a href="{% url 'update_comments' sub_reply.id %}"><i class="fas fa-pen-square mr-1"></i>Edit</a>
+
                                                 <a href="{% url 'delete_comments' sub_reply.id %}"><i class="fas fa-trash mr-1"></i></a>
+                                           {% endif %}
+
                                                 <form action="{% url 'like_dislike' sub_reply.id %}" method="post">
                                                   {% csrf_token %}
                                                   <button class="btn btn-outline-primary" type="submit" name="like"><i class="fas fa-thumbs-up"></i> Likes</button>
@@ -284,14 +290,22 @@
                             <p class="mb-1">
                               {{ comment.author.first_name|title }} {{ comment.author.last_name|title }}
                                 <span class="small text-success">- Comment posted on {{ comment.created_at|date:"D j M Y H:i" }}
-                                    (Last update {{ comment.created_at|timesince }} ago)
+                                    (Last update {{ comment.comment_updated|timesince }} ago)
                                 </span>
                             </p>
-                           <p class="mb-1">
-                               <a href="{% url 'single_project' comment.qi_project_title.id %}">
-                                   {{ comment.qi_project_title.project_title }}
-                               </a>
-                           </p>
+                             {% if comment.qi_project_title %}
+                                  <p class="mb-1">QI PROJECT:
+                                       <a href="{% url 'single_project' comment.qi_project_title.id %}">
+                                           {{ comment.qi_project_title }}
+                                       </a>
+                                   </p>
+                              {% elif comment.program_qi_project_title %}
+                                    <p class="mb-1">QI PROJECT:
+                                       <a href="{% url 'single_project_program' comment.program_qi_project_title.id %}">
+                                           {{ comment.program_qi_project_title.project_title }}
+                                       </a>
+                                   </p>
+                              {% endif %}
                           </div>
                           <p class="small mb-0">
                             {{ comment.content }}
@@ -320,7 +334,7 @@
                             {% endif %}
 
 
-                             {% if comment.comment_set.count == 0 %}
+                             {% if comment.comment_set.count == 0 and comment.author.id == request.user.id%}
                                 <a href="{% url 'update_comments' comment.id %}"><i class="fas fa-pen-square mr-4"></i></a>
                                 <a href="{% url 'delete_comments' comment.id %}"><i class="fas fa-trash mr-1"></i></a>
                             {% endif %}
@@ -362,7 +376,7 @@
                                         <div>
                                           <div class="d-flex justify-content-between align-items-center">
                                             <p class="mb-1">
-                                              {{ reply.author.first_name|title }} {{ reply.author.last_name|title }} <span class="small text-info">- Last update: {{ reply.created_at|timesince }} ago </span>
+                                              {{ reply.author.first_name|title }} {{ reply.author.last_name|title }} <span class="small text-info">- Last update: {{ reply.comment_updated|timesince }} ago </span>
                                             </p>
                                           </div>
                                           <p class="small mb-0">
@@ -391,9 +405,11 @@
                                             </a>
                                         {% endif %}
 
-                                            {% if reply.comment_set.count == 0 %}
+                                            {% if reply.comment_set.count == 0 and reply.author.id == request.user.id %}
+
                                                 <a href="{% url 'update_comments' reply.id %}"><i class="fas fa-pen-square mr-1"></i>Edit</a>
                                                 <a href="{% url 'delete_comments' reply.id %}"><i class="fas fa-trash mr-1"></i></a>
+
                                             {% endif %}
 
                                             <form action="{% url 'like_dislike' reply.id %}" method="post">
@@ -438,7 +454,7 @@
                                         <div>
                                           <div class="d-flex justify-content-between align-items-center">
                                             <p class="mb-1">
-                                              {{ sub_reply.author.first_name|title }} {{ sub_reply.author.last_name|title }} <span class="small text-info">- Last update: {{ comment.created_at|timesince }} ago </span>
+                                              {{ sub_reply.author.first_name|title }} {{ sub_reply.author.last_name|title }} <span class="small text-info">- Last update: {{ comment.comment_updated|timesince }} ago </span>
                                             </p>
                                           </div>
                                           <p class="small mb-0">
@@ -447,8 +463,13 @@
                                            <div class="d-flex justify-content-evenly">
                                                 <p>Likes : {{ sub_reply.likes }}</p>
                                                 <p>Dislikes : {{ sub_reply.dislikes }}</p>
-                                                <a href="{% url 'update_comments' sub_reply.id %}"><i class="fas fa-pen-square mr-1"></i>Edit</a>
-                                                <a href="{% url 'delete_comments' sub_reply.id %}"><i class="fas fa-trash mr-1"></i></a>
+                                           {% if sub_reply.author.id == request.user.id %}
+
+                                                    <a href="{% url 'update_comments' sub_reply.id %}"><i class="fas fa-pen-square mr-1"></i>Edit</a>
+
+                                                    <a href="{% url 'delete_comments' sub_reply.id %}"><i class="fas fa-trash mr-1"></i></a>
+
+                                           {% endif %}
                                                 <form action="{% url 'like_dislike' sub_reply.id %}" method="post">
                                                   {% csrf_token %}
                                                   <button class="btn btn-outline-primary" type="submit" name="like"><i class="fas fa-thumbs-up"></i> Likes</button>

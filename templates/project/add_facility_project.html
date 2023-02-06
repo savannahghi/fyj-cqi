@@ -7,7 +7,13 @@
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
     <div class="p-5 mb-4 bg-light rounded-3">
       <div class="container-fluid py-5">
-        <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
+      {% if "facility" in title %}
+      <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
+      {% elif "program" in title %}
+          <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
+
+      {% endif %}
+
           <div class="d-flex justify-content-between">
               <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
               <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
@@ -21,21 +27,36 @@
         <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
             {% csrf_token %}
 {#            {{ form|crispy}}#}
-        <div class="col-md-2 mt-4">
+            {% if "facility" in  title %}
+            <div class="col-md-2 mt-4">
                 {{ form.hub|as_crispy_field }}
             </div>
+
+        {% endif %}
+
             <div class="col-md-2 mt-4">
                 {{ form.qi_manager|as_crispy_field }}
             </div>
             <div class="col-md-2 mt-4">
                 {{ form.departments|as_crispy_field }}
             </div>
+
+        {% if "facility" in  title %}
             <div class="col-md-2 mt-4">
                 {{ form.project_category|as_crispy_field }}
             </div>
             <div class="col-md-2 mt-4">
                 {{ form.facility_name|as_crispy_field }}
             </div>
+        {% elif "program" in  title %}
+            <div class="col-md-3 mt-4">
+                {{ form.project_category|as_crispy_field }}
+            </div>
+            <div class="col-md-3 mt-4">
+                {{ form.program|as_crispy_field }}
+            </div>
+        {% endif %}
+
          <div class="col-md-2 mt-4">
                 {{ form.settings|as_crispy_field }}
             </div>

@@ -298,7 +298,7 @@ class Subcounty_qi_projects(models.Model):
         ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
         ('Others', 'Others'),)
 
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    departments = models.ForeignKey(Department, on_delete=models.CASCADE)
     # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
     project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
@@ -394,7 +394,7 @@ class County_qi_projects(models.Model):
         ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
         ('Others', 'Others'),)
 
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    departments = models.ForeignKey(Department, on_delete=models.CASCADE)
     project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
     county = models.ForeignKey(Counties, on_delete=models.CASCADE)
@@ -469,7 +469,7 @@ class Hub_qi_projects(models.Model):
         ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
         ('Others', 'Others'),)
 
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    departments = models.ForeignKey(Department, on_delete=models.CASCADE)
     project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
     hub = models.CharField(max_length=250)
@@ -544,7 +544,7 @@ class Program_qi_projects(models.Model):
         ('TX & RETENTION', 'TX & RETENTION'), ('PMTCT', 'PMTCT'), ('MMD/MMS', 'MMD/MMS'), ('LAB', 'LAB'), ('TB', 'TB'),
         ('Others', 'Others'),)
 
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    departments = models.ForeignKey(Department, on_delete=models.CASCADE)
     project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
     program = models.ForeignKey(Program, on_delete=models.CASCADE)
@@ -624,6 +624,7 @@ class Close_project(models.Model):
 
 class TestedChange(models.Model):
     project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
+    program_project = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
     month_year = models.DateField(verbose_name="Date")
     numerator = models.IntegerField()
     denominator = models.IntegerField()
@@ -632,24 +633,20 @@ class TestedChange(models.Model):
     comments = models.TextField()
     achievements = models.FloatField(null=True, blank=True)
 
-    def __str__(self):
-        return str(self.project)
+    # def __str__(self):
+    #     return str(self.project)
         # return self.tested_change
 
     def save(self, *args, **kwargs):
         self.achievements = round(self.numerator / self.denominator * 100, )
-        self.numerator = self.numerator.title()
-        self.denominator = self.denominator.title()
-        self.data_sources = self.data_sources.title()
-        self.tested_change = self.tested_change.title()
-
         super().save(*args, **kwargs)
 
 
 class Comment(models.Model):
     content = models.TextField()
     author = models.ForeignKey(NewUser, on_delete=models.CASCADE)
-    qi_project_title = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    qi_project_title = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, null=True, blank=True)
+    program_qi_project_title = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
     likes = models.IntegerField(default=0)
@@ -773,8 +770,10 @@ class Qi_team_members(models.Model):
     choose_qi_team_member_level = models.CharField(max_length=250, choices=TEAM_MEMBER_LEVEL_CHOICES)
     impact = models.TextField()
     notes = models.TextField()
-    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
-    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, related_name="qi_team_members")
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE,blank=True,null=True)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE,blank=True,null=True)
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, related_name="qi_team_members",blank=True,null=True)
+    program_qi_project = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, related_name="qi_team_members",blank=True,null=True)
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
     user = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE, related_name="team_member")
 
@@ -832,8 +831,10 @@ class Milestone(models.Model):
     end_date = models.DateField()
     description = models.TextField()
     notes = models.TextField(blank=True, null=True)
-    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
-    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE,blank=True, null=True)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE,blank=True, null=True)
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE,blank=True, null=True)
+    program_qi_project = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE,blank=True, null=True)
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
 
     def clean(self):
@@ -858,8 +859,10 @@ class ActionPlan(models.Model):
     percent_completed = models.IntegerField()
     start_date = models.DateField()
     due_date = models.DateField()
-    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE)
-    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE,null=True, blank=True)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE,null=True, blank=True)
+    qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE,null=True, blank=True)
+    program_qi_project = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE,null=True, blank=True)
     created_by = models.ForeignKey(NewUser, default=None, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
@@ -904,7 +907,9 @@ class Lesson_learned(models.Model):
 class Baseline(models.Model):
     baseline_status = models.ImageField(upload_to='images', default="images/baseline.png", null=True, blank=True)
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE, null=True, blank=True)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True, blank=True)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, null=True, blank=True)
+    program_qi_project = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 

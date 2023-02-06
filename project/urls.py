@@ -29,6 +29,7 @@ urlpatterns = [
     path('resources/', resources, name="resources"),
     path('sub-counties-list/', sub_counties_list, name="sub_counties_list"),
     path('single-project/<int:pk>', single_project, name="single_project"),
+    path('single-project-program/<int:pk>', single_project_program, name="single_project_program"),
     path('facility-projects/<str:pk>', facility_project, name="facility_project"),
     path('department-projects/<str:pk>', department_project, name="department_project"),
     path('department-all-projects/<str:pk>', department_filter_project, name="department_filter_project"),
@@ -84,6 +85,7 @@ urlpatterns = [
     path('qi-projects-involved-in/<int:pk>', qi_team_involved, name="qi_team_involved"),
 
     path('facilities-landing-page/', facilities_landing_page, name="facilities_landing_page"),
+    path('program-landing-page/', program_landing_page, name="program_landing_page"),
     path('update-project/<int:pk>/', update_project, name="update_project"),
     path('tested-change/<int:pk>/', tested_change, name="tested_change"),
     path('update-test-of-change/<int:pk>/', update_test_of_change, name="update_test_of_change"),

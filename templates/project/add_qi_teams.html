@@ -9,7 +9,13 @@
       <div class="container-fluid py-5">
       {% if "qi team" in title %}
           <h1 class="display-6 fw-bold text-primary">{{ title|upper}} </h1>
-          <h4 class="display-6">FACILITY: {{ qi_project.facility_name}}</h4>
+          {% if "facility" in level %}
+              <h4 class="display-6">FACILITY: {{ qi_project.facility_name}}</h4>
+              {% else %}
+              <h4 class="display-6">PROGRAM: {{ qi_project.program}}</h4>
+
+          {% endif %}
+
           <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
 {#          {% endfor %}#}
           <div class="row mb-4">
@@ -55,6 +61,11 @@
         <div class="col-md-3 mt-4 pt-3">
         <input class="btn btn-success mt-1" type="submit" value="Submit">
             </div>
+    {% if form.errors %}
+        <div class="alert alert-danger mt-4">
+            {{ form.errors }}
+        </div>
+    {% endif %}
     </form>
       </div>
     </div>

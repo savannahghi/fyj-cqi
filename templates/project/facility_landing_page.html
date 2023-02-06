@@ -2,12 +2,21 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
+{% url "facilities_landing_page" as facilities_landing_page %}
 
 {% block content %}
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
      <div class="p-5 mb-4 bg-light rounded-3">
+     <div class="d-flex justify-content-around">
           <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+          <a href="{% url 'facilities_landing_page' %}" class="btn btn-outline-success">FACILITY PROJECTS</a>
+
+          <a href="#" class="btn btn-outline-success">SUB-COUNTIES PROJECTS</a>
+          <a href="#" class="btn btn-outline-success">COUNTY PROJECTS</a>
+          <a href="#" class="btn btn-outline-success">HUB PROJECTS</a>
+          <a href="{% url 'program_landing_page' %}" class="btn btn-outline-success">PROGRAM PROJECTS</a>
+     </div>
           <div class="container-fluid py-5">
           <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
               <div class="col-md-6">
@@ -42,9 +51,16 @@
                     <div class="col-md-2">
                         {{ my_filters.form.problem_background|as_crispy_field }}
                     </div>
-                    <div class="col-md-2">
-                        {{ my_filters.form.facility_name|as_crispy_field }}
-                    </div>
+                  {% if "facility" in title %}
+                      <div class="col-md-2">
+                            {{ my_filters.form.facility_name|as_crispy_field }}
+                      </div>
+                  {% elif "program" in title %}
+                      <div class="col-md-2">
+                            {{ my_filters.form.program|as_crispy_field }}
+                      </div>
+                  {% endif %}
+
                     <div class="col-md-2">
                         {{ my_filters.form.settings|as_crispy_field }}
                     </div>
@@ -106,15 +122,19 @@
                    <div class="card-body">
                        <h6 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h6>
                        <ul>
-                          <li>Facility : <a href="{% url 'facility_project' qi.facility_name %}">{{ qi.facility_name }}</a></li>
-                          <li>Problem background : {{ qi.problem_background }}</li>
-                          <li>Objective : {{ qi.objective }}</li>
-                          <li>Setting : {{ qi.settings }}</li>
-                          <li>Department : {{ qi.departments.department }}</li>
+                       {% if "facility" in title %}
+                          <li>Facility : <a href="{% url 'facility_project' qi.facility_name %} ">{{ qi.facility_name }} </a></li>
+                       {% elif "program" in title %}
+                          <li>Program : <a href="#">{{ qi.program }} </a></li>
+                       {% endif %}
+                          <li>Problem background : {{ qi.problem_background }} </li>
+                          <li>Objective : {{ qi.objective }} </li>
+                          <li>Setting : {{ qi.settings }} </li>
+                          <li>Department : {{ qi.departments.department }} </li>
                           <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
-                          <li>Created by : {{ qi.created_by }}</li>
+                          <li>Created by : {{ qi.created_by }} </li>
                            {% if qi.comments%}
-                               <li>Comment (s) : {{ qi.comments }}</li>
+                               <li>Comment (s) : {{ qi.comments }} </li>
                            {% endif %}
                        </ul>
                   <div class="d-flex justify-content-evenly" >
@@ -156,21 +176,16 @@
                   <div class="card-body">
                     <h6 class="card-title"> {{ qi.project_title}}</h6>
 
-{#                        {{ archived_project.qi_project.id }}#}
-
-{#                      <a href="#" class="btn btn-success">ARCHIVED PROJECT</a>#}
-
-
-{#                        {{ archived_project.qi_project.project_title }}#}
-
-{#                    {% endfor %}#}
-
                       <ul>
-                          <li>Facility : <a href="{% url 'facility_project' qi.facility_name %}">{{ qi.facility_name }}</a></li>
-                          <li>Problem background : {{ qi.problem_background }}</li>
-                          <li>Objective : {{ qi.objective }}</li>
-                          <li>Setting : {{ qi.settings }}</li>
-                          <li>Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>
+                      {% if "facility" in title %}
+                          <li>Facility : <a href="{% url 'facility_project' qi.facility_name %} ">{{ qi.facility_name }} </a></li>
+                       {% elif "program" in title %}
+                          <li>Program : <a href="#">{{ qi.program }} </a></li>
+                       {% endif %}
+                          <li>Problem background : {{ qi.problem_background }} </li>
+                          <li>Objective : {{ qi.objective }} </li>
+                          <li>Setting : {{ qi.settings }} </li>
+                          <li>Department : <a href="{% url 'department_project' qi.departments.department %} ">{{ qi.departments.department }}</a></li>
                           <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
                           <li>Created by : <a href="{% url 'qi_creators' qi.created_by.username %}">
                               {{ qi.created_by.first_name|title }} {{ qi.created_by.last_name|title }}
@@ -198,14 +213,19 @@
 
 {#                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>#}
                       <button class="btn btn-info" > Last updated on {{ qi.date_updated|date}} </button>
-                      <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
+                      {% if "facility" in title %}
+                            <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
+                       {% elif "program" in title %}
+                            <a href="{% url 'single_project_program' qi.id %}" class="btn btn-secondary">View QI project</a>
+                       {% endif %}
+
 
 
                       {% if user.id == qi.created_by.id %}
                             <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>
                       {% endif %}
                       {% if qi.id not in tracked_projects%}
-                        <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                        <a href="{% url 'single_project' qi.id %} " class="btn btn-danger">UNTRACKED QI PROJECT</a>
 {#                          <a href="{% url 'untracked_projects' %}" class="btn btn-danger">UNTRACKED QI PROJECTS</a>#}
                       {% endif %}
                   </div>

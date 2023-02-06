@@ -192,7 +192,7 @@ class TestedChangeForm(ModelForm):
     class Meta:
         model = TestedChange
         fields = "__all__"
-        exclude = ['achievements', 'project']
+        exclude = ['achievements', 'project','program_project']
         widgets = {
             'data_sources': forms.TextInput(attrs={
                 'placeholder': 'Specify the tools or systems used to collect data for the metric',
@@ -322,7 +322,7 @@ class Qi_team_membersForm(ModelForm):
     class Meta:
         model = Qi_team_members
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'created_by']
+        exclude = ['facility', 'qi_project', 'created_by','program_qi_project','program']
         labels = {
             'user': 'Team Member',
         }
@@ -364,7 +364,7 @@ class MilestoneForm(ModelForm):
     class Meta:
         model = Milestone
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'created_by']
+        exclude = ['facility', 'qi_project', 'created_by','program','program_qi_project']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Major tasks or phases of the project'}),
 
@@ -387,7 +387,7 @@ class ActionPlanForm(ModelForm):
     class Meta:
         model = ActionPlan  # specify the model that the form is based on
         fields = "__all__"  # include all fields from the model
-        exclude = ['facility', 'qi_project', 'created_by', 'progress',
+        exclude = ['facility', 'qi_project', 'created_by', 'progress','program','program_qi_project',
                    'timeframe']  # exclude these fields from the form
         widgets = {
             'responsible': forms.CheckboxSelectMultiple  # render the 'responsible' field as checkboxes
@@ -396,8 +396,13 @@ class ActionPlanForm(ModelForm):
     def __init__(self, facility, qi_projects, *args, **kwargs):
         # call the parent class's init method
         super(ActionPlanForm, self).__init__(*args, **kwargs)
-        # filter the 'responsible' field's queryset based on the passed facility and qi_project
-        self.fields['responsible'].queryset = Qi_team_members.objects.filter(facility=facility, qi_project=qi_projects)
+        try:
+            # filter the 'responsible' field's queryset based on the passed facility and qi_project
+            self.fields['responsible'].queryset = Qi_team_members.objects.filter(facility=facility, qi_project=qi_projects)
+        except:
+            # filter the 'responsible' field's queryset based on the passed facility and qi_project
+            self.fields['responsible'].queryset = Qi_team_members.objects.filter(program=facility,
+                                                                                 program_qi_project=qi_projects)
         # check if an instance is passed to the form
         if 'instance' in kwargs:
             instance = kwargs.pop('instance')
@@ -460,7 +465,7 @@ class BaselineForm(ModelForm):
     class Meta:
         model = Baseline
         fields = "__all__"
-        exclude = ['facility', 'qi_project']
+        exclude = ['facility', 'qi_project','program','program_qi_project']
 
 
 class ProgramForm(ModelForm):

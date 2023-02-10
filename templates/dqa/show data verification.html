@@ -117,27 +117,27 @@
     </thead>
 
     <tbody>
-        {% for data in data_verification %}
+      {% for data in data_verification %}
         <tr>
             <td>{{ data.indicator }}</td>
             <td>{{ data.field_1 }}</td>
             <td>{{ data.field_2 }}</td>
             <td>{{ data.field_3 }}</td>
-            <td class="text-center text-white" style="background-color: green">
+            <td class="text-center text-white" style="background-color: {% if data.total_source == data.total_731moh and data.total_731moh == data.total_khis %}green{% else %}red{% endif %}">
                 <strong> {{data.total_source}} </strong>
             </td>
 
             <td>{{ data.field_5 }}</td>
             <td>{{ data.field_6 }}</td>
             <td>{{ data.field_7 }}</td>
-            <td class="text-center text-white" style="background-color: green">
+             <td class="text-center text-white" style="background-color: {% if data.total_source == data.total_731moh and data.total_731moh == data.total_khis %}green{% else %}red{% endif %}">
                 <strong>{{ data.total_731moh }}</strong>
-            </td>
+             </td>
 
             <td>{{ data.field_9 }}</td>
             <td>{{ data.field_10 }}</td>
             <td>{{ data.field_11}}</td>
-            <td class="text-center text-white" style="background-color: green">
+             <td class="text-center text-white" style="background-color: {% if data.total_source == data.total_731moh and data.total_731moh == data.total_khis %}green{% else %}red{% endif %}">
                 <strong>{{ data.total_khis }}</strong>
             </td>
 
@@ -146,6 +146,9 @@
         <td><a href="{% url 'delete_data_verification' data.id %}" class="btn btn-danger" role="button">Update</a></td>
         </tr>
         {% endfor %}
+
+
+
     </tbody>
 </table>
     </main>

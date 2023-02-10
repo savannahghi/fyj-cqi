@@ -1,0 +1,134 @@
+<!-- Dynamically add active class to the links -->
+{% url "dashboard" as dashboard %}
+{% url "deep_dive_facilities" as deep_dive_facilities %}
+{% url "deep_dive_chmt" as deep_dive_chmt %}
+{% url "qi_team_members" as qi_team_members %}
+{% url "qi_managers" as qi_managers %}
+{% url "archived" as archived %}
+{% url "audit_trail" as audit_trail %}
+{% url "comments" as comments %}
+{% url "resources" as resources %}
+{% url "facilities_landing_page" as facilities_landing_page %}
+{% url "sub_counties_list" as sub_counties_list %}
+{% url "lesson_learnt" as lesson_learnt %}
+{% url "show_sustainmentPlan" as show_sustainmentPlan %}
+{% url 'completed_closed' pk='Completed-or-Closed' as completed_closed %}
+
+
+{% block nav %}
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+      <div class="position-sticky pt-3 sidebar-sticky">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == dashboard %} active{% endif %}" aria-current="page" href="{% url 'dashboard' %}">
+              <span data-feather="home" class="align-text-bottom"></span>
+                Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == facilities_landing_page %} active{% endif %}" href="{% url 'facilities_landing_page' %}">
+              <span data-feather="book-open" class="align-text-bottom"></span>
+              All QI projects
+            </a>
+          </li>
+{#        <li class="nav-item">#}
+{#            <a class="nav-link {% if request.path == deep_dive_facilities %} active{% endif %}" href="{% url 'deep_dive_facilities' %}">#}
+{#              <span data-feather="file" class="align-text-bottom"></span>#}
+{#              Deep dive-Facilities#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == deep_dive_chmt %} active{% endif %}" href="{% url 'deep_dive_chmt' %}">#}
+{#              <span data-feather="activity" class="align-text-bottom"></span>#}
+{#              Deep dive-R/CHMT#}
+{#            </a>#}
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+          <span>TEAMS</span>
+          <a class="link-secondary" href="#" aria-label="Add a new report">
+            <span data-feather="plus-circle" class="align-text-bottom"></span>
+          </a>
+        </h6>
+        <ul>
+
+        </ul>
+          <li class="nav-item">
+             <a class="nav-link {% if request.path == qi_team_members %} active{% endif %}" href="{% url 'qi_team_members' %}">
+              <span data-feather="users" class="align-text-bottom"></span>
+              QI team members
+            </a>
+          </li>
+          <li class="nav-item">
+             <a class="nav-link {% if request.path == qi_managers %} active{% endif %}" href="{% url 'qi_managers' %}">
+              <span data-feather="users" class="align-text-bottom"></span>
+              QI managers
+            </a>
+          </li>
+
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+          <span>Saved reports</span>
+          <a class="link-secondary" href="#" aria-label="Add a new report">
+            <span data-feather="plus-circle" class="align-text-bottom"></span>
+          </a>
+        </h6>
+        <ul class="nav flex-column mb-2">
+         <li class="nav-item">
+             <a class="nav-link {% if request.path == archived %} active{% endif %}" href="{% url 'archived' %}">
+              <span data-feather="layers" class="align-text-bottom"></span>
+              Archived Projects
+            </a>
+          </li>
+          <li class="nav-item">
+             <a class="nav-link {% if request.path == completed_closed %} active{% endif %}" href="{{ completed_closed }}">
+              <span data-feather="check-circle" class="align-text-bottom"></span>
+              Closed projects
+            </a>
+        </li>
+        <li class="nav-item">
+             <a class="nav-link {% if request.path == lesson_learnt %} active{% endif %}" href="{% url 'lesson_learnt' %}">
+              <span data-feather="info" class="align-text-bottom"></span>
+              Lesson Learnt
+            </a>
+          </li>
+        <li class="nav-item">
+             <a class="nav-link {% if request.path == show_sustainmentPlan %} active{% endif %}" href="{% url 'show_sustainmentPlan' %}">
+              <span data-feather="info" class="align-text-bottom"></span>
+              Sustainment plan
+            </a>
+          </li>
+                  <li class="nav-item">
+             <a class="nav-link {% if request.path == sub_counties_list %} active{% endif %}" href="{% url 'sub_counties_list' %}">
+              <span data-feather="target" class="align-text-bottom"></span>
+              Sub-counties
+            </a>
+          </li>
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == audit_trail %} active{% endif %}" href="{% url 'audit_trail' %}">#}
+{#              <span data-feather="target" class="align-text-bottom"></span>#}
+{#              Audit trail#}
+{#            </a>#}
+{#          </li>#}
+          <li class="nav-item">
+             <a class="nav-link {% if request.path == comments %} active{% endif %}" href="{% url 'comments' %}">
+              <span data-feather="file-text" class="align-text-bottom"></span>
+              Comments
+            </a>
+          </li>
+          <li class="nav-item">
+             <a class="nav-link {% if request.path == resources %} active{% endif %}" href="{% url 'resources' %}">
+              <span data-feather="server" class="align-text-bottom"></span>
+              Resources
+            </a>
+          </li>
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == deep_dive_facilities %} active{% endif %}" href="{% url 'deep_dive_facilities' %}">#}
+{#              <span data-feather="file-text" class="align-text-bottom"></span>#}
+{#              Year-end sale#}
+{#            </a>#}
+{#          </li>#}
+        </ul>
+      </div>
+    </nav>
+{% endblock %}

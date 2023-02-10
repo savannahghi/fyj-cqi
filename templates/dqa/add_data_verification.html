@@ -1,0 +1,112 @@
+{% extends 'dqa/index_dqa.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+
+
+    <div class="p-5 mb-4 bg-light rounded-3">
+
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <div class="alert alert-info col-12" role="alert">
+        <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
+    </div>
+{#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
+        {% endfor %}
+    </ul>
+{% endif %}
+
+      <div class="container-fluid py-5">
+      {% if "facility" in title %}
+      <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
+      {% elif "program" in title %}
+          <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
+      {% endif %}
+{#          <div class="d-flex justify-content-between">#}
+{#              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>#}
+{#              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>#}
+{#              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>#}
+{#              <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>#}
+{#              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>#}
+{#              <a href="{% url 'add_hub' %}" class="btn btn-success" role="button">ADD HUB</a>#}
+{#              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
+{#          </div>#}
+    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+   {% csrf_token %}
+         {% for field in form|slice:"0:3" %}
+            {% if "indicator" in field.html_name %}
+                <div class="col-md-4">
+                 {{ field|as_crispy_field }}
+                 </div>
+                {% else %}
+                <div class="col-md-2">
+             {{ field|as_crispy_field }}
+             </div>
+            {% endif %}
+
+
+              {% endfor %}
+
+        <table>
+          <thead>
+            <tr>
+
+            {% for key,months in quarters.items %}
+                {% for month in months %}
+                    <th>{{ month }}</th>
+                {% endfor %}
+                {% for month in months %}
+                        <th>{{ month }}</th>
+                {% endfor %}
+                {% for month in months %}
+                        <th>{{ month }}</th>
+                {% endfor %}
+              <th>{{ key }}</th>
+            {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {% for field in form|slice:"3:8" %}
+                  {% if "total" not in field.html_name %}
+                    <td>{{ field|as_crispy_field }}</td>
+                  {% endif %}
+
+              {% endfor %}
+
+              {% for field in form|slice:"8:12" %}
+                {% if "total" not in field.html_name %}
+                    <td>{{ field|as_crispy_field }}</td>
+                  {% endif %}
+              {% endfor %}
+              {% for field in form|slice:"12:16" %}
+                {% if "total" not in field.html_name %}
+                    <td>{{ field|as_crispy_field }}</td>
+                  {% endif %}
+              {% endfor %}
+            </tr>
+          </tbody>
+        </table>
+         <div class="col-md-3 mt-4 pt-2">
+                <input class="btn btn-success mt-1" type="submit" value="Submit">
+            </div>
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                  <strong>Please correct the following errors:</strong>
+                  <ul>
+                    {% for error in form.errors %}
+                      <li>{{ error }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+            {% endif %}
+        </form>
+      </div>
+    </div>
+</main>
+{% endblock %}

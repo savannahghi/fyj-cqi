@@ -1,4 +1,6 @@
 # from django.contrib.auth.models import User
+import re
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from crum import get_current_user, get_current_request
@@ -75,8 +77,6 @@ class Hub(models.Model):
 
 
 class Facilities(models.Model):
-    # FACILITY_CHOICES = read_txt(file_)
-    # facilities = models.CharField(max_length=250, choices=FACILITY_CHOICES, unique=True)
     facilities = models.CharField(max_length=250, unique=True)
     mfl_code = models.IntegerField(unique=True)
 
@@ -88,8 +88,8 @@ class Facilities(models.Model):
         return self.facilities
 
     def save(self, *args, **kwargs):
-        """Ensure manager name is in title case"""
-        self.facilities = self.facilities.title().strip()
+        """Ensure facility name is in title case and replace any symbol with an underscore"""
+        self.facilities = re.sub(r'[^\w\s]', '_', self.facilities).title().strip()
         super().save(*args, **kwargs)
 
 

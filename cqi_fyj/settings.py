@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'project.apps.ProjectConfig',
     'account',
+    'dqa',
     'crispy_forms',
     'phonenumber_field',
     'django_filters',

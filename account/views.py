@@ -49,8 +49,7 @@ def login_page(request):
         password = request.POST.get("password")
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            print(username)
-            print(password)
+
             login(request, user)
             return redirect("facilities_landing_page")
 

@@ -1422,8 +1422,6 @@ def department_filter_project(request, pk):
         #      'department': x.project.departments.department,
         #      } for x in testedChange
         # ]
-        print("list_of_projects:::::::::::::::::::::::::::")
-        print(list_of_projects)
         pro_perfomance_trial = prepare_viz(list_of_projects, pk, "department")
 
         facility_name = pk
@@ -4112,12 +4110,10 @@ def create_comment(request, pk):
 
 def update_comments(request, pk):
     comment = Comment.objects.get(id=pk)
-    print(comment.content)
+
     try:
         project = QI_Projects.objects.get(id=comment.qi_project_title_id)
     except:
-        print("id::::::::::::::::::::::::::")
-        print(comment.program_qi_project_title_id)
         project = Program_qi_projects.objects.get(id=comment.program_qi_project_title_id)
     # check the page user is from
     if request.method == "GET":

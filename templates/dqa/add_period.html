@@ -1,0 +1,51 @@
+{% extends 'dqa/index_dqa.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="p-5 mb-4 bg-light rounded-3">
+      <div class="container-fluid py-5">
+      {% if "facility" in title %}
+      <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
+      {% elif "program" in title %}
+          <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
+
+      {% endif %}
+
+          <div class="d-flex justify-content-between">
+              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
+              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
+              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>
+              <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
+              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>
+              <a href="{% url 'add_hub' %}" class="btn btn-success" role="button">ADD HUB</a>
+              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>
+          </div>
+
+  <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+            {% csrf_token %}
+{#            {{ form|crispy}}#}
+
+            <div class="col-md-2 mt-4">
+                {{ period_form.quarter|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-4">
+                {{ period_form.year|as_crispy_field }}
+            </div>
+
+{#    #}
+{#            <div class="col-md-2 mt-4">#}
+{#                {{ form.year|as_crispy_field }}#}
+{#            </div>#}
+
+            <div class="col-md-3 mt-4 pt-2">
+                <input class="btn btn-success mt-1" type="submit" value="Submit">
+            </div>
+
+        </form>
+      </div>
+    </div>
+</main>
+{% endblock %}

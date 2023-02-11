@@ -6,6 +6,7 @@ from project.views import *
 urlpatterns = [
     path('', dashboard, name="dashboard"),
     path('deep-dive-facilities/', deep_dive_facilities, name="deep_dive_facilities"),
+    path('cqi/load-data/', load_data, name='load_data'),
     # path('login/', login_page, name="login_page"),
     # path('register/', register_page, name="register"),
     # path('update-profile/<int:pk>', update_profile, name="update_profile"),

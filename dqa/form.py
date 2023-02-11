@@ -9,8 +9,16 @@ class DataVerificationForm(ModelForm):
     class Meta:
         model = DataVerification
         fields = "__all__"
-        exclude = ['created_by']
+        exclude = ['created_by', 'quarter_year']
 
+    # This is the constructor method of the form
+    def __init__(self, *args, **kwargs):
+        # Call the parent constructor method
+        super().__init__(*args, **kwargs)
+        # Loop through all the fields in the form
+        for field in self.fields:
+            # Set the label of each field to False
+            self.fields[field].label = False
 
 class PeriodForm(ModelForm):
     class Meta:
@@ -42,4 +50,3 @@ class FacilitySelectionForm(forms.Form):
         empty_label="Select facility",
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
-

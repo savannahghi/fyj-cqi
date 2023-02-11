@@ -38,6 +38,53 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 
 
+def load_data(request):
+    if request.method == 'POST':
+        file = request.FILES['file']
+        # Read the data from the excel file into a pandas DataFrame
+        keyword = "faci"
+        xls_file = pd.ExcelFile(file)
+        sheet_names = [sheet for sheet in xls_file.sheet_names if keyword.upper() in sheet.upper()]
+        if sheet_names:
+            dfs = pd.read_excel(file, sheet_name=sheet_names)
+            df = pd.concat([df.assign(sheet_name=name) for name, df in dfs.items()])
+            df = df[list(df.columns[:2])]
+            # except:
+            #     df = pd.read_excel(file)
+            # except:
+            #     df = pd.read_csv(file)
+
+            if len(df.columns) == 2:
+                df.fillna(0, inplace=True)
+                # process_cols = [col for col in df.columns if col not in [df.columns[1], df.columns[2]]]
+                # for col in process_cols:
+                #     df[col] = df[col].astype(int)
+                df[df.columns[0]] = df[df.columns[0]].astype(int)
+                df[df.columns[1]] = df[df.columns[1]].astype(str)
+
+                # Iterate over each row in the DataFrame
+                for index, row in df.iterrows():
+                    performance = Facilities()
+                    performance.mfl_code = row[df.columns[0]]
+                    performance.facilities = row[df.columns[1]]
+                    performance.save()
+                messages.error(request, f'Data successfully saved in the database!')
+                return redirect('show_data_verification')
+            else:
+                # Notify the user that the data is incorrect
+                messages.error(request, f'Kindly confirm if {file} has all data columns.The file has'
+                                        f'{len(df.columns)} columns')
+                print(df.columns)
+                redirect('load_data')
+        else:
+            # Notify the user that the data already exists
+            messages.error(request, f"Uploaded file does not have a sheet name 'facility'.")
+            redirect('load_data')
+
+        # return redirect('show_data_verification')
+    return render(request, 'dqa/upload.html')
+
+
 # Create your views here.
 def download_pdf(request):
     response = HttpResponse(content_type='application/pdf')
@@ -266,7 +313,7 @@ def dashboard(request):
         # print("program_qi_projects_df:::")
         # print(program_qi_projects_df)
         # program_qi_projects_df.to_csv("program_qi_projects_df.csv", index=False)
-        best_performing_df = pd.concat([qi_projects_df,program_qi_projects_df])
+        best_performing_df = pd.concat([qi_projects_df, program_qi_projects_df])
         # print("best_performing_df::::::::::::")
         # print(best_performing_df.head(1))
         # best_performing_df = [
@@ -590,7 +637,7 @@ def add_project_facility(request):
     else:
         form = QI_ProjectsForm(prefix='banned')
 
-    context = {"form": form,"title":"facility"}
+    context = {"form": form, "title": "facility"}
     return render(request, "project/add_facility_project.html", context)
 
 
@@ -932,7 +979,7 @@ def add_project_program(request):
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = QI_Projects_programForm()
-    context = {"form": form,"title":"program"}
+    context = {"form": form, "title": "program"}
     return render(request, "project/add_facility_project.html", context)
 
 
@@ -1402,14 +1449,13 @@ def department_filter_project(request, pk):
         ]
         # then concatenate the two lists to get a single list of dictionaries
         # Finally, you can create a dataframe from this list of dictionaries.
-        qi_projects_df = pd.DataFrame(qi_projects )
+        qi_projects_df = pd.DataFrame(qi_projects)
 
         program_qi_projects_df = pd.DataFrame(program_qi_projects)
 
-        program_qi_projects_df.columns=list(qi_projects_df.columns)
+        program_qi_projects_df.columns = list(qi_projects_df.columns)
 
-        list_of_projects = pd.concat([qi_projects_df , program_qi_projects_df])
-
+        list_of_projects = pd.concat([qi_projects_df, program_qi_projects_df])
 
         # list_of_projects = [
         #     {'achievements': x.achievements,
@@ -1442,7 +1488,7 @@ def department_filter_project(request, pk):
                    "pro_perfomance_trial": pro_perfomance_trial,
                    "difference": difference,
                    "projects_tracked": projects_tracked,
-                   "program_projects":program_projects,
+                   "program_projects": program_projects,
 
                    }
     return render(request, "project/department_filter_projects.html", context)
@@ -3328,7 +3374,7 @@ def single_project_program(request, pk):
     try:
         baseline = Baseline.objects.filter(program_qi_project__id=pk).latest('date_created')
     except Baseline.DoesNotExist:
-        baseline=None
+        baseline = None
 
     today = datetime.now(timezone.utc).date()
     action_plans = pagination_(request, action_plan)
@@ -3474,6 +3520,7 @@ def add_stake_holders(request, pk):
                }
     return render(request, 'project/stakeholders.html', context)
 
+
 # @login_required(login_url='login')
 # def add_baseline_image(request, pk):
 #     # WORKING!
@@ -3547,6 +3594,7 @@ def add_baseline_image(request, pk):
 
                }
     return render(request, 'project/baseline_images.html', context)
+
 
 # def my_view(request, pk):
 #     """
@@ -3771,9 +3819,6 @@ def update_baseline(request, pk):
         "qi_project": qi_project,
     }
     return render(request, 'project/add_milestones.html', context)
-
-
-
 
 
 @login_required(login_url='login')

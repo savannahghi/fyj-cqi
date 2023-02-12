@@ -117,7 +117,12 @@
     <tbody>
       {% for data in data_verification %}
         <tr>
+        {% if "_total" in data.indicator|lower or "positive (pmtct)" in data.indicator|lower or "haart total" in data.indicator|lower or "children currently on art" in data.indicator|lower or "children starting art" in data.indicator|lower or "infant prophylaxis" in data.indicator|lower %}
+            <td class="fw-bold" style="background-color: #8fd19e; font-style: italic">{{ data.indicator }}</td>
+        {% else %}
             <td>{{ data.indicator }}</td>
+        {% endif %}
+
             <td>{{ data.field_1 }}</td>
             <td>{{ data.field_2 }}</td>
             <td>{{ data.field_3 }}</td>
@@ -201,10 +206,13 @@
                     <td class="align-middle text-center fw-bold">{{ performance.tx_curr_a|add:performance.tx_curr_p }}</td>
                  {% endif %}
             {% endfor %}
-            
-            
-        <td><a href="{% url 'update_data_verification' data.id %}" class="btn btn-info" role="button">Update</a></td>
+
+         {% if "_total" in data.indicator|lower or "positive (pmtct)" in data.indicator|lower or "haart total" in data.indicator|lower or "children currently on art" in data.indicator|lower or "children starting art" in data.indicator|lower or "infant prophylaxis" in data.indicator|lower %}
+
+        {% else %}
+             <td><a href="{% url 'update_data_verification' data.id %}" class="btn btn-info" role="button">Update</a></td>
         <td><a href="{% url 'delete_data_verification' data.id %}" class="btn btn-danger" role="button">Delete</a></td>
+        {% endif %}
         </tr>
         {% endfor %}
 

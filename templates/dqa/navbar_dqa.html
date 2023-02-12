@@ -1,8 +1,8 @@
 <!-- Dynamically add active class to the links -->
-{% url "dashboard" as dashboard %}
-{% url "deep_dive_facilities" as deep_dive_facilities %}
+{% url "show_data_verification" as show_data_verification %}
+{% url "add_data_verification" as add_data_verification %}
 {% url "deep_dive_chmt" as deep_dive_chmt %}
-{% url "qi_team_members" as qi_team_members %}
+{% url "dqa_summary" as dqa_summary %}
 {% url "qi_managers" as qi_managers %}
 {% url "archived" as archived %}
 {% url "audit_trail" as audit_trail %}
@@ -11,7 +11,7 @@
 {% url "facilities_landing_page" as facilities_landing_page %}
 {% url "sub_counties_list" as sub_counties_list %}
 {% url "lesson_learnt" as lesson_learnt %}
-{% url "show_sustainmentPlan" as show_sustainmentPlan %}
+{% url "load_data" as load_data %}
 {% url 'completed_closed' pk='Completed-or-Closed' as completed_closed %}
 
 
@@ -20,15 +20,15 @@
       <div class="position-sticky pt-3 sidebar-sticky">
         <ul class="nav flex-column">
           <li class="nav-item">
-            <a class="nav-link {% if request.path == dashboard %} active{% endif %}" aria-current="page" href="{% url 'dashboard' %}">
+            <a class="nav-link {% if request.path == show_data_verification %} active{% endif %}" aria-current="page" href="{% url 'show_data_verification' %}">
               <span data-feather="home" class="align-text-bottom"></span>
-                Dashboard
+                Data verification
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link {% if request.path == facilities_landing_page %} active{% endif %}" href="{% url 'facilities_landing_page' %}">
+            <a class="nav-link {% if request.path == add_data_verification %} active{% endif %}" href="{% url 'add_data_verification' %}">
               <span data-feather="book-open" class="align-text-bottom"></span>
-              All QI projects
+              Add facility DQA data
             </a>
           </li>
 {#        <li class="nav-item">#}
@@ -53,9 +53,9 @@
 
         </ul>
           <li class="nav-item">
-             <a class="nav-link {% if request.path == qi_team_members %} active{% endif %}" href="{% url 'qi_team_members' %}">
+             <a class="nav-link {% if request.path == dqa_summary %} active{% endif %}" href="{% url 'dqa_summary' %}">
               <span data-feather="users" class="align-text-bottom"></span>
-              QI team members
+              DQA summary
             </a>
           </li>
           <li class="nav-item">
@@ -93,9 +93,9 @@
             </a>
           </li>
         <li class="nav-item">
-             <a class="nav-link {% if request.path == show_sustainmentPlan %} active{% endif %}" href="{% url 'show_sustainmentPlan' %}">
+             <a class="nav-link {% if request.path == load_data %} active{% endif %}" href="{% url 'load_data' %}">
               <span data-feather="info" class="align-text-bottom"></span>
-              Sustainment plan
+              Load data
             </a>
           </li>
                   <li class="nav-item">

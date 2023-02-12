@@ -20,6 +20,28 @@ class DataVerificationForm(ModelForm):
             # Set the label of each field to False
             self.fields[field].label = False
 
+
+
+
+    # def save(self, commit=True):
+    #     # Get the instance of the form data but don't commit it yet
+    #     instance = super().save(commit=False)
+    #
+    #     # Get the related DataVerification object, if it exists
+    #     data_verification = DataVerification.objects.filter(
+    #         quarter_year=instance.quarter_year,
+    #         facility_name=instance.facility_name
+    #     ).first()
+    #
+    #     # Check if the related DataVerification object exists and both 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15 years' are present
+    #     if data_verification and data_verification.number_positive_15_plus and data_verification.number_positive_below_15:
+    #         # Calculate the 'Number tested Positive _Total' field
+    #         instance.number_positive_total = data_verification.number_positive_15_plus + data_verification.number_positive_below_15
+    #
+    #     # Save the form data
+    #     if commit:
+    #         instance.save()
+
 class PeriodForm(ModelForm):
     class Meta:
         model = Period

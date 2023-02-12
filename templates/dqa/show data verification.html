@@ -156,7 +156,7 @@
                 {% elif "aged 15+ years" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">{{ performance.tst_pos_a }}</td>
                 {% elif "_total" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tst_pos_a }}+{{ performance.tst_pos_p }}</td>
+                    <td class="align-middle text-center fw-bold">{{ performance.tst_pos_a|add:performance.tst_pos_p }}</td>
                 {% elif "n positive at 1st anc" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">{{ performance.kp_anc }}</td>
                 {% elif "results_anc" in data.indicator|lower %}
@@ -180,9 +180,9 @@
                 {% elif "prophyl_pnc<= 6 weeks" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">-</td>
                 {% elif "positive (pmtct)" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.kp_anc }}+{{ performance.new_pos_anc }}</td>
+                    <td class="align-middle text-center fw-bold">{{ performance.kp_anc|add:performance.new_pos_anc }}</td>
                 {% elif "haart total" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.new_on_haart_anc }}+{{ performance.on_haart_anc }}</td>
+                    <td class="align-middle text-center fw-bold">{{ performance.new_on_haart_anc|add:performance.on_haart_anc }}</td>
                 {% elif "infant prophylaxis" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">-</td>
                 {% elif "under 15yrs starting" in data.indicator|lower %}
@@ -190,7 +190,7 @@
                 {% elif "above 15yrs starting" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">{{ performance.tx_new_a }}</td>
                 {% elif "children starting art" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tx_new_a }}+{{ performance.tx_new_p }}</td>
+                    <td class="align-middle text-center fw-bold">{{ performance.tx_new_a|add:performance.tx_new_p }}</td>
                 {% elif "relapse tb_cases" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">{{ performance.tb_stat_d }}</td>
                 {% elif "art <15years" in data.indicator|lower %}
@@ -198,7 +198,7 @@
                 {% elif "art 15+ years" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">{{ performance.tx_curr_a }}</td>
                 {% elif "children currently on art" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tx_curr_a }}+{{ performance.tx_curr_p }}</td>
+                    <td class="align-middle text-center fw-bold">{{ performance.tx_curr_a|add:performance.tx_curr_p }}</td>
                  {% endif %}
             {% endfor %}
             

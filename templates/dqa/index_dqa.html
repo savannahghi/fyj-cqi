@@ -153,6 +153,50 @@ td {
   {#white-space: nowrap;#}
 }
 
+/* Add a class of animated to the element to be animated */
+.animated {
+    /* Set the duration of the animation to 5 seconds */
+    animation-duration: 5s;
+    /* Make sure the element retains its state after the animation is complete */
+    animation-fill-mode: both;
+}
+
+/* Define the keyframes of the fade-in animation */
+@keyframes fadeIn {
+    /* Start the animation with the element having an opacity of 0 */
+    from {
+        opacity: 0;
+    }
+    /* End the animation with the element having an opacity of 1 */
+    to {
+        opacity: 1;
+    }
+}
+
+/* Add a class of fadeIn to the element to trigger the fade-in animation */
+.fadeIn {
+    /* Assign the fade-in animation to the element */
+    animation-name: fadeIn;
+}
+
+
+.flicker-button {
+  /* This selector is used to add style to the button element with the class name "flicker-button" */
+  animation: flicker 1s infinite;
+  /* The animation property is applied to the button with the value "flicker" for 1 second, with infinite repetition */
+}
+
+@keyframes flicker {
+  /* The keyframes define the animation for the "flicker" animation */
+  0% { background-color: green; }
+  /* At 0% of the animation, the background color of the button is set to green */
+  50% { background-color: red; }
+  /* At 50% of the animation, the background color of the button is set to red */
+  100% { background-color: green; }
+  /* At 100% of the animation, the background color of the button is set back to green */
+}
+
+
 
     </style>
 

@@ -1,7 +1,9 @@
 import pandas as pd
+import plotly.express as px
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
+from django.db.models import Count
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
@@ -11,6 +13,7 @@ from django.shortcuts import render, redirect
 from dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm, YearSelectionForm, FacilitySelectionForm
 from dqa.models import DataVerification, Period, Indicators, FyjPerformance
 from project.models import Facilities
+from project.views import bar_chart
 
 
 def load_data(request):
@@ -654,11 +657,16 @@ def show_data_verification(request):
                 program_accessed.append("CARE & RX")
     # Sort the data_verification objects based on the order of the indicator choices
     sorted_data_verification = sorted(data_verification, key=lambda x: indicator_choices.index(x.indicator))
+    if data_verification:
+        if data_verification.count() < 30:
+            messages.error(request, f"Only {data_verification.count()} DQA indicators for {selected_facility} "
+                                    f"({quarter_year}) have been recorded so far. To ensure proper data visualization,"
+                                    f" it is important to capture at least 30 indicators.")
 
     if not data_verification:
         if selected_facility:
-            messages.error(request, f"No DQA data found for {selected_facility} {selected_quarter}-FY{year_suffix}. "
-                                    f"Please add data for the facility.")
+            messages.error(request,
+                           f"No DQA data was found in the database for {selected_facility} {selected_quarter}-FY{year_suffix}.")
 
     try:
         fyj_performance = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
@@ -1119,45 +1127,213 @@ def delete_data_verification(request, pk):
     return render(request, 'project/delete_test_of_change.html', context)
 
 
+def bar_chart(df, x_axis, y_axis, title=None):
+    # df[x_axis]=df[x_axis].str.split(" ").str[0]
+
+    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=200,
+                 color=x_axis,
+                 category_orders={
+                     x_axis: ['Source', 'MOH 731', 'KHIS', 'DATIM']},
+                 color_discrete_map={'Source': '#5B9BD5',
+                                     'MOH 731': '#ED7D31',
+                                     'KHIS': '#A5A5A5',
+                                     'DATIM': '#FFC000',
+                                     }
+                 )
+
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    })
+    # Set the font size of the x-axis and y-axis labels
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=7
+            ),
+            title_font=dict(
+                size=7
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=7
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            # text="My Line Chart",
+            font=dict(
+                size=12
+            )
+        )
+        ,
+        font=dict(
+            family="Courier New, monospace",
+            size=12,
+            color="RebeccaPurple"
+        )
+    )
+
+    fig.update_layout(showlegend=False)
+    return fig.to_html()
+
+
 def dqa_summary(request):
-    dqa = DataVerification.objects.all()
-    fyj_perf = FyjPerformance.objects.values()
-    if dqa:
-        # loop through both models QI_Projects and Program_qi_projects using two separate lists
-        dqa_df = [
-            {'indicator': x.indicator,
-             'facility': x.facility_name.facilities,
-             'mfl_code': x.facility_name.mfl_code,
-             'Source': x.total_source,
-             "MOH 731": x.total_731moh,
-             "KHIS": x.total_khis,
-             "quarter_year": x.quarter_year.quarter_year,
-             } for x in dqa
-        ]
-        # Finally, you can create a dataframe from this list of dictionaries.
-        dqa_df = pd.DataFrame(dqa_df)
-        dqa_df = dqa_df[(dqa_df['mfl_code'] == 15351) & (dqa_df['quarter_year'] == "Qtr3-22")]
+    form = QuarterSelectionForm(request.POST or None)
+    year_form = YearSelectionForm(request.POST or None)
+    facility_form = FacilitySelectionForm(request.POST or None)
 
-        indicators_to_use = ['Total Infant prophylaxis', 'Maternal HAART Total ', 'Number tested Positive _Total',
-                             'Total Positive (PMTCT)', 'Number of adults and children starting ART', 'Starting_TPT',
-                             'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
-                             'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
-                             'Cervical Cancer Screening (Women on ART)'
+    selected_quarter = "Qtr1"
+    selected_year = "2021"
+    year_suffix = "21"
+    selected_facility = None
 
-                             ]
-        dqa_df=dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
+    if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
+        selected_quarter = form.cleaned_data['quarter']
+        selected_year = year_form.cleaned_data['year']
+        selected_facility = facility_form.cleaned_data['facilities']
+        print("selected_facility.mfl_code:::::::::::::::")
+        print(selected_facility.mfl_code)
+        year_suffix = selected_year[-2:]
+    #     quarters = {
+    #         selected_quarter: [
+    #             f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}', 'Total'
+    #         ] if selected_quarter == 'Qtr1' else [
+    #             f'Jan-{year_suffix}', f'Feb-{year_suffix}', f'Mar-{year_suffix}', 'Total'
+    #         ] if selected_quarter == 'Qtr2' else [
+    #             f'Apr-{year_suffix}', f'May-{year_suffix}', f'Jun-{year_suffix}', 'Total'
+    #         ] if selected_quarter == 'Qtr3' else [
+    #             f'Jul-{year_suffix}', f'Aug-{year_suffix}', f'Sep-{year_suffix}', 'Total'
+    #         ]
+    #     }
+    # else:
+    #     quarters = {}
 
-        print(dqa_df.head())
-    if fyj_perf:
-        fyj_perf_df = pd.DataFrame(list(fyj_perf))
-        fyj_perf_df = fyj_perf_df[(fyj_perf_df['mfl_code'] == 15351) & (fyj_perf_df['quarter_year'] == "Qtr3-22")]
-        fyj_perf_df=pd.melt(fyj_perf_df, id_vars=['id','mfl_code','facility','month','quarter_year'],
-                            value_vars=list(fyj_perf_df.columns[4:-1]),
-                var_name='indicator', value_name='performance')
+    quarter_year = f"{selected_quarter}-{year_suffix}"
 
-        # TODO: RENAME COLUMNS NAME TO BE IDENTICAL AND HELP IN MERGING
-        print(fyj_perf_df.head())
+    dicts = {}
+    dqa = None
+
+    if "submit_data" in request.POST:
+        dqa = DataVerification.objects.filter(facility_name__mfl_code=selected_facility.mfl_code,
+                                              quarter_year__quarter_year=quarter_year)
+        fyj_perf = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
+                                                 quarter_year=quarter_year).values()
+        if dqa:
+            # loop through both models QI_Projects and Program_qi_projects using two separate lists
+            dqa_df = [
+                {'indicator': x.indicator,
+                 'facility': x.facility_name.facilities,
+                 'mfl_code': x.facility_name.mfl_code,
+                 'Source': x.total_source,
+                 "MOH 731": x.total_731moh,
+                 "KHIS": x.total_khis,
+                 "quarter_year": x.quarter_year.quarter_year,
+                 } for x in dqa
+            ]
+            # Finally, you can create a dataframe from this list of dictionaries.
+            dqa_df = pd.DataFrame(dqa_df)
+            indicators_to_use = ['Total Infant prophylaxis', 'Maternal HAART Total ', 'Number tested Positive _Total',
+                                 'Total Positive (PMTCT)', 'Number of adults and children starting ART', 'Starting_TPT',
+                                 'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
+                                 'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
+                                 'Cervical Cancer Screening (Women on ART)'
+
+                                 ]
+            dqa_df = dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
+
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Number of adults and children Currently on ART",
+                                                              "Number Current on ART Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Number of adults and children starting ART",
+                                                              "Number Starting ART Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Number tested Positive _Total",
+                                                              "Number Tested Positive Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Starting_TPT", "Number Starting IPT Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("PrEP_New", "Number initiated on PrEP")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Sexual violence", "Gend_GBV Sexual Violence")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Emotional and /Physical Violence",
+                                                              "Gend_GBV_Physical and /Emotional")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Cervical Cancer Screening (Women on ART)",
+                                                              "Number Screened for Cervical Cancer")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("New & Relapse TB_Cases", "New & Relapse TB cases")
+            dqa_df['indicator'] = dqa_df['indicator'].replace('Maternal HAART Total ', "Maternal HAART Total")
+            if dqa_df.empty:
+                messages.info(request, f"A few DQA indicators for {selected_facility} have been capture but not "
+                                       f"enough for data visualization")
+        else:
+            dqa_df = pd.DataFrame(columns=['indicator', 'facility', 'mfl_code', 'Source', 'MOH 731', 'KHIS',
+                                           'quarter_year'])
+            messages.info(request, f"No DQA data for {selected_facility}")
+        if fyj_perf:
+            fyj_perf_df = pd.DataFrame(list(fyj_perf))
+            for col in fyj_perf_df.columns[4:-1]:
+                fyj_perf_df[col] = fyj_perf_df[col].astype(int)
+            fyj_perf_df['Maternal HAART Total'] = fyj_perf_df['on_haart_anc'] + fyj_perf_df['new_on_haart_anc']
+            fyj_perf_df['Total Positive (PMTCT)'] = fyj_perf_df['kp_anc'] + fyj_perf_df['new_pos_anc']
+            fyj_perf_df['Number Tested Positive Total'] = fyj_perf_df['tst_pos_p'] + fyj_perf_df['tst_pos_a']
+            fyj_perf_df['Number Starting ART Total'] = fyj_perf_df['tx_new_p'] + fyj_perf_df['tx_new_a']
+            fyj_perf_df['Number Current on ART Total'] = fyj_perf_df['tx_curr_p'] + fyj_perf_df['tx_curr_a']
+            fyj_perf_df['Total Infant prophylaxis'] = 0
+
+            fyj_perf_df = fyj_perf_df.rename(
+                columns={"prep_new": "Number initiated on PrEP", "gbv_sexual": "Gend_GBV Sexual Violence",
+                         "gbv_emotional_physical": "Gend_GBV_Physical and /Emotional",
+                         "cx_ca": "Number Screened for Cervical Cancer",
+                         "tb_stat_d": "New & Relapse TB cases", "ipt": "Number Starting IPT Total"})
+
+            indicators_to_use_perf = ['mfl_code', 'quarter_year', "Number initiated on PrEP",
+                                      'Maternal HAART Total', 'Number Tested Positive Total',
+                                      'Total Positive (PMTCT)', 'Number Starting ART Total',
+                                      'New & Relapse TB cases', 'Number Starting IPT Total',
+                                      'Number Current on ART Total', "Gend_GBV Sexual Violence",
+                                      'Gend_GBV_Physical and /Emotional', 'Number Screened for Cervical Cancer',
+                                      'Total Infant prophylaxis'
+
+                                      ]
+            fyj_perf_df = fyj_perf_df[indicators_to_use_perf]
+
+            fyj_perf_df = pd.melt(fyj_perf_df, id_vars=['mfl_code', 'quarter_year'],
+                                  value_vars=list(fyj_perf_df.columns[2:]),
+                                  var_name='indicator', value_name='DATIM')
+            if dqa_df.empty:
+                messages.info(request, f"A few DATIM indicators for {selected_facility} have been capture but not "
+                                       f"enough for data visualization")
+
+
+        else:
+            fyj_perf_df = pd.DataFrame(columns=['mfl_code', 'quarter_year', 'indicator', 'DATIM'])
+            messages.info(request, f"No DATIM data for {selected_facility}!")
+
+        merged_df = dqa_df.merge(fyj_perf_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
+
+        merged_df = merged_df[
+            ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
+        merged_df = pd.melt(merged_df, id_vars=['mfl_code', 'facility', 'indicator', 'quarter_year'],
+                            value_vars=list(merged_df.columns[4:]),
+                            var_name='data sources', value_name='performance')
+
+        merged_df['performance'] = merged_df['performance'].fillna(0)
+        merged_df['performance'] = merged_df['performance'].astype(int)
+        dicts = {}
+
+        for indy in merged_df['indicator'].unique():
+            merged_df_viz = merged_df[merged_df['indicator'] == indy]
+            quarter = merged_df_viz['quarter_year'].unique()[0]
+            dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
+
     context = {
-
+        "dicts": dicts,
+        "dqa": dqa,
+        'form': form,
+        "year_form": year_form,
+        "facility_form": facility_form,
     }
-    render(request, 'dqa/dqa_summary.html', context)
+    return render(request, 'dqa/dqa_summary.html', context)

@@ -9,6 +9,26 @@
 
            <div class="col-md-12">
            <h6 class="display-6 fw-bold text-primary">HIV DQA Facility Data Verification Assessment Tool</h6>
+           {% if messages %}
+                <ul class="messages">
+                    {% if messages|length >= 1 %}
+                        {% for message in messages|slice:":1" %}
+                            {% if "dqa" in message|lower %}
+                                <div class="mb-3">
+                                    <a href="{% url 'add_data_verification' %}" class="btn btn-success flicker-button" role="button"> ADD FACILITY DQA DATA </a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+
+                        <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                            {% for message in messages|slice:":1" %}
+                            <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
+                            {% endfor %}
+                        </div>
+
+               </ul>
+           {% endif %}
            {% if data_verification %}
                {% for data in data_verification|slice:":1" %}
                     <h4 class="h5">FACILITY: {{ data.facility_name.facilities }} </h4>
@@ -23,25 +43,11 @@
     {% endfor %}
 </div>
 
-               {% else %}
-               {% if messages %}
-    <ul class="messages">
-        {% for message in messages|slice:":1" %}
-            <div class="alert alert-info col-12" role="alert">
-        <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
-    </div>
-{#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
-        {% endfor %}
-    </ul>
-{% endif %}
 
+
+               </ul>
             {% endif %}
            </div>
-
-{#        <div class="col-md-4 d-flex justify-content-between">#}
-{#            <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>#}
-{#            <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
-{#        </div>#}
       </div>
     <div class="d-flex justify-content-around">
 

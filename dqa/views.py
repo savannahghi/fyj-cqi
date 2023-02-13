@@ -1081,7 +1081,7 @@ def update_data_verification(request, pk):
                             'created_by': request.user,
                         }
                     )
-
+            # TODO: AFTER UPDATE, USER SHOULD BE TAKEN BACK TO THE PAGE THEY WERE FROM WITH DATA ALREADY LOADED
             return HttpResponseRedirect(request.session['page_from'])
     else:
         quarter_year = item.quarter_year.quarter_year

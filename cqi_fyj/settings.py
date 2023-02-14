@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django_filters',
     'multiselectfield',
     'mathfilters',
+    'django_select2',
 
     # Note: Order of INSTALLED_APPS is important. To ensure that exceptions inside other apps’ signal handlers do not
     # affect the integrity of file deletions within transactions, django_cleanup should be placed last in INSTALLED_APPS

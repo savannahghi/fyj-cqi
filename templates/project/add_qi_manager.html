@@ -142,6 +142,58 @@
                 {% endif %}
                   </form>
 
+                {% elif "Add DQA Work Plan" in title %}
+                    <h6 class="mb-4 mt-4">FACILITY: {{ facility }}</h6>
+                    <h6 class="mb-4 mt-4">MFL CODE: {{ mfl_code}}</h6>
+                    <h6 class="mb-4 mt-4">DQA date: {{ date_modified}}</h6>
+
+
+                  <form class="row mt-5" method="POST"  enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+
+                                <div class="col-md-6 mt-4">
+                                    {{ form.dqa_date|as_crispy_field }}
+                                </div>
+                  <div class="col-md-6 mt-4">
+                                    {{ form.program_areas_reviewed|as_crispy_field }}
+                                </div>
+                      <div class="col-md-4 mt-4">
+                                    {{ form.strengths_identified|as_crispy_field }}
+                                </div>
+                  <div class="col-md-4 mt-4">
+                                    {{ form.gaps_identified|as_crispy_field }}
+                                </div>
+                  <div class="col-md-4 mt-4">
+                                    {{ form.individuals_conducting_dqa|as_crispy_field }}
+                                </div>
+                  <div class="col-md-4 mt-4">
+                                    {{ form.recommendation|as_crispy_field }}
+                                </div>
+                  <div class="col-md-4 mt-4">
+                                    {{ form.individuals_responsible|as_crispy_field }}
+                                </div>
+
+                  <div class="col-md-4 mt-4">
+                                    {{ form.comments|as_crispy_field }}
+                                </div>
+                  <div class="col-md-6 mt-4">
+                                    {{ form.percent_completed|as_crispy_field }}
+                                </div>
+                  <div class="col-md-6 mt-4">
+                                    {{ form.due_complete_by|as_crispy_field }}
+                                </div>
+
+                        <div class="col-md-12 mt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                  {% if form.errors %}
+                    <div class="alert alert-danger mt-4">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+                  </form>
+
+
                 {% elif "SUSTAINMENT PLAN" in title %}
                  <div class="d-flex justify-content-between">
                         <div>

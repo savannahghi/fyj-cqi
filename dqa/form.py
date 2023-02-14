@@ -1,13 +1,25 @@
 import datetime
 
+from django.db.models import Count
 from django.forms import ModelForm
 from django import forms
+from django_select2.forms import ModelSelect2Widget
 
-from dqa.models import DataVerification, Period
+from dqa.models import DataVerification, Period, DQAWorkPlan, Indicators
 from project.models import Facilities
 
 
 class DataVerificationForm(ModelForm):
+    # TODO: INCLUDE DJANGO-SELECT2 IN ALL THE DROP DOWNS
+    facility_name = forms.ModelChoiceField(
+        queryset=Facilities.objects.all(),
+        empty_label="Select facility",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    indicator = forms.ChoiceField(choices=DataVerification.INDICATOR_CHOICES,
+                                  widget=forms.Select(attrs={'class': 'form-control select2'}))
+
+
     class Meta:
         model = DataVerification
         fields = "__all__"
@@ -21,6 +33,7 @@ class DataVerificationForm(ModelForm):
         for field in self.fields:
             # Set the label of each field to False
             self.fields[field].label = False
+
 
 class PeriodForm(ModelForm):
     class Meta:
@@ -41,15 +54,27 @@ class QuarterSelectionForm(forms.Form):
 
 class YearSelectionForm(forms.Form):
     current_year = datetime.datetime.now().year
-    YEAR_CHOICES = [(str(x), str(x)) for x in range(2021, current_year+1)]
+    YEAR_CHOICES = [(str(x), str(x)) for x in range(2021, current_year + 1)]
     year = forms.ChoiceField(
         choices=YEAR_CHOICES
     )
 
 
 class FacilitySelectionForm(forms.Form):
+    # facilities = forms.ModelChoiceField(
+    #     queryset=Facilities.objects.all(),
+    #     empty_label="Select facility",
+    #     widget=forms.Select(attrs={'class': 'form-control'}),
+    # )
     facilities = forms.ModelChoiceField(
         queryset=Facilities.objects.all(),
         empty_label="Select facility",
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
+
+class DQAWorkPlanForm(ModelForm):
+    class Meta:
+        model = DQAWorkPlan
+        fields = '__all__'
+        exclude = ['facility_name', 'quarter_year', 'created_by']

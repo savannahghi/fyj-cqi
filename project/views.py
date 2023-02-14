@@ -4362,3 +4362,8 @@ def delete_sustainable_plan(request, pk):
         "test_of_changes": item
     }
     return render(request, 'project/delete_test_of_change.html', context)
+
+
+@login_required(login_url='login')
+def monthly_data_review(request):
+    return render(request, 'project/monthly_data_review_summary.html')

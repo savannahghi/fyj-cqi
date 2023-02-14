@@ -7,7 +7,7 @@
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
            <div class="col-md-12">
-           <h6 class="display-6 fw-bold text-primary text-center">Summary Dashboard</h6>
+           <h6 class="display-6 text-primary text-center">DQA Summary Dashboard</h6>
                <hr>
            {% if messages %}
                 <ul class="messages">
@@ -29,6 +29,7 @@
 
                </ul>
            {% endif %}
+
            <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
             {% csrf_token %}
         <p> Please choose quarter, year, facility and then submit </p>
@@ -47,14 +48,21 @@
             </div>
 
         </form>
-           <div>
+           <div class="row">
+                <div class="col-md-10">
                {% if dqa %}
-               {% for data in dqa|slice:":1" %}
-                    <h4 class="h5">FACILITY: {{ data.facility_name.facilities }} </h4>
-                    <h6 class="h6">MFL CODE: {{ data.facility_name.mfl_code }} </h6>
-                    <h6 class="h6">DATE OF AUDIT: {{ data.date_modified }} </h6>
-               {% endfor %}
-           {% endif %}
+                   {% for data in dqa|slice:":1" %}
+                        <h4 class="h5">FACILITY: {{ data.facility_name.facilities }} </h4>
+                        <h6 class="h6">MFL CODE: {{ data.facility_name.mfl_code }} </h6>
+                        <h6 class="h6">DATE OF AUDIT: {{ data.date_modified }} </h6>
+                   {% endfor %}
+                   </div >
+                       <div class="col-md-2">
+                           {% if dicts %}
+                                <a href="{% url 'dqa_work_plan_create' selected_facility.id quarter_year %}" class="btn btn-success" role="button">ADD DQA WORK PLAN</a>
+                            {% endif %}
+                       </div>
+               {% endif %}
            </div>
                <hr>
            <div class="row" >

@@ -1,3 +1,6 @@
+from datetime import timezone
+from django.utils import timezone
+
 import pandas as pd
 import plotly.express as px
 from django.contrib import messages
@@ -8,10 +11,11 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
 # Create your views here.
+from django.views.generic import ListView
 
-
-from dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm, YearSelectionForm, FacilitySelectionForm
-from dqa.models import DataVerification, Period, Indicators, FyjPerformance
+from dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm, YearSelectionForm, FacilitySelectionForm, \
+    DQAWorkPlanForm
+from dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan
 from project.models import Facilities
 from project.views import bar_chart
 
@@ -570,12 +574,14 @@ def add_data_verification(request):
     else:
         # Create an empty instance of the DataVerificationForm
         form = DataVerificationForm()
+        forms=form
 
     # convert a form into a list to allow slicing
     form = list(form)
     # Create the context for the template
     context = {
         "form": form,
+        "forms":forms,
         "quarters": quarters,
         "quarter_form": quarter_form,
         "year_form": year_form,
@@ -659,6 +665,7 @@ def show_data_verification(request):
     sorted_data_verification = sorted(data_verification, key=lambda x: indicator_choices.index(x.indicator))
     if data_verification:
         if data_verification.count() < 30:
+            # TODO: THIS MESSAGE SHOULD BE ONLY WHEN DATA NEEDED FOR VISUALIZATION IS NOT ENTERED.
             messages.error(request, f"Only {data_verification.count()} DQA indicators for {selected_facility} "
                                     f"({quarter_year}) have been recorded so far. To ensure proper data visualization,"
                                     f" it is important to capture at least 30 indicators.")
@@ -1322,11 +1329,38 @@ def dqa_summary(request):
 
         merged_df['performance'] = merged_df['performance'].fillna(0)
         merged_df['performance'] = merged_df['performance'].astype(int)
-        dicts = {}
+        # merged_df = merged_df.sort_values('indicator')
+        # print(merged_df)
+        # dicts = {}
+        #
+        # for indy in merged_df['indicator'].unique():
+        #     merged_df_viz = merged_df[merged_df['indicator'] == indy]
+        #     # print(merged_df_viz)
+        #     quarter = merged_df_viz['quarter_year'].unique()[0]
+        #     dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
 
-        for indy in merged_df['indicator'].unique():
+        # Define a new DataFrame object by grouping the 'merged_df' DataFrame by 'indicator' column and calculating
+        # the standard deviation of 'performance' column. The idea is to have the indicator with the greatest
+        # disparities in the performance column come first.
+        grouped = merged_df.groupby("indicator")["performance"].std().reset_index()
+        # Sort the 'grouped' DataFrame in descending order based on 'performance' column
+        grouped = grouped.sort_values("performance", ascending=False)
+        # Extract the 'indicator' column from the sorted 'grouped' DataFrame and assign it to a new variable called
+        # 'grouped'
+        grouped = grouped["indicator"]
+        # Create an empty dictionary object to store the bar charts for each 'indicator' in 'grouped'
+        dicts = {}
+        # Loop through each 'indicator' in 'grouped'
+        for indy in grouped:
+            # Create a new DataFrame object called 'merged_df_viz' containing only the rows where 'indicator' column
+            # matches the current 'indy' value
             merged_df_viz = merged_df[merged_df['indicator'] == indy]
+            # Extract the unique value from the 'quarter_year' column in 'merged_df_viz' and assign it to a variable
+            # called 'quarter'
             quarter = merged_df_viz['quarter_year'].unique()[0]
+            # Create a new key-value pair in the 'dicts' dictionary, where the key is a string containing the 'indy'
+            # value and the 'quarter' value, and the value is a bar chart object created using the 'merged_df_viz'
+            # DataFrame
             dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
 
     context = {
@@ -1335,5 +1369,129 @@ def dqa_summary(request):
         'form': form,
         "year_form": year_form,
         "facility_form": facility_form,
+        "selected_facility": selected_facility,
+        "quarter_year": quarter_year,
     }
     return render(request, 'dqa/dqa_summary.html', context)
+
+
+def dqa_work_plan_create(request, pk, quarter_year):
+    facility = DataVerification.objects.filter(facility_name_id=pk,
+                                               quarter_year__quarter_year=quarter_year
+                                               ).order_by('-date_modified').first()
+    today = timezone.now().date()
+
+    if request.method == 'POST':
+        form = DQAWorkPlanForm(request.POST)
+        if form.is_valid():
+            dqa_work_plan = form.save(commit=False)
+            dqa_work_plan.facility_name = facility.facility_name
+            dqa_work_plan.quarter_year = facility.quarter_year
+            dqa_work_plan.created_by = request.user
+            dqa_work_plan.progress = (dqa_work_plan.due_complete_by - today).days
+            dqa_work_plan.timeframe = (dqa_work_plan.due_complete_by - dqa_work_plan.dqa_date).days
+            dqa_work_plan.save()
+            return redirect('dqa_work_plan')
+    else:
+        form = DQAWorkPlanForm()
+
+    context = {
+        'form': form,
+        'title': 'Add DQA Work Plan',
+        'facility': facility.facility_name,
+        'mfl_code': facility.facility_name.mfl_code,
+        'date_modified': facility.date_modified,
+    }
+
+    return render(request, 'project/add_qi_manager.html', context)
+
+
+def show_dqa_work_plan(request):
+    form = QuarterSelectionForm(request.POST or None)
+    year_form = YearSelectionForm(request.POST or None)
+    facility_form = FacilitySelectionForm(request.POST or None)
+
+    selected_quarter = "Qtr1"
+    selected_year = "2021"
+    year_suffix = "21"
+    selected_facility = None
+    work_plan = None
+
+    if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
+        selected_quarter = form.cleaned_data['quarter']
+        selected_year = year_form.cleaned_data['year']
+        selected_facility = facility_form.cleaned_data['facilities']
+        year_suffix = selected_year[-2:]
+        quarter_year = f"{selected_quarter}-{year_suffix}"
+
+    if "submit_data" in request.POST:
+        work_plan = DQAWorkPlan.objects.filter(facility_name_id=selected_facility.id,
+                                               quarter_year__quarter_year=quarter_year
+                                               )
+        if not work_plan:
+            messages.error(request, f"No work plan for {selected_facility} ({quarter_year}) found.")
+    context = {
+        "work_plan": work_plan,
+        'form': form,
+        "year_form": year_form,
+        "facility_form": facility_form,
+    }
+    return render(request, 'dqa/dqa_work_plan_list.html', context)
+
+# @login_required(login_url='login')
+# def add_dqa_action_plan(request, pk):
+#     # facility_project = QI_Projects.objects.get(id=pk)
+#
+#     try:
+#         facility_project = get_object_or_404(QI_Projects, id=pk)
+#         qi_project = QI_Projects.objects.get(id=pk)
+#         facility = facility_project.facility_name
+#         qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
+#         level = "facility"
+#     except:
+#         facility_project = get_object_or_404(Program_qi_projects, id=pk)
+#         qi_project = Program_qi_projects.objects.get(id=pk)
+#         facility = facility_project.program
+#         qi_team_members = Qi_team_members.objects.filter(program_qi_project=facility_project)
+#         level = "program"
+#
+#     qi_projects = facility_project
+#
+#     today = timezone.now().date()
+#     # check the page user is from
+#     if request.method == "GET":
+#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+#
+#     if request.method == "POST":
+#         form = ActionPlanForm(facility, qi_projects, request.POST)
+#         if form.is_valid():
+#             # form.save()
+#             post = form.save(commit=False)
+#             if level == "facility":
+#                 post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
+#                 post.qi_project = qi_project
+#                 post.program = None
+#             elif level == "program":
+#                 post.facility = None
+#                 post.program = Program.objects.get(id=facility_project.program_id)
+#                 post.program_qi_project = qi_project
+#
+#             post.created_by = request.user
+#             #
+#             post.progress = (post.due_date - today).days
+#             post.timeframe = (post.due_date - post.start_date).days
+#             post.save()
+#
+#             # Save many-to-many relationships
+#             form.save_m2m()
+#             # redirect back to the page the user was from after saving the form
+#             return HttpResponseRedirect(request.session['page_from'])
+#     else:
+#         form = ActionPlanForm(facility, qi_projects)
+#     context = {"form": form,
+#                "title": "Add Action Plan",
+#                "qi_team_members": qi_team_members,
+#                "qi_project": qi_project,
+#                "level": level
+#                }
+#     return render(request, "project/add_qi_manager.html", context)

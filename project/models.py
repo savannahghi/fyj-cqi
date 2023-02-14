@@ -181,6 +181,7 @@ class QI_Projects(models.Model):
     # TODO: INCLUDE SIMS REPORTS,DQAs AND CBS REPORTS SHOWING AREAS OF IMPROVEMENT (SHARED EVERY 2 WEEKS) care&rx,
     #  covid,etc
     # TODO: TRACK USAGE
+    # TODO: ALLOW USERS TO ADD 3-5 PROCESS ANALYSIS IMAGES
     FACILITY_CHOICES = read_txt(file_)
     SUB_COUNTY_CHOICES = read_txt(sub_county_file)
     COUNTY_CHOICES = read_txt(county_file)

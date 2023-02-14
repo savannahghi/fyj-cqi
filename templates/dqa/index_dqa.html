@@ -20,6 +20,10 @@
       <link rel="stylesheet" href="{% static 'assets/css/rome.css' %}">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css">
 
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/css/select2.min.css" rel="stylesheet" />
+
+
+
 
 
     <style>
@@ -226,6 +230,10 @@ td {
             <a class="nav-link px-3" href="{% url 'facilities_landing_page' %}">CQI</a>
 
         </div>
+<div class="navbar-nav">
+            <a class="nav-link px-3" href="{% url 'monthly_data_review' %}">Monthly data review</a>
+
+        </div>
     <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'facilities_landing_page' %}">You are logged in as {{ user.username|title }}</a>
 
@@ -280,7 +288,13 @@ td {
     let table = document.getElementsByClassName("my-table")[0];
     table.style.marginTop = navbarHeight + 'px';
 </script>
-
+<!--This enables searching and filtering the dropdown-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+    $('.select2').select2();
+});
+</script>
   </body>
 
   <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">

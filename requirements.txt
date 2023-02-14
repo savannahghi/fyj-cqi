@@ -8,6 +8,7 @@ django-multiselectfield==0.1.12
 django-mathfilters
 django-pandas==0.6.6
 django-phonenumber-field==7.0.0
+django-select2
 openpyxl
 phonenumbers==8.13.0
 Pillow==9.3.0

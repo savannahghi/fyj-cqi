@@ -82,6 +82,7 @@ class Indicators(models.Model):
 
 class DataVerification(models.Model):
     INDICATOR_CHOICES = [
+        ('', 'Select indicator'),
         ('PrEP_New', 'PrEP_New'),
         ('Starting_TPT', 'Starting TPT'),
         ('GBV_Sexual violence', 'GBV_Sexual violence'),
@@ -194,7 +195,7 @@ class FyjPerformance(models.Model):
     cx_ca = models.IntegerField()
     tb_stat_d = models.IntegerField()
     ipt = models.IntegerField()
-    quarter_year = models.CharField(max_length=100,blank=True,null=True)
+    quarter_year = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f"{self.facility} - {self.month}"
@@ -211,16 +212,16 @@ class FyjPerformance(models.Model):
         month = month_str.split()[0]
 
         # Determine the quarter based on the month while handling both full month names and abbreviated names
-        if month in ["October", "November", "December","Oct","Nov","Dec"]:
+        if month in ["October", "November", "December", "Oct", "Nov", "Dec"]:
             # If the month is October, November, or December, the quarter is Qtr1
             quarter = "Qtr1"
-        elif month in ["January", "February", "March","Jan","Feb","Mar"]:
+        elif month in ["January", "February", "March", "Jan", "Feb", "Mar"]:
             # If the month is January, February, or March, the quarter is Qtr2
             quarter = "Qtr2"
-        elif month in ["April", "May", "June","Apr","Jun"]:
+        elif month in ["April", "May", "June", "Apr", "Jun"]:
             # If the month is April, May, or June, the quarter is Qtr3
             quarter = "Qtr3"
-        elif month in ["July", "August", "September","Jul","Aug","Sep"]:
+        elif month in ["July", "August", "September", "Jul", "Aug", "Sep"]:
             # If the month is July, August, or September, the quarter is Qtr4
             quarter = "Qtr4"
 
@@ -230,3 +231,31 @@ class FyjPerformance(models.Model):
         # Call the parent save method to save the object
         super().save(*args, **kwargs)
 
+
+class DQAWorkPlan(models.Model):
+    AREAS_CHOICES = [
+        ("HTS/PREVENTION/PMTCT", "HTS/PREVENTION/PMTCT"),
+        ("CHART ABSTRACTION", "CHART ABSTRACTION"),
+        ("M&E SYSTEMS", "M&E SYSTEMS"),
+        ("Data Management Systems", "Data Management Systems")
+    ]
+    dqa_date = models.DateField()
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE,blank=True,null=True)
+    quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE,blank=True,null=True)
+    individuals_conducting_dqa = models.TextField()
+    program_areas_reviewed = models.CharField(choices=AREAS_CHOICES, max_length=255)
+    strengths_identified = models.TextField()
+    gaps_identified = models.TextField()
+    recommendation = models.TextField()
+    percent_completed = models.IntegerField()
+    individuals_responsible = models.TextField()
+    due_complete_by = models.DateField()
+    comments = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    progress = models.FloatField(null=True, blank=True)
+    timeframe = models.FloatField(null=True, blank=True)
+    created_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                   default=None, on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                    default=None, on_delete=models.CASCADE, related_name='+')

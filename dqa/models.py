@@ -271,4 +271,4 @@ class SystemAssessment(models.Model):
     dqa_date = models.DateField()
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE,blank=True,null=True)
     quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE,blank=True,null=True)
-    component = models.CharField(max_length=)
+    component = models.CharField(max_length=250)

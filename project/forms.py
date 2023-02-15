@@ -12,6 +12,12 @@ from django import forms
 
 
 class QI_ProjectsForm(ModelForm):
+    facility_name = forms.ModelChoiceField(
+        queryset=Facilities.objects.all(),
+        empty_label="Select facility",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+
     # def __init__(self, *args, **kwargs):
     # Django Model Forms - Setting a required field (True/False)
     #     super().__init__(*args, **kwargs)
@@ -67,6 +73,12 @@ class QI_ProjectsForm(ModelForm):
 
 
 class QI_ProjectsConfirmForm(ModelForm):
+    facility_name = forms.ModelChoiceField(
+        queryset=Facilities.objects.all(),
+        empty_label="Select facility",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+
     class Meta:
         model = QI_Projects
         fields = "__all__"
@@ -137,7 +149,7 @@ class QI_Projects_programForm(ModelForm):
         #            ]
         labels = {
             'measurement_frequency': 'Monitoring frequency',
-            'project_category':'Component',
+            'project_category': 'Component',
         }
         widgets = {
             'problem_background': forms.Textarea(attrs={
@@ -192,7 +204,7 @@ class TestedChangeForm(ModelForm):
     class Meta:
         model = TestedChange
         fields = "__all__"
-        exclude = ['achievements', 'project','program_project']
+        exclude = ['achievements', 'project', 'program_project']
         widgets = {
             'data_sources': forms.TextInput(attrs={
                 'placeholder': 'Specify the tools or systems used to collect data for the metric',
@@ -322,7 +334,7 @@ class Qi_team_membersForm(ModelForm):
     class Meta:
         model = Qi_team_members
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'created_by','program_qi_project','program']
+        exclude = ['facility', 'qi_project', 'created_by', 'program_qi_project', 'program']
         labels = {
             'user': 'Team Member',
         }
@@ -364,7 +376,7 @@ class MilestoneForm(ModelForm):
     class Meta:
         model = Milestone
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'created_by','program','program_qi_project']
+        exclude = ['facility', 'qi_project', 'created_by', 'program', 'program_qi_project']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Major tasks or phases of the project'}),
 
@@ -387,7 +399,7 @@ class ActionPlanForm(ModelForm):
     class Meta:
         model = ActionPlan  # specify the model that the form is based on
         fields = "__all__"  # include all fields from the model
-        exclude = ['facility', 'qi_project', 'created_by', 'progress','program','program_qi_project',
+        exclude = ['facility', 'qi_project', 'created_by', 'progress', 'program', 'program_qi_project',
                    'timeframe']  # exclude these fields from the form
         widgets = {
             'responsible': forms.CheckboxSelectMultiple  # render the 'responsible' field as checkboxes
@@ -398,7 +410,8 @@ class ActionPlanForm(ModelForm):
         super(ActionPlanForm, self).__init__(*args, **kwargs)
         try:
             # filter the 'responsible' field's queryset based on the passed facility and qi_project
-            self.fields['responsible'].queryset = Qi_team_members.objects.filter(facility=facility, qi_project=qi_projects)
+            self.fields['responsible'].queryset = Qi_team_members.objects.filter(facility=facility,
+                                                                                 qi_project=qi_projects)
         except:
             # filter the 'responsible' field's queryset based on the passed facility and qi_project
             self.fields['responsible'].queryset = Qi_team_members.objects.filter(program=facility,
@@ -465,7 +478,7 @@ class BaselineForm(ModelForm):
     class Meta:
         model = Baseline
         fields = "__all__"
-        exclude = ['facility', 'qi_project','program','program_qi_project']
+        exclude = ['facility', 'qi_project', 'program', 'program_qi_project']
 
 
 class ProgramForm(ModelForm):
@@ -491,8 +504,8 @@ class SustainmentPlanForm(ModelForm):
     class Meta:
         model = SustainmentPlan
         fields = "__all__"
-        exclude=['created_by']
-        widgets={
+        exclude = ['created_by']
+        widgets = {
             'objectives': forms.Textarea(attrs={
                 'placeholder': "Captures the overall objectives of the sustainment plan, including what the plan aims "
                                "to achieve and what results are expected.",
@@ -569,7 +582,15 @@ class SustainmentPlanForm(ModelForm):
 
             # 'informed': autocomplete.ModelSelect2(url='newuser-autocomplete'),
         }
+
+
 #         # exclude = [''
 #         #            ]
 #
 #     # field_order = ['qi_manager']
+
+class RootCauseImagesForm(ModelForm):
+    class Meta:
+        model = RootCauseImages
+        fields = "__all__"
+        exclude = ['facility', 'qi_project', 'program', 'program_qi_project']

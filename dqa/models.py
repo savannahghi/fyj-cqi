@@ -259,3 +259,16 @@ class DQAWorkPlan(models.Model):
                                    default=None, on_delete=models.CASCADE)
     modified_by = models.ForeignKey(NewUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
+
+
+class SystemAssessment(models.Model):
+    AREAS_CHOICES = [
+        ("Yes", "Yes - completely"),
+        ("Partly", "Partly"),
+        ("No", "No - not at all"),
+        ("N/A", "N/A")
+    ]
+    dqa_date = models.DateField()
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE,blank=True,null=True)
+    quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE,blank=True,null=True)
+    component = models.CharField(max_length=)

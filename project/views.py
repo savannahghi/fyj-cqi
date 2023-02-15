@@ -29,7 +29,7 @@ from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, Proje
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
     ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm, \
-    BaselineForm, CommentForm, HubForm, SustainmentPlanForm, ProgramForm
+    BaselineForm, CommentForm, HubForm, SustainmentPlanForm, ProgramForm, RootCauseImagesForm
 from .filters import *
 
 import plotly.express as px
@@ -3208,7 +3208,7 @@ def single_project(request, pk):
 
     facility_project = QI_Projects.objects.get(id=pk)
     if not facility_project.process_analysis:
-        facility_project.process_analysis = 'media/images/default.png'
+        facility_project.process_analysis = 'staticfiles/images/default.png'
     # get other All projects
     other_projects = QI_Projects.objects.filter(facility_name=facility_project.facility_name)
     # Hit db once
@@ -3231,6 +3231,9 @@ def single_project(request, pk):
     except Baseline.DoesNotExist:
         baseline = None
 
+    project_images=RootCauseImages.objects.all()
+    root_cause_image = project_images.filter(qi_project__id=pk).order_by("date_created")
+    project_images=project_images.filter(qi_project__id=pk).count()
     today = datetime.now(timezone.utc).date()
     action_plans = pagination_(request, action_plan)
 
@@ -3325,7 +3328,7 @@ def single_project(request, pk):
                    "all_archived": all_archived,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
-                   "title": "facility"}
+                   "title": "facility","root_cause_images":root_cause_image,"project_images":project_images}
 
     else:
         # print("pro_perfomance_trial::::::::::::::::::::::::::::::::::::: else")
@@ -3338,7 +3341,7 @@ def single_project(request, pk):
                    "all_archived": all_archived,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
-                   "title": "facility"}
+                   "title": "facility","root_cause_images":root_cause_image,"project_images":project_images}
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -3353,7 +3356,7 @@ def single_project_program(request, pk):
 
     facility_project = Program_qi_projects.objects.get(id=pk)
     if not facility_project.process_analysis:
-        facility_project.process_analysis = 'media/images/default.png'
+        facility_project.process_analysis = 'staticfiles/images/default.png'
     # get other All projects
     other_projects = Program_qi_projects.objects.filter(program=facility_project.program)
     # Hit db once
@@ -3591,6 +3594,7 @@ def add_baseline_image(request, pk):
     else:
         baselineform = BaselineForm()
     context = {"form": baselineform,
+               "title": "ADD BASELINE STATUS"
 
                }
     return render(request, 'project/baseline_images.html', context)
@@ -4367,3 +4371,42 @@ def delete_sustainable_plan(request, pk):
 @login_required(login_url='login')
 def monthly_data_review(request):
     return render(request, 'project/monthly_data_review_summary.html')
+
+
+@login_required(login_url='login')
+def add_images(request, pk):
+    # WORKING!
+    try:
+        facility_project = QI_Projects.objects.get(id=pk)
+    except:
+        facility_project = Program_qi_projects.objects.get(id=pk)
+
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = RootCauseImagesForm(request.POST, request.FILES)
+        if form.is_valid():
+            post = form.save(commit=False)
+            #
+            try:
+                post.facility = Facilities.objects.get(facilities=facility_project.facility_name)
+                post.program = None
+                post.qi_project = facility_project
+                post.program_qi_project = None
+            except:
+                post.facility = None
+                post.program = Program.objects.get(program=facility_project.program)
+                post.program_qi_project = facility_project
+                post.qi_project = None
+
+            post.save()
+            # return HttpResponseRedirect(request.session['page_from'])
+            return redirect(request.session['page_from'])
+    else:
+        form = RootCauseImagesForm()
+    context = {"form": form,
+               "title": "Add Root Cause Images"
+
+               }
+    return render(request, 'project/baseline_images.html', context)

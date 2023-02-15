@@ -85,7 +85,7 @@
               {% if user.is_authenticated %}
                   {% if user.id == row.created_by.id %}
                       <td>
-                          <a href="{% url 'delete_qi_team_member' row.created_by.id|add:"0" %}" class="btn btn-danger" role="button">Delete</a>
+{#                          <a href="{% url 'delete_qi_team_member' row.created_by.id|add:"0" %}" class="btn btn-danger" role="button">Delete</a>#}
                       </td>
                   {% endif %}
               {% endif %}

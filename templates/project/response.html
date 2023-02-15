@@ -69,7 +69,7 @@
               {% if user.id == comment.commented_by.id %}
                 <a class="btn btn-info btn-sm" href="{% url 'update_comments' comment.id %}">Edit</a>
                 <a class="btn btn-primary btn-sm" href="{% url 'comments_response' comment.id %}">Respond</a>
-          <a class="btn btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>
+{#          <a class="btn btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>#}
           {% endif %}
           {% endif %}
 

@@ -65,7 +65,15 @@
                {% endif %}
            </div>
                <hr>
+
            <div class="row" >
+           {% if dicts %}
+
+
+           <p class="text-center text-primary" >
+               The DQA summary charts below are ordered from the indicators with the greatest discrepancies to the least.
+           </p>
+
             {% for indicator,fig in dicts.items %}
                       <div class="col-md-4 mt-3" >
                         <div class="card " >
@@ -84,6 +92,7 @@
                       </div>
 
             {% endfor %}
+            {% endif %}
             </div>
            </div>
            </div>

@@ -20,6 +20,8 @@
       <link rel="stylesheet" href="{% static 'assets/css/rome.css' %}">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css">
 
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/css/select2.min.css" rel="stylesheet" />
+
 
 
     <style>
@@ -137,7 +139,14 @@
         .full-width-input {
             width: 100%;
         }
-
+.card.enlarged {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1.05);
+  z-index: 1;
+  transition: transform 0.3s ease-in-out;
+}
     </style>
 
 
@@ -226,6 +235,20 @@
     let navbarHeight = navbar.offsetHeight;
     let table = document.getElementsByClassName("my-table")[0];
     table.style.marginTop = navbarHeight + 'px';
+</script>
+
+  <!--This enables searching and filtering the dropdown-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+    $('.select2').select2();
+});
+</script>
+
+  <script>
+function enlargeCard(card) {
+  card.classList.toggle("enlarged");
+}
 </script>
 
   </body>

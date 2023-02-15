@@ -73,7 +73,7 @@
                       {% if comment.id not in all_responses %}
                     <a class="btn btn-info btn-sm" href="{% url 'update_comments' comment.id %}">Edit</a>
 
-              <a class="btn btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>
+{#              <a class="btn btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>#}
                       {% endif %}
                       {% endif %}
                    </div>

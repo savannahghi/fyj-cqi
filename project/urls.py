@@ -80,6 +80,7 @@ urlpatterns = [
     path('add-lesson-learnt/', add_lesson_learnt, name="add_lesson_learnt"),
     path('add-sustainment-plan/<int:pk>', add_sustainmentplan, name="add_sustainmentplan"),
     path('add-baseline-image/<int:pk>', add_baseline_image, name="add_baseline_image"),
+    path('add-image/<int:pk>', add_images, name="add_images"),
     path('create-comment/<int:pk>', create_comment, name="create_comment"),
     path('add-program/', add_program, name="add_program"),
 

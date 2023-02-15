@@ -138,7 +138,7 @@
                     {% if user.is_authenticated %}
                       {% if user.id == action_plan.created_by.id %}
                             <td>
-                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-danger" role="button">Delete</a>
+{#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-danger" role="button">Delete</a>#}
                             </td>
                       {% endif %}
                   {% endif %}

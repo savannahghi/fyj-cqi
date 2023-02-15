@@ -37,7 +37,7 @@
                     <a href="{% url 'toggle_archive_project' facility_project.id %}" class="btn btn-success">Archive project</a>
                 {% endif %}
 
-                <a href="{% url 'delete_project' facility_project.id %}" class="btn btn-danger">Delete project</a>
+{#                <a href="{% url 'delete_project' facility_project.id %}" class="btn btn-danger">Delete project</a>#}
             {% endif %}
         {% endif %}
 
@@ -175,10 +175,20 @@
                     </p>
                 </div>
 <div class="mt-2">
+{% if user.id == facility_project.created_by.id %}
     {% if baseline.baseline_status.url is not null %}
+{#        {% for field in facility_project %}#}
+{#            CREATOR: {{ facility_project.created_by.id }}#}
+{#            USER ID: {{  user.id }}#}
+{#        {% endfor %}#}
+
      <a href="{% url 'update_baseline' facility_project.id %}" class="btn btn-warning mb-3">Update Baseline status</a>
+
+
 {% else %}
     <a href="{% url 'add_baseline_image' facility_project.id %}" class="btn btn-success mb-3">Add Baseline status</a>
+
+{% endif %}
 {% endif %}
 </div>
  <div class="container-fluid mt-2">
@@ -364,6 +374,8 @@
                       </p>
                 </div>
 
+
+
         <div class="container-fluid mt-2">
           <div class="row">
             <div class="col-12">
@@ -371,6 +383,40 @@
             </div>
           </div>
         </div>
+{% if project_images < 4 %}
+    <div class="mt-2">
+        <p style="font-size:x-small;">Please note that you can upload a maximum of 4 additional root cause analysis images. You currently have
+            {{ project_images|sub:"4"|abs }} images remaining to upload. Click the 'Add More Images' button to upload additional
+            images.
+        </p>
+        <a href="{% url 'add_images' facility_project.id %}" class="btn btn-success mb-3">Add More Images</a>
+    </div>
+{% endif %}
+
+          <div class="row">
+  {% for image in root_cause_images %}
+    <div class="col-md-3 mt-3">
+      <div class="card" onclick="enlargeCard(this)">
+        <div class="card-body">
+          <div class="col">
+            <div class="row">
+              <img class="img-fluid" src="{{MEDIA_URL}}{{image.root_cause_image.url }}" alt="" style="image-resolution: normal; image-rendering: high-quality;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+            {#<div class="col-4">#}
+            {# <img  class=".img-fluid" src="{{MEDIA_URL}}{{image.root_cause_image.url }}" alt="" style="image-resolution: normal; image-rendering: high-quality;">#}
+            {#</div>#}
+{#              {% endfor %}#}
+{#          </div>#}
+{#        </div>#}
+
+
 
 
 
@@ -525,7 +571,7 @@
                     {% if user.is_authenticated %}
                       {% if user.id == field.created_by.id %}
                             <td>
-                              <a href="{% url 'delete_qi_team_member' field.id %}" class="btn btn-danger" role="button">Delete</a>
+{#                              <a href="{% url 'delete_qi_team_member' field.id %}" class="btn btn-danger" role="button">Delete</a>#}
                             </td>
                       {% endif %}
                   {% endif %}
@@ -669,7 +715,7 @@
                     {% if user.is_authenticated %}
                       {% if user.id == action_plan.created_by.id %}
                             <td>
-                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-danger" role="button">Delete</a>
+{#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-danger" role="button">Delete</a>#}
                             </td>
                       {% endif %}
                   {% endif %}
@@ -771,7 +817,7 @@
                     {% if user.is_authenticated %}
                       {% if user.id == field.created_by.id %}
                             <td>
-                              <a href="{% url 'delete_milestone' field.id %}" class="btn btn-danger" role="button">Delete</a>
+{#                              <a href="{% url 'delete_milestone' field.id %}" class="btn btn-danger" role="button">Delete</a>#}
                             </td>
                       {% endif %}
                   {% endif %}
@@ -1033,7 +1079,7 @@
                         {% endif %}
                         <td>
                             <a class="btn btn-info btn-sm" href="{% url 'update_test_of_change' change.id %}">Edit</a>
-                            <a class="btn btn-danger btn-sm" href="{% url 'delete_test_of_change' change.id %}">Delete</a>
+{#                            <a class="btn btn-danger btn-sm" href="{% url 'delete_test_of_change' change.id %}">Delete</a>#}
                         </td>
                         </tr>
                     {% endfor %}

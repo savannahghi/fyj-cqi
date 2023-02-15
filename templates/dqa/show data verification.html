@@ -8,7 +8,8 @@
        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
 
            <div class="col-md-12">
-           <h6 class="display-6 text-primary">HIV DQA Facility Data Verification Assessment Tool</h6>
+           <h6 class="display-6 text-primary text-center">HIV DQA Facility Data Verification Assessment Tool</h6>
+               <hr>
            {% if messages %}
                 <ul class="messages">
                     {% if messages|length >= 1 %}
@@ -49,31 +50,47 @@
             {% endif %}
            </div>
       </div>
-    <div class="d-flex justify-content-around">
-
-
+{#    <div class="d-flex justify-content-evenly">#}
     <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
-            {% csrf_token %}
+        {% csrf_token %}
         <p> Please choose quarter, year, facility and then submit </p>
 
-            <div class="col-md-2 mt-2">
-                {{ form.quarter|as_crispy_field }}
-            </div>
-            <div class="col-md-2 mt-2">
-                {{ year_form.year|as_crispy_field }}
-            </div>
+        <div class="col-md-2 mt-2">
+            {{ form.quarter|as_crispy_field }}
+        </div>
+        <div class="col-md-2 mt-2 pr-5">
+            {{ year_form.year|as_crispy_field }}
+        </div>
         <div class="col-md-4 mt-2">
-                {{ facility_form.facilities|as_crispy_field }}
-            </div>
-            <div class="col-md-3 mt-2 pt-3">
-                <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
-            </div>
+            {{ facility_form.facilities|as_crispy_field }}
+        </div>
+        <div class="col-md-2 mt-2 pt-3">
+            <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+        </div>
+    {% if messages %}
 
-        </form>
-   <div>
-        <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>
-   </div>
-     </div>
+
+        {% for message in messages|slice:":1" %}
+            {% if "dqa" not in message|lower %}
+                <div class="col-md-2 mt-2 pt-3">
+                    <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>
+                </div>
+                {% else %}
+                <div class="col-md-2 mt-2 pt-3"></div>
+            {% endif %}
+        {% endfor %}
+
+    {% else %}
+                <div class="col-md-2 mt-2 pt-3">
+            <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>
+        </div>
+    {% endif %}
+{#        <div class="col-md-2 mt-2 pt-3">#}
+{#            <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>#}
+{#        </div>#}
+    </form>
+{#</div>#}
+
     <table class="table table-striped table-hover" style="font-size: small;">
     <thead class="thead-dark">
 {#    <th scope="col"></th>#}
@@ -217,7 +234,7 @@
 
         {% else %}
              <td><a href="{% url 'update_data_verification' data.id %}" class="btn btn-info" role="button">Update</a></td>
-        <td><a href="{% url 'delete_data_verification' data.id %}" class="btn btn-danger" role="button">Delete</a></td>
+{#        <td><a href="{% url 'delete_data_verification' data.id %}" class="btn btn-danger" role="button">Delete</a></td>#}
         {% endif %}
         </tr>
         {% endfor %}

@@ -1,4 +1,6 @@
 from datetime import timezone
+
+from django.forms import modelformset_factory
 from django.utils import timezone
 
 import pandas as pd
@@ -14,10 +16,24 @@ from django.shortcuts import render, redirect
 from django.views.generic import ListView
 
 from dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm, YearSelectionForm, FacilitySelectionForm, \
-    DQAWorkPlanForm
-from dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan
+    DQAWorkPlanForm, SystemAssessmentForm, DateSelectionForm
+from dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan, SystemAssessment
 from project.models import Facilities
 from project.views import bar_chart
+
+
+def load_system_data(request):
+    if request.method == 'POST':
+        file = request.FILES['file']
+        df = pd.read_excel(file, usecols=[0])
+        for index, row in df.iterrows():
+            instance = SystemAssessment(description=row[0])
+            instance.save()
+
+        # Code to load data from Excel file and save it to MyModel
+        return render(request, 'dqa/upload.html', {'success': True})
+    else:
+        return render(request, 'dqa/upload.html')
 
 
 def load_data(request):
@@ -574,14 +590,14 @@ def add_data_verification(request):
     else:
         # Create an empty instance of the DataVerificationForm
         form = DataVerificationForm()
-        forms=form
+        forms = form
 
     # convert a form into a list to allow slicing
     form = list(form)
     # Create the context for the template
     context = {
         "form": form,
-        "forms":forms,
+        "forms": forms,
         "quarters": quarters,
         "quarter_form": quarter_form,
         "year_form": year_form,
@@ -1438,6 +1454,7 @@ def show_dqa_work_plan(request):
     }
     return render(request, 'dqa/dqa_work_plan_list.html', context)
 
+
 # @login_required(login_url='login')
 # def add_dqa_action_plan(request, pk):
 #     # facility_project = QI_Projects.objects.get(id=pk)
@@ -1495,3 +1512,84 @@ def show_dqa_work_plan(request):
 #                "level": level
 #                }
 #     return render(request, "project/add_qi_manager.html", context)
+
+
+def add_system_verification(request):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    quarter_form = QuarterSelectionForm(request.POST or None)
+    year_form = YearSelectionForm(request.POST or None)
+    form = SystemAssessmentForm()
+    system_assessments = SystemAssessment.objects.all()
+    facility_form = FacilitySelectionForm(request.POST or None)
+    date_form = DateSelectionForm(request.POST or None)
+    SystemAssessmentFormSet = modelformset_factory(SystemAssessment, fields=(
+        'dropdown_option', 'auditor_note','facility_name',
+        'supporting_documentation_required'), extra=0)
+
+
+
+
+    selected_quarter = "Qtr1"
+    selected_year = "2021"
+    year_suffix = selected_year[-2:]
+
+    if quarter_form.is_valid() and year_form.is_valid():
+        selected_quarter = quarter_form.cleaned_data['quarter']
+        request.session['selected_quarter'] = selected_quarter
+
+        selected_year = year_form.cleaned_data['year']
+        request.session['selected_year'] = selected_year
+        year_suffix = selected_year[-2:]
+        quarters = {
+            selected_quarter: [
+                f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}'
+            ] if selected_quarter == 'Qtr1' else [
+                f'Jan-{year_suffix}', f'Feb-{year_suffix}', f'Mar-{year_suffix}'
+            ] if selected_quarter == 'Qtr2' else [
+                f'Apr-{year_suffix}', f'May-{year_suffix}', f'Jun-{year_suffix}'
+            ] if selected_quarter == 'Qtr3' else [
+                f'Jul-{year_suffix}', f'Aug-{year_suffix}', f'Sep-{year_suffix}'
+            ]
+        }
+    else:
+        quarters = {
+            "Qtr2": [f'January-{year_suffix}', f'Feb-{year_suffix}', f'Mar-{year_suffix}']
+        }
+
+    # if request.method == "POST":
+
+    # Check if the request method is POST and the submit_data button was pressed
+    if 'submit_data' in request.POST:
+        # Create an instance of the DataVerificationForm with the submitted data
+        # form = SystemAssessmentForm(request.POST)
+        form = SystemAssessmentFormSet(request.POST)
+        form.save()
+
+    # If the request method is not POST or the submit_data button was not pressed
+    else:
+        # Create an empty instance of the DataVerificationForm
+        # form = SystemAssessmentForm()
+        formset = SystemAssessmentFormSet(queryset=system_assessments)
+        forms = formset
+
+    # convert a form into a list to allow slicing
+    form = list(form)
+    # Create the context for the template
+    context = {
+        "form": form,
+        "forms": formset,
+        "quarters": quarters,
+        "quarter_form": quarter_form,
+        "year_form": year_form,
+        "year_suffix": year_suffix,
+        "system_assessments": system_assessments,
+        "facility_form":facility_form,
+        "date_form":date_form,
+    }
+
+    # Render the template with the context
+    return render(request, 'dqa/add_system_assessment.html', context)
+
+

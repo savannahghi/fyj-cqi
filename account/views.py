@@ -60,4 +60,3 @@ def logout_page(request):
     logout(request)
     return redirect("login")
 
-    return render(request, "account/login_page.html", {})

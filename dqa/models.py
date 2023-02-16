@@ -81,10 +81,12 @@ class Indicators(models.Model):
 
 
 class DataVerification(models.Model):
+    # TODO: ALLOW USERS TO ADD INDICATORS
     INDICATOR_CHOICES = [
         ('', 'Select indicator'),
         ('PrEP_New', 'PrEP_New'),
         ('Starting_TPT', 'Starting TPT'),
+        ('Starting_TPTs', 'Starting TPTs'),
         ('GBV_Sexual violence', 'GBV_Sexual violence'),
         ('GBV_Emotional and /Physical Violence', 'GBV_Emotional and /Physical Violence'),
         ('Cervical Cancer Screening (Women on ART)', 'Cervical Cancer Screening (Women on ART)'),
@@ -240,8 +242,8 @@ class DQAWorkPlan(models.Model):
         ("Data Management Systems", "Data Management Systems")
     ]
     dqa_date = models.DateField()
-    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE,blank=True,null=True)
-    quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE,blank=True,null=True)
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
+    quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE, blank=True, null=True)
     individuals_conducting_dqa = models.TextField()
     program_areas_reviewed = models.CharField(choices=AREAS_CHOICES, max_length=255)
     strengths_identified = models.TextField()
@@ -262,13 +264,25 @@ class DQAWorkPlan(models.Model):
 
 
 class SystemAssessment(models.Model):
-    AREAS_CHOICES = [
-        ("Yes", "Yes - completely"),
-        ("Partly", "Partly"),
-        ("No", "No - not at all"),
-        ("N/A", "N/A")
-    ]
-    dqa_date = models.DateField()
-    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE,blank=True,null=True)
-    quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE,blank=True,null=True)
-    component = models.CharField(max_length=250)
+    description = models.TextField()
+    dropdown_option = models.CharField(max_length=50, choices=[
+                                        ("Yes", "Yes - completely"),
+                                        ("Partly", "Partly"),
+                                        ("No", "No - not at all"),
+                                        ("N/A", "N/A")
+                                    ], blank=True, null=True)
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
+    quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE, blank=True, null=True)
+    # component = models.CharField(max_length=250, blank=True, null=True)
+    auditor_note = models.CharField(max_length=250, blank=True, null=True)
+    supporting_documentation_required = models.CharField(max_length=10,
+                                                          choices=[("", "-"), ("Yes", "Yes"), ("No", "No")]
+                                                         , blank=True, null=True)
+    dqa_date = models.DateField(blank=True, null=True)
+    calculations = models.FloatField(null=True, blank=True)
+    created_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                   default=None, on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(NewUser, blank=True, null=True,
+                                    default=None, on_delete=models.CASCADE, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

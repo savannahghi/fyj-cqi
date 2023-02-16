@@ -21,6 +21,7 @@
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css">
 
       <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/css/select2.min.css" rel="stylesheet" />
+      <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/smoothness/jquery-ui.css">
 
 
 
@@ -279,6 +280,8 @@ td {
       $("#id_end_date").datepicker();
       $("#id_due_date").datepicker();
       $("#id_month_year").datepicker();
+      {#$("#id_date").datepicker();#}
+
     });
   </script>
 
@@ -295,6 +298,14 @@ td {
     $('.select2').select2();
 });
 </script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>
+
+{#  <script>#}
+{#    $(document).ready(function() {#}
+{#      $('input[type="date"]').datepicker();#}
+{#    });#}
+{#  </script>#}
   </body>
 
   <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">

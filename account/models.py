@@ -18,5 +18,5 @@ class NewUser(AbstractUser):
     def save(self, *args, **kwargs):
         """Ensure email are in the lower case"""
         self.email = self.email.lower()
-        self.username = self.username.lower()
+        # self.username = self.username.lower()
         super(NewUser, self).save(*args, **kwargs)

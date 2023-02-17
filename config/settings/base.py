@@ -16,7 +16,7 @@ env = environs.Env()
 ALLOWED_HOSTS = env.list(
     "DJANGO_ALLOWED_HOSTS",
     default=[
-        "fyjcqiprojects.ttl.co.ke","127.0.0.1","localhost",
+        "fyjcqiprojects.ttl.co.ke", "127.0.0.1", "localhost",
     ],
 )
 DEBUG = env.bool("DJANGO_DEBUG", False)
@@ -52,12 +52,14 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    "compressor",
     "crispy_forms",
     "phonenumber_field",
     "django_filters",
     "multiselectfield",
     "mathfilters",
     "django_select2",
+
 
     # Note: Order of INSTALLED_APPS is important. To ensure that exceptions inside other apps’ signal handlers do not
     # affect the integrity of file deletions within transactions, django_cleanup should be placed last in INSTALLED_APPS
@@ -124,6 +126,7 @@ TEMPLATES = [
     },
 ]
 
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 ###############################################################################
 # TRANSLATIONS AND LOCALES
 ###############################################################################
@@ -133,10 +136,6 @@ TIME_ZONE = "Africa/Nairobi"
 USE_I18N = True
 # USE_L10N = True
 USE_TZ = True
-
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
-
-WHITENOISE_MANIFEST_STRICT = False
 
 ###############################################################################
 # AUTH AND PASSWORDS
@@ -206,8 +205,11 @@ MEDIA_URL = "/media/"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "assets" / "assets/static"]
+STATICFILES_DIRS = [BASE_DIR / "assets" / "static"]
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+    "compressor.finders.CompressorFinder",
 ]
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+WHITENOISE_MANIFEST_STRICT = False

@@ -1614,7 +1614,8 @@ def add_system_verification(request):
         # formset = SystemAssessmentFormSet(initial=initial_data)
         initial_data = [{'description': 'description1'}, {'description': 'description2'},
                         {'description': 'description3'}]
-        formset = SystemAssessmentFormSet(initial=initial_data)
+        formset = SystemAssessmentFormSet(queryset=SystemAssessment.objects.none(), initial=initial_data)
+
 
     context = {
         'formset': formset,

@@ -12,9 +12,10 @@ env.read_env(path=ENV_PATH, override=True)
 ALLOWED_HOSTS = env.list(
     "DJANGO_ALLOWED_HOSTS",
     default=[
-        "fyjcqiprojects.ttl.co.ke",
-    ],
-)
+        ".fahariyajamii.org",
+        "cqi.fahariyajamii.org",
+        ],
+    )
 
 SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 

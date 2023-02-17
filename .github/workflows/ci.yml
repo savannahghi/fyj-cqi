@@ -1,0 +1,63 @@
+name: CI
+
+on: [push]
+
+env:
+  COMPOSE_DOCKER_CLI_BUILD: 1
+  DJANGO_DEBUG: true
+  DJANGO_SECRET_KEY: "${{ secrets.DJANGO_SECRET_KEY }}"
+  DOCKER_BUILDKIT: 1 # Enable Buildkit and let compose use it to speed up image building
+  GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  POSTGRES_DB: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_PORT: 5432
+  POSTGRES_USER: postgres
+  TEST_POSTGRES_DB: cqi_test
+  TEST_POSTGRES_HOST: localhost
+  TEST_POSTGRES_PASSWORD: postgres
+  TEST_POSTGRES_PORT: 5432
+  TEST_POSTGRES_USER: postgres
+  USE_DOCKER: no
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    # Service containers to run with `container-job`
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Requirements
+      run: |
+        sudo apt-get update
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements/test.txt
+
+    - name: Run Migrations
+      run: python manage.py migrate

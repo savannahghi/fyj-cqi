@@ -185,14 +185,17 @@
     </tr>
   </thead>
   <tbody>
-    {% for system_assessment in system_assessments %}
+{% for form in formset %}
       <tr>
-        <td>{{ system_assessment.description }}</td>
-        {% for field in formset.management_form %}
-          <td>{{ field }}</td>
-        {% endfor %}
-        {% for form in formset %}
-          {% if form.instance == system_assessment %}
+
+        <td>
+            <p>{{ form.description }}</p>
+        </td>
+{#        {% for field in formset.management_form %}#}
+{#          <td>{{ field }}</td>#}
+{#        {% endfor %}#}
+{#        {% for form in formset %}#}
+{#          {% if form.instance == system_assessment %}#}
             <td>{{ form.dropdown_option }}</td>
 {#            <td>{{ form.facility_name }}</td>#}
 {#            <td>{{ form.quarter_year }}</td>#}
@@ -201,8 +204,8 @@
             <td>{{ form.supporting_documentation_required }}</td>
 {#            <td>{{ form.dqa_date }}</td>#}
 {#            <td>{{ form.calculations }}</td>#}
-          {% endif %}
-        {% endfor %}
+{#          {% endif %}#}
+{#        {% endfor %}#}
       </tr>
     {% endfor %}
   </tbody>
@@ -210,7 +213,6 @@
 
  <button type="submit">Save</button>
 </form>
-
 
 
 

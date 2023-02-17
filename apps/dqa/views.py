@@ -1587,35 +1587,37 @@ def add_system_verification(request):
     SystemAssessmentFormSet = modelformset_factory(
         SystemAssessment,
         form=SystemAssessmentForm,
-        extra=0,
+        extra=5,
     )
 
-    if request.method == 'POST':
-        formset = SystemAssessmentFormSet(request.POST, initial=initial_data)
-        if formset.is_valid():
-            instances = formset.save(commit=False)
-            for instance in instances:
-                instance.dropdown_option = formset.cleaned_data[formset.forms.index(instance)]['dropdown_option']
-                instance.auditor_note = formset.cleaned_data[formset.forms.index(instance)]['auditor_note']
-                instance.supporting_documentation_required = formset.cleaned_data[formset.forms.index(instance)][
-                    'supporting_documentation_required']
-                instance.facility_name = request.user.facility  # Or however you want to determine the facility
-                # instance.quarter_year = get_current_quarter_year()  # Replace with your own function to determine the current quarter year
-                instance.dqa_date = timezone.now().date()
-                instance.created_by = request.user
-                if instance.dropdown_option == 'Yes':
-                    instance.calculations = 3
-                elif instance.dropdown_option == 'Partly':
-                    instance.calculations = 2
-                elif instance.dropdown_option == 'No':
-                    instance.calculations = 1
-                instance.save()
-    else:
-        # formset = SystemAssessmentFormSet(initial=initial_data)
-        initial_data = [{'description': 'description1'}, {'description': 'description2'},
-                        {'description': 'description3'}]
-        formset = SystemAssessmentFormSet(queryset=SystemAssessment.objects.none(), initial=initial_data)
-
+    # if request.method == 'POST':
+    #     formset = SystemAssessmentFormSet(request.POST, initial=initial_data)
+    #     if formset.is_valid():
+    #         instances = formset.save(commit=False)
+    #         for instance in instances:
+    #             instance.dropdown_option = formset.cleaned_data[formset.forms.index(instance)]['dropdown_option']
+    #             instance.auditor_note = formset.cleaned_data[formset.forms.index(instance)]['auditor_note']
+    #             instance.supporting_documentation_required = formset.cleaned_data[formset.forms.index(instance)][
+    #                 'supporting_documentation_required']
+    #             instance.facility_name = request.user.facility  # Or however you want to determine the facility
+    #             # instance.quarter_year = get_current_quarter_year()  # Replace with your own function to determine the current quarter year
+    #             instance.dqa_date = timezone.now().date()
+    #             instance.created_by = request.user
+    #             if instance.dropdown_option == 'Yes':
+    #                 instance.calculations = 3
+    #             elif instance.dropdown_option == 'Partly':
+    #                 instance.calculations = 2
+    #             elif instance.dropdown_option == 'No':
+    #                 instance.calculations = 1
+    #             instance.save()
+    # else:
+    # formset = SystemAssessmentFormSet(initial=initial_data)
+    # initial_data = [{'description': 'description1'}, {'description': 'description2'},
+    #                 {'description': 'description3'}]
+    # formset = SystemAssessmentFormSet(queryset=SystemAssessment.objects.none(), initial=initial_data)
+    formset = SystemAssessmentFormSet(queryset=SystemAssessment.objects.all(),initial=initial_data)
+    print("form set::::::::::::::::::::::::::::::")
+    print(formset)
 
     context = {
         'formset': formset,

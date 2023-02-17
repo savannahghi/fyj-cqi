@@ -1,0 +1,74 @@
+{% extends 'project/index.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+ <div class="p-5 mb-4 bg-light rounded-3">
+      <div class="container-fluid py-5">
+{#        <h1 class="display-5 fw-bold">FACILITY NAME</h1>#}
+{#        <p class="col-md-8 fs-4">COUNTY/SUBCOUNTY</p>#}
+          {% if title == "Update sub counties" %}
+            <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                {% csrf_token %}
+
+                <div class="col-md-6">
+                    {{ form.sub_counties|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.counties|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.facilities|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.hub|as_crispy_field }}
+                </div>
+                <div class="col-md-3 mt-4 pt-2">
+                    <input class="btn btn-success mt-1" type="submit" value="Submit">
+                </div>
+               </form>
+            {% elif title == "Update Resource" %}
+                <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                {% csrf_token %}
+
+                <div class="col-md-9">
+                    {{ form.resource_name|as_crispy_field }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.resource_type|as_crispy_field }}
+                </div>
+                <div class="col-md-12">
+                    {{ form.resource|as_crispy_field }}
+                </div>
+                <div class="col-md-12">
+                    {{ form.description|as_crispy_field }}
+                </div>
+                <div class="col-md-3 mt-4 pt-2">
+                    <input class="btn btn-success mt-1" type="submit" value="Submit">
+                </div>
+            </form>
+          {% else %}
+              <form method="POST" class="mt-5" enctype='multipart/form-data'>
+                    {% csrf_token %}
+                    {{ form|crispy}}
+                   <input class="btn btn-success mt-1" type="submit" value="Update">
+            </form>
+            {% endif %}
+
+
+      </div>
+    </div>
+{#<div class="container mt-3">#}
+{#         <form method="post">#}
+{#        {% csrf_token %}#}
+{#        {{ form|crispy}}#}
+{#         <input class="btn btn-success mt-1" type="submit" value="Add QI cqi">#}
+{#    </form>#}
+{#</div>#}
+
+
+    </main>
+{% endblock %}

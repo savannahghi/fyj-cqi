@@ -1,0 +1,247 @@
+{% extends 'dqa/index_dqa.html' %}
+{#{% extends 'cqi/index.html' %}#}
+{% load static %}
+{% load crispy_forms_tags %}
+{% regroup sub_counties by counties as sub_counties_by_county %}
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+
+           <div class="col-md-12">
+           <h6 class="display-6 text-primary text-center">HIV DQA Facility Data Verification Assessment Tool</h6>
+               <hr>
+           {% if messages %}
+                <ul class="messages">
+                    {% if messages|length >= 1 %}
+                        {% for message in messages|slice:":1" %}
+                            {% if "dqa" in message|lower %}
+                                <div class="mb-3">
+                                    <a href="{% url 'add_data_verification' %}" class="btn btn-success flicker-button" role="button"> ADD FACILITY DQA DATA </a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+
+                        <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                            {% for message in messages|slice:":1" %}
+                            <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
+                            {% endfor %}
+                        </div>
+
+               </ul>
+           {% endif %}
+           {% if data_verification %}
+               {% for data in data_verification|slice:":1" %}
+                    <h4 class="h5">FACILITY: {{ data.facility_name.facilities }} </h4>
+                    <h6 class="h6">MFL CODE: {{ data.facility_name.mfl_code }} </h6>
+                    <h6 class="h6">DATE OF AUDIT: {{ data.date_modified }} </h6>
+               {% endfor %}
+
+            <div class="d-flex justify-content-start">
+    <h6 class="h6">Program Area Assessed (<span style="color: blue;">{{ program_accessed|length }}</span>): </h6>
+    {% for program in program_accessed %}
+        <p style="font-size: small; margin-left: 5px;">{{ program }}, </p>
+    {% endfor %}
+</div>
+
+
+
+               </ul>
+            {% endif %}
+           </div>
+      </div>
+{#    <div class="d-flex justify-content-evenly">#}
+    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+        {% csrf_token %}
+        <p> Please choose quarter, year, facility and then submit </p>
+
+        <div class="col-md-2 mt-2">
+            {{ form.quarter|as_crispy_field }}
+        </div>
+        <div class="col-md-2 mt-2 pr-5">
+            {{ year_form.year|as_crispy_field }}
+        </div>
+        <div class="col-md-4 mt-2">
+            {{ facility_form.name|as_crispy_field }}
+        </div>
+        <div class="col-md-2 mt-2 pt-3">
+            <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+        </div>
+    {% if messages %}
+
+
+        {% for message in messages|slice:":1" %}
+            {% if "dqa" not in message|lower %}
+                <div class="col-md-2 mt-2 pt-3">
+                    <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>
+                </div>
+                {% else %}
+                <div class="col-md-2 mt-2 pt-3"></div>
+            {% endif %}
+        {% endfor %}
+
+    {% else %}
+                <div class="col-md-2 mt-2 pt-3">
+            <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>
+        </div>
+    {% endif %}
+{#        <div class="col-md-2 mt-2 pt-3">#}
+{#            <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>#}
+{#        </div>#}
+    </form>
+{#</div>#}
+
+    <table class="table table-striped table-hover" style="font-size: small;">
+    <thead class="thead-dark">
+{#    <th scope="col"></th>#}
+    <tr>
+            <th></th>
+            <th colspan="3" style="font-size: x-small"> Primary Data source (Registers/EMR) </th>
+            <th></th>
+            <th colspan="3" style="font-size: x-small"> Verification MOH 731 </th>
+            <th></th>
+            <th colspan="3" style="font-size: x-small"> Verification KHIS </th>
+            <th></th>
+            <th colspan="3" style="font-size: x-small"> Verification DATIM/DHIS2 </th>
+         </tr>
+           <tr>
+            <th></th>
+            <th colspan="3" style="font-size: x-small"> VALUE COUNTED FROM SOURCE </th>
+            <th></th>
+            <th colspan="3" style="font-size: x-small"> VALUE REPORTED (MOH 731) </th>
+            <th></th>
+            <th colspan="3" style="font-size: x-small"> NUMBER IN KHIS </th>
+            <th></th>
+            <th colspan="3" style="font-size: x-small"> VALUE REPORTED (DATIM/DHIS2) </th>
+         </tr>
+        {% if quarters %}
+         <tr>
+            <th style="font-size: x-small">Indicator</th>
+            {% for key,months in quarters.items %}
+                {% for month in months %}
+                    <th style="font-size: x-small">{{ month }}</th>
+                {% endfor %}
+                {% for month in months %}
+                        <th style="font-size: x-small">{{ month }}</th>
+                {% endfor %}
+                {% for month in months %}
+                        <th style="font-size: x-small">{{ month }}</th>
+                {% endfor %}
+              <th class="align-middle text-center" style="font-size: x-small ">{{ key }}-{{ selected_year}}</th>
+                <th></th>
+                <th></th>
+            {% endfor %}
+         </tr>
+        {% endif %}
+
+
+    </thead>
+
+    <tbody>
+      {% for data in data_verification %}
+        <tr>
+        {% if "_total" in data.indicator|lower or "positive (pmtct)" in data.indicator|lower or "haart total" in data.indicator|lower or "children currently on art" in data.indicator|lower or "children starting art" in data.indicator|lower or "infant prophylaxis" in data.indicator|lower %}
+            <td class="fw-bold" style="background-color: #8fd19e; font-style: italic">{{ data.indicator }}</td>
+        {% else %}
+            <td>{{ data.indicator }}</td>
+        {% endif %}
+
+            <td>{{ data.field_1 }}</td>
+            <td>{{ data.field_2 }}</td>
+            <td>{{ data.field_3 }}</td>
+            <td class="text-center text-white" style="background-color: {% if data.total_source == data.total_731moh and data.total_731moh == data.total_khis %}green{% else %}red{% endif %}">
+                <strong> {{data.total_source}} </strong>
+            </td>
+
+            <td>{{ data.field_5 }}</td>
+            <td>{{ data.field_6 }}</td>
+            <td>{{ data.field_7 }}</td>
+             <td class="text-center text-white" style="background-color: {% if data.total_source == data.total_731moh and data.total_731moh == data.total_khis %}green{% else %}red{% endif %}">
+                <strong>{{ data.total_731moh }}</strong>
+             </td>
+
+            <td>{{ data.field_9 }}</td>
+            <td>{{ data.field_10 }}</td>
+            <td>{{ data.field_11}}</td>
+             <td class="text-center text-white" style="background-color: {% if data.total_source == data.total_731moh and data.total_731moh == data.total_khis %}green{% else %}red{% endif %}">
+                <strong>{{ data.total_khis }}</strong>
+            </td>
+            {% for performance in fyj_performance %}
+                {% if "prep" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.prep_new }}</td>
+                {% elif "tpt" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.ipt }}</td>
+                {% elif "sex" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.gbv_sexual }}</td>
+                {% elif "emot" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.gbv_emotional_physical }}</td>
+                {% elif "cancer" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.cx_ca }}</td>
+                {% elif "l test" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tst_t }}</td>
+                {% elif "aged <15 years" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tst_pos_p }}</td>
+                {% elif "aged 15+ years" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tst_pos_a }}</td>
+                {% elif "_total" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tst_pos_a|add:performance.tst_pos_p }}</td>
+                {% elif "n positive at 1st anc" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.kp_anc }}</td>
+                {% elif "results_anc" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.new_pos_anc }}</td>
+                {% elif "on haart" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.on_haart_anc }}</td>
+                {% elif "haart anc" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.new_on_haart_anc }}</td>
+                {% elif "prophyl_anc" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">-</td>
+                {% elif "results_l&d" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">-</td>
+                {% elif "haart_l&d" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">-</td>
+                {% elif "prophyl_l&d" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">-</td>
+                {% elif "results_pnc<=6 weeks" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">-</td>
+                {% elif "haart_pnc<= 6 weeks" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">-</td>
+                {% elif "prophyl_pnc<= 6 weeks" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">-</td>
+                {% elif "positive (pmtct)" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.kp_anc|add:performance.new_pos_anc }}</td>
+                {% elif "haart total" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.new_on_haart_anc|add:performance.on_haart_anc }}</td>
+                {% elif "infant prophylaxis" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">-</td>
+                {% elif "under 15yrs starting" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tx_new_p }}</td>
+                {% elif "above 15yrs starting" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tx_new_a }}</td>
+                {% elif "children starting art" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tx_new_a|add:performance.tx_new_p }}</td>
+                {% elif "relapse tb_cases" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tb_stat_d }}</td>
+                {% elif "art <15years" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tx_curr_p }}</td>
+                {% elif "art 15+ years" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tx_curr_a }}</td>
+                {% elif "children currently on art" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">{{ performance.tx_curr_a|add:performance.tx_curr_p }}</td>
+                 {% endif %}
+            {% endfor %}
+
+         {% if "_total" in data.indicator|lower or "positive (pmtct)" in data.indicator|lower or "haart total" in data.indicator|lower or "children currently on art" in data.indicator|lower or "children starting art" in data.indicator|lower or "infant prophylaxis" in data.indicator|lower %}
+
+        {% else %}
+             <td><a href="{% url 'update_data_verification' data.id %}" class="btn btn-info" role="button">Update</a></td>
+{#        <td><a href="{% url 'delete_data_verification' data.id %}" class="btn btn-danger" role="button">Delete</a></td>#}
+        {% endif %}
+        </tr>
+        {% endfor %}
+
+
+
+    </tbody>
+</table>
+    </main>
+{% endblock %}

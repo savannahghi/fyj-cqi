@@ -1,0 +1,100 @@
+{% extends 'dqa/index_dqa.html' %}
+{#{% extends 'cqi/index.html' %}#}
+{% load static %}
+{% load crispy_forms_tags %}
+{% regroup sub_counties by counties as sub_counties_by_county %}
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+           <div class="col-md-12">
+           <h6 class="display-6 text-primary text-center">DQA Summary Dashboard</h6>
+               <hr>
+           {% if messages %}
+                <ul class="messages">
+                    {% if messages|length >= 1 %}
+                        {% for message in messages|slice:":1" %}
+                            {% if "dqa" in message|lower %}
+                                <div class="mb-3">
+                                    <a href="{% url 'add_data_verification' %}" class="btn btn-success flicker-button" role="button"> ADD FACILITY DQA DATA </a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+
+                        <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                            {% for message in messages|slice:":1" %}
+                            <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
+                            {% endfor %}
+                        </div>
+
+               </ul>
+           {% endif %}
+
+           <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+            {% csrf_token %}
+        <p> Please choose quarter, year, facility and then submit </p>
+
+            <div class="col-md-2 mt-2">
+                {{ form.quarter|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-2">
+                {{ year_form.year|as_crispy_field }}
+            </div>
+        <div class="col-md-4 mt-2">
+                {{ facility_form.name|as_crispy_field }}
+            </div>
+            <div class="col-md-3 mt-2 pt-3">
+                <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+            </div>
+
+        </form>
+           <div class="row">
+                <div class="col-md-10">
+               {% if dqa %}
+                   {% for data in dqa|slice:":1" %}
+                        <h4 class="h5">FACILITY: {{ data.facility_name.facilities }} </h4>
+                        <h6 class="h6">MFL CODE: {{ data.facility_name.mfl_code }} </h6>
+                        <h6 class="h6">DATE OF AUDIT: {{ data.date_modified }} </h6>
+                   {% endfor %}
+                   </div >
+                       <div class="col-md-2">
+                           {% if dicts %}
+                                <a href="{% url 'dqa_work_plan_create' selected_facility.id quarter_year %}" class="btn btn-success" role="button">ADD DQA WORK PLAN</a>
+                            {% endif %}
+                       </div>
+               {% endif %}
+           </div>
+               <hr>
+
+           <div class="row" >
+           {% if dicts %}
+
+
+           <p class="text-center text-primary" >
+               The DQA summary charts below are ordered from the indicators with the greatest discrepancies to the least.
+           </p>
+
+            {% for indicator,fig in dicts.items %}
+                      <div class="col-md-4 mt-3" >
+                        <div class="card " >
+{#                          <div class="card-body">#}
+                                <div class="col">
+                                    <div class="text text-center">
+                                        {{ indicator }}
+                                    </div>
+                                    <div class="row" >
+
+                                        {{ fig|safe }}
+                                    </div>
+                                </div>
+{#                          </div>#}
+                        </div>
+                      </div>
+
+            {% endfor %}
+            {% endif %}
+            </div>
+           </div>
+           </div>
+    </main>
+{% endblock %}

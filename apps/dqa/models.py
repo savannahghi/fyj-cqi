@@ -27,7 +27,7 @@ class Period(models.Model):
         ('Qtr4', 'Q4'),
     ]
     quarter = models.CharField(choices=QUARTER_CHOICES, max_length=4)
-    quarter_year = models.CharField(max_length=5, blank=True)
+    quarter_year = models.CharField(max_length=10, blank=True)
 
     class Meta:
         verbose_name_plural = "Periods"
@@ -266,17 +266,17 @@ class DQAWorkPlan(models.Model):
 class SystemAssessment(models.Model):
     description = models.TextField()
     dropdown_option = models.CharField(max_length=50, choices=[
-                                        ("Yes", "Yes - completely"),
-                                        ("Partly", "Partly"),
-                                        ("No", "No - not at all"),
-                                        ("N/A", "N/A")
-                                    ], blank=True, null=True)
+        ("Yes", "Yes - completely"),
+        ("Partly", "Partly"),
+        ("No", "No - not at all"),
+        ("N/A", "N/A")
+    ], blank=True, null=True)
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
     quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE, blank=True, null=True)
     # component = models.CharField(max_length=250, blank=True, null=True)
     auditor_note = models.CharField(max_length=250, blank=True, null=True)
     supporting_documentation_required = models.CharField(max_length=10,
-                                                          choices=[("", "-"), ("Yes", "Yes"), ("No", "No")]
+                                                         choices=[("", "-"), ("Yes", "Yes"), ("No", "No")]
                                                          , blank=True, null=True)
     dqa_date = models.DateField(blank=True, null=True)
     calculations = models.FloatField(null=True, blank=True)
@@ -286,3 +286,9 @@ class SystemAssessment(models.Model):
                                     default=None, on_delete=models.CASCADE, related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.facility_name} - {self.quarter_year}"
+
+    class Meta:
+        unique_together = (("quarter_year", "description", "facility_name"),)

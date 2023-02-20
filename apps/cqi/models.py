@@ -87,7 +87,7 @@ class Facilities(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure facility name is in title case and replace any symbol with an underscore"""
-        self.name = re.sub(r'[^\w\s]', '_', self.name).title().strip()
+        self.name = re.sub(r'[^\w\s]', ' ', self.name).title().strip()
         super().save(*args, **kwargs)
 
 
@@ -180,9 +180,6 @@ class QI_Projects(models.Model):
     #  covid,etc
     # TODO: TRACK USAGE
     # TODO: ALLOW USERS TO ADD 3-5 PROCESS ANALYSIS IMAGES
-    # FACILITY_CHOICES = read_txt(file_)
-    # SUB_COUNTY_CHOICES = read_txt(sub_county_file)
-    # COUNTY_CHOICES = read_txt(county_file)
     DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
                           ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
                           ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
@@ -194,33 +191,21 @@ class QI_Projects(models.Model):
 
     departments = models.ForeignKey(Department, on_delete=models.CASCADE)
     department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
-    # project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
-    # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
     county = models.ForeignKey(Counties, on_delete=models.CASCADE)
     sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
     hub = models.ForeignKey(Hub, null=True, blank=True, on_delete=models.CASCADE)
-    # sub_county = models.CharField(max_length=250, choices=SUB_COUNTY_CHOICES)
-    # county = models.CharField(max_length=250, choices=COUNTY_CHOICES)
     settings = models.CharField(max_length=250)
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', default='images/default.png', null=True, blank=True)
-
     objective = models.TextField()
-    # participants = models.TextField()
-    # responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
-    # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    # created_by = models.ForeignKey('auth.User', blank=True, null=True,
-    #                                   default=None, on_delete=models.CASCADE)
-
     created_by = models.ForeignKey(CustomUser, blank=True, null=True,
                                    default=None, on_delete=models.CASCADE)
-    # team_member = models.ForeignKey('Qi_team_members', on_delete=models.CASCADE, null=True, blank=True)
     STATUS_CHOICES = (
         ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed-or-Closed', 'COMPLETED OR CLOSED'),
@@ -239,29 +224,19 @@ class QI_Projects(models.Model):
         ('Annually', 'Annually'),
     )
     measurement_frequency = models.CharField(max_length=250, choices=FREQUENCY_CHOICES)
-    # comments = models.TextField(blank=True)
 
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
-    # modified_by = models.ForeignKey('auth.User', blank=True, null=True,
-    #                                 default=None, on_delete=models.CASCADE, related_name='+')
 
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
-    # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
-
     # Django fix Admin plural
     class Meta:
         verbose_name_plural = "QI_Projects"
         ordering = ['facility_name']
-
-    # def save(self, *args, **kwargs):
-    #     if not self.sales:
-    #         self.sales = self.sales_name.sales
-    #     return super().save(*args, **kwargs)
 
     def save(self, commit=True, *args, **kwargs):
         user = get_current_user()

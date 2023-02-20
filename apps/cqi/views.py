@@ -35,6 +35,7 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 
 
+@transaction.atomic
 def load_data(request):
     if request.method == 'POST':
         file = request.FILES['file']
@@ -46,39 +47,40 @@ def load_data(request):
             dfs = pd.read_excel(file, sheet_name=sheet_names)
             df = pd.concat([df.assign(sheet_name=name) for name, df in dfs.items()])
             df = df[list(df.columns[:2])]
-            # except:
-            #     df = pd.read_excel(file)
-            # except:
-            #     df = pd.read_csv(file)
-
             if len(df.columns) == 2:
                 df.fillna(0, inplace=True)
-                # process_cols = [col for col in df.columns if col not in [df.columns[1], df.columns[2]]]
-                # for col in process_cols:
-                #     df[col] = df[col].astype(int)
                 df[df.columns[0]] = df[df.columns[0]].astype(int)
                 df[df.columns[1]] = df[df.columns[1]].astype(str)
-
                 # Iterate over each row in the DataFrame
                 for index, row in df.iterrows():
-                    performance = Facilities()
-                    performance.mfl_code = row[df.columns[0]]
-                    performance.name = row[df.columns[1]]
-                    performance.save()
-                messages.error(request, f'Data successfully saved in the database!')
+                    mfl_code = row[df.columns[0]]
+                    name = row[df.columns[1]]
+                    try:
+                        # either create a new facility object if it doesn't exist in the database, or retrieve the
+                        # existing facility object if it does. If the facility already exists, the name is updated
+                        # and the object is saved.
+                        facility, created = Facilities.objects.get_or_create(
+                            mfl_code=mfl_code,
+                            defaults={'name': name},
+                        )
+                        if not created:
+                            # Facility already exists, update the name
+                            facility.name = name
+                            facility.save()
+                    except IntegrityError as e:
+                        pass
+                messages.success(request, f'Data successfully saved in the database!')
                 return redirect('show_data_verification')
             else:
                 # Notify the user that the data is incorrect
-                messages.error(request, f'Kindly confirm if {file} has all data columns.The file has'
+                messages.error(request, f'Kindly confirm if {file} has all data columns. The file has'
                                         f'{len(df.columns)} columns')
-                print(df.columns)
                 redirect('load_data')
         else:
             # Notify the user that the data already exists
             messages.error(request, f"Uploaded file does not have a sheet name 'facility'.")
             redirect('load_data')
 
-        # return redirect('show_data_verification')
     return render(request, 'dqa/upload.html')
 
 
@@ -3228,9 +3230,9 @@ def single_project(request, pk):
     except Baseline.DoesNotExist:
         baseline = None
 
-    project_images=RootCauseImages.objects.all()
+    project_images = RootCauseImages.objects.all()
     root_cause_image = project_images.filter(qi_project__id=pk).order_by("date_created")
-    project_images=project_images.filter(qi_project__id=pk).count()
+    project_images = project_images.filter(qi_project__id=pk).count()
     today = datetime.now(timezone.utc).date()
     action_plans = pagination_(request, action_plan)
 
@@ -3325,7 +3327,7 @@ def single_project(request, pk):
                    "all_archived": all_archived,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
-                   "title": "facility","root_cause_images":root_cause_image,"project_images":project_images}
+                   "title": "facility", "root_cause_images": root_cause_image, "project_images": project_images}
 
     else:
         # print("pro_perfomance_trial::::::::::::::::::::::::::::::::::::: else")
@@ -3338,7 +3340,7 @@ def single_project(request, pk):
                    "all_archived": all_archived,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
-                   "title": "facility","root_cause_images":root_cause_image,"project_images":project_images}
+                   "title": "facility", "root_cause_images": root_cause_image, "project_images": project_images}
 
     return render(request, "project/individual_qi_project.html", context)
 

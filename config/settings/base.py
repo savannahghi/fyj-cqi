@@ -203,7 +203,7 @@ ADMIN_URL = "admin/"
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / "static"
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "assets" / "static"]
 STATICFILES_FINDERS = [

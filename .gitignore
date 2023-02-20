@@ -11,7 +11,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 db_cql
 downloads/
 eggs/

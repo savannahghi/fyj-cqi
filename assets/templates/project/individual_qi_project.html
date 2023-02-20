@@ -380,7 +380,8 @@
           <div class="row">
             <div class="col-12">
                 {% if facility_project.process_analysis %}
-                    <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}" alt="">
+{#                    <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}" alt="">#}
+                    <img  class=".img-fluid" src="{{facility_project.process_analysis.url }}" alt="">
                     {% else %}
              <img  class=".img-fluid" src="{% static 'images/default.png' %}" alt="">
                     {% endif %}

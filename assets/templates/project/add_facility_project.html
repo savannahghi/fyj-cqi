@@ -18,7 +18,13 @@
               <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
               <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
               <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>
-              <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
+              {% if "facility" in title %}
+                  <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
+                 {% elif "program" in title %}
+              <a href="{% url 'add_program' %}" class="btn btn-success" role="button">ADD PROGRAM</a>
+
+              {% endif %}
+
               <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>
               <a href="{% url 'add_hub' %}" class="btn btn-success" role="button">ADD HUB</a>
               <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>
@@ -91,6 +97,10 @@
             </div>
 
             <div class="col-md-12">
+            {% if request.user.is_superuser %}
+             <a href="{% url 'add_trigger' %}" class="btn btn-success mt-3 mb-3" role="button">ADD TRIGGER</a>
+            {% endif %}
+
                 <p>What triggered the creation of this QI Initiative?</p>
                   {% for checkbox in form.triggers %}
                     <label class="form-check-inline">

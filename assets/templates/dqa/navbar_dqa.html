@@ -11,7 +11,7 @@
 {% url "facilities_landing_page" as facilities_landing_page %}
 {% url "sub_counties_list" as sub_counties_list %}
 {% url "lesson_learnt" as lesson_learnt %}
-{% url "load_data" as load_data %}
+{% url "load_datim_data" as load_datim_data %}
 {% url 'completed_closed' pk='Completed-or-Closed' as completed_closed %}
 
 
@@ -87,6 +87,14 @@
               DQA Work plan
             </a>
           </li>
+        {% if request.user.is_superuser %}
+        <li class="nav-item">
+             <a class="nav-link {% if request.path == load_datim_data %} active{% endif %}" href="{% url 'load_datim_data' %}">
+              <span data-feather="file-text" class="align-text-bottom"></span>
+              Load DATIM data
+            </a>
+          </li>
+        {% endif %}
 
         </ul>
 

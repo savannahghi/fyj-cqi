@@ -291,6 +291,10 @@ class CategoryForm(ModelForm):
     class Meta:
         model = Category
         fields = "__all__"
+        labels = {
+
+            'category': 'Component',
+        }
 
 
 class Sub_countiesForm(ModelForm):
@@ -594,3 +598,12 @@ class RootCauseImagesForm(ModelForm):
         model = RootCauseImages
         fields = "__all__"
         exclude = ['facility', 'qi_project', 'program', 'program_qi_project']
+
+
+class TriggerForm(ModelForm):
+    class Meta:
+        model = Trigger
+        fields = "__all__"
+        labels = {
+            "name": "Trigger name"
+        }

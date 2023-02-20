@@ -27,7 +27,7 @@ from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, Proje
     QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
     ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm, \
-    BaselineForm, CommentForm, HubForm, SustainmentPlanForm, ProgramForm, RootCauseImagesForm
+    BaselineForm, CommentForm, HubForm, SustainmentPlanForm, ProgramForm, RootCauseImagesForm, TriggerForm
 from .filters import *
 
 import plotly.express as px
@@ -606,7 +606,7 @@ def add_project_facility(request):
             # get clean data from the form
             facility_name = form.cleaned_data['facility_name']
 
-            facility_id = Facilities.objects.get(facilities=facility_name)
+            facility_id = Facilities.objects.get(name=facility_name)
             # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
             all_subcounties = Sub_counties.facilities.through.objects.all()
             all_counties = Sub_counties.counties.through.objects.all()
@@ -997,8 +997,27 @@ def add_program(request):
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = ProgramForm()
-    context = {"form": form}
-    return render(request, "project/add_program_project.html", context)
+    context = {"form": form, "title": "ADD PROGRAM"}
+    return render(request, "project/add_qi_manager.html", context)
+
+
+@login_required(login_url='login')
+def add_trigger(request):
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    if request.method == "POST":
+        form = TriggerForm(request.POST)
+        if form.is_valid():
+            form.save()
+
+            # redirect back to the page the user was from after saving the form
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = TriggerForm()
+    context = {"form": form, "title": "ADD TRIGGER"}
+    return render(request, "project/add_qi_manager.html", context)
 
 
 @login_required(login_url='login')
@@ -1025,7 +1044,7 @@ def update_project(request, pk):
             # get clean data from the form
             if title == "facility":
                 facility_name = form.cleaned_data['facility_name']
-                facility_id = Facilities.objects.get(facilities=facility_name)
+                facility_id = Facilities.objects.get(name=facility_name)
 
                 # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
                 all_subcounties = Sub_counties.facilities.through.objects.all()
@@ -1339,7 +1358,7 @@ def program_landing_page(request):
 
 @login_required(login_url='login')
 def facility_project(request, pk):
-    projects = QI_Projects.objects.filter(facility_name__facilities=pk).order_by("-date_updated")
+    projects = QI_Projects.objects.filter(facility_name__name=pk).order_by("-date_updated")
 
     facility_name = pk
 
@@ -1568,13 +1587,13 @@ def qi_managers_filter_project(request, pk):
 @login_required(login_url='login')
 def facility_filter_project(request, pk):
     projects_tracked = []
-    projects = QI_Projects.objects.filter(facility_name__facilities=pk).order_by("-date_updated")
+    projects = QI_Projects.objects.filter(facility_name__name=pk).order_by("-date_updated")
     # project_id_values = request.session['project_id_values']
 
     # accessing facility qi projects
     # use two underscore to the field with foreign key
     # list_of_projects = TestedChange.objects.filter(project_id__in=project_id_values).order_by('-achievements')
-    testedChange = TestedChange.objects.filter(project__facility_name__facilities=pk)
+    testedChange = TestedChange.objects.filter(project__facility_name__name=pk)
     # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
     # list_of_projects = my_filters.qs
     list_of_projects = [
@@ -3511,7 +3530,7 @@ def add_stake_holders(request, pk):
         if stakeholderform.is_valid():
             post = stakeholderform.save(commit=False)
 
-            post.facility = Facilities.objects.get(facilities=facility_project.facility_name)
+            post.facility = Facilities.objects.get(name=facility_project.facility_name)
             post.save()
             # return HttpResponseRedirect(request.session['page_from'])
             return redirect(request.session['page_from'])
@@ -3540,7 +3559,7 @@ def add_stake_holders(request, pk):
 #             post = baselineform.save(commit=False)
 #             #
 #             try:
-#                 post.facility = Facilities.objects.get(facilities=facility_project.facility_name)
+#                 post.facility = Facilities.objects.get(name=facility_project.facility_name)
 #                 post.program = None
 #                 post.qi_project = facility_project
 #                 post.program_qi_project = None
@@ -3577,7 +3596,7 @@ def add_baseline_image(request, pk):
             post = baselineform.save(commit=False)
             #
             try:
-                post.facility = Facilities.objects.get(facilities=facility_project.facility_name)
+                post.facility = Facilities.objects.get(name=facility_project.facility_name)
                 post.program = None
                 post.qi_project = facility_project
                 post.program_qi_project = None
@@ -4389,7 +4408,7 @@ def add_images(request, pk):
             post = form.save(commit=False)
             #
             try:
-                post.facility = Facilities.objects.get(facilities=facility_project.facility_name)
+                post.facility = Facilities.objects.get(name=facility_project.facility_name)
                 post.program = None
                 post.qi_project = facility_project
                 post.program_qi_project = None

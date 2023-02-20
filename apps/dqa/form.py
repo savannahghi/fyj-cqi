@@ -1,6 +1,6 @@
 import datetime
 
-from django.forms import ModelForm
+from django.forms import ModelForm, Textarea
 from django import forms
 
 from apps.dqa.models import DataVerification, Period, DQAWorkPlan, SystemAssessment
@@ -59,7 +59,8 @@ class YearSelectionForm(forms.Form):
 
 class DateSelectionForm(forms.Form):
     date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="DQA date"
     )
 
 
@@ -101,43 +102,21 @@ class DQAWorkPlanForm(ModelForm):
 #     description = forms.CharField(disabled=True)
 
 class SystemAssessmentForm(ModelForm):
-    name = forms.ModelChoiceField(
-        queryset=Facilities.objects.all(),
-        empty_label="Select facility",
-        widget=forms.Select(attrs={'class': 'form-control select2'}),
-    )
-
     class Meta:
         model = SystemAssessment
-        # fields = "__all__"
-        exclude = ['calculations', 'created_by', 'modified_by', 'quarter_year', 'facility_name']
+        fields = ['description', 'dropdown_option', 'auditor_note', 'supporting_documentation_required']
+        widgets = {
+            'description': Textarea(attrs={'readonly': 'readonly','rows': '5'}),
+            'auditor_note': forms.Textarea(attrs={'size': '40','rows': '5'})
+        }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance.pk is None and 'initial' in kwargs:
-            self.fields['description'].initial = kwargs['initial']['description']
-
-    # def save(self, commit=True):
-    #     instances = super().save(commit=False)
-    #     for instance in instances:
-    #         dropdown_option = instance.dropdown_option
-    #         if dropdown_option == "Yes":
-    #             instance.calculations = 3
-    #         elif dropdown_option == "Partly":
-    #             instance.calculations = 2
-    #         elif dropdown_option == "No":
-    #             instance.calculations = 1
-    #         if commit:
-    #             instance.save()
-    #     return instances
-
+    def clean(self):
+        cleaned_data = super().clean()
+        for field_name in ['id','modified_by', 'created_at', 'updated_at']:
+            if field_name in cleaned_data:
+                del cleaned_data[field_name]
+        return cleaned_data
     # def clean(self):
     #     cleaned_data = super().clean()
-    #     dropdown_option = cleaned_data.get('dropdown_option')
-    #     if dropdown_option == 'Yes':
-    #         cleaned_data['calculations'] = 3
-    #     elif dropdown_option == 'Partly':
-    #         cleaned_data['calculations'] = 2
-    #     elif dropdown_option == 'No':
-    #         cleaned_data['calculations'] = 1
-    #     return cleaned_data
+    #     if not all(cleaned_data.values()):
+    #         raise forms.ValidationError("All fields are required.")

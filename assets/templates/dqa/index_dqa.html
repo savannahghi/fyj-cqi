@@ -123,13 +123,14 @@
         }
               .my-table {
             position: relative;
-            z-index: 1; /* this will make the table appear above the navbar */
+            {#z-index: 1; /* this will make the table appear above the navbar */#}
         }
               thead {
                   background-color: #6c757d;
   color: #fff;
           position: sticky;
           top: 56px; /* this will make the table header stick 56px below the navbar */
+                   z-index: 1; /* ensure that the thead is above other table content */
         }
 
               .comments-card {
@@ -201,7 +202,9 @@ td {
   /* At 100% of the animation, the background color of the button is set back to green */
 }
 
-
+textarea[name="description"] {
+    background-color: grey;
+}
 
     </style>
 

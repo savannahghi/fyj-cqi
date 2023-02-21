@@ -38,4 +38,5 @@ admin.site.register(Hub)
 admin.site.register(SustainmentPlan)
 admin.site.register(Program)
 admin.site.register(RootCauseImages)
+admin.site.register(Milestone)
 

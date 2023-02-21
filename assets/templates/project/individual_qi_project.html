@@ -26,7 +26,13 @@
         <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
         {% if user.is_authenticated %}
             {% if user.id == facility_project.created_by.id %}
-                <a href="{% url 'update_project' facility_project.id %}" class="btn btn-warning">Update project</a>
+                {% if facility_name %}
+                    <a href="{% url 'update_project_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-warning">Update project</a>
+                    {% elif program_name %}
+                    <a href="{% url 'update_project_program' facility_project.id facility_project.program.program %}" class="btn btn-warning">Update project</a>
+
+                {% endif %}
+
                 {% if all_archived %}
                     {% if facility_project.id in all_archived %}
                         <a href="{% url 'toggle_archive_project' facility_project.id %}" class="btn btn-success">Unarchive project</a>
@@ -176,19 +182,17 @@
                 </div>
 <div class="mt-2">
 {% if user.id == facility_project.created_by.id %}
-    {% if baseline.baseline_status.url is not null %}
-{#        {% for field in facility_project %}#}
-{#            CREATOR: {{ facility_project.created_by.id }}#}
-{#            USER ID: {{  user.id }}#}
-{#        {% endfor %}#}
-
-     <a href="{% url 'update_baseline' facility_project.id %}" class="btn btn-warning mb-3">Update Baseline status</a>
-
-
-{% else %}
-    <a href="{% url 'add_baseline_image' facility_project.id %}" class="btn btn-success mb-3">Add Baseline status</a>
-
-{% endif %}
+    {% if baseline.baseline_status.url %}
+         <a href="{% url 'update_baseline' facility_project.id %}" class="btn btn-warning mb-3">Update Baseline status</a>
+    {% else %}
+        {% if facility_name %}
+            {{ facility_project.facility_name.name }}
+            <a href="{% url 'add_baseline_image_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Baseline status</a>
+        {% elif program_name %}
+            {{ facility_project.program.program }}
+            <a href="{% url 'add_baseline_image_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Baseline status</a>
+        {% endif %}
+    {% endif %}
 {% endif %}
 </div>
  <div class="container-fluid mt-2">
@@ -202,7 +206,7 @@
 {#        <a href="{% url 'add_baseline_image' facility_project.id %}" class="btn btn-success mb-3">Add Baseline status</a>#}
 {#    </div>#}
 <div class="bg-image hover-zoom magnify" >
-    <img  class=".img-fluid" src="{{MEDIA_URL}}{{baseline.baseline_status.url }}" alt="">
+    <img  class="img-fluid" src="{{baseline.baseline_status.url }}" alt="">
 </div>
     <h6 class="mt-2"><strong>PROBLEM STATEMENT :</strong></h6>
 <div class="d-flex justify-content-between">
@@ -237,7 +241,7 @@
                 </div>
     <p>{{ facility_project.problem_background }}</p>
 
-    {% if facility_project.process_analysis.url is not null %}
+{#    {% if facility_project.process_analysis.url is not null %}#}
         <h6><strong>ROOT CAUSE ANALYSIS :</strong></h6>
          <div class="d-flex justify-content-between">
                         <div>
@@ -380,10 +384,9 @@
           <div class="row">
             <div class="col-12">
                 {% if facility_project.process_analysis %}
-{#                    <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}" alt="">#}
-                    <img  class=".img-fluid" src="{{facility_project.process_analysis.url }}" alt="">
+                    <img  class="img-fluid" src="{{ facility_project.process_analysis.url }}" alt="">
                     {% else %}
-             <img  class=".img-fluid" src="{% static 'images/default.png' %}" alt="">
+             <img  class="img-fluid" src="{% static 'images/default.png' %}" alt="">
                     {% endif %}
             </div>
           </div>
@@ -394,7 +397,12 @@
             {{ project_images|sub:"4"|abs }} images remaining to upload. Click the 'Add More Images' button to upload additional
             images.
         </p>
-        <a href="{% url 'add_images' facility_project.id %}" class="btn btn-success mb-3">Add More Images</a>
+        {% if facility_name %}
+            <a href="{% url 'add_image_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add More Images</a>
+            {% elif program_name %}
+            <a href="{% url 'add_image_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add More Images</a>
+        {% endif %}
+
     </div>
 {% endif %}
 
@@ -405,7 +413,7 @@
         <div class="card-body">
           <div class="col">
             <div class="row">
-              <img class="img-fluid" src="{{MEDIA_URL}}{{image.root_cause_image.url }}" alt="" style="image-resolution: normal; image-rendering: high-quality;">
+              <img class="img-fluid" src="{{image.root_cause_image.url }}" alt="" style="image-resolution: normal; image-rendering: high-quality;">
             </div>
           </div>
         </div>
@@ -428,7 +436,8 @@
 {#        <div class="bg-image hover-zoom mt-2">#}
 {#            <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}" alt="">#}
 {#        </div>#}
-    {% endif %}
+{#    {% endif %}#}
+
     <h6><strong>OBJECTIVE :</strong></h6>
 <div class="d-flex justify-content-between">
     <div>
@@ -475,7 +484,12 @@
 
 <div class="d-flex justify-content-between">
     <div>
-        <a href="{% url 'add_qi_team_member' facility_project.id %}" class="btn btn-success mb-3">Add Stakeholders</a>
+{#        <a href="{% url 'add_qi_team_member' facility_project.id %}" class="btn btn-success mb-3">Add Stakeholders</a>#}
+        {% if facility_name %}
+            <a href="{% url 'add_qi_team_member_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Stakeholders</a>
+        {% elif program_name %}
+            <a href="{% url 'add_qi_team_member_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Stakeholders</a>
+        {% endif %}
     </div>
     <div>
         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapsestakeholders" role="button" aria-expanded="false" aria-controls="collapsestakeholders">
@@ -540,6 +554,8 @@
               <th scope="col">Role</th>
               <th scope="col">Impact</th>
               <th scope="col">Notes</th>
+              <th scope="col"></th>
+              <th scope="col"></th>
 
     </thead>
     <tbody>
@@ -620,7 +636,12 @@
 
     <div class="d-flex justify-content-between">
     <div>
-       <a href="{% url 'add_corrective_action' facility_project.id %}" class="btn btn-success mb-3">Add Action plan</a>
+{#       <a href="{% url 'add_corrective_action' facility_project.id %}" class="btn btn-success mb-3">Add Action plan</a>#}
+        {% if facility_name %}
+            <a href="{% url 'add_corrective_action_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Action plan</a>
+        {% elif program_name %}
+            <a href="{% url 'add_corrective_action_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Action plan</a>
+        {% endif %}
     </div>
     <div>
         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseactionplan" role="button" aria-expanded="false" aria-controls="collapseactionplan">
@@ -661,6 +682,8 @@
         <th scope="col">Responsible person(s)</th>
         <th scope="col">constrains</th>
         <th scope="col">indicator</th>
+        <th scope="col"></th>
+        <th scope="col"></th>
 
     </thead>
     <tbody>
@@ -759,7 +782,12 @@
 
                     <div class="d-flex justify-content-between">
                         <div>
-                            <a href="{% url 'add_project_milestone' facility_project.id %}" class="btn btn-success mb-3">Add Milestones</a>
+{#                            <a href="{% url 'add_project_milestone' facility_project.id %}" class="btn btn-success mb-3">Add Milestones</a>#}
+                            {% if facility_name %}
+            <a href="{% url 'add_project_milestone_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Milestones</a>
+        {% elif program_name %}
+            <a href="{% url 'add_project_milestone_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Milestones</a>
+        {% endif %}
                         </div>
                         <div>
                             <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapsemilestone" role="button" aria-expanded="false" aria-controls="collapsemilestone">
@@ -795,6 +823,8 @@
               <th scope="col">End date</th>
               <th scope="col">Description</th>
               <th scope="col">Notes</th>
+              <th scope="col"></th>
+              <th scope="col"></th>
     </thead>
     <tbody>
         {% for field in milestones %}
@@ -979,7 +1009,12 @@
     {% endif %}
     {% if user.is_authenticated %}
         {% if user.id == facility_project.created_by.id %}
-            <a href="{% url 'tested_change' facility_project.id %}" class="btn btn-warning mt-4">Add tested change</a>
+{#            <a href="{% url 'tested_change' facility_project.id %}" class="btn btn-warning mt-4">Add tested change</a>#}
+            {% if facility_name %}
+            <a href="{% url 'tested_change_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-warning mb-3">Add tested change</a>
+        {% elif program_name %}
+            <a href="{% url 'tested_change_program' facility_project.id facility_project.program.program %}" class="btn btn-warning mb-3">Add tested change</a>
+        {% endif %}
         {% endif %}
     {% endif %}
 <div class="d-flex justify-content-between">
@@ -1054,6 +1089,7 @@
                         <th>Numerator</th>
                         <th >Denominator</th>
                         <th>Achievement</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1100,16 +1136,40 @@
                         Yes
                         </a>
 {#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
-                        <a href="{% url 'show_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
+{#                        <a href="{% url 'show_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                    {% if facility_name %}
+            <a href="{% url 'show_project_comments_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-outline-primary">View QI Project comments</a>
+
+        {% elif program_name %}
+            <a href="{% url 'show_project_comments_program' facility_project.id facility_project.program.program %}" class="btn btn-outline-primary">View QI Project comments</a>
+
+                {% endif %}
                     </div>
                 </p>
                 <div class="collapse" id="collapseExampleTwo">
-                <form action="{% url 'create_comment' facility_project.id %}" method="post">
+                {% if facility_name %}
+{#            <a href="{% url 'create_comment_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Action plan</a>#}
+                    <form action="{% url 'create_comment_facility' facility_project.id facility_project.facility_name.name %}" method="post">
                             {% csrf_token %}
                             <input type="hidden" name="parent" value="{{ facility_project.id }}">
                             <textarea name="content" class="form-control" style="width: 100%;"></textarea>
                             <button class="btn btn-secondary mt-2" type="submit" >Submit</button>
                         </form>
+        {% elif program_name %}
+{#            <a href="{% url 'create_comment_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Action plan</a>#}
+        <form action="{% url 'create_comment_program' facility_project.id facility_project.program.program %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent" value="{{ facility_project.id }}">
+                            <textarea name="content" class="form-control" style="width: 100%;"></textarea>
+                            <button class="btn btn-secondary mt-2" type="submit" >Submit</button>
+                        </form>
+                {% endif %}
+{#                <form action="{% url 'create_comment' facility_project.id %}" method="post">#}
+{#                            {% csrf_token %}#}
+{#                            <input type="hidden" name="parent" value="{{ facility_project.id }}">#}
+{#                            <textarea name="content" class="form-control" style="width: 100%;"></textarea>#}
+{#                            <button class="btn btn-secondary mt-2" type="submit" >Submit</button>#}
+{#                        </form>#}
 {#                    <form action="{% url 'create_comment' facility_project.id %}" method="POST">#}
 {#                        {% csrf_token %}#}
 {#                        {{ form|crispy }}#}
@@ -1122,7 +1182,14 @@
             <p>
                 <div class="d-flex justify-content-evenly">
 {#                    <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
-                    <a href="{% url "show_project_comments" facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
+{#                    <a href="{% url "show_project_comments" facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                {% if facility_name %}
+            <a href="{% url 'show_project_comments_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-outline-primary">View QI Project comments</a>
+
+        {% elif program_name %}
+            <a href="{% url 'show_project_comments_program' facility_project.id facility_project.program.program %}" class="btn btn-outline-primary">View QI Project comments</a>
+
+                {% endif %}
                 </div>
         {% endif %}
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">

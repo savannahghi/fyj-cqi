@@ -19,7 +19,7 @@
      <div class="row mb-4">
          <h6 class="mb-4 mt-4">FACILITY: {{ qi_project.facility_name}}  </h6>
          <h6 class="mb-4">MFL CODE: {{ qi_project.facility_name.mfl_code }}</h6>
-          <h6 class="mb-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
+          <h6 class="mb-4">CQI PROJECT: {{ qi_project.project_title }}</h6>
                 <div class="col-md-6">
                        <strong>OBJECTIVE(s): </strong>{{ qi_project.objective|title }}
                   </div>
@@ -44,9 +44,9 @@
         <div class="card comments-card">
           <div class="card-body p-4">
           {% if all_comments|length > 1 %}
-               <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comments for {{ qi_project.project_title}} QI project</h4>
+               <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comments for {{ qi_project.project_title }} QI project</h4>
               {% else %}
-           <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comment for {{ qi_project.project_title}} QI project</h4>
+           <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comment for {{ qi_project.project_title }} QI project</h4>
           {% endif %}
 
             <div class="row">
@@ -87,9 +87,11 @@
                                     0 Replies
                             {% endif %}
                             {% if comment.author.id != request.user.id  %}
+                                 {% if facility_name or program_name %}
                                 <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ comment.id }}"  aria-expanded="false" aria-controls="collapseExample{{ comment.id }}">
                                 <span class="small"> reply</span>
                             </a>
+                            {% endif %}
                             {% endif %}
 
 
@@ -112,8 +114,11 @@
                            </form>
                         </div>
                         <div class="collapse" id="collapseExample{{ comment.id }}">
-
-                            <form action="{% url 'create_comment' comment.id %}" method="post">
+                            {% if facility_name %}
+                                <form action="{% url 'create_comment_facility' comment.id comment.qi_project_title.facility_name.name %}" method="post">
+                            {% elif program_name %}
+                                <form action="{% url 'create_comment_program' comment.id comment.program_qi_project_title.program.program %}" method="post">
+                            {% endif %}
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ comment.id }}">
                                 <textarea name="content" class="form-control" style="width: 100%;"></textarea>
@@ -159,9 +164,11 @@
                                         {% endif %}
 
                                         {% if reply.author.id != request.user.id  %}
+                                             {% if facility_name or program_name %}
                                             <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ reply.id }}"  aria-expanded="false" aria-controls="collapseExample{{ reply.id }}">
                                                 <span class="small"> reply</span>
                                             </a>
+                                        {% endif %}
                                         {% endif %}
 
                                             {% if reply.comment_set.count == 0 and reply.author.id == request.user.id %}
@@ -184,17 +191,20 @@
                                             </form>
                                         </div>
                                         {% if user.is_authenticated %}
-                                {#            {% if user.id != facility_project.created_by_id %}#}
                                                 <div class="collapse" id="collapseExample{{ reply.id }}">
-                                                    <form action="{% url 'create_comment' reply.id %}" method="post">
+                                                {% if facility_name %}
+                                <form action="{% url 'create_comment_facility' reply.id reply.qi_project_title.facility_name.name %}" method="post">
+                            {% elif program_name %}
+                                <form action="{% url 'create_comment_program' reply.id reply.program_qi_project_title.program.program %}" method="post">
+                            {% endif %}
                                                         {% csrf_token %}
                                                         <input type="hidden" name="parent" value="{{ reply.id }}">
                                                         <textarea name="content" class="form-control" style="width: 100%;"></textarea>
-                                {#                        <input class="mt-2" type="submit" value="Reply">#}
+
                                                         <button class="btn btn-info mt-2" type="submit" >Reply</button>
                                                     </form>
                                                 </div>
-                                {#           {% endif %}#}
+
                                         {% endif %}
                                 </div>
                               </div>
@@ -230,8 +240,8 @@
 
                                                 <form action="{% url 'like_dislike' sub_reply.id %}" method="post">
                                                   {% csrf_token %}
-                                                  <button class="btn btn-outline-primary" type="submit" name="like"><i class="fas fa-thumbs-up"></i> Likes</button>
-                                                    <button class="btn btn-outline-success" type="submit" name="dislike"><i class="fas fa-thumbs-down"></i> Dislikes</button>
+                                                  <button class="btn btn-outline-primary" type="submit" name="like"><i class="fas fa-thumbs-up"></i> Likes </button>
+                                                    <button class="btn btn-outline-success" type="submit" name="dislike"><i class="fas fa-thumbs-down"></i> Dislikes </button>
                                                     {% if messages %}
                                                       <ul class="messages">
                                                         {% for message in messages %}
@@ -272,9 +282,9 @@
         <div class="card comments-card">
           <div class="card-body p-4">
             {% if all_comments|length > 1 %}
-               <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comments for {{ qi_project.project_title}} QI project</h4>
+               <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comments for {{ qi_project.project_title }} QI project</h4>
               {% else %}
-           <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comment for {{ qi_project.project_title}} QI project</h4>
+           <h4 class="text-center mb-4 pb-2">{{ all_comments|length }} comment for {{ qi_project.project_title }} QI project</h4>
           {% endif %}
             <div class="row">
               <div class="col">
@@ -328,9 +338,11 @@
                                     0 Replies
                             {% endif %}
                             {% if comment.author.id != request.user.id  %}
+                                 {% if facility_name or program_name %}
                                 <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ comment.id }}"  aria-expanded="false" aria-controls="collapseExample{{ comment.id }}">
                                 <span class="small"> reply</span>
                             </a>
+                            {% endif %}
                             {% endif %}
 
 
@@ -353,8 +365,11 @@
                            </form>
                         </div>
                         <div class="collapse" id="collapseExample{{ comment.id }}">
-
-                            <form action="{% url 'create_comment' comment.id %}" method="post">
+                            {% if facility_name %}
+                                <form action="{% url 'create_comment_facility' comment.id comment.qi_project_title.facility_name.name %}" method="post">
+                            {% elif program_name %}
+                                <form action="{% url 'create_comment_program' comment.id comment.program_qi_project_title.program.program %}" method="post">
+                            {% endif %}
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ comment.id }}">
                                 <textarea name="content" class="form-control" style="width: 100%;"></textarea>
@@ -400,9 +415,11 @@
                                         {% endif %}
 
                                         {% if reply.author.id != request.user.id  %}
+                                             {% if facility_name or program_name %}
                                             <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ reply.id }}"  aria-expanded="false" aria-controls="collapseExample{{ reply.id }}">
                                                 <span class="small"> reply</span>
                                             </a>
+                                        {% endif %}
                                         {% endif %}
 
                                             {% if reply.comment_set.count == 0 and reply.author.id == request.user.id %}
@@ -426,17 +443,18 @@
                                             </form>
                                         </div>
                                         {% if user.is_authenticated %}
-                                {#            {% if user.id != facility_project.created_by_id %}#}
                                                 <div class="collapse" id="collapseExample{{ reply.id }}">
-                                                    <form action="{% url 'create_comment' reply.id %}" method="post">
+                                                    {% if facility_name %}
+                                <form action="{% url 'create_comment_facility' reply.id reply.qi_project_title.facility_name.name %}" method="post">
+                            {% elif program_name %}
+                                <form action="{% url 'create_comment_program' reply.id reply.program_qi_project_title.program.program %}" method="post">
+                            {% endif %}
                                                         {% csrf_token %}
                                                         <input type="hidden" name="parent" value="{{ reply.id }}">
                                                         <textarea name="content" class="form-control" style="width: 100%;"></textarea>
-                                {#                        <input class="mt-2" type="submit" value="Reply">#}
                                                         <button class="btn btn-info mt-2" type="submit" >Reply</button>
                                                     </form>
                                                 </div>
-                                {#           {% endif %}#}
                                         {% endif %}
                                 </div>
                               </div>

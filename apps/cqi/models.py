@@ -881,7 +881,7 @@ class Lesson_learned(models.Model):
 
 
 class Baseline(models.Model):
-    baseline_status = models.ImageField(upload_to='images', default="images/baseline.png", null=True, blank=True)
+    baseline_status = models.ImageField(upload_to='images',  null=True, blank=True)
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE, null=True, blank=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True, blank=True)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, null=True, blank=True)
@@ -977,7 +977,7 @@ class SustainmentPlan(models.Model):
 #     modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
 #                                     default=None, on_delete=models.CASCADE, related_name='+')
 class RootCauseImages(models.Model):
-    root_cause_image = models.ImageField(upload_to='images', default="images/baseline.png", null=True, blank=True)
+    root_cause_image = models.ImageField(upload_to='images',  null=True, blank=True)
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE, null=True, blank=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True, blank=True)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, null=True, blank=True)

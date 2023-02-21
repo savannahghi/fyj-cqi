@@ -1,6 +1,6 @@
 # import os.path
 import csv
-from datetime import datetime, timezone
+from datetime import datetime
 from itertools import tee
 
 import pandas as pd
@@ -16,7 +16,7 @@ from django.db import IntegrityError, transaction
 # from django.db.models import Count, Q
 # from django.forms import forms
 from django.db.models import Count, Q, F
-# from django.utils import timezone
+from django.utils import timezone
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -1021,15 +1021,15 @@ def add_trigger(request):
 
 
 @login_required(login_url='login')
-def update_project(request, pk):
+def update_project(request, pk, program_name=None, facility_name=None):
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     try:
-        project = QI_Projects.objects.get(id=pk)
+        project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         title = "facility"
     except:
-        project = Program_qi_projects.objects.get(id=pk)
+        project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
         title = "program"
     if request.method == "POST":
         if title == "facility":
@@ -1067,6 +1067,8 @@ def update_project(request, pk):
 
             # save
             post.save()
+            print("MEASUREMENT STSTUS:::::::::::::::::::::::::::::::::::")
+            print(measurement_status)
 
             # Save many-to-many relationships
             form.save_m2m()
@@ -2246,15 +2248,51 @@ def toggle_archive_project(request, project_id):
     return HttpResponseRedirect(request.session['page_from'])
 
 
+# @login_required(login_url='login')
+# def tested_change(request, pk):
+#     try:
+#         qi_project = QI_Projects.objects.get(id=pk)
+#         facility = qi_project.facility_name
+#         subcounty = qi_project.sub_county
+#         level = 'facility'
+#     except:
+#         qi_project = Program_qi_projects.objects.get(id=pk)
+#         facility = qi_project.program
+#         subcounty = None
+#         level = 'program'
+#
+#     if request.method == "GET":
+#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+#     if request.method == "POST":
+#         form = TestedChangeForm(request.POST)
+#         if form.is_valid():
+#             # do not save first, wait to update foreign key
+#             post = form.save(commit=False)
+#             # get cqi primary
+#             if "facility" in level:
+#                 post.project = QI_Projects.objects.get(id=pk)
+#             elif "program" in level:
+#                 post.program_project = Program_qi_projects.objects.get(id=pk)
+#             # save
+#             post.save()
+#             return HttpResponseRedirect(request.session['page_from'])
+#     else:
+#         form = TestedChangeForm(instance=request.user)
+#     context = {
+#         "form": form,
+#         "qi_project": qi_project,
+#     }
+#     return render(request, 'project/add_tested_change.html', context)
+
 @login_required(login_url='login')
-def tested_change(request, pk):
+def tested_change(request, pk, program_name=None, facility_name=None):
     try:
-        qi_project = QI_Projects.objects.get(id=pk)
+        qi_project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         facility = qi_project.facility_name
         subcounty = qi_project.sub_county
         level = 'facility'
     except:
-        qi_project = Program_qi_projects.objects.get(id=pk)
+        qi_project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
         facility = qi_project.program
         subcounty = None
         level = 'program'
@@ -2279,6 +2317,8 @@ def tested_change(request, pk):
     context = {
         "form": form,
         "qi_project": qi_project,
+        "facility_name": facility_name,
+        "program_name": program_name,
     }
     return render(request, 'project/add_tested_change.html', context)
 
@@ -2376,12 +2416,21 @@ def deep_dive_chmt(request):
 
 
 @login_required(login_url='login')
-def add_qi_team_member(request, pk):
-    try:
-        facility_project = QI_Projects.objects.get(id=pk)
-    except:
-        facility_project = Program_qi_projects.objects.get(id=pk)
-    # check the page user is from
+def add_qi_team_member(request, pk, program_name=None, facility_name=None):
+    # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
+    if facility_name:
+        facility = Facilities.objects.get(name=facility_name)
+        program = None
+        qi_project = QI_Projects.objects.get(id=pk, facility_name=facility)
+        program_qi_project = None
+        qi_projects = qi_project
+    elif program_name:
+        program = Program.objects.get(program=program_name)
+        facility = None
+        qi_project = None
+        program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
+        qi_projects = program_qi_project
+
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -2389,23 +2438,23 @@ def add_qi_team_member(request, pk):
         form = Qi_team_membersForm(request.POST)
         if form.is_valid():
             post = form.save(commit=False)
-            try:
-                post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
-                post.qi_project = facility_project
-            except:
-                post.program = Program.objects.get(id=facility_project.program_id)
-                post.program_qi_project = facility_project
+            post.facility = facility
+            post.program = program
+            post.qi_project = qi_project
+            post.program_qi_project = program_qi_project
             post.created_by = request.user
             post.save()
-            # redirect back to the page the user was from after saving the form
-            return HttpResponseRedirect(request.session['page_from'])
+            return redirect(request.session['page_from'])
     else:
         form = Qi_team_membersForm()
+
     context = {"form": form,
+               "facility_name": facility_name,
+               "program_name": program_name,
                "title": "add qi team member",
-               "qi_project": facility_project,
+               "qi_projects": qi_projects,
                }
-    return render(request, "project/add_qi_teams.html", context)
+    return render(request, 'project/add_qi_teams.html', context)
 
 
 @login_required(login_url='login')
@@ -3246,6 +3295,7 @@ def single_project(request, pk):
     # get baseline image for this cqi
     try:
         baseline = Baseline.objects.filter(qi_project__id=pk).latest('date_created')
+        print(baseline)
     except Baseline.DoesNotExist:
         baseline = None
 
@@ -3346,7 +3396,10 @@ def single_project(request, pk):
                    "all_archived": all_archived,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
-                   "title": "facility", "root_cause_images": root_cause_image, "project_images": project_images}
+                   "title": "facility", "root_cause_images": root_cause_image, "project_images": project_images,
+                   "facility_name": "facility_name",
+
+                   }
 
     else:
         # print("pro_perfomance_trial::::::::::::::::::::::::::::::::::::: else")
@@ -3359,7 +3412,8 @@ def single_project(request, pk):
                    "all_archived": all_archived,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
-                   "title": "facility", "root_cause_images": root_cause_image, "project_images": project_images}
+                   "title": "facility", "root_cause_images": root_cause_image, "project_images": project_images,
+                   "facility_name": "facility_name", }
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -3394,9 +3448,14 @@ def single_project_program(request, pk):
     # get baseline image for this cqi
     try:
         baseline = Baseline.objects.filter(program_qi_project__id=pk).latest('date_created')
+        print(baseline)
     except Baseline.DoesNotExist:
         baseline = None
+        print(baseline)
 
+    project_images = RootCauseImages.objects.all()
+    root_cause_image = project_images.filter(program_qi_project__id=pk).order_by("date_created")
+    project_images = project_images.filter(program_qi_project__id=pk).count()
     today = datetime.now(timezone.utc).date()
     action_plans = pagination_(request, action_plan)
 
@@ -3492,7 +3551,8 @@ def single_project_program(request, pk):
                    "all_archived": all_archived,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
-                   "title": "program"}
+                   "title": "program", "program_name": "program_name", "project_images": project_images,
+                   "root_cause_images": root_cause_image}
 
     else:
         project_performance = {}
@@ -3503,7 +3563,8 @@ def single_project_program(request, pk):
                    "all_archived": all_archived,
                    "qi_teams": qi_teams,
                    "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
-                   "title": "program"}
+                   "title": "program", "program_name": "program_name", "project_images": project_images,
+                   "root_cause_images": root_cause_image}
 
     return render(request, "project/individual_qi_project.html", context)
 
@@ -3579,13 +3640,56 @@ def add_stake_holders(request, pk):
 #                }
 #     return render(request, 'cqi/baseline_images.html', context)
 
-@login_required(login_url='login')
-def add_baseline_image(request, pk):
-    # WORKING!
-    try:
-        facility_project = QI_Projects.objects.get(id=pk)
-    except:
-        facility_project = Program_qi_projects.objects.get(id=pk)
+# @login_required(login_url='login')
+# def add_baseline_image(request, pk):
+#     # WORKING!
+#     try:
+#         facility_project = QI_Projects.objects.get(id=pk)
+#     except:
+#         facility_project = Program_qi_projects.objects.get(id=pk)
+#
+#     if request.method == "GET":
+#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+#
+#     if request.method == "POST":
+#         baselineform = BaselineForm(request.POST, request.FILES)
+#         if baselineform.is_valid():
+#             post = baselineform.save(commit=False)
+#             #
+#             try:
+#                 post.facility = Facilities.objects.get(name=facility_project.facility_name)
+#                 post.program = None
+#                 post.qi_project = facility_project
+#                 post.program_qi_project = None
+#             except:
+#                 post.facility = None
+#                 post.program = Program.objects.get(program=facility_project.program)
+#                 post.program_qi_project = facility_project
+#                 post.qi_project = None
+#
+#             post.save()
+#             # return HttpResponseRedirect(request.session['page_from'])
+#             return redirect(request.session['page_from'])
+#     else:
+#         baselineform = BaselineForm()
+#     context = {"form": baselineform,
+#                "title": "ADD BASELINE STATUS"
+#
+#                }
+#     return render(request, 'project/baseline_images.html', context)
+
+def add_baseline_image(request, pk, program_name=None, facility_name=None):
+    # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
+    if facility_name:
+        facility = Facilities.objects.get(name=facility_name)
+        program = None
+        qi_project = QI_Projects.objects.get(id=pk, facility_name=facility)
+        program_qi_project = None
+    elif program_name:
+        program = Program.objects.get(program=program_name)
+        facility = None
+        qi_project = None
+        program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
 
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -3594,26 +3698,18 @@ def add_baseline_image(request, pk):
         baselineform = BaselineForm(request.POST, request.FILES)
         if baselineform.is_valid():
             post = baselineform.save(commit=False)
-            #
-            try:
-                post.facility = Facilities.objects.get(name=facility_project.facility_name)
-                post.program = None
-                post.qi_project = facility_project
-                post.program_qi_project = None
-            except:
-                post.facility = None
-                post.program = Program.objects.get(program=facility_project.program)
-                post.program_qi_project = facility_project
-                post.qi_project = None
-
+            post.facility = facility
+            post.program = program
+            post.qi_project = qi_project
+            post.program_qi_project = program_qi_project
             post.save()
-            # return HttpResponseRedirect(request.session['page_from'])
             return redirect(request.session['page_from'])
     else:
         baselineform = BaselineForm()
     context = {"form": baselineform,
-               "title": "ADD BASELINE STATUS"
-
+               "title": "ADD BASELINE STATUS",
+               "facility_name": facility_name,
+               "program_name": program_name,
                }
     return render(request, 'project/baseline_images.html', context)
 
@@ -3932,18 +4028,63 @@ def delete_comment(request, pk):
 # context = {'history_records': history_records}
 # return render(request, 'cqi/facility_landing_page.html', context)
 
-@login_required(login_url='login')
-def add_project_milestone(request, pk):
+# @login_required(login_url='login')
+# def add_project_milestone(request, pk):
+#     title = "ADD PROJECT MILESTONE"
+#     # check the page user is from
+#     if request.method == "GET":
+#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+#     try:
+#         facility_project = QI_Projects.objects.get(id=pk)
+#         qi_project = QI_Projects.objects.get(id=pk)
+#         level = "facility"
+#     except:
+#         facility_project = Program_qi_projects.objects.get(id=pk)
+#         qi_project = Program_qi_projects.objects.get(id=pk)
+#         level = "program"
+#
+#     if request.method == "POST":
+#         form = MilestoneForm(request.POST)
+#         # try:
+#         if form.is_valid():
+#             post = form.save(commit=False)
+#             if "facility" in level:
+#                 post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
+#                 post.qi_project = qi_project
+#             elif "program" in level:
+#                 post.program = Program.objects.get(id=facility_project.program_id)
+#                 post.program_qi_project = qi_project
+#
+#             post.created_by = request.user
+#             post.save()
+#             return HttpResponseRedirect(request.session['page_from'])
+#     else:
+#         form = MilestoneForm()
+#     context = {"form": form, "title": title, "qi_project": qi_project, "level": level, }
+#     return render(request, "project/add_milestones.html", context)
+# def add_baseline_image(request, pk, program_name=None, facility_name=None):
+#     # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
+#     if facility_name:
+#         facility = Facilities.objects.get(name=facility_name)
+#         program = None
+#         qi_project = QI_Projects.objects.get(id=pk, facility_name=facility)
+#         program_qi_project = None
+#     elif program_name:
+#         program = Program.objects.get(program=program_name)
+#         facility = None
+#         qi_project = None
+#         program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
+def add_project_milestone(request, pk, program_name=None, facility_name=None):
     title = "ADD PROJECT MILESTONE"
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    try:
-        facility_project = QI_Projects.objects.get(id=pk)
+    if facility_name:
+        facility_project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         qi_project = QI_Projects.objects.get(id=pk)
         level = "facility"
-    except:
-        facility_project = Program_qi_projects.objects.get(id=pk)
+    if program_name:
+        facility_project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
         qi_project = Program_qi_projects.objects.get(id=pk)
         level = "program"
 
@@ -3964,7 +4105,10 @@ def add_project_milestone(request, pk):
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = MilestoneForm()
-    context = {"form": form, "title": title, "qi_project": qi_project, "level": level, }
+    context = {"form": form, "title": title, "qi_project": qi_project, "level": level,
+               "facility_name": facility_name,
+               "program_name": program_name,
+               }
     return render(request, "project/add_milestones.html", context)
 
 
@@ -4009,17 +4153,17 @@ def delete_milestone(request, pk):
 
 
 @login_required(login_url='login')
-def add_corrective_action(request, pk):
+def add_corrective_action(request, pk, program_name=None, facility_name=None):
     # facility_project = QI_Projects.objects.get(id=pk)
 
-    try:
-        facility_project = get_object_or_404(QI_Projects, id=pk)
+    if facility_name:
+        facility_project = get_object_or_404(QI_Projects, id=pk, facility_name__name=facility_name)
         qi_project = QI_Projects.objects.get(id=pk)
         facility = facility_project.facility_name
         qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
         level = "facility"
-    except:
-        facility_project = get_object_or_404(Program_qi_projects, id=pk)
+    if program_name:
+        facility_project = get_object_or_404(Program_qi_projects, id=pk, program__program=program_name)
         qi_project = Program_qi_projects.objects.get(id=pk)
         facility = facility_project.program
         qi_team_members = Qi_team_members.objects.filter(program_qi_project=facility_project)
@@ -4127,18 +4271,68 @@ def delete_action_plan(request, pk):
     return render(request, 'project/delete_test_of_change.html', context)
 
 
-@login_required(login_url='login')
-def create_comment(request, pk):
+# @login_required(login_url='login')
+# def create_comment(request, pk):
+#     comment = None
+#     qi_project = None
+#     program_qi_project = None
+#     try:
+#         comment = Comment.objects.get(id=pk)
+#     except ObjectDoesNotExist:
+#         try:
+#             qi_project = QI_Projects.objects.get(id=pk)
+#         except ObjectDoesNotExist:
+#             program_qi_project = Program_qi_projects.objects.get(id=pk)
+#     if request.method == "POST":
+#         form = CommentForm(request.POST)
+#         if form.is_valid():
+#             content = form.cleaned_data['content']
+#             parent_id = form.cleaned_data.get('parent_id')
+#             try:
+#                 with transaction.atomic():
+#                     if parent_id:
+#                         parent_comment = Comment.objects.get(id=parent_id)
+#                         Comment.objects.create(content=content, parent=parent_comment,
+#                                                parent_id=request.POST.get('parent'))
+#                     else:
+#                         if comment:
+#                             Comment.objects.create(content=content, author=request.user,
+#                                                    parent_id=request.POST.get('parent'),
+#                                                    qi_project_title=comment.qi_project_title,
+#                                                    program_qi_project_title=comment.program_qi_project_title,
+#                                                    )
+#                         elif qi_project:
+#                             Comment.objects.create(content=content, author=request.user, qi_project_title=qi_project)
+#                         else:
+#                             Comment.objects.create(content=content, author=request.user,
+#                                                    program_qi_project_title=program_qi_project)
+#             except ObjectDoesNotExist:
+#                 form.add_error('parent_id', 'Parent comment does not exist')
+#             except PermissionDenied:
+#                 form.add_error(None, 'You do not have permission to create a comment')
+#             else:
+#                 return redirect(request.META.get('HTTP_REFERER'))
+#     else:
+#         form = CommentForm()
+#     return render(request, 'project/create_comment.html', {'form': form})
+
+def create_comment(request, pk, program_name=None, facility_name=None):
     comment = None
     qi_project = None
     program_qi_project = None
     try:
+        # if facility_name:
         comment = Comment.objects.get(id=pk)
+        # if program_name:
+        #     comment = Comment.objects.get(id=pk, program_qi_project_title__program__program=program_name)
     except ObjectDoesNotExist:
         try:
-            qi_project = QI_Projects.objects.get(id=pk)
+            qi_project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         except ObjectDoesNotExist:
-            program_qi_project = Program_qi_projects.objects.get(id=pk)
+            program_qi_project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
+
+    print("qi_project::::::::::::::::::::::::::::::::")
+    print(qi_project)
     if request.method == "POST":
         form = CommentForm(request.POST)
         if form.is_valid():
@@ -4223,12 +4417,33 @@ def delete_comments(request, pk):
     return render(request, 'project/delete_test_of_change.html', context)
 
 
-def show_project_comments(request, pk):
+# def show_project_comments(request, pk):
+#     try:
+#         project = QI_Projects.objects.get(id=pk)
+#         level = "facility"
+#     except:
+#         project = Program_qi_projects.objects.get(id=pk)
+#         level = "program"
+#
+#     if "facility" in level:
+#         comments = Comment.objects.filter(qi_project_title_id=pk, parent_id=None).order_by('-created_at')
+#     elif "program" in level:
+#         try:
+#             comments = Comment.objects.filter(program_qi_project_title_id=pk, parent_id=None).order_by('-created_at')
+#         except:
+#             comments = None
+#
+#     if not comments:
+#         comments = Comment.objects.filter(id=pk).order_by('-created_at')
+#     context = {'all_comments': comments, "title": "COMMENTS", "qi_project": project, }
+#     return render(request, 'project/comments_trial.html', context)
+
+def show_project_comments(request, pk, program_name=None, facility_name=None):
     try:
-        project = QI_Projects.objects.get(id=pk)
+        project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         level = "facility"
     except:
-        project = Program_qi_projects.objects.get(id=pk)
+        project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
         level = "program"
 
     if "facility" in level:
@@ -4241,7 +4456,10 @@ def show_project_comments(request, pk):
 
     if not comments:
         comments = Comment.objects.filter(id=pk).order_by('-created_at')
-    context = {'all_comments': comments, "title": "COMMENTS", "qi_project": project, }
+    context = {'all_comments': comments, "title": "COMMENTS", "qi_project": project,
+               "program_name": program_name,
+               "facility_name": facility_name
+               }
     return render(request, 'project/comments_trial.html', context)
 
 
@@ -4392,12 +4610,18 @@ def monthly_data_review(request):
 
 
 @login_required(login_url='login')
-def add_images(request, pk):
-    # WORKING!
-    try:
-        facility_project = QI_Projects.objects.get(id=pk)
-    except:
-        facility_project = Program_qi_projects.objects.get(id=pk)
+def add_images(request, pk, program_name=None, facility_name=None):
+    # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
+    if facility_name:
+        facility = Facilities.objects.get(name=facility_name)
+        program = None
+        qi_project = QI_Projects.objects.get(id=pk, facility_name=facility)
+        program_qi_project = None
+    elif program_name:
+        program = Program.objects.get(program=program_name)
+        facility = None
+        qi_project = None
+        program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
 
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -4406,25 +4630,18 @@ def add_images(request, pk):
         form = RootCauseImagesForm(request.POST, request.FILES)
         if form.is_valid():
             post = form.save(commit=False)
-            #
-            try:
-                post.facility = Facilities.objects.get(name=facility_project.facility_name)
-                post.program = None
-                post.qi_project = facility_project
-                post.program_qi_project = None
-            except:
-                post.facility = None
-                post.program = Program.objects.get(program=facility_project.program)
-                post.program_qi_project = facility_project
-                post.qi_project = None
-
+            post.facility = facility
+            post.program = program
+            post.qi_project = qi_project
+            post.program_qi_project = program_qi_project
             post.save()
             # return HttpResponseRedirect(request.session['page_from'])
             return redirect(request.session['page_from'])
     else:
         form = RootCauseImagesForm()
     context = {"form": form,
-               "title": "Add Root Cause Images"
-
+               "title": "Add Root Cause Images",
+               "facility_name": facility_name,
+               "program_name": program_name,
                }
     return render(request, 'project/baseline_images.html', context)

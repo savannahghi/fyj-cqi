@@ -65,7 +65,11 @@ urlpatterns = [
     path('completed-closed/<str:pk>', completed_closed, name="completed_closed"),
     path('add-lesson-learnt/<int:pk>', add_lesson_learnt, name="add_lesson_learnt"),
     path('lesson-learnt/', lesson_learnt, name="lesson_learnt"),
-    path('show-qi-cqi-comments/<int:pk>', show_project_comments, name="show_project_comments"),
+    # path('show-qi-cqi-comments/<int:pk>', show_project_comments, name="show_project_comments"),
+
+    path('show-project-comments-facility/<int:pk>/<str:facility_name>/', show_project_comments, name='show_project_comments_facility'),
+    path('show-project-comments-program/<int:pk>/<str:program_name>/', show_project_comments, name='show_project_comments_program'),
+
     path('like-dislike/<int:pk>', like_dislike, name="like_dislike"),
     path('show-sustainmentPlan/', show_sustainmentPlan, name="show_sustainmentPlan"),
 
@@ -92,14 +96,34 @@ urlpatterns = [
     path('add-cqi/county', add_project_county, name="add_project_county"),
     path('add-cqi/hub', add_project_hub, name="add_project_hub"),
     path('add-cqi/program', add_project_program, name="add_project_program"),
-    path('add-qi-team-member/<int:pk>', add_qi_team_member, name="add_qi_team_member"),
-    path('add-cqi-milestone/<int:pk>', add_project_milestone, name="add_project_milestone"),
-    path('add-corrective-action/<int:pk>', add_corrective_action, name="add_corrective_action"),
+    # path('add-qi-team-member/<int:pk>', add_qi_team_member, name="add_qi_team_member"),
+
+    path('add-qi-team-member-facility/<int:pk>/<str:facility_name>/', add_qi_team_member, name='add_qi_team_member_facility'),
+    path('add-qi-team-member-program/<int:pk>/<str:program_name>/', add_qi_team_member, name='add_qi_team_member_program'),
+
+    # path('add-cqi-milestone/<int:pk>', add_project_milestone, name="add_project_milestone"),
+    path('add-project-milestone-facility/<int:pk>/<str:facility_name>/', add_project_milestone, name='add_project_milestone_facility'),
+    path('add-project-milestone-program/<int:pk>/<str:program_name>/', add_project_milestone, name='add_project_milestone_program'),
+    # path('add-corrective-action/<int:pk>', add_corrective_action, name="add_corrective_action"),
+
+    path('add-corrective-action-facility/<int:pk>/<str:facility_name>/', add_corrective_action, name='add_corrective_action_facility'),
+    path('add-corrective-action-program/<int:pk>/<str:program_name>/', add_corrective_action, name='add_corrective_action_program'),
+
     path('add-lesson-learnt/', add_lesson_learnt, name="add_lesson_learnt"),
     path('add-sustainment-plan/<int:pk>', add_sustainmentplan, name="add_sustainmentplan"),
-    path('add-baseline-image/<int:pk>', add_baseline_image, name="add_baseline_image"),
-    path('add-image/<int:pk>', add_images, name="add_images"),
-    path('create-comment/<int:pk>', create_comment, name="create_comment"),
+    # path('add-baseline-image/<int:pk>', add_baseline_image, name="add_baseline_image"),
+
+    path('add-baseline-image-facility/<int:pk>/<str:facility_name>/', add_baseline_image, name='add_baseline_image_facility'),
+    path('add-baseline-image-program/<int:pk>/<str:program_name>/', add_baseline_image, name='add_baseline_image_program'),
+
+    path('add-image-facility/<int:pk>/<str:facility_name>/', add_images, name='add_image_facility'),
+    path('add-image-program/<int:pk>/<str:program_name>/', add_images, name='add_image_program'),
+
+    # path('add-image/<int:pk>', add_images, name="add_images"),
+    # path('create-comment/<int:pk>', create_comment, name="create_comment"),
+    path('create-comment-facility/<int:pk>/<str:facility_name>/', create_comment, name='create_comment_facility'),
+    path('create-comment-program/<int:pk>/<str:program_name>/', create_comment, name='create_comment_program'),
+
     path('add-program/', add_program, name="add_program"),
     path('add-trigger/', add_trigger, name="add_trigger"),
 
@@ -108,8 +132,14 @@ urlpatterns = [
 
     path('facilities-landing-page/', facilities_landing_page, name="facilities_landing_page"),
     path('program-landing-page/', program_landing_page, name="program_landing_page"),
-    path('update-cqi/<int:pk>/', update_project, name="update_project"),
-    path('tested-change/<int:pk>/', tested_change, name="tested_change"),
+    # path('update-cqi/<int:pk>/', update_project, name="update_project"),
+    path('update-project-facility/<int:pk>/<str:facility_name>/', update_project, name='update_project_facility'),
+    path('update-project-program/<int:pk>/<str:program_name>/', update_project, name='update_project_program'),
+
+    # path('tested-change/<int:pk>/', tested_change, name="tested_change"),
+    path('add-tested-change-facility/<int:pk>/<str:facility_name>/', tested_change, name='tested_change_facility'),
+    path('add-tested-change-program/<int:pk>/<str:program_name>/', tested_change, name='tested_change_program'),
+
     path('update-test-of-change/<int:pk>/', update_test_of_change, name="update_test_of_change"),
     path('update-resource/<int:pk>/', update_resource, name="update_resource"),
     path('update-qi-managers/<int:pk>/', update_qi_managers, name="update_qi_managers"),

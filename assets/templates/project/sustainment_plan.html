@@ -46,7 +46,7 @@
 {% if plan %}
         <div class="sticky-top" style="z-index:10">
 <table class="table table-striped table-hover my-table">
-    <thead class="bg-light">
+    <thead style="font-size: x-small">
         <th scope="col"></th>
         <th scope="col">QI project</th>
         <th scope="col">objective</th>
@@ -65,32 +65,49 @@
           <tr>
               <th scope="row">{{ forloop.counter }}</th>
                 <td>
-                    <a href="#">{{ field.qi_project }}</a>
-
-                    <strong class="badge mt-2"><a href="#" >
-                        Project created by: {{ field.created_by.first_name|title }}</a></strong>
-                    <br>
-                    <strong class="badge alert-warning mt-2">{{ field.created_by.phone_number }}</strong>
-                    <br>
-                    <strong class="badge alert-info mt-2">{{ field.facility_name.facilities}}</strong>
-                    <br>
-                        <strong class="badge alert-warning mt-2">Number of QIT/WIT: {{ field.num_members }}</strong>
-                    <br>
-                    <strong class="badge alert-warning mt-2">QI manager: {{ field.qi_manager}}</strong>
-                    <br>
-                    <strong class="badge alert-warning mt-2">Started: {{ field.start_date|date }}</strong>
-                    <br>
-                <strong class="badge alert-warning mt-2">End date: {{ field.end_date|date }}</strong>
-                    <br>
-
+                    {% if field.qi_project.facility_name.name %}
+                        <a href="{% url 'single_project' field.qi_project.id %}">{{ field.qi_project.project_title }}</a>
+                        <strong class="badge mt-2"><a href="#" >
+                        Project created by: {{ field.qi_project.created_by.first_name|title }}</a></strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">{{ field.qi_project.created_by.phone_number }}</strong>
+                        <br>
+                        <strong class="badge alert-info mt-2">{{ field.qi_project.facility_name.facilities}}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">QI manager: {{ field.qi_project.qi_manager}}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Started: {{ field.start_date|date }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">End date: {{ field.end_date|date }}</strong>
+                        <br>
+                    {% elif field.program.program %}
+                        <a href="{% url 'single_project_program' field.program.id %}">{{ field.program.project_title }}</a>
+                        <strong class="badge mt-2"><a href="#" >
+                        Project created by: {{ field.program.created_by.first_name|title }}</a></strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">{{ field.program.created_by.phone_number }}</strong>
+                        <br>
+                        <strong class="badge alert-info mt-2">{{ field.program.facility_name.facilities}}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">QI manager: {{ field.program.qi_manager}}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Started: {{ field.start_date|date }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">End date: {{ field.end_date|date }}</strong>
+                        <br>
+                    {% endif %}
                 <div class="mt-2 d-flex justify-content-evenly" style="display:inline-block;">
-                    <a href="{% url 'update_sustainable_plan' field.id %}" class="btn btn-info" role="button" >Update</a>
+                {% if field.created_by.id == request.user.id %}
+                    {% if field.qi_project.facility_name.name %}
+                        <a href="{% url 'update_sustainable_plant_facility' field.id field.qi_project.facility_name.name %}" class="btn btn-info" role="button" >Update</a>
+                    {% elif field.program.program %}
+                        <a href="{% url 'update_sustainable_plan_program' field.id field.program.program.program %}" class="btn btn-info" role="button" >Update</a>
+                    {% endif %}
+                {% endif %}
 {#                    <a href="{% url 'delete_sustainable_plan' field.id %}" class="btn btn-danger" role="button">Delete</a>#}
                 </div>
 
                 </td>
-{#          <td>#}
-{#                {{ field.objectives }}#}
               <td>
                     {{ field.objectives }}
                   <br>
@@ -123,8 +140,9 @@
                 </td>
                 </td>
                 <td>
-                    <a href="#" >
-                        {{ field.training_and_support }}</a>
+{#                    <a href="#" >#}
+                        {{ field.training_and_support }}
+{#                    </a>#}
 
                 </td>
                 </td>

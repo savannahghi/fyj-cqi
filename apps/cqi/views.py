@@ -16,6 +16,7 @@ from django.db import IntegrityError, transaction
 # from django.db.models import Count, Q
 # from django.forms import forms
 from django.db.models import Count, Q, F
+from django.urls import reverse
 from django.utils import timezone
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
@@ -78,7 +79,7 @@ def load_data(request):
                 redirect('load_data')
         else:
             # Notify the user that the data already exists
-            messages.error(request, f"Uploaded file does not have a sheet name 'facility'.")
+            messages.error(request, f"Uploaded file (with data) should have a worksheet named 'facility'.")
             redirect('load_data')
 
     return render(request, 'dqa/upload.html')
@@ -139,14 +140,14 @@ def download_lessons(request):
     response['Content-Disposition'] = 'attachment; filename="lessons.csv"'
 
     writer = csv.writer(response)
-    writer.writerow(['Project Name', 'Problem or Opportunity', 'Key Successes',
+    writer.writerow(['Program Project', 'Facility Project', 'Problem or Opportunity', 'Key Successes',
                      'Challenges', 'Best Practices', 'Recommendations',
                      'Resources', 'Created By', 'Modified By',
                      'Future Plans', 'Date Created', 'Date Modified'])
 
     lessons = Lesson_learned.objects.all()
     for lesson in lessons:
-        writer.writerow([lesson.project_name, lesson.problem_or_opportunity,
+        writer.writerow([lesson.program, lesson.project_name, lesson.problem_or_opportunity,
                          lesson.key_successes, lesson.challenges,
                          lesson.best_practices, lesson.recommendations,
                          lesson.resources, lesson.created_by, lesson.modified_by,
@@ -632,7 +633,7 @@ def add_project_facility(request):
             form.save_m2m()
             # redirect back to the page the user was from after saving the form
             # return HttpResponseRedirect(request.session['page_from'])
-            return redirect("facilities_landing_page")
+            return redirect('single_project', post.id)
     else:
         form = QI_ProjectsForm(prefix='banned')
 
@@ -920,11 +921,14 @@ def add_project_subcounty(request):
             # save
             post.save()
             # redirect back to the page the user was from after saving the form
-            return HttpResponseRedirect(request.session['page_from'])
+            # return HttpResponseRedirect(request.session['page_from'])
+            # Redirect the user to the detail page of the newly created object
+            return redirect('single_project_subcounty', post.id)
     else:
         form = QI_ProjectsSubcountyForm()
-    context = {"form": form}
-    return render(request, "project/add_subcounty_project.html", context)
+    context = {"form": form, "title": "sub_county"}
+    # return render(request, "project/add_subcounty_project.html", context)
+    return render(request, "project/add_facility_project.html", context)
 
 
 @login_required(login_url='login')
@@ -936,13 +940,14 @@ def add_project_county(request):
     if request.method == "POST":
         form = QI_Projects_countyForm(request.POST)
         if form.is_valid():
-            form.save()
-            # redirect back to the page the user was from after saving the form
-            return HttpResponseRedirect(request.session['page_from'])
+            project = form.save()
+            project_id = project.id  # Get the ID of the newly created project
+            project_url = reverse('single_project_county', args=[project_id])  # Construct the URL of the project page
+            return redirect(project_url)  # Redirect the user to the project page
     else:
         form = QI_Projects_countyForm()
-    context = {"form": form}
-    return render(request, "project/add_county_project.html", context)
+    context = {"form": form,"title": "county"}
+    return render(request, "project/add_facility_project.html", context)
 
 
 @login_required(login_url='login')
@@ -954,13 +959,17 @@ def add_project_hub(request):
     if request.method == "POST":
         form = QI_Projects_hubForm(request.POST)
         if form.is_valid():
-            form.save()
+            # form.save()
+            project = form.save()
+            project_id = project.id  # Get the ID of the newly created project
+            project_url = reverse('single_project_hub', args=[project_id])  # Construct the URL of the project page
+            return redirect(project_url)  # Redirect the user to the project page
             # redirect back to the page the user was from after saving the form
-            return HttpResponseRedirect(request.session['page_from'])
+            # return HttpResponseRedirect(request.session['page_from'])
     else:
         form = QI_Projects_hubForm()
-    context = {"form": form}
-    return render(request, "project/add_hub_project.html", context)
+    context = {"form": form,"title": "hub"}
+    return render(request, "project/add_facility_project.html", context)
 
 
 @login_required(login_url='login')
@@ -972,10 +981,10 @@ def add_project_program(request):
     if request.method == "POST":
         form = QI_Projects_programForm(request.POST)
         if form.is_valid():
-            form.save()
-
-            # redirect back to the page the user was from after saving the form
-            return HttpResponseRedirect(request.session['page_from'])
+            project = form.save()
+            project_id = project.id  # Get the ID of the newly created project
+            project_url = reverse('single_project_program', args=[project_id])  # Construct the URL of the project page
+            return redirect(project_url)  # Redirect the user to the project page
     else:
         form = QI_Projects_programForm()
     context = {"form": form, "title": "program"}
@@ -1021,21 +1030,37 @@ def add_trigger(request):
 
 
 @login_required(login_url='login')
-def update_project(request, pk, program_name=None, facility_name=None):
+def update_project(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    try:
+    if facility_name:
         project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         title = "facility"
-    except:
+    elif program_name:
         project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
         title = "program"
+    elif subcounty_name:
+        project = Subcounty_qi_projects.objects.get(id=pk, sub_county__sub_counties=subcounty_name)
+        title = "subcounty"
+    elif county_name:
+        project = County_qi_projects.objects.get(id=pk, county__county_name=county_name)
+        title = "county"
+    elif hub_name:
+        project = Hub_qi_projects.objects.get(id=pk, hub__hub=hub_name)
+        title = "hub"
+
     if request.method == "POST":
         if title == "facility":
             form = QI_ProjectsForm(request.POST, request.FILES, instance=project)
         elif title == "program":
             form = QI_Projects_programForm(request.POST, request.FILES, instance=project)
+        elif title == "subcounty":
+            form = QI_ProjectsSubcountyForm(request.POST, request.FILES, instance=project)
+        elif title == "county":
+            form = QI_Projects_countyForm(request.POST, request.FILES, instance=project)
+        elif title == "hub":
+            form = QI_Projects_hubForm(request.POST, request.FILES, instance=project)
         if form.is_valid():
             # form.save()
             # # do not save first, wait to update foreign key
@@ -1064,6 +1089,21 @@ def update_project(request, pk, program_name=None, facility_name=None):
                 facility_id = Program.objects.get(program=facility_name)
                 # TRY TO HANDLE PROGRAM_QI_PROJECTS MODEL
                 post.program = facility_id
+            elif title == "subcounty":
+                subcounty_name_ = form.cleaned_data['sub_county']
+                facility_id = Sub_counties.objects.get(sub_counties=subcounty_name_)
+                # TRY TO HANDLE PROGRAM_QI_PROJECTS MODEL
+                post.sub_county = facility_id
+            elif title == "county":
+                facility_name = form.cleaned_data['county']
+                facility_id = Counties.objects.get(county_name=facility_name)
+                # TRY TO HANDLE PROGRAM_QI_PROJECTS MODEL
+                post.program = facility_id
+            elif title == "hub":
+                facility_name = form.cleaned_data['hub']
+                facility_id = Hub.objects.get(hub=facility_name)
+                # TRY TO HANDLE PROGRAM_QI_PROJECTS MODEL
+                post.program = facility_id
 
             # save
             post.save()
@@ -1081,9 +1121,15 @@ def update_project(request, pk, program_name=None, facility_name=None):
     else:
         if title == "facility":
             form = QI_ProjectsForm(instance=project)
-        else:
+        elif title == "program":
             form = QI_Projects_programForm(instance=project)
-    context = {"form": form, "title": title}
+        elif title == "subcounty":
+            form = QI_ProjectsSubcountyForm(instance=project)
+        elif title == "county":
+            form = QI_Projects_countyForm( instance=project)
+        elif title == "hub":
+            form = QI_Projects_hubForm(instance=project)
+    context = {"form": form, "title": title,'update': "update"}
     return render(request, "project/add_facility_project.html", context)
 
 
@@ -2051,10 +2097,29 @@ def qi_managers_projects(request, pk):
 @login_required(login_url='login')
 def completed_closed(request, pk):
     projects = QI_Projects.objects.filter(measurement_status=pk)
+    lesson_learnt = Lesson_learned.objects.values_list('program_id', flat=True)
     facility_name = pk
     context = {"projects": projects,
                "facility_name": facility_name,
                "title": "Completed or Closed",
+               "cqi_level": "facility",
+               "lesson_learnt": lesson_learnt,
+               }
+    return render(request, "project/department_projects.html", context)
+
+
+@login_required(login_url='login')
+def completed_closed_program(request, pk):
+    print(f"PK::::::::::::::::::::{pk}")
+    # projects = Program_qi_projects.objects.all()
+    projects = Program_qi_projects.objects.filter(measurement_status=pk)
+    lesson_learnt = Lesson_learned.objects.values_list('program_id', flat=True)
+    facility_name = pk
+    context = {"projects": projects,
+               "facility_name": facility_name,
+               "title": "Completed or Closed",
+               "cqi_level": "program",
+               "lesson_learnt": lesson_learnt,
                }
     return render(request, "project/department_projects.html", context)
 
@@ -2080,10 +2145,15 @@ def lesson_learnt(request):
 
     # Retrieve all the lesson_learnt from the Lesson_learned model and Create context variable 'lesson_learnt' with the
     # annotated queryset
-    lesson_learnt = Lesson_learned.objects.annotate(num_members=Count('project_name__qi_team_members'))
+    lesson_learnt = Lesson_learned.objects.annotate(num_members=Count('project_name__qi_team_members'),
+                                                    num_members_project=Count('program__qi_team_members'))
+    facility_plan = SustainmentPlan.objects.values_list("qi_project_id", flat=True)
+    program_plan = SustainmentPlan.objects.values_list("program_id", flat=True)
 
     # facility_name = pk
     context = {"lesson_learnt": lesson_learnt,
+               "facility_plan": facility_plan,
+               "program_plan": program_plan,
                # "projects": projects,
                # "lesson_learnt":lesson_learnt,
 
@@ -2092,8 +2162,15 @@ def lesson_learnt(request):
 
 
 @login_required(login_url='login')
-def add_lesson_learnt(request, pk):
-    project = QI_Projects.objects.get(id=pk)
+def add_lesson_learnt(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
+    if facility_name:
+        project_name = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
+        program = None
+        qi_project = project_name
+    elif program_name:
+        program = Program_qi_projects.objects.get(id=pk, program__program=program_name)
+        project_name = None
+        qi_project = program
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -2103,7 +2180,8 @@ def add_lesson_learnt(request, pk):
         if form.is_valid():
             # form.save()
             post = form.save(commit=False)
-            post.project_name = project
+            post.project_name = project_name
+            post.program = program
             post.created_by = request.user
             post.save()
             messages.success(request, f"Lesson learnt for {post.project_name} added successfully.")
@@ -2113,7 +2191,7 @@ def add_lesson_learnt(request, pk):
     else:
         form = Lesson_learnedForm()
     context = {"form": form,
-               "qi_project": project,
+               "qi_project": qi_project,
                "title": "ADD",
                }
 
@@ -2121,9 +2199,13 @@ def add_lesson_learnt(request, pk):
 
 
 @login_required(login_url='login')
-def update_lesson_learnt(request, pk):
+def update_lesson_learnt(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     lesson_learnt = Lesson_learned.objects.get(id=pk)
-    project = QI_Projects.objects.get(id=lesson_learnt.project_name_id)
+    if facility_name:
+        project = QI_Projects.objects.get(id=lesson_learnt.project_name_id, facility_name__name=facility_name)
+    elif program_name:
+        project = Program_qi_projects.objects.get(id=lesson_learnt.program_id, program__program=program_name)
+
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -2214,15 +2296,41 @@ def measurement_frequency(request, pk):
 
 
 @login_required(login_url='login')
-def toggle_archive_project(request, project_id):
+def toggle_archive_project(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     try:
-        # Get the QI_Projects object from the given qi_project_id
-        qi_project = QI_Projects.objects.get(id=project_id)
+        if facility_name:
+            # Get the QI_Projects object from the given qi_project_id
+            qi_project = QI_Projects.objects.get(id=pk)
 
-        # Get the ArchiveProject object associated with the given qi_project
-        archive_project = ArchiveProject.objects.get(qi_project=qi_project)
+            # Get the ArchiveProject object associated with the given qi_project
+            archive_project = ArchiveProject.objects.get(qi_project=qi_project)
+        elif program_name:
+            # Get the QI_Projects object from the given qi_project_id
+            qi_project = Program_qi_projects.objects.get(id=pk)
+
+            # Get the ArchiveProject object associated with the given qi_project
+            archive_project = ArchiveProject.objects.get(program=qi_project)
+        elif subcounty_name:
+            # Get the QI_Projects object from the given qi_project_id
+            qi_project = Subcounty_qi_projects.objects.get(id=pk)
+
+            # Get the ArchiveProject object associated with the given qi_project
+            archive_project = ArchiveProject.objects.get(subcounty=qi_project)
+
+        elif county_name:
+            # Get the QI_Projects object from the given qi_project_id
+            qi_project = County_qi_projects.objects.get(id=pk)
+
+            # Get the ArchiveProject object associated with the given qi_project
+            archive_project = ArchiveProject.objects.get(county=qi_project)
+        elif hub_name:
+            # Get the QI_Projects object from the given qi_project_id
+            qi_project = Hub_qi_projects.objects.get(id=pk)
+
+            # Get the ArchiveProject object associated with the given qi_project
+            archive_project = ArchiveProject.objects.get(hub=qi_project)
 
         # Toggle the booleanfield archive_project
         if archive_project.archive_project:
@@ -2232,18 +2340,29 @@ def toggle_archive_project(request, project_id):
 
         # Save the changes
         archive_project.save()
-    except:
+    except ArchiveProject.DoesNotExist:
         # create if not in the database
         form = ArchiveProjectForm(request.POST, request.FILES)
         if form.is_valid():
             # do not save first, wait to update foreign key
             post = form.save(commit=False)
             # get cqi primary key
-            post.qi_project = QI_Projects.objects.get(id=project_id)
+            if facility_name:
+                post.qi_project = QI_Projects.objects.get(id=pk)
+            elif program_name:
+                post.program = Program_qi_projects.objects.get(id=pk)
+            elif subcounty_name:
+                post.subcounty = Subcounty_qi_projects.objects.get(id=pk)
+            elif county_name:
+                post.county = County_qi_projects.objects.get(id=pk)
+            elif hub_name:
+                post.hub = Hub_qi_projects.objects.get(id=pk)
             # Archive the cqi
             post.archive_project = True
             # save
             post.save()
+
+            return HttpResponseRedirect(request.session['page_from'])
 
     return HttpResponseRedirect(request.session['page_from'])
 
@@ -2285,17 +2404,32 @@ def toggle_archive_project(request, project_id):
 #     return render(request, 'project/add_tested_change.html', context)
 
 @login_required(login_url='login')
-def tested_change(request, pk, program_name=None, facility_name=None):
-    try:
+def tested_change(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
+    if facility_name:
         qi_project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         facility = qi_project.facility_name
         subcounty = qi_project.sub_county
         level = 'facility'
-    except:
+    elif program_name:
         qi_project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
         facility = qi_project.program
         subcounty = None
         level = 'program'
+    elif subcounty_name:
+        qi_project = Subcounty_qi_projects.objects.get(id=pk, sub_county__sub_counties=subcounty_name)
+        # facility = qi_project.program
+        # subcounty = None
+        level = 'subcounty'
+    elif county_name:
+        qi_project = County_qi_projects.objects.get(id=pk, county__county_name=county_name)
+        # facility = qi_project.program
+        # subcounty = None
+        level = 'county'
+    elif hub_name:
+        qi_project = Hub_qi_projects.objects.get(id=pk, hub__hub=hub_name)
+        # facility = qi_project.program
+        # subcounty = None
+        level = 'hub'
 
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -2309,6 +2443,12 @@ def tested_change(request, pk, program_name=None, facility_name=None):
                 post.project = QI_Projects.objects.get(id=pk)
             elif "program" in level:
                 post.program_project = Program_qi_projects.objects.get(id=pk)
+            elif "subcounty" in level:
+                post.subcounty_project = Subcounty_qi_projects.objects.get(id=pk)
+            elif "county" in level:
+                post.county_project = County_qi_projects.objects.get(id=pk)
+            elif "hub" in level:
+                post.hub_project = Hub_qi_projects.objects.get(id=pk)
             # save
             post.save()
             return HttpResponseRedirect(request.session['page_from'])
@@ -2319,6 +2459,9 @@ def tested_change(request, pk, program_name=None, facility_name=None):
         "qi_project": qi_project,
         "facility_name": facility_name,
         "program_name": program_name,
+        "subcounty_name": subcounty_name,
+        "county_name": county_name,
+        "hub_name": hub_name,
     }
     return render(request, 'project/add_tested_change.html', context)
 
@@ -2416,20 +2559,56 @@ def deep_dive_chmt(request):
 
 
 @login_required(login_url='login')
-def add_qi_team_member(request, pk, program_name=None, facility_name=None):
+def add_qi_team_member(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
     if facility_name:
         facility = Facilities.objects.get(name=facility_name)
         program = None
         qi_project = QI_Projects.objects.get(id=pk, facility_name=facility)
         program_qi_project = None
+        subcounty_qi_project = None
+        county_qi_project = None
+        hub_qi_project = None
         qi_projects = qi_project
     elif program_name:
         program = Program.objects.get(program=program_name)
         facility = None
         qi_project = None
         program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
+        subcounty_qi_project = None
+        county_qi_project = None
+        hub_qi_project = None
         qi_projects = program_qi_project
+    elif subcounty_name:
+        subcounty = Sub_counties.objects.get(sub_counties=subcounty_name)
+        facility = None
+        program = None
+        qi_project = None
+        program_qi_project = None
+        subcounty_qi_project = Subcounty_qi_projects.objects.get(id=pk, sub_county=subcounty)
+        county_qi_project = None
+        hub_qi_project = None
+        qi_projects = subcounty_qi_project
+    elif county_name:
+        county =Counties.objects.get(county_name=county_name)
+        facility = None
+        program = None
+        qi_project = None
+        program_qi_project = None
+        subcounty_qi_project = None
+        county_qi_project =County_qi_projects.objects.get(id=pk, county=county)
+        hub_qi_project = None
+        qi_projects = county_qi_project
+    elif hub_name:
+        hub = Hub.objects.get(hub=hub_name)
+        facility = None
+        program = None
+        qi_project = None
+        program_qi_project = None
+        subcounty_qi_project = None
+        county_qi_project = None
+        hub_qi_project = Hub_qi_projects.objects.get(id=pk, hub=hub)
+        qi_projects = hub_qi_project
 
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -2442,6 +2621,9 @@ def add_qi_team_member(request, pk, program_name=None, facility_name=None):
             post.program = program
             post.qi_project = qi_project
             post.program_qi_project = program_qi_project
+            post.subcounty_qi_project = subcounty_qi_project
+            post.county_qi_project = county_qi_project
+            post.hub_qi_project = hub_qi_project
             post.created_by = request.user
             post.save()
             return redirect(request.session['page_from'])
@@ -2451,6 +2633,9 @@ def add_qi_team_member(request, pk, program_name=None, facility_name=None):
     context = {"form": form,
                "facility_name": facility_name,
                "program_name": program_name,
+               "subcounty_name": subcounty_name,
+               "county_name": county_name,
+               "hub_name": hub_name,
                "title": "add qi team member",
                "qi_projects": qi_projects,
                }
@@ -2474,16 +2659,26 @@ def delete_qi_team_member(request, pk):
 
 
 @login_required(login_url='login')
-def update_qi_team_member(request, pk):
+def update_qi_team_member(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Qi_team_members.objects.get(id=pk)
-    try:
+    if facility_name:
         qi_project = QI_Projects.objects.get(id=item.qi_project_id)
         level = "facility"
-    except:
+    elif program_name:
         qi_project = Program_qi_projects.objects.get(id=item.program_id)
         level = "program"
+    elif subcounty_name:
+        qi_project = Subcounty_qi_projects.objects.get(id=item.subcounty_qi_project_id)
+        level = "subcounty"
+    elif county_name:
+        qi_project = County_qi_projects.objects.get(id=item.county_qi_project_id)
+        level = "county"
+    elif hub_name:
+        qi_project = Hub_qi_projects.objects.get(id=item.hub_qi_project_id)
+        level = "hub"
+
     if request.method == "POST":
         form = Qi_team_membersForm(request.POST, instance=item)
         if form.is_valid():
@@ -3422,7 +3617,7 @@ def single_project(request, pk):
 def single_project_program(request, pk):
     # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
     try:
-        all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id', flat=True)
+        all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('program_id', flat=True)
     except:
         all_archived = []
 
@@ -3570,6 +3765,460 @@ def single_project_program(request, pk):
 
 
 @login_required(login_url='login')
+def single_project_subcounty(request, pk):
+    # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
+    try:
+        all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('subcounty_id', flat=True)
+    except:
+        all_archived = []
+
+    facility_project = Subcounty_qi_projects.objects.get(id=pk)
+    # if not facility_project.process_analysis:
+    #     facility_project.process_analysis = 'staticfiles/images/default.png'
+    # get other All projects
+    other_projects = Subcounty_qi_projects.objects.filter(sub_county=facility_project.sub_county)
+    # Hit db once
+    test_of_change_qs = TestedChange.objects.all()
+    # check comments
+    all_comments = ProjectComments.objects.filter(qi_project_title__id=facility_project.id).order_by('-comment_updated')
+
+    # get qi team members for this cqi
+    qi_teams = Qi_team_members.objects.filter(subcounty_qi_project__id=pk)
+    qi_teams = pagination_(request, qi_teams)
+    # get milestones for this cqi
+    milestones = Milestone.objects.filter(subcounty_qi_project__id=pk)
+    # # get action plan for this cqi
+    action_plan = ActionPlan.objects.filter(subcounty_qi_project__id=pk).order_by('progress')
+    action_plans = pagination_(request, action_plan)
+
+    # get baseline image for this cqi
+    try:
+        baseline = Baseline.objects.filter(subcounty_qi_project__id=pk).latest('date_created')
+        print(baseline)
+    except Baseline.DoesNotExist:
+        baseline = None
+        print(baseline)
+
+    project_images = RootCauseImages.objects.all()
+    root_cause_image = project_images.filter(subcounty_qi_project__id=pk).order_by("date_created")
+    project_images = project_images.filter(subcounty_qi_project__id=pk).count()
+    today = datetime.now(timezone.utc).date()
+    action_plans = pagination_(request, action_plan)
+
+    # use date filter and get the timestamp first and then subtract the timestamps of both dates to get the difference
+    # in seconds and then convert it to days.
+    for plan in action_plans:
+        plan.progress = (plan.due_date - today).days
+
+    if request.method == "POST":
+        form = ProjectCommentsForm(request.POST)
+        # stakeholderform = StakeholderForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            # get cqi primary key
+            post.qi_project_title = Subcounty_qi_projects.objects.get(project_title=facility_project.project_title)
+            post.commented_by = CustomUser.objects.get(username=request.user.username)
+            # save
+            post.save()
+            # show empty form
+            form = ProjectCommentsForm()
+    else:
+        form = ProjectCommentsForm()
+        # stakeholderform = StakeholderForm()
+
+    # accessing facility qi projects
+    # use two underscore to the field with foreign key
+    list_of_projects = TestedChange.objects.filter(
+        subcounty_project_id__sub_county=facility_project.sub_county).order_by(
+        '-month_year')
+    list_of_projects = [
+        {'month_year': x.month_year,
+         'project_id': x.subcounty_project_id,
+         'tested of change': x.tested_change,
+         'achievements': x.achievements,
+         'facility': x.subcounty_project,
+         'cqi': x.subcounty_project.project_title,
+         } for x in list_of_projects
+    ]
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    # print("df::::::::::::::")
+    # print(list_of_projects)
+    if list_of_projects.shape[0] != 0:
+        dicts = {}
+        keys = list_of_projects['project_id'].unique()
+        values = list_of_projects['cqi'].unique()
+        for i in range(len(keys)):
+            dicts[keys[i]] = values[i]
+        # print("list_of_projects['cqi'].unique()")
+        # print(list_of_projects['cqi'].unique())
+        all_other_projects_trend = []
+        for project in list_of_projects['cqi'].unique():
+            all_other_projects_trend.append(
+                prepare_trends(list_of_projects[list_of_projects['cqi'] == project], project))
+
+        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+        # print("keys")
+        # print(keys)
+    else:
+        pro_perfomance_trial = {}
+
+    # assign it to a dataframe using list comprehension
+    other_projects = [
+        {'department(s)': x.departments.department,
+         'cqi category': x.project_category,
+         'id': x.id,
+         } for x in other_projects
+    ]
+    # convert data from database to a dataframe
+    df_other_projects = pd.DataFrame(other_projects)
+    df_other_projects['total projects'] = 1
+
+    changes = test_of_change_qs.filter(subcounty_project_id=pk).order_by('-month_year')
+    # assign it to a dataframe using list comprehension
+    changes_data = [
+        {'month_year': x.month_year,
+         'tested of change': x.tested_change,
+         'achievements': x.achievements,
+         } for x in changes
+    ]
+    # convert data from database to a dataframe
+    df = pd.DataFrame(changes_data)
+    if df.shape[0] != 0:
+        df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
+        df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
+
+        project_performance = prepare_trends_big_size(df)
+
+        facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "All projects")
+
+        context = {"facility_project": facility_project, "test_of_change": changes,
+                   "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
+                   "all_archived": all_archived,
+                   "qi_teams": qi_teams,
+                   "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
+                   "title": "subcounty", "subcounty_name": "subcounty_name", "project_images": project_images,
+                   "root_cause_images": root_cause_image}
+
+    else:
+        project_performance = {}
+        facility_proj_performance = {}
+        context = {"facility_project": facility_project, "test_of_change": changes,
+                   "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
+                   "all_archived": all_archived,
+                   "qi_teams": qi_teams,
+                   "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
+                   "title": "subcounty", "subcounty_name": "subcounty_name", "project_images": project_images,
+                   "root_cause_images": root_cause_image}
+
+    return render(request, "project/individual_qi_project.html", context)
+
+
+@login_required(login_url='login')
+def single_project_county(request, pk):
+    # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
+    try:
+        all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('county_id', flat=True)
+    except:
+        all_archived = []
+
+    facility_project = County_qi_projects.objects.get(id=pk)
+    # if not facility_project.process_analysis:
+    #     facility_project.process_analysis = 'staticfiles/images/default.png'
+    # get other All projects
+    other_projects = County_qi_projects.objects.filter(county=facility_project.county)
+    # Hit db once
+    test_of_change_qs = TestedChange.objects.all()
+    # check comments
+    all_comments = ProjectComments.objects.filter(qi_project_title__id=facility_project.id).order_by('-comment_updated')
+
+    # get qi team members for this cqi
+    qi_teams = Qi_team_members.objects.filter(county_qi_project__id=pk)
+    qi_teams = pagination_(request, qi_teams)
+    # get milestones for this cqi
+    milestones = Milestone.objects.filter(county_qi_project__id=pk)
+    # # get action plan for this cqi
+    action_plan = ActionPlan.objects.filter(county_qi_project__id=pk).order_by('progress')
+    action_plans = pagination_(request, action_plan)
+
+    # get baseline image for this cqi
+    try:
+        baseline = Baseline.objects.filter(county_qi_project__id=pk).latest('date_created')
+        print(baseline)
+    except Baseline.DoesNotExist:
+        baseline = None
+        print(baseline)
+
+    project_images = RootCauseImages.objects.all()
+    root_cause_image = project_images.filter(county_qi_project__id=pk).order_by("date_created")
+    project_images = project_images.filter(county_qi_project__id=pk).count()
+    today = datetime.now(timezone.utc).date()
+    action_plans = pagination_(request, action_plan)
+
+    # use date filter and get the timestamp first and then subtract the timestamps of both dates to get the difference
+    # in seconds and then convert it to days.
+    for plan in action_plans:
+        plan.progress = (plan.due_date - today).days
+
+    if request.method == "POST":
+        form = ProjectCommentsForm(request.POST)
+        # stakeholderform = StakeholderForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            # get cqi primary key
+            post.qi_project_title = County_qi_projects.objects.get(project_title=facility_project.project_title)
+            post.commented_by = CustomUser.objects.get(username=request.user.username)
+            # save
+            post.save()
+            # show empty form
+            form = ProjectCommentsForm()
+    else:
+        form = ProjectCommentsForm()
+        # stakeholderform = StakeholderForm()
+
+    # accessing facility qi projects
+    # use two underscore to the field with foreign key
+    list_of_projects = TestedChange.objects.filter(
+        county_project__county=facility_project.county).order_by(
+        '-month_year')
+    list_of_projects = [
+        {'month_year': x.month_year,
+         'project_id': x.county_project_id,
+         'tested of change': x.tested_change,
+         'achievements': x.achievements,
+         'facility': x.county_project,
+         'cqi': x.county_project.project_title,
+         } for x in list_of_projects
+    ]
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    # print("df::::::::::::::")
+    # print(list_of_projects)
+    if list_of_projects.shape[0] != 0:
+        dicts = {}
+        keys = list_of_projects['project_id'].unique()
+        values = list_of_projects['cqi'].unique()
+        for i in range(len(keys)):
+            dicts[keys[i]] = values[i]
+        # print("list_of_projects['cqi'].unique()")
+        # print(list_of_projects['cqi'].unique())
+        all_other_projects_trend = []
+        for project in list_of_projects['cqi'].unique():
+            all_other_projects_trend.append(
+                prepare_trends(list_of_projects[list_of_projects['cqi'] == project], project))
+
+        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+        # print("keys")
+        # print(keys)
+    else:
+        pro_perfomance_trial = {}
+
+    # assign it to a dataframe using list comprehension
+    other_projects = [
+        {'department(s)': x.departments.department,
+         'cqi category': x.project_category,
+         'id': x.id,
+         } for x in other_projects
+    ]
+    # convert data from database to a dataframe
+    df_other_projects = pd.DataFrame(other_projects)
+    df_other_projects['total projects'] = 1
+
+    changes = test_of_change_qs.filter(county_project_id=pk).order_by('-month_year')
+    # assign it to a dataframe using list comprehension
+    changes_data = [
+        {'month_year': x.month_year,
+         'tested of change': x.tested_change,
+         'achievements': x.achievements,
+         } for x in changes
+    ]
+    # convert data from database to a dataframe
+    df = pd.DataFrame(changes_data)
+    if df.shape[0] != 0:
+        df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
+        df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
+
+        project_performance = prepare_trends_big_size(df)
+
+        facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "All projects")
+
+        context = {"facility_project": facility_project, "test_of_change": changes,
+                   "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
+                   "all_archived": all_archived,
+                   "qi_teams": qi_teams,
+                   "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
+                   "title": "county", "county_name": "county_name", "project_images": project_images,
+                   "root_cause_images": root_cause_image}
+
+    else:
+        project_performance = {}
+        facility_proj_performance = {}
+        context = {"facility_project": facility_project, "test_of_change": changes,
+                   "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
+                   "all_archived": all_archived,
+                   "qi_teams": qi_teams,
+                   "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
+                   "title": "county", "county_name": "county_name", "project_images": project_images,
+                   "root_cause_images": root_cause_image}
+
+    return render(request, "project/individual_qi_project.html", context)
+
+def single_project_hub(request, pk):
+    # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
+    try:
+        all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('county_id', flat=True)
+    except:
+        all_archived = []
+
+    facility_project = Hub_qi_projects.objects.get(id=pk)
+    # if not facility_project.process_analysis:
+    #     facility_project.process_analysis = 'staticfiles/images/default.png'
+    # get other All projects
+    other_projects = Hub_qi_projects.objects.filter(hub=facility_project.hub)
+    # Hit db once
+    test_of_change_qs = TestedChange.objects.all()
+    # check comments
+    all_comments = ProjectComments.objects.filter(qi_project_title__id=facility_project.id).order_by('-comment_updated')
+
+    # get qi team members for this cqi
+    qi_teams = Qi_team_members.objects.filter(county_qi_project__id=pk)
+    qi_teams = pagination_(request, qi_teams)
+    # get milestones for this cqi
+    milestones = Milestone.objects.filter(county_qi_project__id=pk)
+    # # get action plan for this cqi
+    action_plan = ActionPlan.objects.filter(county_qi_project__id=pk).order_by('progress')
+    action_plans = pagination_(request, action_plan)
+
+    # get baseline image for this cqi
+    try:
+        baseline = Baseline.objects.filter(county_qi_project__id=pk).latest('date_created')
+        print(baseline)
+    except Baseline.DoesNotExist:
+        baseline = None
+        print(baseline)
+
+    project_images = RootCauseImages.objects.all()
+    root_cause_image = project_images.filter(county_qi_project__id=pk).order_by("date_created")
+    project_images = project_images.filter(county_qi_project__id=pk).count()
+    today = datetime.now(timezone.utc).date()
+    action_plans = pagination_(request, action_plan)
+
+    # use date filter and get the timestamp first and then subtract the timestamps of both dates to get the difference
+    # in seconds and then convert it to days.
+    for plan in action_plans:
+        plan.progress = (plan.due_date - today).days
+
+    if request.method == "POST":
+        form = ProjectCommentsForm(request.POST)
+        # stakeholderform = StakeholderForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            # get cqi primary key
+            post.qi_project_title = County_qi_projects.objects.get(project_title=facility_project.project_title)
+            post.commented_by = CustomUser.objects.get(username=request.user.username)
+            # save
+            post.save()
+            # show empty form
+            form = ProjectCommentsForm()
+    else:
+        form = ProjectCommentsForm()
+        # stakeholderform = StakeholderForm()
+
+    # accessing facility qi projects
+    # use two underscore to the field with foreign key
+    list_of_projects = TestedChange.objects.filter(
+        hub_project__hub=facility_project.hub).order_by(
+        '-month_year')
+    list_of_projects = [
+        {'month_year': x.month_year,
+         'project_id': x.county_project_id,
+         'tested of change': x.tested_change,
+         'achievements': x.achievements,
+         'facility': x.county_project,
+         'cqi': x.county_project.project_title,
+         } for x in list_of_projects
+    ]
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    # print("df::::::::::::::")
+    # print(list_of_projects)
+    if list_of_projects.shape[0] != 0:
+        dicts = {}
+        keys = list_of_projects['project_id'].unique()
+        values = list_of_projects['cqi'].unique()
+        for i in range(len(keys)):
+            dicts[keys[i]] = values[i]
+        # print("list_of_projects['cqi'].unique()")
+        # print(list_of_projects['cqi'].unique())
+        all_other_projects_trend = []
+        for project in list_of_projects['cqi'].unique():
+            all_other_projects_trend.append(
+                prepare_trends(list_of_projects[list_of_projects['cqi'] == project], project))
+
+        pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
+        # print("keys")
+        # print(keys)
+    else:
+        pro_perfomance_trial = {}
+
+    # assign it to a dataframe using list comprehension
+    other_projects = [
+        {'department(s)': x.departments.department,
+         'cqi category': x.project_category,
+         'id': x.id,
+         } for x in other_projects
+    ]
+    # convert data from database to a dataframe
+    df_other_projects = pd.DataFrame(other_projects)
+    df_other_projects['total projects'] = 1
+
+    changes = test_of_change_qs.filter(county_project_id=pk).order_by('-month_year')
+    # assign it to a dataframe using list comprehension
+    changes_data = [
+        {'month_year': x.month_year,
+         'tested of change': x.tested_change,
+         'achievements': x.achievements,
+         } for x in changes
+    ]
+    # convert data from database to a dataframe
+    df = pd.DataFrame(changes_data)
+    if df.shape[0] != 0:
+        df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
+        df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
+
+        project_performance = prepare_trends_big_size(df)
+
+        facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "All projects")
+
+        context = {"facility_project": facility_project, "test_of_change": changes,
+                   "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
+                   "all_archived": all_archived,
+                   "qi_teams": qi_teams,
+                   "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
+                   "title": "hub", "hub_name": "hub_name", "project_images": project_images,
+                   "root_cause_images": root_cause_image}
+
+    else:
+        project_performance = {}
+        facility_proj_performance = {}
+        context = {"facility_project": facility_project, "test_of_change": changes,
+                   "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
+                   "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,
+                   "all_archived": all_archived,
+                   "qi_teams": qi_teams,
+                   "milestones": milestones, "action_plans": action_plans, "today": today, "baseline": baseline,
+                   "title": "hub", "hub_name": "hub_name", "project_images": project_images,
+                   "root_cause_images": root_cause_image}
+
+    return render(request, "project/individual_qi_project.html", context)
+
+
+@login_required(login_url='login')
 def untracked_projects(request):
     all_projects = QI_Projects.objects.all()
     tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
@@ -3678,18 +4327,51 @@ def add_stake_holders(request, pk):
 #                }
 #     return render(request, 'project/baseline_images.html', context)
 
-def add_baseline_image(request, pk, program_name=None, facility_name=None):
+def add_baseline_image(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
     if facility_name:
         facility = Facilities.objects.get(name=facility_name)
         program = None
         qi_project = QI_Projects.objects.get(id=pk, facility_name=facility)
         program_qi_project = None
+        subcounty_qi_project = None
+        hub_qi_project = None
+        county_qi_project = None
     elif program_name:
         program = Program.objects.get(program=program_name)
         facility = None
         qi_project = None
         program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
+        subcounty_qi_project = None
+        hub_qi_project = None
+        county_qi_project = None
+    elif subcounty_name:
+        subcounty = Sub_counties.objects.get(sub_counties=subcounty_name)
+        program = None
+        facility = None
+        qi_project = None
+        program_qi_project = None
+        subcounty_qi_project = Subcounty_qi_projects.objects.get(id=pk, sub_county=subcounty)
+        hub_qi_project = None
+        county_qi_project = None
+    elif county_name:
+        county = Counties.objects.get(county_name=county_name)
+        program = None
+        facility = None
+        qi_project = None
+        program_qi_project = None
+        subcounty_qi_project = None
+        hub_qi_project = None
+        county_qi_project = County_qi_projects.objects.get(id=pk, county=county)
+    elif hub_name:
+        hub = Hub.objects.get(hub=hub_name)
+        program = None
+        facility = None
+        qi_project = None
+        program_qi_project = None
+        subcounty_qi_project = None
+        hub_qi_project = Hub_qi_projects.objects.get(id=pk, hub=hub)
+        county_qi_project = None
 
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -3702,6 +4384,9 @@ def add_baseline_image(request, pk, program_name=None, facility_name=None):
             post.program = program
             post.qi_project = qi_project
             post.program_qi_project = program_qi_project
+            post.subcounty_qi_project = subcounty_qi_project
+            post.hub_qi_project = hub_qi_project
+            post.county_qi_project = county_qi_project
             post.save()
             return redirect(request.session['page_from'])
     else:
@@ -3710,6 +4395,9 @@ def add_baseline_image(request, pk, program_name=None, facility_name=None):
                "title": "ADD BASELINE STATUS",
                "facility_name": facility_name,
                "program_name": program_name,
+               "subcounty_name": subcounty_name,
+               "county_name": county_name,
+               "hub_name": hub_name,
                }
     return render(request, 'project/baseline_images.html', context)
 
@@ -3860,83 +4548,191 @@ def add_baseline_image(request, pk, program_name=None, facility_name=None):
 # from django.shortcuts import render, HttpResponseRedirect
 # from django.http import Http404
 @login_required(login_url='login')
-def update_baseline(request, pk):
-    """
-    View to handle the update of the baseline status of a QI cqi.
-
-    Parameters:
-    - request (HttpRequest): The incoming request object
-    - pk (int): The primary key of the QI cqi
-
-    Returns:
-    - HttpResponse: A template rendering containing the updated baseline status form
-
-    """
-    # Store the name of the model in the GET request
-    model_name = None
-    # Store the instance of the QI cqi
-    qi_project = None
-    # Store the instance of the baseline
-    item = None
-
-    # Handle the GET request
+# def update_baseline(request, pk):
+#     """
+#     View to handle the update of the baseline status of a QI cqi.
+#
+#     Parameters:
+#     - request (HttpRequest): The incoming request object
+#     - pk (int): The primary key of the QI cqi
+#
+#     Returns:
+#     - HttpResponse: A template rendering containing the updated baseline status form
+#
+#     """
+#     # Store the name of the model in the GET request
+#     model_name = None
+#     # Store the instance of the QI cqi
+#     qi_project = None
+#     # Store the instance of the baseline
+#     item = None
+#
+#     # Handle the GET request
+#     if request.method == "GET":
+#         # Store the referrer URL in the session
+#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+#         # Get the model name from the GET request
+#         model_name = request.GET.get('model')
+#
+#     # If the model name is not None, then retrieve the corresponding model
+#     if model_name:
+#         # Get the model using the app_label and model_name
+#         model = apps.get_model(app_label='app_name', model_name=model_name)
+#         print(model_name)
+#         try:
+#             # Try to retrieve the instance of the QI cqi using the pk
+#             qi_project = model.objects.get(id=pk)
+#             # If the model name is 'QI_Projects', then retrieve the baseline using the foreign key 'qi_project'
+#             if model_name == "QI_Projects":
+#                 item = Baseline.objects.get(qi_project__id=pk)
+#             # If the model name is 'Program_qi_projects', then retrieve the baseline using the foreign key
+#             # 'program_qi_project'
+#             elif model_name == "Program_qi_projects":
+#                 item = Baseline.objects.get(program_qi_project__id=pk)
+#             elif model_name == "Subcounty_qi_projects":
+#                 item = Baseline.objects.get(subcounty_qi_project__id=pk)
+#             elif model_name == "County_qi_projects":
+#                 item = Baseline.objects.get(county_qi_project__id=pk)
+#             # If the model name is 'Hub_qi_projects', then retrieve the baseline using the foreign key 'hub_qi_project'
+#             elif model_name == "Hub_qi_projects":
+#                 item = Baseline.objects.get(hub_qi_project__id=pk)
+#         except model.DoesNotExist:
+#             # Raise a 404 error if the QI cqi is not found
+#             raise Http404("Page not found.")
+#     else:
+#         try:
+#             # Try to retrieve the instance of the QI cqi using the pk and the 'QI_Projects' model
+#             qi_project = QI_Projects.objects.get(id=pk)
+#             item = Baseline.objects.get(qi_project__id=pk)
+#         except QI_Projects.DoesNotExist:
+#             try:
+#                 # Try to retrieve the instance of the QI cqi using the pk and the 'Program_qi_projects' model
+#                 qi_project = Program_qi_projects.objects.get(id=pk)
+#                 item = Baseline.objects.get(program_qi_project__id=pk)
+#             except Program_qi_projects.DoesNotExist:
+#                 try:
+#                     # Try to retrieve the instance of the QI cqi using the pk and the 'Program_qi_projects' model
+#                     qi_project = Subcounty_qi_projects.objects.get(id=pk)
+#                     item = Baseline.objects.get(program_qi_project__id=pk)
+#                 except Subcounty_qi_projects.DoesNotExist:
+#                     try:
+#                         # Try to retrieve the instance of the QI cqi using the pk and the 'Program_qi_projects' model
+#                         qi_project = County_qi_projects.objects.get(id=pk)
+#                         item = Baseline.objects.get(program_qi_project__id=pk)
+#                     except County_qi_projects.DoesNotExist:
+#                         try:
+#                             # Try to retrieve the instance of the QI cqi using the pk and the 'Hub_qi_projects' model
+#                             qi_project = Hub_qi_projects.objects.get(id=pk)
+#                             item = Baseline.objects.get(hub_qi_project__id=pk)
+#                         except Hub_qi_projects.DoesNotExist:
+#                             raise Http404("Page not found.")
+#
+#     if request.method == "POST":
+#         form = BaselineForm(request.POST, request.FILES, instance=item)
+#         if form.is_valid():
+#             form.save()
+#             return redirect(request.session['page_from'])
+#     else:
+#         form = BaselineForm(instance=item)
+#     context = {
+#         "form": form,
+#         "title": "Update baseline status",
+#         "qi_project": qi_project,
+#     }
+#     return render(request, 'project/add_milestones.html', context)
+def update_baseline(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
+    title = "Update baseline status"
+    # check the page user is from
     if request.method == "GET":
-        # Store the referrer URL in the session
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-        # Get the model name from the GET request
-        model_name = request.GET.get('model')
-
-    # If the model name is not None, then retrieve the corresponding model
-    if model_name:
-        # Get the model using the app_label and model_name
-        model = apps.get_model(app_label='app_name', model_name=model_name)
-        try:
-            # Try to retrieve the instance of the QI cqi using the pk
-            qi_project = model.objects.get(id=pk)
-            # If the model name is 'QI_Projects', then retrieve the baseline using the foreign key 'qi_project'
-            if model_name == "QI_Projects":
-                item = Baseline.objects.get(qi_project__id=pk)
-            # If the model name is 'Program_qi_projects', then retrieve the baseline using the foreign key
-            # 'program_qi_project'
-            elif model_name == "Program_qi_projects":
-                item = Baseline.objects.get(program_qi_project__id=pk)
-            # If the model name is 'Hub_qi_projects', then retrieve the baseline using the foreign key 'hub_qi_project'
-            elif model_name == "Hub_qi_projects":
-                item = Baseline.objects.get(hub_qi_project__id=pk)
-        except model.DoesNotExist:
-            # Raise a 404 error if the QI cqi is not found
-            raise Http404("Page not found.")
-    else:
-        try:
-            # Try to retrieve the instance of the QI cqi using the pk and the 'QI_Projects' model
-            qi_project = QI_Projects.objects.get(id=pk)
-            item = Baseline.objects.get(qi_project__id=pk)
-        except QI_Projects.DoesNotExist:
-            try:
-                # Try to retrieve the instance of the QI cqi using the pk and the 'Program_qi_projects' model
-                qi_project = Program_qi_projects.objects.get(id=pk)
-                item = Baseline.objects.get(program_qi_project__id=pk)
-            except Program_qi_projects.DoesNotExist:
-                try:
-                    # Try to retrieve the instance of the QI cqi using the pk and the 'Hub_qi_projects' model
-                    qi_project = Hub_qi_projects.objects.get(id=pk)
-                    item = Baseline.objects.get(hub_qi_project__id=pk)
-                except Hub_qi_projects.DoesNotExist:
-                    raise Http404("Page not found.")
+    if facility_name:
+        facility_project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
+        qi_project = QI_Projects.objects.get(id=pk)
+        level = "facility"
+    if program_name:
+        facility_project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
+        qi_project = Program_qi_projects.objects.get(id=pk)
+        level = "program"
+    if subcounty_name:
+        facility_project = Subcounty_qi_projects.objects.get(id=pk, sub_county__sub_counties=subcounty_name)
+        qi_project = Subcounty_qi_projects.objects.get(id=pk)
+        level = "subcounty"
+    if hub_name:
+        facility_project = Hub_qi_projects.objects.get(id=pk, hub__hub=hub_name)
+        qi_project = Hub_qi_projects.objects.get(id=pk)
+        level = "hub"
+    if county_name:
+        facility_project = County_qi_projects.objects.get(id=pk, county__county_name=county_name)
+        qi_project = County_qi_projects.objects.get(id=pk)
+        level = "county"
 
     if request.method == "POST":
-        form = BaselineForm(request.POST, request.FILES, instance=item)
+        form = BaselineForm(request.POST, request.FILES)
+        # try:
         if form.is_valid():
-            form.save()
-            return redirect(request.session['page_from'])
+            post = form.save(commit=False)
+            if "facility" in level:
+                post.facility = None
+                post.program = None
+                post.qi_project =qi_project
+                post.program_qi_project = None
+                post.subcounty_qi_project = None
+                post.hub_qi_project = None
+                post.county_qi_project = None
+            elif "program" in level:
+                post.facility = None
+                post.program = None
+                post.qi_project = None
+                post.program_qi_project = qi_project
+                post.subcounty_qi_project = None
+                post.hub_qi_project = None
+                post.county_qi_project = None
+            elif "subcounty" in level:
+                post.facility = None
+                post.program = None
+                post.qi_project = None
+                post.program_qi_project = None
+                post.subcounty_qi_project = qi_project
+                post.hub_qi_project = None
+                post.county_qi_project = None
+            elif "county" in level:
+                post.facility = None
+                post.program = None
+                post.qi_project = None
+                post.program_qi_project = None
+                post.subcounty_qi_project = None
+                post.hub_qi_project = None
+                post.county_qi_project = qi_project
+            elif "hub" in level:
+                post.facility = None
+                post.program = None
+                post.qi_project = None
+                post.program_qi_project = None
+                post.subcounty_qi_project = None
+                post.hub_qi_project = qi_project
+                post.county_qi_project = None
+            post.created_by = request.user
+            try:
+                post.save()
+                return HttpResponseRedirect(request.session['page_from'])
+            except KeyError as e:
+                extension = e.args[0].split('.')[-1]
+                allowed_formats = ['jpg', 'jpeg', 'png', 'gif', 'tif', 'tiff']
+                if extension in allowed_formats:
+                    messages.error(request, f"Failed to save the file. Please try again.")
+                else:
+                    messages.error(request,
+                                   f"Unsupported file format. Please choose a file with one of the following extensions: {', '.join(allowed_formats)}.")
+                return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = BaselineForm(instance=item)
-    context = {
-        "form": form,
-        "title": "Update baseline status",
-        "qi_project": qi_project,
-    }
-    return render(request, 'project/add_milestones.html', context)
+        form = BaselineForm(instance=qi_project)
+    context = {"form": form, "title": title, "qi_project": qi_project, "level": level,
+               "facility_name": facility_name,
+               "program_name": program_name,
+               }
+    return render(request, "project/add_milestones.html", context)
+
+    # return render(request, "project/add_milestones.html", context)
 
 
 @login_required(login_url='login')
@@ -4074,7 +4870,7 @@ def delete_comment(request, pk):
 #         facility = None
 #         qi_project = None
 #         program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
-def add_project_milestone(request, pk, program_name=None, facility_name=None):
+def add_project_milestone(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     title = "ADD PROJECT MILESTONE"
     # check the page user is from
     if request.method == "GET":
@@ -4083,10 +4879,22 @@ def add_project_milestone(request, pk, program_name=None, facility_name=None):
         facility_project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         qi_project = QI_Projects.objects.get(id=pk)
         level = "facility"
-    if program_name:
+    elif program_name:
         facility_project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
         qi_project = Program_qi_projects.objects.get(id=pk)
         level = "program"
+    elif subcounty_name:
+        facility_project = Subcounty_qi_projects.objects.get(id=pk, sub_county__sub_counties=subcounty_name)
+        qi_project = Subcounty_qi_projects.objects.get(id=pk)
+        level = "subcounty"
+    elif county_name:
+        facility_project = County_qi_projects.objects.get(id=pk, county__county_name=county_name)
+        qi_project = County_qi_projects.objects.get(id=pk)
+        level = "county"
+    elif hub_name:
+        facility_project = Hub_qi_projects.objects.get(id=pk, hub__hub=hub_name)
+        qi_project = Hub_qi_projects.objects.get(id=pk)
+        level = "hub"
 
     if request.method == "POST":
         form = MilestoneForm(request.POST)
@@ -4099,6 +4907,20 @@ def add_project_milestone(request, pk, program_name=None, facility_name=None):
             elif "program" in level:
                 post.program = Program.objects.get(id=facility_project.program_id)
                 post.program_qi_project = qi_project
+                # post.facility = None
+                # post.qi_project = None
+                # post.subcounty_qi_project = None
+                # post.county_qi_project = None
+                # post.hub_qi_project = None
+            elif "subcounty" in level:
+                # post.program = Sub_counties.objects.get(id=facility_project.sub_county_id)
+                post.subcounty_qi_project = qi_project
+            elif "county" in level:
+                # post.program = Counties.objects.get(id=facility_project.county_id)
+                post.county_qi_project = qi_project
+            elif "hub" in level:
+                # post.program = Hub.objects.get(id=facility_project.hub_id)
+                post.hub_qi_project = qi_project
 
             post.created_by = request.user
             post.save()
@@ -4113,14 +4935,20 @@ def add_project_milestone(request, pk, program_name=None, facility_name=None):
 
 
 @login_required(login_url='login')
-def update_milestone(request, pk):
+def update_milestone(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Milestone.objects.get(id=pk)
-    try:
-        qi_project = QI_Projects.objects.get(id=pk)
-    except:
-        qi_project = Program_qi_projects.objects.get(id=pk)
+    if facility_name:
+        qi_project = QI_Projects.objects.get(id=item.qi_project_id)
+    elif program_name:
+        qi_project = Program_qi_projects.objects.get(id=item.program_qi_project_id)
+    elif subcounty_name:
+        qi_project = Subcounty_qi_projects.objects.get(id=item.subcounty_qi_project_id)
+    elif county_name:
+        qi_project = County_qi_projects.objects.get(id=item.county_qi_project_id)
+    elif hub_name:
+        qi_project = Hub_qi_projects.objects.get(id=item.hub_qi_project_id)
     if request.method == "POST":
         form = MilestoneForm(request.POST, instance=item)
         if form.is_valid():
@@ -4153,7 +4981,7 @@ def delete_milestone(request, pk):
 
 
 @login_required(login_url='login')
-def add_corrective_action(request, pk, program_name=None, facility_name=None):
+def add_corrective_action(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     # facility_project = QI_Projects.objects.get(id=pk)
 
     if facility_name:
@@ -4162,12 +4990,30 @@ def add_corrective_action(request, pk, program_name=None, facility_name=None):
         facility = facility_project.facility_name
         qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
         level = "facility"
-    if program_name:
+    elif program_name:
         facility_project = get_object_or_404(Program_qi_projects, id=pk, program__program=program_name)
         qi_project = Program_qi_projects.objects.get(id=pk)
         facility = facility_project.program
         qi_team_members = Qi_team_members.objects.filter(program_qi_project=facility_project)
         level = "program"
+    elif subcounty_name:
+        facility_project = get_object_or_404(Subcounty_qi_projects, id=pk, sub_county__sub_counties=subcounty_name)
+        qi_project = Subcounty_qi_projects.objects.get(id=pk)
+        facility = facility_project.sub_county
+        qi_team_members = Qi_team_members.objects.filter(subcounty_qi_project=facility_project)
+        level = "subcounty"
+    elif county_name:
+        facility_project = get_object_or_404(County_qi_projects, id=pk, county__county_name=county_name)
+        qi_project = County_qi_projects.objects.get(id=pk)
+        facility = facility_project.county
+        qi_team_members = Qi_team_members.objects.filter(county_qi_project=facility_project)
+        level = "county"
+    elif hub_name:
+        facility_project = get_object_or_404(Hub_qi_projects, id=pk, hub=hub_name)
+        qi_project = Hub_qi_projects.objects.get(id=pk)
+        facility = facility_project.hub
+        qi_team_members = Qi_team_members.objects.filter(hub_qi_project=facility_project)
+        level = "hub"
 
     qi_projects = facility_project
 
@@ -4177,7 +5023,7 @@ def add_corrective_action(request, pk, program_name=None, facility_name=None):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
     if request.method == "POST":
-        form = ActionPlanForm(facility, qi_projects, request.POST)
+        form = ActionPlanForm(facility, qi_projects, level, request.POST)
         if form.is_valid():
             # form.save()
             post = form.save(commit=False)
@@ -4185,10 +5031,41 @@ def add_corrective_action(request, pk, program_name=None, facility_name=None):
                 post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
                 post.qi_project = qi_project
                 post.program = None
+                post.program_qi_project = None
+                post.subcounty_qi_project = None
+                post.county_qi_project = None
+                post.hub_qi_project = None
             elif level == "program":
                 post.facility = None
                 post.program = Program.objects.get(id=facility_project.program_id)
                 post.program_qi_project = qi_project
+                post.qi_project=None
+                post.subcounty_qi_project = None
+                post.county_qi_project = None
+                post.hub_qi_project = None
+            elif level == "county":
+                post.facility = None
+                post.program = None
+                post.program_qi_project = None
+                post.qi_project=None
+                post.subcounty_qi_project = None
+                post.county_qi_project = qi_project
+                post.hub_qi_project = None
+            elif level == "subcounty":
+                post.facility = None
+                post.program = None
+                post.program_qi_project = None
+                post.qi_project=None
+                post.subcounty_qi_project = qi_project
+                post.county_qi_project = None
+                post.hub_qi_project = None
+            elif level == "hub":
+                post.facility = None
+                post.program = None
+                post.program_qi_project = None
+                post.subcounty_qi_project = None
+                post.county_qi_project = None
+                post.hub_qi_project = qi_project
 
             post.created_by = request.user
             #
@@ -4201,7 +5078,7 @@ def add_corrective_action(request, pk, program_name=None, facility_name=None):
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = ActionPlanForm(facility, qi_projects)
+        form = ActionPlanForm(facility, qi_projects,level)
     context = {"form": form,
                "title": "Add Action Plan",
                "qi_team_members": qi_team_members,
@@ -4212,26 +5089,50 @@ def add_corrective_action(request, pk, program_name=None, facility_name=None):
 
 
 @login_required(login_url='login')
-def update_action_plan(request, pk):
+def update_action_plan(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     # facility_project = get_object_or_404(QI_Projects, id=pk)
     # qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     action_plan = ActionPlan.objects.get(id=pk)
-    try:
+    if facility_name:
         facility = action_plan.facility
         qi_projects = action_plan.qi_project
 
         qi_project = QI_Projects.objects.get(id=action_plan.qi_project_id)
         qi_team_members = Qi_team_members.objects.filter(qi_project=action_plan.qi_project)
-    except:
+        level="facility"
+    elif program_name:
         facility = action_plan.program
         qi_projects = action_plan.program_qi_project
 
         qi_project = Program_qi_projects.objects.get(id=action_plan.program_qi_project_id)
         qi_team_members = Qi_team_members.objects.filter(program_qi_project=action_plan.qi_project)
+        level="program"
+
+    elif subcounty_name:
+        facility = action_plan.subcounty_qi_project.sub_county
+        qi_projects = action_plan.subcounty_qi_project
+        qi_project = Subcounty_qi_projects.objects.get(id=action_plan.subcounty_qi_project_id)
+        qi_team_members = Qi_team_members.objects.filter(subcounty_qi_project=action_plan.qi_project)
+        level="subcounty"
+    elif county_name:
+        facility = action_plan.county_qi_project.county
+        qi_projects = action_plan.county_qi_project
+
+        qi_project = County_qi_projects.objects.get(id=action_plan.county_qi_project_id)
+        qi_team_members = Qi_team_members.objects.filter(county_qi_project=action_plan.qi_project)
+        level="county"
+    elif hub_name:
+        facility = action_plan.hub_qi_project.hub
+        qi_projects = action_plan.hub_qi_project
+
+        qi_project = Hub_qi_projects.objects.get(id=action_plan.hub_qi_project_id)
+        qi_team_members = Qi_team_members.objects.filter(hub_qi_project=action_plan.qi_project)
+        level="hub"
+
     if request.method == "POST":
-        form = ActionPlanForm(facility, qi_projects, request.POST, instance=action_plan)
+        form = ActionPlanForm(facility, qi_projects, level,request.POST, instance=action_plan)
         if form.is_valid():
             # responsible = form.cleaned_data['responsible']
             post = form.save(commit=False)
@@ -4245,7 +5146,7 @@ def update_action_plan(request, pk):
             form.save_m2m()
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = ActionPlanForm(facility, qi_projects, instance=action_plan)
+        form = ActionPlanForm(facility, qi_projects,level, instance=action_plan)
     context = {
         "form": form,
         "qi_team_members": qi_team_members,
@@ -4316,23 +5217,35 @@ def delete_action_plan(request, pk):
 #         form = CommentForm()
 #     return render(request, 'project/create_comment.html', {'form': form})
 
-def create_comment(request, pk, program_name=None, facility_name=None):
+def create_comment(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     comment = None
     qi_project = None
     program_qi_project = None
+    subcounty_qi_project = None
+    county_qi_project = None
+    hub_qi_project = None
+
+    print("NAME:::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+    print(subcounty_name)
     try:
         # if facility_name:
         comment = Comment.objects.get(id=pk)
         # if program_name:
         #     comment = Comment.objects.get(id=pk, program_qi_project_title__program__program=program_name)
     except ObjectDoesNotExist:
-        try:
+        if facility_name:
             qi_project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
-        except ObjectDoesNotExist:
+        elif program_name:
             program_qi_project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
+        elif subcounty_name:
+            subcounty_qi_project = Subcounty_qi_projects.objects.get(id=pk, sub_county__sub_counties=subcounty_name)
+        elif county_name:
+            county_qi_project = County_qi_projects.objects.get(id=pk, county__county_name=county_name)
+        elif hub_name:
+            hub_qi_project = Hub_qi_projects.objects.get(id=pk, hub__hub=hub_name)
 
-    print("qi_project::::::::::::::::::::::::::::::::")
-    print(qi_project)
+    # print("qi_project::::::::::::::::::::::::::::::::")
+    # print(qi_project)
     if request.method == "POST":
         form = CommentForm(request.POST)
         if form.is_valid():
@@ -4350,12 +5263,24 @@ def create_comment(request, pk, program_name=None, facility_name=None):
                                                    parent_id=request.POST.get('parent'),
                                                    qi_project_title=comment.qi_project_title,
                                                    program_qi_project_title=comment.program_qi_project_title,
+                                                   subcounty_qi_project_title=comment.subcounty_qi_project_title,
+                                                   county_project_title=comment.county_project_title,
+                                                   hub_qi_project_title=comment.hub_qi_project_title,
                                                    )
                         elif qi_project:
                             Comment.objects.create(content=content, author=request.user, qi_project_title=qi_project)
-                        else:
+                        elif program_qi_project:
                             Comment.objects.create(content=content, author=request.user,
                                                    program_qi_project_title=program_qi_project)
+                        elif subcounty_qi_project:
+                            Comment.objects.create(content=content, author=request.user,
+                                                   subcounty_qi_project_title=subcounty_qi_project)
+                        elif county_qi_project:
+                            Comment.objects.create(content=content, author=request.user,
+                                                   county_project_title=county_qi_project)
+                        elif hub_qi_project:
+                            Comment.objects.create(content=content, author=request.user,
+                                                   hub_qi_project_title=hub_qi_project)
             except ObjectDoesNotExist:
                 form.add_error('parent_id', 'Parent comment does not exist')
             except PermissionDenied:
@@ -4438,13 +5363,24 @@ def delete_comments(request, pk):
 #     context = {'all_comments': comments, "title": "COMMENTS", "qi_project": project, }
 #     return render(request, 'project/comments_trial.html', context)
 
-def show_project_comments(request, pk, program_name=None, facility_name=None):
-    try:
+def show_project_comments(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
+    print("NAME:::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+    print(subcounty_name)
+    if facility_name:
         project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         level = "facility"
-    except:
+    elif program_name:
         project = Program_qi_projects.objects.get(id=pk, program__program=program_name)
         level = "program"
+    elif subcounty_name:
+        project = Subcounty_qi_projects.objects.get(id=pk, sub_county__sub_counties=subcounty_name)
+        level = "subcounty"
+    elif county_name:
+        project = County_qi_projects.objects.get(id=pk, county__county_name=county_name)
+        level = "county"
+    elif hub_name:
+        project = Hub_qi_projects.objects.get(id=pk, hub__hub=hub_name)
+        level = "hub"
 
     if "facility" in level:
         comments = Comment.objects.filter(qi_project_title_id=pk, parent_id=None).order_by('-created_at')
@@ -4453,12 +5389,30 @@ def show_project_comments(request, pk, program_name=None, facility_name=None):
             comments = Comment.objects.filter(program_qi_project_title_id=pk, parent_id=None).order_by('-created_at')
         except:
             comments = None
+    elif "subcounty" in level:
+        try:
+            comments = Comment.objects.filter(subcounty_qi_project_title_id=pk, parent_id=None).order_by('-created_at')
+        except:
+            comments = None
+    elif "county" in level:
+        try:
+            comments = Comment.objects.filter(county_project_title_id=pk, parent_id=None).order_by('-created_at')
+        except:
+            comments = None
+    elif "hub" in level:
+        try:
+            comments = Comment.objects.filter(hub_qi_project_title_id=pk, parent_id=None).order_by('-created_at')
+        except:
+            comments = None
 
     if not comments:
         comments = Comment.objects.filter(id=pk).order_by('-created_at')
     context = {'all_comments': comments, "title": "COMMENTS", "qi_project": project,
                "program_name": program_name,
-               "facility_name": facility_name
+               "facility_name": facility_name,
+               "subcounty_name": subcounty_name,
+               "county_name": county_name,
+               "hub_name": hub_name,
                }
     return render(request, 'project/comments_trial.html', context)
 
@@ -4528,13 +5482,21 @@ def like_dislike(request, pk):
 
 
 @login_required(login_url='login')
-def add_sustainmentplan(request, pk):
+def add_sustainmentplan(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     # qi_project=QI_Projects.objects.get(id=pk)
     # lesson=Lesson_learned.objects.filter(project_name=qi_project)
-    qi_project = QI_Projects.objects.filter(id=pk).first()
-    if not qi_project:
-        raise Http404("Project does not exist")
-    lesson = Lesson_learned.objects.filter(project_name=qi_project)
+    if facility_name:
+        qi_project = QI_Projects.objects.filter(id=pk, facility_name__name=facility_name).first()
+        lesson = Lesson_learned.objects.filter(project_name=qi_project)
+        program = None
+        qi_project_name = qi_project
+    # if not qi_project:
+    #     raise Http404("Project does not exist")
+    elif program_name:
+        qi_project = Program_qi_projects.objects.filter(id=pk, program__program=program_name).first()
+        lesson = Lesson_learned.objects.filter(program=qi_project)
+        qi_project_name = None
+        program = qi_project
 
     title = "ADD SUSTAINMENT PLAN"
     # check the page user is from
@@ -4549,8 +5511,11 @@ def add_sustainmentplan(request, pk):
             # TODO: ENSURE ALL FORMS CAN SHOW FORM ERRORS
             post = form.save(commit=False)
             post.created_by = request.user
+            post.qi_project = qi_project_name
+            post.program = program
             post.save()
-            return HttpResponseRedirect(request.session['page_from'])
+            # return HttpResponseRedirect(request.session['page_from'])
+            return redirect("show_sustainmentPlan")
     else:
         form = SustainmentPlanForm()
     context = {"form": form, "title": title, "qi_project": qi_project, "lesson_learnt": lesson, }
@@ -4566,8 +5531,11 @@ def show_sustainmentPlan(request):
     return render(request, "project/sustainment_plan.html", context)
 
 
-def update_sustainable_plan(request, pk):
-    plan = SustainmentPlan.objects.get(id=pk)
+def update_sustainable_plan(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
+    if facility_name:
+        plan = SustainmentPlan.objects.get(id=pk, qi_project__facility_name__name=facility_name)
+    if program_name:
+        plan = SustainmentPlan.objects.get(id=pk, program__program__program=program_name)
     # cqi = QI_Projects.objects.get(id=lesson_learnt.project_name_id)
     # check the page user is from
     if request.method == "GET":
@@ -4610,18 +5578,51 @@ def monthly_data_review(request):
 
 
 @login_required(login_url='login')
-def add_images(request, pk, program_name=None, facility_name=None):
+def add_images(request, pk, program_name=None, facility_name=None, subcounty_name=None,hub_name=None,county_name=None):
     # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
     if facility_name:
         facility = Facilities.objects.get(name=facility_name)
         program = None
         qi_project = QI_Projects.objects.get(id=pk, facility_name=facility)
         program_qi_project = None
+        subcounty_qi_project = None
+        county_qi_project = None
+        hub_qi_project = None
     elif program_name:
         program = Program.objects.get(program=program_name)
         facility = None
         qi_project = None
         program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
+        subcounty_qi_project = None
+        county_qi_project = None
+        hub_qi_project = None
+    elif subcounty_name:
+        subcounty = Sub_counties.objects.get(sub_counties=subcounty_name)
+        facility = None
+        qi_project = None
+        program_qi_project = None
+        subcounty_qi_project = Subcounty_qi_projects.objects.get(id=pk, sub_county=subcounty)
+        county_qi_project = None
+        hub_qi_project = None
+        program = None
+    elif county_name:
+        county = Counties.objects.get(county_name=county_name)
+        facility = None
+        qi_project = None
+        program_qi_project = None
+        subcounty_qi_project = None
+        county_qi_project = County_qi_projects.objects.get(id=pk, county=county)
+        hub_qi_project = None
+        program = None
+    elif hub_name:
+        hub = Hub.objects.get(hub=hub_name)
+        facility = None
+        qi_project = None
+        program_qi_project = None
+        subcounty_qi_project = None
+        county_qi_project = None
+        hub_qi_project = Hub_qi_projects.objects.get(id=pk, hub=hub)
+        program = None
 
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -4634,6 +5635,9 @@ def add_images(request, pk, program_name=None, facility_name=None):
             post.program = program
             post.qi_project = qi_project
             post.program_qi_project = program_qi_project
+            post.subcounty_qi_project = subcounty_qi_project
+            post.county_qi_project = county_qi_project
+            post.hub_qi_project = hub_qi_project
             post.save()
             # return HttpResponseRedirect(request.session['page_from'])
             return redirect(request.session['page_from'])
@@ -4643,5 +5647,8 @@ def add_images(request, pk, program_name=None, facility_name=None):
                "title": "Add Root Cause Images",
                "facility_name": facility_name,
                "program_name": program_name,
+               "subcounty_name": subcounty_name,
+               "county_name": county_name,
+               "hub_name": hub_name,
                }
     return render(request, 'project/baseline_images.html', context)

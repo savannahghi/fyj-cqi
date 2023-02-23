@@ -87,7 +87,7 @@
                                     0 Replies
                             {% endif %}
                             {% if comment.author.id != request.user.id  %}
-                                 {% if facility_name or program_name %}
+                                 {% if facility_name or program_name or subcounty_name or county_name or hub_name %}
                                 <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ comment.id }}"  aria-expanded="false" aria-controls="collapseExample{{ comment.id }}">
                                 <span class="small"> reply</span>
                             </a>
@@ -118,6 +118,12 @@
                                 <form action="{% url 'create_comment_facility' comment.id comment.qi_project_title.facility_name.name %}" method="post">
                             {% elif program_name %}
                                 <form action="{% url 'create_comment_program' comment.id comment.program_qi_project_title.program.program %}" method="post">
+                            {% elif subcounty_name %}
+                                <form action="{% url 'create_comment_subcounty' comment.id comment.subcounty_qi_project_title.sub_county %}" method="post">
+                            {% elif county_name %}
+                                <form action="{% url 'create_comment_county' comment.id comment.county_project_title.county.county_name %}" method="post">
+                            {% elif hub_name %}
+                                <form action="{% url 'create_comment_hub' comment.id comment.hub_qi_project_title.hub.hub %}" method="post">
                             {% endif %}
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ comment.id }}">
@@ -164,7 +170,7 @@
                                         {% endif %}
 
                                         {% if reply.author.id != request.user.id  %}
-                                             {% if facility_name or program_name %}
+                                             {% if facility_name or program_name or subcounty_name or county_name or hub_name %}
                                             <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ reply.id }}"  aria-expanded="false" aria-controls="collapseExample{{ reply.id }}">
                                                 <span class="small"> reply</span>
                                             </a>
@@ -196,6 +202,12 @@
                                 <form action="{% url 'create_comment_facility' reply.id reply.qi_project_title.facility_name.name %}" method="post">
                             {% elif program_name %}
                                 <form action="{% url 'create_comment_program' reply.id reply.program_qi_project_title.program.program %}" method="post">
+                            {% elif subcounty_name %}
+                                <form action="{% url 'create_comment_subcounty' reply.id reply.subcounty_qi_project_title.sub_county %}" method="post">
+                            {% elif county_name %}
+                                <form action="{% url 'create_comment_county' reply.id reply.county_project_title.county.county_name %}" method="post">
+                            {% elif hub_name %}
+                                <form action="{% url 'create_comment_hub' reply.id reply.hub_qi_project_title.hub.hub %}" method="post">
                             {% endif %}
                                                         {% csrf_token %}
                                                         <input type="hidden" name="parent" value="{{ reply.id }}">
@@ -338,7 +350,7 @@
                                     0 Replies
                             {% endif %}
                             {% if comment.author.id != request.user.id  %}
-                                 {% if facility_name or program_name %}
+                                 {% if facility_name or program_name or subcounty_name or county_name or hub_name %}
                                 <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ comment.id }}"  aria-expanded="false" aria-controls="collapseExample{{ comment.id }}">
                                 <span class="small"> reply</span>
                             </a>
@@ -369,6 +381,12 @@
                                 <form action="{% url 'create_comment_facility' comment.id comment.qi_project_title.facility_name.name %}" method="post">
                             {% elif program_name %}
                                 <form action="{% url 'create_comment_program' comment.id comment.program_qi_project_title.program.program %}" method="post">
+                            {% elif subcounty_name %}
+                                <form action="{% url 'create_comment_subcounty' comment.id comment.subcounty_qi_project_title.sub_county %}" method="post">
+                            {% elif county_name %}
+                                <form action="{% url 'create_comment_county' comment.id comment.county_project_title.county.county_name %}" method="post">
+                            {% elif hub_name %}
+                                <form action="{% url 'create_comment_hub' comment.id comment.hub_qi_project_title.hub.hub %}" method="post">
                             {% endif %}
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ comment.id }}">
@@ -448,6 +466,12 @@
                                 <form action="{% url 'create_comment_facility' reply.id reply.qi_project_title.facility_name.name %}" method="post">
                             {% elif program_name %}
                                 <form action="{% url 'create_comment_program' reply.id reply.program_qi_project_title.program.program %}" method="post">
+                            {% elif subcounty_name %}
+                                <form action="{% url 'create_comment_subcounty' reply.id reply.subcounty_qi_project_title.sub_county %}" method="post">
+                            {% elif county_name %}
+                                <form action="{% url 'create_comment_county' reply.id reply.county_project_title.county.county_name %}" method="post">
+                            {% elif hub_name %}
+                                <form action="{% url 'create_comment_hub' reply.id reply.hub_qi_project_title.hub.hub %}" method="post">
                             {% endif %}
                                                         {% csrf_token %}
                                                         <input type="hidden" name="parent" value="{{ reply.id }}">

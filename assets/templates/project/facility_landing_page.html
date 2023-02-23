@@ -140,7 +140,7 @@
                   <div class="d-flex justify-content-evenly" >
                       {% if qi.measurement_status == "Canceled" %}
                             <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">{{ qi.measurement_status }}</a>
-                              {% elif qi.measurement_status == "Completed or Closed" %}
+                              {% elif qi.measurement_status == "Completed-or-Closed" %}
                             <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">{{ qi.measurement_status }}</a>
                               {% else %}
                               <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">{{ qi.measurement_status }}</a>
@@ -199,7 +199,7 @@
 
                       {% if qi.measurement_status == "Canceled" %}
                         <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">{{ qi.measurement_status }}</a>
-                          {% elif qi.measurement_status == "Completed or Closed" %}
+                          {% elif qi.measurement_status == "Completed-or-Closed" %}
                         <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">{{ qi.measurement_status }}</a>
                           {% elif qi.measurement_status == "Postponed" %}
                         <a href="{% url 'postponed' qi.measurement_status %}" class="btn btn-info">{{ qi.measurement_status }}</a>

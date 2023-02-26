@@ -12,9 +12,15 @@
       <h4 class="display-6">FACILITY: {{ qi_project.facility_name}}</h4>
       {% elif "program" in level %}
       <h4 class="display-6">PROGRAM: {{ qi_project.program}}</h4>
+      {% elif "profile" in profile %}
+      <h4 class="display-6">UPDATE PROFILE</h4>
       {% endif %}
+      {% if not profile %}
           <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
 {#          {% endfor %}#}
+
+
+
           <div class="row">
 {#              <div class="col d-flex justify-content-between">#}
                 <div class="col-md-6">
@@ -31,6 +37,7 @@
                   </div>
 {#              </div>#}
           </div>
+       {% endif %}
         <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
             {% csrf_token %}
 {#            {{ form|crispy}}#}

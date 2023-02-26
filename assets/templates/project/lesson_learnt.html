@@ -4,9 +4,20 @@
 {% block content %}
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
+ {% if messages %}
+        <ul class="messages">
+             <div class="alert alert-info col-12 animated fadeIn" role="alert">
+
+                    <h5 class="d-flex justify-content-evenly small">{{ messages }}</h5>
+
+                </div>
+
+       </ul>
+    {% endif %}
 <div class="p-5 mb-4 bg-light rounded-3">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h4>LESSON LEARNED</h4>
+
     </div>
     <div>
         <p>Welcome to the "Lessons Learned" page on our CQI dashboard! </p>
@@ -87,13 +98,67 @@
                         <br>
                         <strong class="badge alert-info mt-2">{{ field.program.program.program}}</strong>
                         <br>
-                        <strong class="badge alert-warning mt-2">Number of QIT/WIT: {{ field.num_members_project }}</strong>
+                        <strong class="badge alert-warning mt-2">Number of QIT/WIT: {{ field.num_members_program }}</strong>
                         <br>
                         <strong class="badge alert-warning mt-2">QI manager: {{ field.program.qi_manager}}</strong>
                         <br>
                         <strong class="badge alert-warning mt-2">Started: {{ field.program.start_date|date }}</strong>
                         <br>
                         <strong class="badge alert-warning mt-2">Completed: {{ field.program.date_updated|date }}</strong>
+                        <br>
+                   {% elif field.subcounty %}
+                       <a href="{% url 'single_project_subcounty' field.subcounty.id %}">{{ field.subcounty.project_title }}</a>
+                        <br>
+                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.subcounty.created_by.username %}" >
+                        Project created by: {{ field.subcounty.created_by.first_name|title }}</a></strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">{{ field.subcounty.created_by.phone_number }}</strong>
+                        <br>
+                        <strong class="badge alert-info mt-2">{{ field.subcounty.sub_county.sub_counties}}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Number of QIT/WIT: {{ field.num_members_subcounty }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">QI manager: {{ field.subcounty.qi_manager}}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Started: {{ field.subcounty.start_date|date }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Completed: {{ field.subcounty.date_updated|date }}</strong>
+                        <br>
+                   {% elif field.county %}
+                       <a href="{% url 'single_project_county' field.county.id %}">{{ field.county.project_title }}</a>
+                        <br>
+                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.county.created_by.username %}" >
+                        Project created by: {{ field.county.created_by.first_name|title }}</a></strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">{{ field.county.created_by.phone_number }}</strong>
+                        <br>
+                        <strong class="badge alert-info mt-2">{{ field.county.county.county_name }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Number of QIT/WIT: {{ field.num_members_county }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">QI manager: {{ field.county.qi_manager}}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Started: {{ field.county.start_date|date }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Completed: {{ field.county.date_updated|date }}</strong>
+                        <br>
+                   {% elif field.hub %}
+                       <a href="{% url 'single_project_hub' field.hub.id %}">{{ field.hub.project_title }}</a>
+                        <br>
+                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.hub.created_by.username %}" >
+                        Project created by: {{ field.hub.created_by.first_name|title }}</a></strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">{{ field.hub.created_by.phone_number }}</strong>
+                        <br>
+                        <strong class="badge alert-info mt-2">{{ field.hub.hub.hub }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Number of QIT/WIT: {{ field.num_members_hub }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">QI manager: {{ field.hub.qi_manager}}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Started: {{ field.hub.start_date|date }}</strong>
+                        <br>
+                        <strong class="badge alert-warning mt-2">Completed: {{ field.hub.date_updated|date }}</strong>
                         <br>
                 {% endif %}
                 <div class="mt-2 d-flex justify-content-evenly" style="display:inline-block;">
@@ -106,6 +171,18 @@
                          {% if field.program_id not in program_plan %}
                             <a href="{% url 'update_lesson_learnt_program' field.id field.program.program %}" class="btn btn-info" role="button" >Update</a>
                          {% endif %}
+                    {% elif field.subcounty %}
+                        {% if field.subcounty_id not in subcounty_plan %}
+                        <a href="{% url 'update_lesson_learnt_subcounty' field.id field.subcounty.sub_county.sub_counties %}" class="btn btn-info" role="button" >Update</a>
+                        {% endif %}
+                    {% elif field.county %}
+                        {% if field.county_id not in county_plan %}
+                        <a href="{% url 'update_lesson_learnt_county' field.id field.county.county.county_name %}" class="btn btn-info" role="button" >Update</a>
+                        {% endif %}
+                    {% elif field.hub %}
+                        {% if field.hub_id not in hub_plan %}
+                        <a href="{% url 'update_lesson_learnt_hub' field.id field.hub.hub.hub %}" class="btn btn-info" role="button" >Update</a>
+                        {% endif %}
                    {% endif %}
                 {% endif %}
 {#                    <a href="{% url 'delete_lesson_learnt' field.id %}" class="btn btn-danger" role="button">Delete</a>#}
@@ -146,6 +223,30 @@
                    {% elif field.program %}
                         {% if field.program_id not in program_plan %}
                             <a href="{% url 'add_sustainmentplan_program' field.program_id field.program.program %}" >
+                                {{ field.future_plans }}
+                            </a>
+                        {% else %}
+                            {{ field.future_plans }}
+                        {% endif %}
+                    {% elif field.subcounty %}
+                        {% if field.subcounty_id not in subcounty_plan %}
+                            <a href="{% url 'add_sustainmentplan_subcounty' field.subcounty_id field.subcounty.sub_county.sub_counties %}" >
+                                {{ field.future_plans }}
+                            </a>
+                        {% else %}
+                            {{ field.future_plans }}
+                        {% endif %}
+                    {% elif field.county %}
+                        {% if field.county_id not in county_plan %}
+                            <a href="{% url 'add_sustainmentplan_county' field.county_id field.county.county.county_name %}" >
+                                {{ field.future_plans }}
+                            </a>
+                        {% else %}
+                            {{ field.future_plans }}
+                        {% endif %}
+                    {% elif field.hub %}
+                        {% if field.hub_id not in hub_plan %}
+                            <a href="{% url 'add_sustainmentplan_hub' field.hub_id field.hub.hub.hub %}" >
                                 {{ field.future_plans }}
                             </a>
                         {% else %}

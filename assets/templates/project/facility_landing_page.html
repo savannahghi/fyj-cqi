@@ -139,11 +139,11 @@
                        </ul>
                   <div class="d-flex justify-content-evenly" >
                       {% if qi.measurement_status == "Canceled" %}
-                            <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">{{ qi.measurement_status }}</a>
+                            <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
                               {% elif qi.measurement_status == "Completed-or-Closed" %}
-                            <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">{{ qi.measurement_status }}</a>
+                            <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
                               {% else %}
-                              <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">{{ qi.measurement_status }}</a>
+                              <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">STATUS: {{ qi.measurement_status }}</a>
                           {% endif %}
 {#                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>#}
                         <button>Last updated on {{ qi.date_updated}}</button>
@@ -178,7 +178,7 @@
 
                       <ul>
                       {% if "facility" in title %}
-                          <li>Facility : <a href="{% url 'facility_project' qi.facility_name %} ">{{ qi.facility_name }} </a></li>
+                          <li>Facility : <a href="{% url 'facility_project' qi.facility_name.mfl_code %} ">{{ qi.facility_name }} </a></li>
                        {% elif "program" in title %}
                           <li>Program : <a href="#">{{ qi.program }} </a></li>
                        {% endif %}
@@ -187,9 +187,11 @@
                           <li>Setting : {{ qi.settings }} </li>
                           <li>Department : <a href="{% url 'department_project' qi.departments.department %} ">{{ qi.departments.department }}</a></li>
                           <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
-                          <li>Created by : <a href="{% url 'qi_creators' qi.created_by.username %}">
+                          <li>Created by :{{ qi.created_by.id }}
+                          <a href="{% url 'qi_creators' qi.created_by.id %}">
                               {{ qi.created_by.first_name|title }} {{ qi.created_by.last_name|title }}
-                          </a></li>
+                          </a>
+                          </li>
                           <li>QI manager : <a href="{% url 'qi_managers_projects' qi.qi_manager.id %}">{{ qi.qi_manager }}</a></li>
                           {% if qi.comments %}
                             <li>Comment (s) : {{ qi.comments }}</li>
@@ -198,14 +200,14 @@
                       <div class="d-flex justify-content-evenly" >
 
                       {% if qi.measurement_status == "Canceled" %}
-                        <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">{{ qi.measurement_status }}</a>
+                        <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
                           {% elif qi.measurement_status == "Completed-or-Closed" %}
-                        <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">{{ qi.measurement_status }}</a>
+                        <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
                           {% elif qi.measurement_status == "Postponed" %}
-                        <a href="{% url 'postponed' qi.measurement_status %}" class="btn btn-info">{{ qi.measurement_status }}</a>
+                        <a href="{% url 'postponed' qi.measurement_status %}" class="btn btn-info">STATUS: {{ qi.measurement_status }}</a>
 
                           {% elif qi.measurement_status == 'Not started' %}
-                        <a href="{% url 'not_started' qi.measurement_status %}" class="btn btn-info">{{ qi.measurement_status }}</a>
+                        <a href="{% url 'not_started' qi.measurement_status %}" class="btn btn-info">STATUS: {{ qi.measurement_status }}</a>
                           {% else %}
                           <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">Ongoing</a>
                       {% endif %}

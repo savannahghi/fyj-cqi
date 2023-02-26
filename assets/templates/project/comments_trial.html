@@ -169,13 +169,13 @@
                                                 0 Replies
                                         {% endif %}
 
-                                        {% if reply.author.id != request.user.id  %}
+{#                                        {% if reply.author.id != request.user.id  %}#}
                                              {% if facility_name or program_name or subcounty_name or county_name or hub_name %}
                                             <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ reply.id }}"  aria-expanded="false" aria-controls="collapseExample{{ reply.id }}">
                                                 <span class="small"> reply</span>
                                             </a>
                                         {% endif %}
-                                        {% endif %}
+{#                                        {% endif %}#}
 
                                             {% if reply.comment_set.count == 0 and reply.author.id == request.user.id %}
                                                 <a href="{% url 'update_comments' reply.id %}"><i class="fas fa-pen-square mr-1"></i>Edit</a>
@@ -433,7 +433,7 @@
                                         {% endif %}
 
                                         {% if reply.author.id != request.user.id  %}
-                                             {% if facility_name or program_name %}
+                                             {% if facility_name or program_name or subcounty_name or county_name or hub_name %}
                                             <a class="fas fa-reply fa-xs" data-bs-toggle="collapse" href="#collapseExample{{ reply.id }}"  aria-expanded="false" aria-controls="collapseExample{{ reply.id }}">
                                                 <span class="small"> reply</span>
                                             </a>

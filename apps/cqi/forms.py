@@ -189,7 +189,7 @@ class QI_ProjectsSubcountyForm(ModelForm):
 class QI_Projects_countyForm(ModelForm):
     county = forms.ModelChoiceField(
         queryset=Counties.objects.all(),
-        empty_label="Select sub-county",
+        empty_label="Select County",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
     qi_manager = forms.ModelChoiceField(
@@ -208,6 +208,7 @@ class QI_Projects_countyForm(ModelForm):
         label="Component",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
     class Meta:
         model = County_qi_projects
         fields = "__all__"
@@ -268,6 +269,7 @@ class QI_Projects_hubForm(ModelForm):
         label="Component",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
     class Meta:
         model = Hub_qi_projects
         fields = "__all__"
@@ -371,7 +373,7 @@ class TestedChangeForm(ModelForm):
     class Meta:
         model = TestedChange
         fields = "__all__"
-        exclude = ['achievements', 'project', 'program_project','subcounty_project','county_project','hub_project']
+        exclude = ['achievements', 'project', 'program_project', 'subcounty_project', 'county_project', 'hub_project']
         widgets = {
             'data_sources': forms.TextInput(attrs={
                 'placeholder': 'Specify the tools or systems used to collect data for the metric',
@@ -505,8 +507,8 @@ class Qi_team_membersForm(ModelForm):
     class Meta:
         model = Qi_team_members
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'created_by', 'program_qi_project', 'program','subcounty_qi_project',
-                   'hub_qi_project','county_qi_project']
+        exclude = ['facility', 'qi_project', 'created_by', 'program_qi_project', 'program', 'subcounty_qi_project',
+                   'hub_qi_project', 'county_qi_project']
         labels = {
             'user': 'Team Member',
         }
@@ -530,7 +532,7 @@ class ArchiveProjectForm(ModelForm):
     class Meta:
         model = ArchiveProject
         fields = "__all__"
-        exclude = ['qi_project','program','subcounty','hub','county']
+        exclude = ['qi_project', 'program', 'subcounty', 'hub', 'county']
 
     field_order = ['qi_project']
 
@@ -548,8 +550,8 @@ class MilestoneForm(ModelForm):
     class Meta:
         model = Milestone
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'created_by', 'program', 'program_qi_project','subcounty_qi_project',
-                   'county_qi_project','hub_qi_project']
+        exclude = ['facility', 'qi_project', 'created_by', 'program', 'program_qi_project', 'subcounty_qi_project',
+                   'county_qi_project', 'hub_qi_project']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Major tasks or phases of the cqi'}),
 
@@ -573,12 +575,13 @@ class ActionPlanForm(ModelForm):
         model = ActionPlan  # specify the model that the form is based on
         fields = "__all__"  # include all fields from the model
         exclude = ['facility', 'qi_project', 'created_by', 'progress', 'program', 'program_qi_project',
-                   'timeframe','county_qi_project','subcounty_qi_project','hub_qi_project']  # exclude these fields from the form
+                   'timeframe', 'county_qi_project', 'subcounty_qi_project',
+                   'hub_qi_project']  # exclude these fields from the form
         widgets = {
             'responsible': forms.CheckboxSelectMultiple  # render the 'responsible' field as checkboxes
         }
 
-    def __init__(self, facility, qi_projects,level, *args, **kwargs):
+    def __init__(self, facility, qi_projects, level, *args, **kwargs):
         # call the parent class's init method
         super(ActionPlanForm, self).__init__(*args, **kwargs)
         if level == "facility":
@@ -591,8 +594,9 @@ class ActionPlanForm(ModelForm):
                                                                                  program_qi_project=qi_projects)
         elif level == "subcounty":
             # filter the 'responsible' field's queryset based on the passed facility and qi_project
-            self.fields['responsible'].queryset = Qi_team_members.objects.filter(subcounty_qi_project__sub_county=facility,
-                                                                                 subcounty_qi_project=qi_projects)
+            self.fields['responsible'].queryset = Qi_team_members.objects.filter(
+                subcounty_qi_project__sub_county=facility,
+                subcounty_qi_project=qi_projects)
         elif level == "county":
             # filter the 'responsible' field's queryset based on the passed facility and qi_project
             self.fields['responsible'].queryset = Qi_team_members.objects.filter(county_qi_project__county=facility,
@@ -622,7 +626,7 @@ class Lesson_learnedForm(ModelForm):
     class Meta:
         model = Lesson_learned
         fields = "__all__"
-        exclude = ['project_name', 'created_by', 'modified_by', 'program']
+        exclude = ['project_name', 'created_by', 'modified_by', 'program', 'subcounty', 'county', 'hub']
         widgets = {
 
             'key_successes': forms.Textarea(attrs={
@@ -663,7 +667,8 @@ class BaselineForm(ModelForm):
     class Meta:
         model = Baseline
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'program', 'program_qi_project','subcounty_qi_project','county_qi_project',
+        exclude = ['facility', 'qi_project', 'program', 'program_qi_project', 'subcounty_qi_project',
+                   'county_qi_project',
                    'hub_qi_project']
 
 
@@ -690,7 +695,7 @@ class SustainmentPlanForm(ModelForm):
     class Meta:
         model = SustainmentPlan
         fields = "__all__"
-        exclude = ['created_by', 'program', 'qi_project']
+        exclude = ['created_by', 'program', 'qi_project', 'subcounty', 'county', 'hub']
         widgets = {
             'objectives': forms.Textarea(attrs={
                 'placeholder': "Captures the overall objectives of the sustainment plan, including what the plan aims "
@@ -789,3 +794,12 @@ class TriggerForm(ModelForm):
         labels = {
             "name": "Trigger name"
         }
+
+
+class BestPerformingForm(forms.Form):
+    PERCENTAGE_CHOICES = [(str(x), str(x)) for x in range(5,101,5)]
+    percentage = forms.ChoiceField(
+        choices=PERCENTAGE_CHOICES,
+        label="Choose threshold (%)",
+        widget=forms.Select(attrs={'class': 'form-control select2'})
+    )

@@ -101,7 +101,7 @@
           <a href="#" class="btn btn-primary">Last updated on {{ qi.qi_project.date_updated|date }} </a>
           <a href="{% url 'single_project' qi.qi_project.id %}" class="btn btn-secondary">View QI project</a>
               {% if user.id == qi.qi_project.created_by.id %}
-          <a href="{% url 'update_project' qi.qi_project.id %}" class="btn btn-warning">Update project</a>
+{#          <a href="{% url 'update_project' qi.qi_project.id %}" class="btn btn-warning">Update project</a>#}
               {% endif %}
 {#          {% if qi.id not in tracked_projects %}#}
 {#            <a href="{% url 'single_project' qi.qi_project.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>#}

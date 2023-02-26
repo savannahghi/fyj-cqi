@@ -9,37 +9,62 @@
         <h4 >Dashboard</h4>
       </div>
         <hr>
+ {% if county_qi_projects or program_qi_projects %}
     <div class="col mt-3" >
         <div class="card " >
           <div class="card-body">
               <div class="container">
                 <div class="col">
-                    {% if county_qi_projects %}
-                        <div class="row ">
-                         {{ county_qi_projects|safe }}
+                    <div class="row ">
+                    <div class="col-md-12 d-flex">
+                        <div class="col-md-6">
+                            {{ program_qi_projects|safe }}
                         </div>
-                    {% endif %}
+                        <div class="col-md-6">
+                            {{ county_qi_projects|safe }}
+                        </div>
+                    </div>
+                    </div>
+                </div>
+              </div>
+          </div>
+        </div>
+    </div>
+{% endif %}
+{% if subcounty_qi_projects %}
+    <div class="col mt-3" >
+        <div class="card " >
+          <div class="card-body">
+              <div class="container">
+                <div class="col">
+
+                    <div class="row ">
+                         {{ subcounty_qi_projects|safe }}
+                    </div>
 
                 </div>
               </div>
           </div>
         </div>
     </div>
+{% endif %}
+{% if hub_qi_projects %}
     <div class="col mt-3" >
         <div class="card " >
           <div class="card-body">
               <div class="container">
                 <div class="col">
-                    {% if subcounty_qi_projects %}
+
                     <div class="row ">
-                         {{ subcounty_qi_projects|safe }}
+                         {{ hub_qi_projects|safe }}
                     </div>
-                    {% endif %}
+
                 </div>
               </div>
           </div>
         </div>
     </div>
+{% endif %}
     <div class="col mt-3" >
         <div class="card " >
           <div class="card-body">
@@ -98,8 +123,27 @@
 
         </div>
         </div>
+<form action="" method="POST">
+        {% csrf_token %}
+    <div class="row">
+        <div class="col-md-3 mt-2">
+            {{ percentage_form.percentage|as_crispy_field }}
+        </div>
 
-      <h4 class="d-flex justify-content-evenly mt-4">QI MANAGERS WITH BEST QI PROJECTS</h4>
+        <div class="col-md-2 mt-2 pt-3">
+            <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+        </div>
+
+    </div>
+
+    </form>
+    {% if selected_percentage %}
+    <h4 class="d-flex justify-content-evenly mt-4">QI MANAGERS WITH BEST QI PROJECTS (>= {{ selected_percentage }})</h4>
+    {% else %}
+         <h4 class="d-flex justify-content-evenly mt-4">QI MANAGERS WITH BEST QI PROJECTS</h4>
+    {% endif %}
+
+
 <table class="table table-striped table-hover">
     <thead class="thead-dark">
         <th scope="col"></th>

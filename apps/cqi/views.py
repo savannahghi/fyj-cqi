@@ -1664,7 +1664,6 @@ def department_filter_project(request, pk):
                "projects_tracked": projects_tracked,
                "program_projects": program_projects,
                "number_of_projects_created": number_of_projects_created,
-
                }
     return render(request, "project/department_filter_projects.html", context)
 
@@ -1791,6 +1790,7 @@ def facility_filter_project(request, pk):
     hub_projects = Hub_qi_projects.objects.filter(hub__hub=pk).order_by("-date_updated")
     program_projects = Program_qi_projects.objects.filter(program__program=pk).order_by("-date_updated")
     all_projects = list(chain(projects, subcounty_projects, hub_projects, county_projects, program_projects))
+
     facility_name = pk
     number_of_projects_created = len(all_projects)
     try:
@@ -2020,6 +2020,7 @@ def qicreator_filter_project(request, pk):
                                       fac_qi_projects_df
                                       ])
         projects_tracked = list_of_projects['project_id'].unique()
+
         pro_perfomance_trial = prepare_viz(list_of_projects, pk, "facility")
 
         facility_name = pk
@@ -2118,6 +2119,7 @@ def county_filter_project(request, pk):
                                       fac_qi_projects_df
                                       ])
         projects_tracked = list_of_projects['project_id'].unique()
+
         print(f"PK:{pk} jere")
         print(list_of_projects)
         pro_perfomance_trial = prepare_viz(list_of_projects, pk, "facility")
@@ -2153,6 +2155,7 @@ def sub_county_filter_project(request, pk):
     projects = QI_Projects.objects.filter(sub_county__sub_counties=pk)
     subcounty_projects = Subcounty_qi_projects.objects.filter(sub_county__sub_counties=pk)
     all_projects = list(chain(projects, subcounty_projects))
+
     facility_name = pk
     number_of_projects_created = len(all_projects)
     try:
@@ -2185,6 +2188,7 @@ def sub_county_filter_project(request, pk):
                                       subcounty_qi_projects_df,
                                       ])
         projects_tracked = list_of_projects['project_id'].unique()
+
         print(f"PK:{pk} jere")
         print(list_of_projects)
         pro_perfomance_trial = prepare_viz(list_of_projects, pk, "facility")
@@ -6039,7 +6043,6 @@ def action_plans_for_responsible_person(request, pk):
         'responsible_person': responsible_person,
         'action_plans': action_plans,
     }
-
     return render(request, 'project/qi_team_members.html', context)
 
 
@@ -6185,3 +6188,4 @@ def qiteam_member_filter_project(request, pk):
 
                }
     return render(request, "project/department_filter_projects.html", context)
+

@@ -1,5 +1,6 @@
 # from django.contrib.auth.models import User
 import re
+import uuid
 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -41,6 +42,7 @@ def read_txt(file_):
 
 
 class Program(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     program = models.CharField(max_length=250, unique=True)
 
     # cooperative_agreement_number = models.IntegerField()
@@ -59,6 +61,7 @@ class Program(models.Model):
 
 
 class Hub(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     hub = models.CharField(max_length=250, unique=True)
 
     class Meta:
@@ -75,6 +78,7 @@ class Hub(models.Model):
 
 
 class Facilities(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=250, unique=True)
     mfl_code = models.IntegerField(unique=True)
 
@@ -92,6 +96,7 @@ class Facilities(models.Model):
 
 
 class Counties(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     county_name = models.CharField(max_length=250, unique=True)
 
     # sub_counties = models.ManyToManyField(Sub_counties)
@@ -110,6 +115,7 @@ class Counties(models.Model):
 
 
 class Sub_counties(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     sub_counties = models.CharField(max_length=250, unique=True)
     counties = models.ManyToManyField(Counties)
     facilities = models.ManyToManyField(Facilities)
@@ -129,6 +135,7 @@ class Sub_counties(models.Model):
 
 
 class Trigger(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=200)
 
     class Meta:
@@ -144,6 +151,7 @@ class Trigger(models.Model):
 
 
 class Department(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     # TODO: EXPLORE HOW TO SHARE QI PROJECTS
     department = models.CharField(max_length=250, unique=True)
 
@@ -160,6 +168,7 @@ class Department(models.Model):
 
 
 class Category(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     # TODO: INCLUDE USER USAGE FOR THE ENTIRE APP (LOGINS AND PAGE VIEWS)
     category = models.CharField(max_length=250, unique=True)
 
@@ -176,6 +185,7 @@ class Category(models.Model):
 
 
 class QI_Projects(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     # TODO: INCLUDE SIMS REPORTS,DQAs AND CBS REPORTS SHOWING AREAS OF IMPROVEMENT (SHARED EVERY 2 WEEKS) care&rx,
     #  covid,etc
     # TODO: TRACK USAGE
@@ -204,8 +214,8 @@ class QI_Projects(models.Model):
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
-    created_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                   default=None, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
     STATUS_CHOICES = (
         ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed-or-Closed', 'COMPLETED OR CLOSED'),
@@ -228,8 +238,8 @@ class QI_Projects(models.Model):
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
-    modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                    default=None, on_delete=models.CASCADE, related_name='+')
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -260,6 +270,7 @@ class QI_Projects(models.Model):
 
 
 class Subcounty_qi_projects(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     # FACILITY_CHOICES = read_txt(file_)
     # SUB_COUNTY_CHOICES = read_txt(sub_county_file)
     # COUNTY_CHOICES = read_txt(county_file)
@@ -295,8 +306,8 @@ class Subcounty_qi_projects(models.Model):
     # created_by = models.ForeignKey('auth.User', blank=True, null=True,
     #                                   default=None, on_delete=models.CASCADE)
 
-    created_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                   default=None, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
     STATUS_CHOICES = (
         ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed-or-Closed', 'COMPLETED OR CLOSED'),
@@ -322,8 +333,8 @@ class Subcounty_qi_projects(models.Model):
     # modified_by = models.ForeignKey('auth.User', blank=True, null=True,
     #                                 default=None, on_delete=models.CASCADE, related_name='+')
 
-    modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                    default=None, on_delete=models.CASCADE, related_name='+')
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -359,6 +370,7 @@ class Subcounty_qi_projects(models.Model):
 
 
 class County_qi_projects(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     # COUNTY_CHOICES = read_txt(county_file)
     DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
                           ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
@@ -381,8 +393,8 @@ class County_qi_projects(models.Model):
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
 
-    created_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                   default=None, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
     STATUS_CHOICES = (
         ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed-or-Closed', 'COMPLETED OR CLOSED'),
@@ -406,8 +418,8 @@ class County_qi_projects(models.Model):
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
-    modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                    default=None, on_delete=models.CASCADE, related_name='+')
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -436,6 +448,7 @@ class County_qi_projects(models.Model):
 
 
 class Hub_qi_projects(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
                           ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
                           ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
@@ -457,8 +470,8 @@ class Hub_qi_projects(models.Model):
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
 
-    created_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                   default=None, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
     STATUS_CHOICES = (
         ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed-or-Closed', 'COMPLETED OR CLOSED'),
@@ -482,8 +495,8 @@ class Hub_qi_projects(models.Model):
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
-    modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                    default=None, on_delete=models.CASCADE, related_name='+')
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -512,6 +525,7 @@ class Hub_qi_projects(models.Model):
 
 
 class Program_qi_projects(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
                           ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
                           ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
@@ -533,8 +547,8 @@ class Program_qi_projects(models.Model):
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
 
-    created_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                   default=None, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
     STATUS_CHOICES = (
         ('Started or Ongoing', 'STARTING OR ONGOING'),
         ('Completed-or-Closed', 'COMPLETED OR CLOSED'),
@@ -558,8 +572,8 @@ class Program_qi_projects(models.Model):
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
-    modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                    default=None, on_delete=models.CASCADE, related_name='+')
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -588,6 +602,7 @@ class Program_qi_projects(models.Model):
 
 
 class Close_project(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     project_id = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
     program_id = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
     subcounty_id = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
@@ -604,14 +619,15 @@ class Close_project(models.Model):
 
 
 class TestedChange(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
     program_project = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
     subcounty_project = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE,
-                                              blank=True, null=True)
-    hub_project = models.ForeignKey(Hub_qi_projects, on_delete=models.CASCADE,
-                                       blank=True, null=True)
-    county_project = models.ForeignKey(County_qi_projects, on_delete=models.CASCADE,
                                           blank=True, null=True)
+    hub_project = models.ForeignKey(Hub_qi_projects, on_delete=models.CASCADE,
+                                    blank=True, null=True)
+    county_project = models.ForeignKey(County_qi_projects, on_delete=models.CASCADE,
+                                       blank=True, null=True)
     month_year = models.DateField(verbose_name="Date")
     numerator = models.IntegerField()
     denominator = models.IntegerField()
@@ -630,11 +646,13 @@ class TestedChange(models.Model):
 
 
 class Comment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     content = models.TextField()
     author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     qi_project_title = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, null=True, blank=True)
     program_qi_project_title = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
-    subcounty_qi_project_title = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
+    subcounty_qi_project_title = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE, null=True,
+                                                   blank=True)
     county_project_title = models.ForeignKey(County_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
     hub_qi_project_title = models.ForeignKey(Hub_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -646,6 +664,7 @@ class Comment(models.Model):
 
 
 class LikeDislike(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     # is_like = models.BooleanField(default=True)
@@ -654,6 +673,7 @@ class LikeDislike(models.Model):
 
 
 class ProjectComments(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     qi_project_title = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
     commented_by = models.ForeignKey(CustomUser, blank=True, null=True,
                                      default=None, on_delete=models.CASCADE)
@@ -669,6 +689,7 @@ class ProjectComments(models.Model):
 
 
 class ProjectResponses(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     response_by = models.ForeignKey(CustomUser, blank=True, null=True,
                                     default=None, on_delete=models.CASCADE)
     comment = models.ForeignKey(ProjectComments, blank=True, null=True,
@@ -685,6 +706,7 @@ class ProjectResponses(models.Model):
 
 
 class Resources(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     RESOURCE_TYPE = (
         ("articles", "Articles"),
         ("case studies", "Case Studies"),
@@ -723,6 +745,7 @@ class Resources(models.Model):
 
 
 class Qi_managers(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     first_name = models.CharField(max_length=250)
     last_name = models.CharField(max_length=250)
     phone_number = PhoneNumberField(null=True, blank=True)
@@ -747,6 +770,7 @@ class Qi_managers(models.Model):
 
 
 class Qi_team_members(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     TEAM_MEMBER_LEVEL_CHOICES = [
         ('Facility QI team member', 'Facility QI team member'),
         ('Sub-county QI team member', 'Sub-county QI team member'),
@@ -769,10 +793,11 @@ class Qi_team_members(models.Model):
     subcounty_qi_project = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE,
                                              related_name="qi_team_members", blank=True, null=True)
     hub_qi_project = models.ForeignKey(Hub_qi_projects, on_delete=models.CASCADE,
-                                             related_name="qi_team_members", blank=True, null=True)
+                                       related_name="qi_team_members", blank=True, null=True)
     county_qi_project = models.ForeignKey(County_qi_projects, on_delete=models.CASCADE,
-                                             related_name="qi_team_members", blank=True, null=True)
-    created_by = models.ForeignKey(CustomUser, default=None, on_delete=models.CASCADE)
+                                          related_name="qi_team_members", blank=True, null=True)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, default=None, on_delete=models.CASCADE, related_name="team_member")
 
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
@@ -798,6 +823,7 @@ class Qi_team_members(models.Model):
 
 
 class ArchiveProject(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
     program = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
     subcounty = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
@@ -818,6 +844,7 @@ class ArchiveProject(models.Model):
 
 
 class Stakeholder(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=200)
     role = models.CharField(max_length=200)
     department = models.CharField(max_length=200)
@@ -828,6 +855,7 @@ class Stakeholder(models.Model):
 
 
 class Milestone(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=200, verbose_name='Milestone name')
     start_date = models.DateField()
     end_date = models.DateField()
@@ -840,7 +868,8 @@ class Milestone(models.Model):
     subcounty_qi_project = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
     county_qi_project = models.ForeignKey(County_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
     hub_qi_project = models.ForeignKey(Hub_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
-    created_by = models.ForeignKey(CustomUser, default=None, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
 
     def clean(self):
         if self.start_date > self.end_date:
@@ -856,6 +885,7 @@ class Milestone(models.Model):
 
 
 class ActionPlan(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     corrective_action = models.TextField()
     resources_required = models.TextField()
     responsible = models.ManyToManyField(Qi_team_members)
@@ -871,7 +901,8 @@ class ActionPlan(models.Model):
     subcounty_qi_project = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
     county_qi_project = models.ForeignKey(County_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
     hub_qi_project = models.ForeignKey(Hub_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
-    created_by = models.ForeignKey(CustomUser, default=None, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
     progress = models.FloatField(null=True, blank=True)
@@ -893,6 +924,7 @@ class ActionPlan(models.Model):
 
 
 class Lesson_learned(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     # TODO: INCLUDE CONTROL PLAN MODEL
     project_name = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True, )
     program = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, blank=True, null=True, )
@@ -908,9 +940,10 @@ class Lesson_learned(models.Model):
     recommendations = models.TextField()
     resources = models.TextField()
     # contact_info = models.TextField()
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                    default=None, on_delete=models.CASCADE, related_name='+')
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE, related_name='+')
     future_plans = models.TextField()
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
@@ -920,15 +953,16 @@ class Lesson_learned(models.Model):
 
 
 class Baseline(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     baseline_status = models.ImageField(upload_to='images', null=True, blank=True)
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE, null=True, blank=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True, blank=True)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, null=True, blank=True)
     program_qi_project = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, null=True, blank=True)
     subcounty_qi_project = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE,
-                                              blank=True, null=True)
+                                             blank=True, null=True)
     hub_qi_project = models.ForeignKey(Hub_qi_projects, on_delete=models.CASCADE,
-                                        blank=True, null=True)
+                                       blank=True, null=True)
     county_qi_project = models.ForeignKey(County_qi_projects, on_delete=models.CASCADE,
                                           blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -966,6 +1000,7 @@ class Baseline(models.Model):
 
 
 class SustainmentPlan(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     # TODO: HAVE DASHBOARDS AND REPORTS TO TRACK HOW THE PROJECT IS DOING DURING SUSTAINMENT PHASE. EXPLORE HOW GANNT
     #  CHART AND RACI MATRIX CHART CAN BE INCORPORATED
 
@@ -1011,7 +1046,8 @@ class SustainmentPlan(models.Model):
     consulted = models.TextField()
     # Field to specify the user informed about the objective
     informed = models.TextField()
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
 
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
@@ -1029,6 +1065,7 @@ class SustainmentPlan(models.Model):
 #     modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
 #                                     default=None, on_delete=models.CASCADE, related_name='+')
 class RootCauseImages(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     root_cause_image = models.ImageField(upload_to='images', null=True, blank=True)
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE, null=True, blank=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True, blank=True)

@@ -1,100 +1,12 @@
 {% extends 'project/index.html' %}
 {% load static %}
-
+{% load mathfilters %}
 {% block content %}
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-         <div class="d-flex justify-content-between pt-3 pb-2 mb-3">
+    {% if team_members %}
+     <div class="d-flex justify-content-between pt-3 pb-2 mb-3">
         <h4 >QI Team Members</h4>
-{#             <a href="{% url 'add_qi_team_member' %}" class="btn btn-success mt-4">ADD QI TEAM MEMBER</a>#}
-{#        <div class="btn-toolbar mb-2 mb-md-0">#}
-{#          <div class="btn-group me-2">#}
-{#            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>#}
-{#            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>#}
-{#          </div>#}
-{#          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">#}
-{#            <span data-feather="calendar" class="align-text-bottom"></span>#}
-{#            This week#}
-{#          </button>#}
-{#        </div>#}
       </div>
-
-{#<div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">#}
-{#    <div class="modal-header">#}
-{#        <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>#}
-{#        <h3 id="myModalLabel">Delete</h3>#}
-{#    </div>#}
-{#    <div class="modal-body">#}
-{#        <p></p>#}
-{#    </div>#}
-{#    <div class="modal-footer">#}
-{#        <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>#}
-{#        <button data-dismiss="modal" class="btn red" id="btnYes">Confirm</button>#}
-{#    </div>#}
-{#   </div>#}
-        <table class="table table-striped table-hover">
-    <thead class="thead-dark">
-    <th scope="col"></th>
-
-        {% for col in qi_team_members_.columns %}
-            {% if forloop.counter != 8  and forloop.counter != 9 %}
-                <th scope="col">{{ col }}</th>
-            {% endif %}
-        {% endfor %}
-
-    </thead>
-    <tbody>
-        </tr>
-        {% for index, row in qi_team_members_.iterrows %}
-              <tr>
-                  <th scope="row">{{ index}}</th>
-
-                {% for cell in row %}
-                    {% if forloop.counter != 8 and forloop.counter != 9 %}
-                        {% if forloop.counter == 6 %}
-                              <td>
-                                {{cell|date}}
-                              </td>
-
-                        {% elif forloop.counter == 10 %}
-                            {% if cell > 0 %}
-                              <td class="text-center text-white" style="background-color: green">
-                                    <strong>{{cell}}</strong>
-                              </td>
-                            {% else %}
-                                 <td class="text-center text-white" style="background-color: red">
-                                    <strong>{{cell}}</strong>
-                                 </td>
-                            {% endif %}
-
-                        {% else %}
-                                <td>
-                                {{cell}}
-                              </td>
-                        {% endif %}
-                    {% endif %}
-
-                {% endfor %}
-              <td>
-                {% if row.8 > 0 %}
-                    <a href="{% url 'qicreator_filter_project' row.0 %}" class="btn btn-secondary" role="button">View</a>
-                {% endif %}
-              </td>
-              <td>
-                  <a href="{% url 'update_qi_team_member' row.QI_team_member_id|add:"0" %}" class="btn btn-info" role="button">Update</a>
-              </td>
-              {% if user.is_authenticated %}
-                  {% if user.id == row.created_by.id %}
-                      <td>
-{#                          <a href="{% url 'delete_qi_team_member' row.created_by.id|add:"0" %}" class="btn btn-danger" role="button">Delete</a>#}
-                      </td>
-                  {% endif %}
-              {% endif %}
-              </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-
         <table class="table table-striped table-hover table-users">
     			<thead>
     				<tr>
@@ -106,15 +18,13 @@
     					<th>QI team member level</th>
     					<th>Project Participation</th>
     					<th>Projects Created</th>
+    					<th>Action plans</th>
 {#    					<th></th>#}
     				</tr>
     			</thead>
 
     			<tbody>
                 {% for team in team_members %}
-
-
-
     				<tr>
     					<td>{{ forloop.counter }}</td>
     					<td>
@@ -126,14 +36,23 @@
                       <td>
 {#                        <strong class="badge alert-success">{{ team.num_participating_projects }}</strong>#}
                         <strong class="badge"><a href="{% url 'qi_team_involved' team.user__id %}" >
-                            {{ team.num_participating_projects }}</a></strong>
+                            {{ team.num_participating_projects }}
+                          </a></strong>
                       </td>
                         <td>
 {#                            {{ team.user__username }} {{ team.num_created_projects }}#}
 {#                            <strong class="badge alert-success">{{ team.num_created_projects }}</strong>#}
-                            <strong class="badge"><a href="{% url 'qi_creators' team.user__username %}">
+                            <strong class="badge"><a href="{% url 'qi_creators' team.user__id %}">
                                 {{ team.num_created_projects }}</a></strong>
 
+                        </td>
+                        <td>
+                            <a href="{% url 'action_plans_for_responsible_person' team.user__id %}" class="btn btn-secondary" role="button">Action plans</a>
+                        </td>
+                        <td>
+{#                            {% if qi_manager.combined_sum > 0 %}#}
+                                <a href="{% url 'qiteam_member_filter_project' team.user__id %}" class="btn btn-secondary" role="button">View Projects</a>
+{#                              {% endif %}#}
                         </td>
 {#                    <td>#}
 {#                        <a href="{% url 'qi_team_involved' team.user__id %}" class="btn btn-secondary" role="button">View Projects</a>#}
@@ -145,5 +64,119 @@
 	               </tbody>
 
     		</table>
+    {% else %}
+        <h4 class="text-center">Action Plans for {{ responsible_person.user.first_name|title }} {{ responsible_person.user.last_name|title }}</h4>
+        <hr>
+        <table class="table table-striped table-hover">
+    <thead class="thead-dark">
+        <th scope="col"></th>
+        <th scope="col">QI Projects</th>
+        <th scope="col">Corrective Actions</th>
+        <th scope="col">Resources</th>
+        <th scope="col">Responsible person(s)</th>
+        <th scope="col">constrains</th>
+        <th scope="col">indicator</th>
+        <th scope="col"></th>
+
+    </thead>
+    <tbody>
+        {% for action_plan in action_plans %}
+          <tr>
+              <th scope="row">{{ forloop.counter }}</th>
+                <td>
+                    {% if action_plan.qi_project.id %}
+                    <a href="{% url 'single_project' action_plan.qi_project.id %}">{{ action_plan.qi_project.project_title }}</a>
+                        {% elif action_plan.program_qi_project.id %}
+                    <a href="{% url 'single_project_subcounty' action_plan.program_qi_project.id %}">{{ action_plan.program_qi_project.project_title }}</a>
+                    {% elif action_plan.subcounty_qi_project.id %}
+                        <a href="{% url 'single_project_program' action_plan.subcounty_qi_project.id %}">{{ action_plan.subcounty_qi_project.project_title }}</a>
+                    {% elif action_plan.county_qi_project.id %}
+                        <a href="{% url 'single_project_county' action_plan.county_qi_project.id %}">{{ action_plan.county_qi_project.project_title }}</a>
+                    {% elif action_plan.hub_qi_project.id %}
+                        <a href="{% url 'single_project_hub' action_plan.hub_qi_project.id %}">{{ action_plan.hub_qi_project.project_title }}</a>
+                    {% endif %}
+{#{{ action_plan.qi_project.project_title }}#}
+{#                    {{ action_plan.qi_project.id }}#}
+{#                    <a href="{% url 'single_project' action_plan.qi_project.id %}">{{ action_plan.qi_project.project_title }}</a>#}
+
+
+
+                </td>
+                <td>
+                {{ action_plan.corrective_action }}
+                    <br>
+                    <br>
+                    <span class="badge alert-warning">Start date: {{ action_plan.start_date }}</span>
+{#                    <br>#}
+{#                    <br>#}
+                    <span class="badge alert-info">Due date: {{ action_plan.due_date }}</span>
+
+
+                </td>
+                <td>
+                    {{ action_plan.resources_required }}
+                    <br>
+                    <br>
+                    <span class="badge alert-warning">Timeframe: {{ action_plan.timeframe|add:"0" }} days</span>
+
+
+                </td>
+                <td>
+                    {% for qi_member in action_plan.responsible.all %}
+                        {{ qi_member.user.first_name }} {{ qi_member.user.last_name }} ,
+                    {% endfor %}
+                    <br>
+                    <br>
+                    <span class="badge alert-info">Percent completed: {{ action_plan.percent_completed }}%</span>
+                </td>
+                <td>
+                    {{ action_plan.constraints }}
+                    <br>
+                    <br>
+                    <span class="badge alert-warning">Last updated on: {{ action_plan.date_updated|date:"D j M Y H:i" }}</span>
+
+                </td>
+                <td>
+                    {{ action_plan.indicator }}
+                    <br>
+                    <br>
+                    {% if action_plan.progress >= 0 and action_plan.percent_completed != 100 %}
+                        <span class="badge alert-info">Remaining time: {{ action_plan.progress|add:"0" }} days</span>
+                    {% elif action_plan.progress < 0 and action_plan.percent_completed != 100 %}
+                        <span class="badge alert-danger">Overdue by: {{ action_plan.progress|add:"0" }} days</span>
+                    {% else %}
+                        <span class="badge alert-success">Achieved: {{ action_plan.progress|abs }} days ago</span>
+
+                    {% endif %}
+                </td>
+                <td>
+{#                  <a href="{% url 'update_action_plan' action_plan.id %}" class="btn btn-info" role="button">Update</a>#}
+                {% if facility_project.measurement_status != "Completed-or-Closed" %}
+                     {% if facility_name %}
+            <a href="{% url 'update_action_plan_facility' action_plan.id action_plan.qi_project.facility_name.name %}" class="btn btn-info" role="button">Update</a>
+        {% elif program_name %}
+            <a href="{% url 'update_action_plan_program' action_plan.id action_plan.program_qi_project.program.program %}" class="btn btn-info" role="button">Update</a>
+                                {% elif subcounty_name %}
+            <a href="{% url 'update_action_plan_subcounty' action_plan.id action_plan.subcounty_qi_project.sub_county %}" class="btn btn-info" role="button">Update</a>
+        {% elif county_name %}
+            <a href="{% url 'update_action_plan_county' action_plan.id action_plan.county_qi_project.county.county_name %}" class="btn btn-info" role="button">Update</a>
+            {% elif hub_name %}
+            <a href="{% url 'update_action_plan_hub' action_plan.id action_plan.hub_qi_project.hub.hub %}" class="btn btn-info" role="button">Update</a>
+
+                            {% endif %}
+                            {% endif %}
+                </td>
+                    {% if user.is_authenticated %}
+                      {% if user.id == action_plan.created_by.id %}
+                            <td>
+{#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-danger" role="button">Delete</a>#}
+                            </td>
+                      {% endif %}
+                  {% endif %}
+          </tr>
+        {% endfor %}
+    </tbody>
+</table>
+    {% endif %}
     </main>
 {% endblock %}

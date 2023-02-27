@@ -14,12 +14,12 @@ urlpatterns = [
     path('dqa_summary', dqa_summary, name='dqa_summary'),
     path('instructions', instructions, name='instructions'),
     path('system-assessment-table', system_assessment_table, name='system_assessment_table'),
-    # path('create-dqa-work-plan/<int:pk>', dqa_work_plan_create, name='dqa_work_plan_create'),
-    path('create-dqa-work-plan/<int:pk>/<str:quarter_year>/', dqa_work_plan_create, name='dqa_work_plan_create'),
+    # path('create-dqa-work-plan/<uuid:pk>', dqa_work_plan_create, name='dqa_work_plan_create'),
+    path('create-dqa-work-plan/<uuid:pk>/<str:quarter_year>/', dqa_work_plan_create, name='dqa_work_plan_create'),
 
     path('dqa-plan/', show_dqa_work_plan, name='show_dqa_work_plan'),
 
-    path('update-data-verification/<int:pk>', update_data_verification,name="update_data_verification"),
-    path('delete-data-verification/<int:pk>', delete_data_verification,name="delete_data_verification"),
+    path('update-data-verification/<uuid:pk>', update_data_verification,name="update_data_verification"),
+    path('delete-data-verification/<uuid:pk>', delete_data_verification,name="delete_data_verification"),
 
 ]

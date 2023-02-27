@@ -21,13 +21,11 @@
             {% if pro_perfomance_trial|length == 0 and pro_perfomance_trial|length == number_of_projects_created %}
                     <h6 >No QI projects so far </h6>
             {% elif pro_perfomance_trial|length == 0  or pro_perfomance_trial|length < number_of_projects_created %}
-<<<<<<< HEAD
                 {{ pro_perfomance_trial|length }}
                 {{ number_of_projects_created }}
                  <h6 >{{ pro_perfomance_trial|length }} {{ title }} QI projects</h6>
-=======
                  <h6 >{{ number_of_projects_created }} {{ title }} QI projects</h6>
->>>>>>> 2f4764349435bcb1d6f05318e0d7c349938ba1e8
+
                 <br>
                 <h6 >{{ difference }} QI Project not tracked </h6>
             {% else %}

@@ -2034,7 +2034,6 @@ def qicreator_filter_project(request, pk):
         number_of_projects_with_test_of_change = 0
         difference = number_of_projects_created - number_of_projects_with_test_of_change
         pro_perfomance_trial = None
-
     context = {"projects": all_projects,
                "facility_name": facility_name,
                "title": "Ongoing",
@@ -2119,7 +2118,6 @@ def county_filter_project(request, pk):
                                       fac_qi_projects_df
                                       ])
         projects_tracked = list_of_projects['project_id'].unique()
-
         print(f"PK:{pk} jere")
         print(list_of_projects)
         pro_perfomance_trial = prepare_viz(list_of_projects, pk, "facility")
@@ -2155,7 +2153,6 @@ def sub_county_filter_project(request, pk):
     projects = QI_Projects.objects.filter(sub_county__sub_counties=pk)
     subcounty_projects = Subcounty_qi_projects.objects.filter(sub_county__sub_counties=pk)
     all_projects = list(chain(projects, subcounty_projects))
-
     facility_name = pk
     number_of_projects_created = len(all_projects)
     try:
@@ -2188,7 +2185,6 @@ def sub_county_filter_project(request, pk):
                                       subcounty_qi_projects_df,
                                       ])
         projects_tracked = list_of_projects['project_id'].unique()
-
         print(f"PK:{pk} jere")
         print(list_of_projects)
         pro_perfomance_trial = prepare_viz(list_of_projects, pk, "facility")
@@ -6188,4 +6184,3 @@ def qiteam_member_filter_project(request, pk):
 
                }
     return render(request, "project/department_filter_projects.html", context)
-

@@ -21,11 +21,8 @@ from apps.cqi.views import dashboard, deep_dive_facilities, load_data, monthly_d
     delete_milestone, delete_action_plan, delete_lesson_learnt, delete_comments, delete_sustainable_plan, \
     download_lessons, download_pdf, add_trigger, completed_closed_program, single_project_subcounty, \
     single_project_county, single_project_hub, completed_closed_subcounty, completed_closed_county, \
-<<<<<<< HEAD
     completed_closed_hub, action_plans_for_responsible_person, qiteam_member_filter_project
-=======
-    completed_closed_hub, action_plans_for_responsible_person
->>>>>>> 2f4764349435bcb1d6f05318e0d7c349938ba1e8
+
 
 urlpatterns = [
     path('', dashboard, name="dashboard"),
@@ -68,10 +65,8 @@ urlpatterns = [
     path('county-all-projects/<str:pk>', county_filter_project, name="county_filter_project"),
     path('subcounty-all-projects/<str:pk>', sub_county_filter_project, name="sub_county_filter_project"),
     path('qi-creator/<int:pk>', qi_creator, name="qi_creators"),
-<<<<<<< HEAD
     path('qiteam-member-projects/<int:pk>', qiteam_member_filter_project, name="qiteam_member_filter_project"),
-=======
->>>>>>> 2f4764349435bcb1d6f05318e0d7c349938ba1e8
+
     path('qi-managers-projects/<uuid:pk>', qi_managers_projects, name="qi_managers_projects"),
     path('action_plans_for_responsible_person/<int:pk>', action_plans_for_responsible_person, name="action_plans_for_responsible_person"),
     path('canceled-projects/<str:pk>', canceled_projects, name="canceled_projects"),

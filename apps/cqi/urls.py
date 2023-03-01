@@ -48,7 +48,8 @@ urlpatterns = [
     path('update-comments/<uuid:pk>/', update_comments, name="update_comments"),
     path('comments-response/<uuid:pk>/', comments_response, name="comments_response"),
     path('update-response/<uuid:pk>/', update_response, name="update_response"),
-    path('untracked-projects/', untracked_projects, name="untracked_projects"),
+    # path('untracked-projects/', untracked_projects, name="untracked_projects"),
+    path('untracked-projects/<str:project_type>/', untracked_projects, name='untracked_projects'),
     path('resources/', resources, name="resources"),
     path('sub-counties-list/', sub_counties_list, name="sub_counties_list"),
     path('single-cqi/<uuid:pk>', single_project, name="single_project"),
@@ -56,7 +57,7 @@ urlpatterns = [
     path('single-cqi-subcounty/<uuid:pk>', single_project_subcounty, name="single_project_subcounty"),
     path('single-cqi-county/<uuid:pk>', single_project_county, name="single_project_county"),
     path('single-cqi-hub/<uuid:pk>', single_project_hub, name="single_project_hub"),
-    path('facility-projects/<int:pk>', facility_project, name="facility_project"),
+    path('facility-projects/<uuid:pk>/<str:project_type>/', facility_project, name="facility_project"),
     path('department-projects/<str:pk>', department_project, name="department_project"),
     path('department-all-projects/<str:pk>', department_filter_project, name="department_filter_project"),
     path('qi-managers-own-cqi/<uuid:pk>', qi_managers_filter_project, name="qi_managers_filter_project"),
@@ -185,7 +186,10 @@ urlpatterns = [
 
     path('qi-projects-involved-in/<int:pk>', qi_team_involved, name="qi_team_involved"),
 
-    path('facilities-landing-page/', facilities_landing_page, name="facilities_landing_page"),
+    # path('facilities-landing-page/', facilities_landing_page, name="facilities_landing_page"),
+
+    path('landing-page/<str:project_type>/', facilities_landing_page, name='facilities_landing_page'),
+
     path('program-landing-page/', program_landing_page, name="program_landing_page"),
     # path('update-cqi/<uuid:pk>/', update_project, name="update_project"),
     path('update-project-facility/<uuid:pk>/<str:facility_name>/', update_project, name='update_project_facility'),

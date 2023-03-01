@@ -189,7 +189,6 @@ class QI_Projects(models.Model):
     # TODO: INCLUDE SIMS REPORTS,DQAs AND CBS REPORTS SHOWING AREAS OF IMPROVEMENT (SHARED EVERY 2 WEEKS) care&rx,
     #  covid,etc
     # TODO: TRACK USAGE
-    # TODO: ALLOW USERS TO ADD 3-5 PROCESS ANALYSIS IMAGES
     DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
                           ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
                           ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
@@ -636,8 +635,8 @@ class TestedChange(models.Model):
     comments = models.TextField()
     achievements = models.FloatField(null=True, blank=True)
 
-    # def __str__(self):
-    #     return str(self.cqi)
+    def __str__(self):
+        return str(self.project)
     # return self.tested_change
 
     def save(self, *args, **kwargs):
@@ -925,7 +924,6 @@ class ActionPlan(models.Model):
 
 class Lesson_learned(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    # TODO: INCLUDE CONTROL PLAN MODEL
     project_name = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True, )
     program = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, blank=True, null=True, )
     subcounty = models.ForeignKey(Subcounty_qi_projects, on_delete=models.CASCADE, blank=True, null=True, )

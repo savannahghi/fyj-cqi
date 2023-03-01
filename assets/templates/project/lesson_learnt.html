@@ -73,7 +73,7 @@
                    {% if field.project_name %}
                         <a href="{% url 'single_project' field.project_name.id %}">{{ field.project_name.project_title }}</a>
                         <br>
-                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.project_name.created_by.username %}" >
+                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.project_name.created_by.id %}" >
                         Project created by: {{ field.project_name.created_by.first_name|title }}</a></strong>
                         <br>
                         <strong class="badge alert-warning mt-2">{{ field.project_name.created_by.phone_number }}</strong>
@@ -91,7 +91,7 @@
                    {% elif field.program %}
                        <a href="{% url 'single_project_program' field.program.id %}">{{ field.program.project_title }}</a>
                         <br>
-                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.program.created_by.username %}" >
+                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.program.created_by.id %}" >
                         Project created by: {{ field.program.created_by.first_name|title }}</a></strong>
                         <br>
                         <strong class="badge alert-warning mt-2">{{ field.program.created_by.phone_number }}</strong>
@@ -109,7 +109,7 @@
                    {% elif field.subcounty %}
                        <a href="{% url 'single_project_subcounty' field.subcounty.id %}">{{ field.subcounty.project_title }}</a>
                         <br>
-                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.subcounty.created_by.username %}" >
+                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.subcounty.created_by.id %}" >
                         Project created by: {{ field.subcounty.created_by.first_name|title }}</a></strong>
                         <br>
                         <strong class="badge alert-warning mt-2">{{ field.subcounty.created_by.phone_number }}</strong>
@@ -127,7 +127,7 @@
                    {% elif field.county %}
                        <a href="{% url 'single_project_county' field.county.id %}">{{ field.county.project_title }}</a>
                         <br>
-                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.county.created_by.username %}" >
+                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.county.created_by.id %}" >
                         Project created by: {{ field.county.created_by.first_name|title }}</a></strong>
                         <br>
                         <strong class="badge alert-warning mt-2">{{ field.county.created_by.phone_number }}</strong>
@@ -145,7 +145,7 @@
                    {% elif field.hub %}
                        <a href="{% url 'single_project_hub' field.hub.id %}">{{ field.hub.project_title }}</a>
                         <br>
-                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.hub.created_by.username %}" >
+                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.hub.created_by.id %}" >
                         Project created by: {{ field.hub.created_by.first_name|title }}</a></strong>
                         <br>
                         <strong class="badge alert-warning mt-2">{{ field.hub.created_by.phone_number }}</strong>

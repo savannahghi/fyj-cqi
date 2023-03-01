@@ -127,7 +127,7 @@
                         <br>
                     {% elif field.hub.hub.hub %}
                         <a href="{% url 'single_project_hub' field.hub.id %}">{{ field.hub.project_title }}</a>
-                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.hub.created_by.first_name %}" >
+                        <strong class="badge mt-2"><a href="{% url 'qi_creators' field.hub.created_by.id %}" >
                         Project created by: {{ field.hub.created_by.first_name|title }}</a></strong>
                         <br>
                         <strong class="badge alert-warning mt-2">{{ field.hub.created_by.phone_number }}</strong>

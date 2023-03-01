@@ -327,6 +327,25 @@
                                            {{ comment.program_qi_project_title.project_title }}
                                        </a>
                                    </p>
+                                 {% elif comment.subcounty_qi_project_title %}
+                                    <p class="mb-1">QI PROJECT:
+                                       <a href="{% url 'single_project_subcounty' comment.subcounty_qi_project_title.id %}">
+                                           {{ comment.subcounty_qi_project_title.project_title }}
+                                       </a>
+                                   </p>
+                                 {% elif comment.county_project_title %}
+                                    <p class="mb-1">QI PROJECT:
+                                       <a href="{% url 'single_project_county' comment.county_project_title.id %}">
+                                           {{ comment.county_project_title.project_title }}
+                                       </a>
+                                   </p>
+                                 {% elif comment.hub_qi_project_title %}
+                                    <p class="mb-1">QI PROJECT:
+                                       <a href="{% url 'single_project_hub' comment.hub_qi_project_title.id %}">
+                                           {{ comment.hub_qi_project_title.project_title }}
+                                       </a>
+                                   </p>
+
                               {% endif %}
                           </div>
                           <p class="small mb-0">

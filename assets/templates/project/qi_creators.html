@@ -16,7 +16,7 @@
     <div class="row mt-5">
     <div class="d-flex justify-content-evenly">
         <h5 >{{ num_projects }} QI projects</h5>
-        <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">All projects</a>
+        <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-primary">All projects</a>
       <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
     </div>
 
@@ -47,12 +47,32 @@
           {% if qi.measurement_status == "Canceled" %}
                         <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
                           {% elif qi.measurement_status == "Completed or Closed" %}
-                        <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                              {% if qi.facility_name %}
+                                  <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                              {% elif qi.sub_county %}
+                                  <a href="{% url 'completed_closed_subcounty' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                              {% elif qi.county %}
+                                  <a href="{% url 'completed_closed_county' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                              {% elif qi.program %}
+                                  <a href="{% url 'completed_closed_program' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                              {% elif qi.hub %}
+                                  <a href="{% url 'completed_closed_hub' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                              {% endif %}
                           {% else %}
                           <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">STATUS: {{ qi.measurement_status }}</a>
                       {% endif %}
           <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated|date }} </a>
-          <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
+          {% if qi.facility_name %}
+              <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
+            {% elif qi.sub_county %}
+              <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-secondary">View QI project</a>
+            {% elif qi.county %}
+              <a href="{% url 'single_project_county' qi.id %}" class="btn btn-secondary">View QI project</a>
+            {% elif qi.hub %}
+              <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-secondary">View QI project</a>
+            {% elif qi.program %}
+              <a href="{% url 'single_project_program' qi.id %}" class="btn btn-secondary">View QI project</a>
+            {% endif %}
               {% if user.id == qi.created_by.id %}
 {#          <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>#}
                   {% if facility_name %}
@@ -68,7 +88,17 @@
                 {% endif %}
               {% endif %}
           {% if qi.id not in tracked_projects %}
-            <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+              {% if qi.facility_name %}
+              <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+            {% elif qi.sub_county %}
+              <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+            {% elif qi.county %}
+              <a href="{% url 'single_project_county' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+            {% elif qi.hub %}
+              <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+            {% elif qi.program %}
+              <a href="{% url 'single_project_program' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+            {% endif %}
           {% endif %}
       </div>
       </div>
@@ -114,12 +144,21 @@
             {% if qi.measurement_status == "Canceled" %}
                 <a href="{% url 'canceled_projects' qi.measurement_status %}" class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
             {% elif qi.measurement_status == "Completed or Closed" %}
-                <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                    {% if qi.facility_name %}
+                          <a href="{% url 'completed_closed' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                      {% elif qi.sub_county %}
+                          <a href="{% url 'completed_closed_subcounty' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                      {% elif qi.county %}
+                          <a href="{% url 'completed_closed_county' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                      {% elif qi.program %}
+                          <a href="{% url 'completed_closed_program' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                      {% elif qi.hub %}
+                          <a href="{% url 'completed_closed_hub' qi.measurement_status %}" class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                      {% endif %}
             {% else %}
                 <a href="{% url 'ongoing' qi.measurement_status %}" class="btn btn-success">STATUS: {{ qi.measurement_status }}</a>
             {% endif %}
                 <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated|date }} </a>
-{#          <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>#}
           {% if qi.facility_name %}
                         <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
           {% elif qi.sub_county %}

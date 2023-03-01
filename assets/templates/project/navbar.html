@@ -8,7 +8,7 @@
 {% url "audit_trail" as audit_trail %}
 {% url "comments" as comments %}
 {% url "resources" as resources %}
-{% url "facilities_landing_page" as facilities_landing_page %}
+{% url "facilities_landing_page" project_type='facility' as facilities_landing_page %}
 {% url "sub_counties_list" as sub_counties_list %}
 {% url "lesson_learnt" as lesson_learnt %}
 {% url "show_sustainmentPlan" as show_sustainmentPlan %}
@@ -27,7 +27,7 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link {% if request.path == facilities_landing_page %} active{% endif %}" href="{% url 'facilities_landing_page' %}">
+            <a class="nav-link {% if request.path == facilities_landing_page %} active{% endif %}" href="{% url 'facilities_landing_page' project_type='facility' %}">
               <span data-feather="book-open" class="align-text-bottom"></span>
               All QI projects
             </a>

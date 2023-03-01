@@ -108,7 +108,6 @@ def load_data(request):
                 # Notify the user that the data is incorrect
                 messages.error(request, f'Kindly confirm if {file} has all data columns.The file has'
                                         f'{len(df.columns)} columns')
-                print(df.columns)
                 redirect('load_data')
         else:
             # Notify the user that the data already exists
@@ -181,8 +180,6 @@ def add_data_verification(request):
         if form.is_valid():
             # Get the selected indicator and facility name from the form data
             selected_indicator = form.cleaned_data['indicator']
-            # print("selected_indicator:::::::::::::::::::::::::::::::")
-            # print(selected_indicator)
             selected_facility = form.cleaned_data['facility_name']
 
             # Try to save the form data
@@ -581,7 +578,6 @@ def add_data_verification(request):
 
             # Handle the IntegrityError exception
             except IntegrityError as e:
-                print(e)
                 # Notify the user that the data already exists
                 messages.error(request, f'Data for {selected_facility}, {request.session["selected_quarter"]}, '
                                         f'{selected_indicator} '
@@ -626,8 +622,6 @@ def show_data_verification(request):
         selected_quarter = form.cleaned_data['quarter']
         selected_year = year_form.cleaned_data['year']
         selected_facility = facility_form.cleaned_data['name']
-        print("selected_facility.mfl_code:::::::::::::::")
-        print(selected_facility.mfl_code)
         year_suffix = selected_year[-2:]
         quarters = {
             selected_quarter: [
@@ -644,9 +638,6 @@ def show_data_verification(request):
         quarters = {}
 
     quarter_year = f"{selected_quarter}-{year_suffix}"
-    print(selected_quarter)
-    print(selected_year)
-    print(selected_facility)
     data_verification = DataVerification.objects.filter(quarter_year__quarter=selected_quarter,
                                                         quarter_year__year=selected_year,
                                                         facility_name=selected_facility,
@@ -727,10 +718,7 @@ def update_data_verification(request, pk):
             selected_quarter = item.quarter_year.quarter
             selected_quarter_year = item.quarter_year.id
             selected_year = item.quarter_year.year
-            print("selected_quarter_year:::::::::::::::::::::::::::::::")
-            print(selected_quarter_year)
             selected_facility = form.cleaned_data['facility_name']
-            print(selected_facility)
 
             form.save()
             # Get the saved data for the selected quarter, year, and facility name
@@ -739,8 +727,6 @@ def update_data_verification(request, pk):
                 quarter_year__year=selected_year,
                 facility_name=selected_facility,
             )
-            for i in data_verification:
-                print(i.indicator)
             if data_verification:
                 # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
                 # years' are saved in the database
@@ -1112,12 +1098,8 @@ def update_data_verification(request, pk):
             return HttpResponseRedirect(request.session['page_from'])
     else:
         quarter_year = item.quarter_year.quarter_year
-        print("item::::::::::::::::::::")
-        print(quarter_year)
         year_suffix = quarter_year[-2:]
         selected_quarter = quarter_year[:4]
-        print(selected_quarter)
-        print(year_suffix)
         quarters = {
             selected_quarter: [
                 f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}'
@@ -1228,8 +1210,6 @@ def dqa_summary(request):
         selected_quarter = form.cleaned_data['quarter']
         selected_year = year_form.cleaned_data['year']
         selected_facility = facility_form.cleaned_data['name']
-        print("selected_facility.mfl_code:::::::::::::::")
-        print(selected_facility.mfl_code)
         year_suffix = selected_year[-2:]
     quarter_year = f"{selected_quarter}-{year_suffix}"
 
@@ -1337,12 +1317,10 @@ def dqa_summary(request):
         merged_df['performance'] = merged_df['performance'].fillna(0)
         merged_df['performance'] = merged_df['performance'].astype(int)
         # merged_df = merged_df.sort_values('indicator')
-        # print(merged_df)
         # dicts = {}
         #
         # for indy in merged_df['indicator'].unique():
         #     merged_df_viz = merged_df[merged_df['indicator'] == indy]
-        #     # print(merged_df_viz)
         #     quarter = merged_df_viz['quarter_year'].unique()[0]
         #     dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
 

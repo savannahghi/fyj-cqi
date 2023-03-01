@@ -231,7 +231,7 @@ textarea[name="description"] {
 
 
     <div class="navbar-nav">
-            <a class="nav-link px-3" href="{% url 'facilities_landing_page' %}">CQI</a>
+            <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">CQI</a>
 
         </div>
 <div class="navbar-nav">
@@ -239,7 +239,7 @@ textarea[name="description"] {
 
         </div>
     <div class="navbar-nav">
-            <a class="nav-link px-3" href="{% url 'facilities_landing_page' %}">You are logged in as {{ user.username|title }}</a>
+            <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">You are logged in as {{ user.username|title }}</a>
 
         </div>
         {% if user.is_authenticated and user.is_staff %}

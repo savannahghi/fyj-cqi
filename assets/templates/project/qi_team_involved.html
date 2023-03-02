@@ -22,8 +22,12 @@
     <div class="row mt-5">
     <div class="d-flex justify-content-evenly">
         <h5 >Involved in {{ projects.count }} QI projects</h5>
-        <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">All projects</a>
-      <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+        <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-primary">All projects</a>
+      {% if request.user.is_superuser %}
+                    <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                      {% else %}
+                    <a href="{% url 'choose_project_level' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                  {% endif %}
     </div>
 
       <div class="container-fluid py-5">
@@ -77,32 +81,85 @@
       <div class="card-body">
         <h6 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h6>
           <ul>
-              <li><strong>Facility :</strong> {{ qi.qi_project.facility_name }}</li>
-              <li><strong>Problem background :</strong> {{ qi.qi_project.problem_background }}</li>
-              <li><strong>Objective :</strong> {{ qi.qi_project.objective }}</li>
-              <li><strong>Setting :</strong> {{ qi.qi_project.settings }}</li>
-              <li><strong>Department :</strong> {{ qi.qi_project.departments }}</li>
-{#              <li>Responsible person : {{ qi.responsible_people }}</li>#}
-              <li><strong>Measurement Frequency :</strong> {{ qi.qi_project.measurement_frequency }}</li>
-              <li><strong>Created by :</strong> {{ qi.qi_project.created_by }}</li>
-              {% if qi.qi_project.comments%}
-               <li>Comment (s) : {{ qi.qi_project.comments }}</li>
-              {% endif %}
+          {% if qi.qi_project.facility_name %}
+            <li><strong>Facility :</strong> {{ qi.qi_project.facility_name }}</li>
+            <li><strong>Problem background :</strong> {{ qi.qi_project.problem_background }}</li>
+            <li><strong>Objective :</strong> {{ qi.qi_project.objective }}</li>
+            <li><strong>Setting :</strong> {{ qi.qi_project.settings }}</li>
+            <li><strong>Department :</strong> {{ qi.qi_project.departments }}</li>
+            <li><strong>Measurement Frequency :</strong> {{ qi.qi_project.measurement_frequency }}</li>
+            <li><strong>Created by :</strong> {{ qi.qi_project.created_by }}</li>
+          {% elif qi.subcounty_qi_project.sub_county %}
+             <li><strong>Sub county :</strong> {{ qi.subcounty_qi_project.sub_county }}</li>
+            <li><strong>Problem background :</strong> {{ qi.subcounty_qi_project.problem_background }}</li>
+            <li><strong>Objective :</strong> {{ qi.subcounty_qi_project.objective }}</li>
+            <li><strong>Setting :</strong> {{ qi.subcounty_qi_project.settings }}</li>
+            <li><strong>Department :</strong> {{ qi.subcounty_qi_project.departments }}</li>
+            <li><strong>Measurement Frequency :</strong> {{ qi.subcounty_qi_project.measurement_frequency }}</li>
+            <li><strong>Created by :</strong> {{ qi.subcounty_qi_project.created_by }}</li>
+          {% elif qi.county_qi_project.county %}
+              <li><strong>County :</strong> {{ qi.county_qi_project.county }}</li>
+            <li><strong>Problem background :</strong> {{ qi.county_qi_project.problem_background }}</li>
+            <li><strong>Objective :</strong> {{ qi.county_qi_project.objective }}</li>
+            <li><strong>Setting :</strong> {{ qi.county_qi_project.settings }}</li>
+            <li><strong>Department :</strong> {{ qi.county_qi_project.departments }}</li>
+            <li><strong>Measurement Frequency :</strong> {{ qi.county_qi_project.measurement_frequency }}</li>
+            <li><strong>Created by :</strong> {{ qi.county_qi_project.created_by }}</li>
+          {% elif qi.hub_qi_project.hub %}
+              <li><strong>Hub :</strong> {{ qi.hub_qi_project.hub }}</li>
+            <li><strong>Problem background :</strong> {{ qi.hub_qi_project.problem_background }}</li>
+            <li><strong>Objective :</strong> {{ qi.hub_qi_project.objective }}</li>
+            <li><strong>Setting :</strong> {{ qi.hub_qi_project.settings }}</li>
+            <li><strong>Department :</strong> {{ qi.hub_qi_project.departments }}</li>
+            <li><strong>Measurement Frequency :</strong> {{ qi.hub_qi_project.measurement_frequency }}</li>
+            <li><strong>Created by :</strong> {{ qi.hub_qi_project.created_by }}</li>
+          {% elif qi.program_qi_project.program %}
+              <li><strong>Program :</strong> {{ qi.program_qi_project.program }}</li>
+            <li><strong>Problem background :</strong> {{ qi.program_qi_project.problem_background }}</li>
+            <li><strong>Objective :</strong> {{ qi.program_qi_project.objective }}</li>
+            <li><strong>Setting :</strong> {{ qi.program_qi_project.settings }}</li>
+            <li><strong>Department :</strong> {{ qi.program_qi_project.departments }}</li>
+            <li><strong>Measurement Frequency :</strong> {{ qi.program_qi_project.measurement_frequency }}</li>
+            <li><strong>Created by :</strong> {{ qi.program_qi_project.created_by }}</li>
+          {% endif %}
+
 
           </ul>
           <div class="d-flex justify-content-evenly">
           {% if qi.measurement_status == "Canceled" %}
             <a href="{% url 'canceled_projects' qi.qi_project.measurement_status %}" class="btn btn-warning">{{ qi.qi_project.measurement_status }}</a>
           {% elif qi.measurement_status == "Completed or Closed" %}
-            <a href="{% url 'completed_closed' qi.qi_project.measurement_status %}" class="btn btn-danger">{{ qi.qi_project.measurement_status }}
+                {% if qi.facility_name %}
+                      <a href="{% url 'completed_closed' qi.qi_project.measurement_status %}" class="btn btn-danger">{{ qi.qi_project.measurement_status }}</a>
+                  {% elif qi.sub_county %}
+                      <a href="{% url 'completed_closed_subcounty' qi.subcounty_qi_project.measurement_status %}" class="btn btn-danger">{{ qi.subcounty_qi_project.measurement_status }}</a>
+                  {% elif qi.county %}
+                      <a href="{% url 'completed_closed_county' qi.county_qi_project.measurement_status %}" class="btn btn-danger">{{ qi.county_qi_project.measurement_status }}</a>
+                  {% elif qi.program %}
+                      <a href="{% url 'completed_closed_program' qi.program_qi_project.measurement_status %}" class="btn btn-danger">{{ qi.program_qi_project.measurement_status }}</a>
+                  {% elif qi.hub %}
+                      <a href="{% url 'completed_closed_hub' qi.hub_qi_project.measurement_status %}" class="btn btn-danger">{{ qi.hub_qi_project.measurement_status }}</a>
+                  {% endif %}
           {% else %}
-              <a href="{% url 'ongoing' qi.qi_project.measurement_status %}" class="btn btn-success">{{ qi.qi_project.measurement_status }}</a>
+{#              <a href="{% url 'ongoing' qi.qi_project.measurement_status %}" class="btn btn-success">{{ qi.qi_project.measurement_status }}</a>#}
           {% endif %}
           <a href="#" class="btn btn-primary">Last updated on {{ qi.qi_project.date_updated|date }} </a>
-          <a href="{% url 'single_project' qi.qi_project.id %}" class="btn btn-secondary">View QI project</a>
-              {% if user.id == qi.qi_project.created_by.id %}
-          <a href="{% url 'update_project' qi.qi_project.id %}" class="btn btn-warning">Update project</a>
-              {% endif %}
+{#          <a href="#" class="btn btn-secondary">View QI project</a>#}
+          {% if qi.qi_project.facility_name %}
+                        <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
+          {% elif qi.subcounty_qi_project.sub_county %}
+                        <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-secondary">View QI project</a>
+          {% elif qi.county_qi_project.county %}
+              <a href="{% url 'single_project_county' qi.id %}" class="btn btn-secondary">View QI project</a>
+          {% elif qi.hub_qi_project.hub %}
+              <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-secondary">View QI project</a>
+          {% elif qi.program_qi_project.program %}
+              <a href="{% url 'single_project_program' qi.id %}" class="btn btn-secondary">View QI project</a>
+          {% endif %}
+{#          <a href="{% url 'single_project' qi.qi_project.id %}" class="btn btn-secondary">View QI project</a>#}
+{#              {% if user.id == qi.qi_project.created_by.id %}#}
+{#          <a href="{% url 'update_project' qi.qi_project.id %}" class="btn btn-warning">Update project</a>#}
+{#              {% endif %}#}
 {#          {% if qi.id not in tracked_projects %}#}
 {#            <a href="{% url 'single_project' qi.qi_project.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>#}
 {#          {% endif %}#}

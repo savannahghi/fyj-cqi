@@ -36,7 +36,64 @@ class ProgramQiprojectFilter(django_filters.FilterSet):
 
     class Meta:
         model = Program_qi_projects
-        fields = [ 'project_title', 'departments', 'problem_background', 'program',
+        fields = ['project_title', 'departments', 'problem_background', 'program',
+                  'settings', 'created_by',
+                  'start_date', 'measurement_frequency', 'measurement_status']
+        exclude = ['process_analysis']
+
+
+class SubcountyQiprojectFilter(django_filters.FilterSet):
+    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From')
+    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To')
+    # sub_county = CharFilter(field_name="sub_county", lookup_expr="icontains",label='Sub county')
+    project_title = CharFilter(field_name="project_title", lookup_expr="icontains", label='Project Title')
+    objective = CharFilter(field_name="objective", lookup_expr="icontains", label='Objective')
+    problem_background = CharFilter(field_name="problem_background", lookup_expr="icontains",
+                                    label='Problem Background')
+    # measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
+    settings = CharFilter(field_name="settings", lookup_expr="icontains", label='Settings')
+
+    class Meta:
+        model = Subcounty_qi_projects
+        fields = ['project_title', 'departments', 'problem_background', 'sub_county',
+                  'settings', 'created_by',
+                  'start_date', 'measurement_frequency', 'measurement_status']
+        exclude = ['process_analysis']
+
+
+class CountyQiprojectFilter(django_filters.FilterSet):
+    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From')
+    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To')
+    # county = CharFilter(field_name="county", lookup_expr="icontains",label='County')
+    project_title = CharFilter(field_name="project_title", lookup_expr="icontains", label='Project Title')
+    objective = CharFilter(field_name="objective", lookup_expr="icontains", label='Objective')
+    problem_background = CharFilter(field_name="problem_background", lookup_expr="icontains",
+                                    label='Problem Background')
+    # measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
+    settings = CharFilter(field_name="settings", lookup_expr="icontains", label='Settings')
+
+    class Meta:
+        model = County_qi_projects
+        fields = ['project_title', 'departments', 'problem_background', 'county',
+                  'settings', 'created_by',
+                  'start_date', 'measurement_frequency', 'measurement_status']
+        exclude = ['process_analysis']
+
+
+class HubQiprojectFilter(django_filters.FilterSet):
+    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From')
+    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To')
+    # hub = CharFilter(field_name="hub", lookup_expr="icontains",label='Hub')
+    project_title = CharFilter(field_name="project_title", lookup_expr="icontains", label='Project Title')
+    objective = CharFilter(field_name="objective", lookup_expr="icontains", label='Objective')
+    problem_background = CharFilter(field_name="problem_background", lookup_expr="icontains",
+                                    label='Problem Background')
+    # measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
+    settings = CharFilter(field_name="settings", lookup_expr="icontains", label='Settings')
+
+    class Meta:
+        model = Hub_qi_projects
+        fields = ['project_title', 'departments', 'problem_background', 'hub',
                   'settings', 'created_by',
                   'start_date', 'measurement_frequency', 'measurement_status']
         exclude = ['process_analysis']

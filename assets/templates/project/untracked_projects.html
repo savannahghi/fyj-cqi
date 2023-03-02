@@ -15,14 +15,33 @@
                          {% if project.id not in all_responses %}
                               <div class="card mt-3">
                                   <div class="card-body">
-                                        <h6 class="card-title"> <a href="{% url 'single_project' project.id %}">{{ project.project_title|title }}</a></h6>
+                                      {% if "facility" in project_type %}
+                                          <h6 class="card-title"> <a href="{% url 'single_project' project.id %}">{{ project.project_title|title }}</a></h6>
+                                   {% elif "program" in project_type %}
+                                          <h6 class="card-title"> <a href="{% url 'single_project_program' project.id %}">{{ project.project_title|title }}</a></h6>
+                                   {% elif project_type == "county" %}
+                                          <h6 class="card-title"> <a href="{% url 'single_project_county' project.id %}">{{ project.project_title|title }}</a></h6>
+                                   {% elif project_type == "subcounty" %}
+                                          <h6 class="card-title"> <a href="{% url 'single_project_subcounty' project.id %}">{{ project.project_title|title }}</a></h6>
+                                   {% elif "hub" in project_type %}
+                                          <h6 class="card-title"> <a href="{% url 'single_project_hub' project.id %}">{{ project.project_title|title }}</a></h6>
+                                   {% endif %}
                                           <ul>
-                                              <li><strong>Facility :</strong>  <a href="{% url 'facility_project' project.facility_name.facilities %}">{{ project.facility_name.facilities }}</a></li>
-                                              <li><strong>CQI Project created by :</strong> <a href="{% url 'qi_creators' project.created_by %}">{{ project.created_by|title }}</a> ({{ project.created_by.phone_number }})</li>
-                                              <li><strong>QI Responsible people :</strong> {{ project.responsible_people }}</li>
+                                               {% if "facility" in project_type %}
+                                                   <li><strong>Facility :</strong>  <a href="{% url 'facility_project' pk=project.facility_name.id project_type="facility" %}">{{ project.facility_name.name }}</a></li>
+                                               {% elif "program" in project_type %}
+                                                   <li><strong>Program :</strong>  <a href="{% url 'facility_project' pk=project.program.id project_type="program" %}">{{ project.program.program }}</a></li>
+                                               {% elif project_type == "county" %}
+                                                   <li><strong>County :</strong> <a href="{% url 'facility_project' pk=project.county.id project_type="county" %}">{{ project.county.county_name }}</a></li>
+                                               {% elif project_type == "subcounty" %}
+                                                   <li><strong>Subcounty :</strong> <a href="{% url 'facility_project' pk=project.sub_county.id project_type="subcounty" %}">{{ project.sub_county.sub_counties }}</a></li>
+                                               {% elif "hub" in project_type %}
+                                                   <li><strong>Hub :</strong>  <a href="{% url 'facility_project' pk=project.hub.id project_type="hub" %}">{{ project.hub.hub }}</a></li>
+                                               {% endif %}
+                                              <li><strong>Project created by :</strong> {{ project.created_by }}</li>
                                           </ul>
                                       <div class="card-footer">
-                                        <small class="text-muted">Project created on {{ project.date_updated|date }}</small>
+                                        <small class="text-muted">Project last update on {{ project.date_updated|date }}</small>
                                       </div>
                                   </div>
                               </div>

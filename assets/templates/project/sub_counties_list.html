@@ -7,11 +7,12 @@
            <div class="col-md-8">
                <h4 class="h5">COUNTIES, SUB-COUNTIES & FACILITIES</h4>
            </div>
-
+ {% if request.user.is_superuser %}
         <div class="col-md-4 d-flex justify-content-between">
             <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
             <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>
         </div>
+           {% endif %}
       </div>
 
 {#<div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">#}
@@ -36,8 +37,10 @@
             <th>Counties</th>
             <th>Sub County</th>
             <th>Facilities</th>
+             {% if request.user.is_superuser %}
             <th></th>
-            <th></th>
+            {% endif %}
+{#            <th></th>#}
         </tr>
 
     </thead>
@@ -61,9 +64,12 @@
                     {{ facility}},
                 {% endfor %}
             </td>
+         {% if request.user.is_superuser %}
             <td>
+
                 <a href="{% url 'update_sub_counties' sub_county.id  %}" class="btn btn-info" role="button">Update</a>
             </td>
+        {% endif %}
         </tr>
         {% endfor %}
     </tbody>

@@ -8,7 +8,7 @@
 {% url "audit_trail" as audit_trail %}
 {% url "comments" as comments %}
 {% url "resources" as resources %}
-{% url "facilities_landing_page" as facilities_landing_page %}
+{% url "facilities_landing_page" project_type='facility' as facilities_landing_page %}
 {% url "sub_counties_list" as sub_counties_list %}
 {% url "lesson_learnt" as lesson_learnt %}
 {% url "show_sustainmentPlan" as show_sustainmentPlan %}
@@ -27,7 +27,7 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link {% if request.path == facilities_landing_page %} active{% endif %}" href="{% url 'facilities_landing_page' %}">
+            <a class="nav-link {% if request.path == facilities_landing_page %} active{% endif %}" href="{% url 'facilities_landing_page' project_type='facility' %}">
               <span data-feather="book-open" class="align-text-bottom"></span>
               All QI projects
             </a>
@@ -46,9 +46,9 @@
 
         <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
           <span>TEAMS</span>
-          <a class="link-secondary" href="#" aria-label="Add a new report">
-            <span data-feather="plus-circle" class="align-text-bottom"></span>
-          </a>
+{#          <a class="link-secondary" href="#" aria-label="Add a new report">#}
+{#            <span data-feather="plus-circle" class="align-text-bottom"></span>#}
+{#          </a>#}
         </h6>
         <ul>
 
@@ -70,9 +70,9 @@
 
         <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
           <span>Saved reports</span>
-          <a class="link-secondary" href="#" aria-label="Add a new report">
-            <span data-feather="plus-circle" class="align-text-bottom"></span>
-          </a>
+{#          <a class="link-secondary" href="#" aria-label="Add a new report">#}
+{#            <span data-feather="plus-circle" class="align-text-bottom"></span>#}
+{#          </a>#}
         </h6>
         <ul class="nav flex-column mb-2">
          <li class="nav-item">

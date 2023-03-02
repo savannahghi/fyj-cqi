@@ -17,6 +17,27 @@ class QI_ProjectsForm(ModelForm):
         empty_label="Select facility",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+    hub = forms.ModelChoiceField(
+        queryset=Hub.objects.all(),
+        empty_label="Select Hub",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    qi_manager = forms.ModelChoiceField(
+        queryset=Qi_managers.objects.all(),
+        empty_label="Select Qi manager",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    departments = forms.ModelChoiceField(
+        queryset=Department.objects.all(),
+        empty_label="Select department",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    project_category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        empty_label="Select component",
+        label="Component",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
 
     # def __init__(self, *args, **kwargs):
     # Django Model Forms - Setting a required field (True/False)
@@ -30,7 +51,6 @@ class QI_ProjectsForm(ModelForm):
                    ]
         labels = {
             'measurement_frequency': 'Monitoring frequency',
-            'project_category': 'Component',
         }
         widgets = {
             'problem_background': forms.Textarea(attrs={
@@ -94,10 +114,65 @@ class QI_ProjectsConfirmForm(ModelForm):
 
 
 class QI_ProjectsSubcountyForm(ModelForm):
+    sub_county = forms.ModelChoiceField(
+        queryset=Sub_counties.objects.all(),
+        empty_label="Select sub-county",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    qi_manager = forms.ModelChoiceField(
+        queryset=Qi_managers.objects.all(),
+        empty_label="Select Qi manager",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    departments = forms.ModelChoiceField(
+        queryset=Department.objects.all(),
+        empty_label="Select department",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    project_category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        empty_label="Select component",
+        label="Component",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+
     class Meta:
         model = Subcounty_qi_projects
         fields = "__all__"
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone', 'county']
+        labels = {
+            'measurement_frequency': 'Monitoring frequency',
+        }
+        widgets = {
+            'problem_background': forms.Textarea(attrs={
+                'placeholder': 'Include current status, previous attempt, relevant research and studies, barriers, '
+                               'importance of the change you intend to make and the need for improvement. For '
+                               'example: The XYZ health center currently has a viral load uptake rate of 50%. '
+                               'Despite previous efforts to increase uptake, barriers such as lack of resources, '
+                               'education, and awareness among patients have hindered progress. Research has shown '
+                               'that viral load testing is crucial in monitoring the effectiveness of antiretroviral '
+                               'therapy (ART) and identifying potential resistance to ART. However, low viral load '
+                               'uptake at the health center may lead to poor health outcomes for patients living with '
+                               'HIV and hinder population-level HIV control. Given the importance of viral load '
+                               'testing and the need for improvement at the XYZ health center, this CQI cqi aims '
+                               'to increase viral load uptake from 50% to 100% by January 2023.'}),
+            'objective': forms.Textarea(attrs={
+                'placeholder': "A cqi objective is a clear and specific statement that defines the goal or "
+                               "outcome that the cqi is aiming to achieve. It should be a summary of the problem "
+                               "background and should indicate the gap between the current situation and the desired "
+                               "outcome. For example: To increase the viral load uptake from 50% to 100% by January "
+                               "2023, by implementing education and training for staff, providing better systems for "
+                               "patients to receive their test results in a timely manner and collaborating with other "
+                               "organizations to improve services."}),
+            'project_title': forms.TextInput(attrs={
+                'placeholder': "A cqi title is a brief, clear, and descriptive name for the cqi that "
+                               "summarizes the main focus or objective of the cqi. "}),
+            'numerator': forms.TextInput(attrs={
+                'placeholder': "eg: The number of eligible patients with a valid viral load sample taken."}),
+            'denominator': forms.TextInput(attrs={
+                'placeholder': "eg: The total number of eligible patients for viral load."}),
+            'triggers': forms.CheckboxSelectMultiple,
+        }
         # widgets = {
         #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
         #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
@@ -112,29 +187,123 @@ class QI_ProjectsSubcountyForm(ModelForm):
 
 
 class QI_Projects_countyForm(ModelForm):
+    county = forms.ModelChoiceField(
+        queryset=Counties.objects.all(),
+        empty_label="Select County",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    qi_manager = forms.ModelChoiceField(
+        queryset=Qi_managers.objects.all(),
+        empty_label="Select Qi manager",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    departments = forms.ModelChoiceField(
+        queryset=Department.objects.all(),
+        empty_label="Select department",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    project_category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        empty_label="Select component",
+        label="Component",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+
     class Meta:
         model = County_qi_projects
         fields = "__all__"
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
-        # widgets = {
-        #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
-        #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
-        #                                                'type': 'date', 'max': datetime.now().date}),
-        # }
+        widgets = {
+            'problem_background': forms.Textarea(attrs={
+                'placeholder': 'Include current status, previous attempt, relevant research and studies, barriers, '
+                               'importance of the change you intend to make and the need for improvement. For '
+                               'example: The XYZ health center currently has a viral load uptake rate of 50%. '
+                               'Despite previous efforts to increase uptake, barriers such as lack of resources, '
+                               'education, and awareness among patients have hindered progress. Research has shown '
+                               'that viral load testing is crucial in monitoring the effectiveness of antiretroviral '
+                               'therapy (ART) and identifying potential resistance to ART. However, low viral load '
+                               'uptake at the health center may lead to poor health outcomes for patients living with '
+                               'HIV and hinder population-level HIV control. Given the importance of viral load '
+                               'testing and the need for improvement at the XYZ health center, this CQI cqi aims '
+                               'to increase viral load uptake from 50% to 100% by January 2023.'}),
+            'objective': forms.Textarea(attrs={
+                'placeholder': "A cqi objective is a clear and specific statement that defines the goal or "
+                               "outcome that the cqi is aiming to achieve. It should be a summary of the problem "
+                               "background and should indicate the gap between the current situation and the desired "
+                               "outcome. For example: To increase the viral load uptake from 50% to 100% by January "
+                               "2023, by implementing education and training for staff, providing better systems for "
+                               "patients to receive their test results in a timely manner and collaborating with other "
+                               "organizations to improve services."}),
+            'project_title': forms.TextInput(attrs={
+                'placeholder': "A cqi title is a brief, clear, and descriptive name for the cqi that "
+                               "summarizes the main focus or objective of the cqi. "}),
+            'numerator': forms.TextInput(attrs={
+                'placeholder': "eg: The number of eligible patients with a valid viral load sample taken."}),
+            'denominator': forms.TextInput(attrs={
+                'placeholder': "eg: The total number of eligible patients for viral load."}),
+            'triggers': forms.CheckboxSelectMultiple,
+        }
 
     field_order = ['qi_manager']
 
 
 class QI_Projects_hubForm(ModelForm):
+    hub = forms.ModelChoiceField(
+        queryset=Hub.objects.all(),
+        empty_label="Select hub",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    qi_manager = forms.ModelChoiceField(
+        queryset=Qi_managers.objects.all(),
+        empty_label="Select Qi manager",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    departments = forms.ModelChoiceField(
+        queryset=Department.objects.all(),
+        empty_label="Select department",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    project_category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        empty_label="Select component",
+        label="Component",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+
     class Meta:
         model = Hub_qi_projects
         fields = "__all__"
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
-        # widgets = {
-        #     'first_cycle_date': forms.DateInput(format=('%Y-%m-%d'),
-        #                                         attrs={'class': 'form-control', 'placeholder': 'Select Date',
-        #                                                'type': 'date', 'max': datetime.now().date}),
-        # }
+        widgets = {
+            'problem_background': forms.Textarea(attrs={
+                'placeholder': 'Include current status, previous attempt, relevant research and studies, barriers, '
+                               'importance of the change you intend to make and the need for improvement. For '
+                               'example: The XYZ health center currently has a viral load uptake rate of 50%. '
+                               'Despite previous efforts to increase uptake, barriers such as lack of resources, '
+                               'education, and awareness among patients have hindered progress. Research has shown '
+                               'that viral load testing is crucial in monitoring the effectiveness of antiretroviral '
+                               'therapy (ART) and identifying potential resistance to ART. However, low viral load '
+                               'uptake at the health center may lead to poor health outcomes for patients living with '
+                               'HIV and hinder population-level HIV control. Given the importance of viral load '
+                               'testing and the need for improvement at the XYZ health center, this CQI cqi aims '
+                               'to increase viral load uptake from 50% to 100% by January 2023.'}),
+            'objective': forms.Textarea(attrs={
+                'placeholder': "A cqi objective is a clear and specific statement that defines the goal or "
+                               "outcome that the cqi is aiming to achieve. It should be a summary of the problem "
+                               "background and should indicate the gap between the current situation and the desired "
+                               "outcome. For example: To increase the viral load uptake from 50% to 100% by January "
+                               "2023, by implementing education and training for staff, providing better systems for "
+                               "patients to receive their test results in a timely manner and collaborating with other "
+                               "organizations to improve services."}),
+            'project_title': forms.TextInput(attrs={
+                'placeholder': "A cqi title is a brief, clear, and descriptive name for the cqi that "
+                               "summarizes the main focus or objective of the cqi. "}),
+            'numerator': forms.TextInput(attrs={
+                'placeholder': "eg: The number of eligible patients with a valid viral load sample taken."}),
+            'denominator': forms.TextInput(attrs={
+                'placeholder': "eg: The total number of eligible patients for viral load."}),
+            'triggers': forms.CheckboxSelectMultiple,
+        }
 
     field_order = ['qi_manager']
 
@@ -204,7 +373,7 @@ class TestedChangeForm(ModelForm):
     class Meta:
         model = TestedChange
         fields = "__all__"
-        exclude = ['achievements', 'project', 'program_project']
+        exclude = ['achievements', 'project', 'program_project', 'subcounty_project', 'county_project', 'hub_project']
         widgets = {
             'data_sources': forms.TextInput(attrs={
                 'placeholder': 'Specify the tools or systems used to collect data for the metric',
@@ -338,7 +507,8 @@ class Qi_team_membersForm(ModelForm):
     class Meta:
         model = Qi_team_members
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'created_by', 'program_qi_project', 'program']
+        exclude = ['facility', 'qi_project', 'created_by', 'program_qi_project', 'program', 'subcounty_qi_project',
+                   'hub_qi_project', 'county_qi_project']
         labels = {
             'user': 'Team Member',
         }
@@ -362,7 +532,7 @@ class ArchiveProjectForm(ModelForm):
     class Meta:
         model = ArchiveProject
         fields = "__all__"
-        exclude = ['qi_project']
+        exclude = ['qi_project', 'program', 'subcounty', 'hub', 'county']
 
     field_order = ['qi_project']
 
@@ -380,7 +550,8 @@ class MilestoneForm(ModelForm):
     class Meta:
         model = Milestone
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'created_by', 'program', 'program_qi_project']
+        exclude = ['facility', 'qi_project', 'created_by', 'program', 'program_qi_project', 'subcounty_qi_project',
+                   'county_qi_project', 'hub_qi_project']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Major tasks or phases of the cqi'}),
 
@@ -404,22 +575,36 @@ class ActionPlanForm(ModelForm):
         model = ActionPlan  # specify the model that the form is based on
         fields = "__all__"  # include all fields from the model
         exclude = ['facility', 'qi_project', 'created_by', 'progress', 'program', 'program_qi_project',
-                   'timeframe']  # exclude these fields from the form
+                   'timeframe', 'county_qi_project', 'subcounty_qi_project',
+                   'hub_qi_project']  # exclude these fields from the form
         widgets = {
             'responsible': forms.CheckboxSelectMultiple  # render the 'responsible' field as checkboxes
         }
 
-    def __init__(self, facility, qi_projects, *args, **kwargs):
+    def __init__(self, facility, qi_projects, level, *args, **kwargs):
         # call the parent class's init method
         super(ActionPlanForm, self).__init__(*args, **kwargs)
-        try:
+        if level == "facility":
             # filter the 'responsible' field's queryset based on the passed facility and qi_project
             self.fields['responsible'].queryset = Qi_team_members.objects.filter(facility=facility,
                                                                                  qi_project=qi_projects)
-        except:
+        elif level == "program":
             # filter the 'responsible' field's queryset based on the passed facility and qi_project
             self.fields['responsible'].queryset = Qi_team_members.objects.filter(program=facility,
                                                                                  program_qi_project=qi_projects)
+        elif level == "subcounty":
+            # filter the 'responsible' field's queryset based on the passed facility and qi_project
+            self.fields['responsible'].queryset = Qi_team_members.objects.filter(
+                subcounty_qi_project__sub_county=facility,
+                subcounty_qi_project=qi_projects)
+        elif level == "county":
+            # filter the 'responsible' field's queryset based on the passed facility and qi_project
+            self.fields['responsible'].queryset = Qi_team_members.objects.filter(county_qi_project__county=facility,
+                                                                                 county_qi_project=qi_projects)
+        elif level == "hub":
+            # filter the 'responsible' field's queryset based on the passed facility and qi_project
+            self.fields['responsible'].queryset = Qi_team_members.objects.filter(hub_qi_project__hub=facility,
+                                                                                 hub_qi_project=qi_projects)
         # check if an instance is passed to the form
         if 'instance' in kwargs:
             instance = kwargs.pop('instance')
@@ -441,7 +626,7 @@ class Lesson_learnedForm(ModelForm):
     class Meta:
         model = Lesson_learned
         fields = "__all__"
-        exclude = ['project_name', 'created_by', 'modified_by']
+        exclude = ['project_name', 'created_by', 'modified_by', 'program', 'subcounty', 'county', 'hub']
         widgets = {
 
             'key_successes': forms.Textarea(attrs={
@@ -452,7 +637,7 @@ class Lesson_learnedForm(ModelForm):
 
             'challenges': forms.Textarea(attrs={
                 'placeholder': "Describe the challenges that were encountered during the cqi. This can"
-                               " help others understand what what didn't work well, and how those lessons can be "
+                               " help others understand what didn't work well, and how those lessons can be "
                                "applied to future projects.",
                 'style': 'font-size: 14px;', }),
             'best_practices': forms.Textarea(attrs={
@@ -482,7 +667,9 @@ class BaselineForm(ModelForm):
     class Meta:
         model = Baseline
         fields = "__all__"
-        exclude = ['facility', 'qi_project', 'program', 'program_qi_project']
+        exclude = ['facility', 'qi_project', 'program', 'program_qi_project', 'subcounty_qi_project',
+                   'county_qi_project',
+                   'hub_qi_project']
 
 
 class ProgramForm(ModelForm):
@@ -508,7 +695,7 @@ class SustainmentPlanForm(ModelForm):
     class Meta:
         model = SustainmentPlan
         fields = "__all__"
-        exclude = ['created_by']
+        exclude = ['created_by', 'program', 'qi_project', 'subcounty', 'county', 'hub']
         widgets = {
             'objectives': forms.Textarea(attrs={
                 'placeholder': "Captures the overall objectives of the sustainment plan, including what the plan aims "
@@ -607,3 +794,27 @@ class TriggerForm(ModelForm):
         labels = {
             "name": "Trigger name"
         }
+
+
+class ShowTriggerForm(ModelForm):
+    name = forms.ModelChoiceField(
+        queryset=Trigger.objects.all(),
+        empty_label="Select trigger",
+        label="Trigger",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    class Meta:
+        model = Trigger
+        fields = "__all__"
+        labels = {
+            "name": "Trigger name"
+        }
+
+
+class BestPerformingForm(forms.Form):
+    PERCENTAGE_CHOICES = [(str(x), str(x)) for x in range(5, 101, 5)]
+    percentage = forms.ChoiceField(
+        choices=PERCENTAGE_CHOICES,
+        label="Choose threshold (%)",
+        widget=forms.Select(attrs={'class': 'form-control select2'})
+    )

@@ -16,7 +16,12 @@
 
         </div>
      <div class="row mb-4">
-         <h6 class="mb-4 mt-4">FACILITY: {{ qi_project.facility_name}}</h6>
+         {% if qi_project.facility_name %}
+              <h6 class="mb-4 mt-4">FACILITY: {{ qi_project.facility_name}}</h6>
+         {% elif qi_project.program %}
+              <h6 class="mb-4 mt-4">PROGRAM: {{ qi_project.program}}</h6>
+         {% endif %}
+
           <h6 class="mb-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
                 <div class="col-md-6">
                        <strong>OBJECTIVE(s): </strong>{{ qi_project.objective|title }}

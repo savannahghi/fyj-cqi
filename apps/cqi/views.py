@@ -31,7 +31,7 @@ from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, Proje
     DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
     ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm, \
     BaselineForm, CommentForm, HubForm, SustainmentPlanForm, ProgramForm, RootCauseImagesForm, TriggerForm, \
-    BestPerformingForm
+    BestPerformingForm, ShowTriggerForm
 from .filters import *
 
 import plotly.express as px
@@ -600,7 +600,8 @@ def add_project(request):
     if request.method == "POST":
         form = QI_ProjectsConfirmForm(request.POST)
         county_form = QI_Projects_countyForm(request.POST)
-        if form.is_valid() and county_form.is_valid():
+        trigger_form = TriggerForm(request.POST)
+        if form.is_valid() and county_form.is_valid() and trigger_form.is_valid():
             # form.save()
             # # do not save first, wait to update foreign key
             post = form.save(commit=False)
@@ -624,13 +625,15 @@ def add_project(request):
             # save
             post.save()
             county_form.save()
+            trigger_form.save()
 
             # redirect back to the page the user was from after saving the form
             return HttpResponseRedirect(request.session['page_from'])
     else:
         form = QI_ProjectsConfirmForm()
         county_form = QI_Projects_countyForm()
-    context = {"form": form, "county_form": county_form}
+        trigger_form = ShowTriggerForm()
+    context = {"form": form, "county_form": county_form,"trigger_form":trigger_form}
     return render(request, "project/add_project.html", context)
 
 
@@ -1212,14 +1215,12 @@ def make_archive_charts(list_of_projects):
 
         # concat and sort them by cqi id
         df_heads = pd.concat(lst).sort_values("achievements", ascending=False)
+        keys = [project for project in list(df_heads['project_id'])]
 
         all_other_projects_trend = []
-        keys = []
-        for project in list(df_heads['project_id']):
-            keys.append(project)
-            # filter dfs based on the order of the best performing projects
+        for project in list_of_projects['cqi'].unique():
             all_other_projects_trend.append(
-                prepare_trends(list_of_projects[list_of_projects['project_id'] == project]))
+                prepare_trends(list_of_projects[list_of_projects['cqi'] == project], project))
         dicts = {}
         for i in range(len(keys)):
             dicts[keys[i]] = all_other_projects_trend[i]

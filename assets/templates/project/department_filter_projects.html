@@ -30,7 +30,11 @@
             {% endif %}
             <a href="{% url 'dashboard' %}" class="btn btn-primary">Dashboard</a>
             <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-primary">All projects</a>
-            <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+            {% if request.user.is_superuser %}
+                    <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                      {% else %}
+                    <a href="{% url 'choose_project_level' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                  {% endif %}
         </div>
     {% if difference %}
 {#        {% if difference > 0 and pro_perfomance_trial|length > 0 %}#}

@@ -796,8 +796,23 @@ class TriggerForm(ModelForm):
         }
 
 
+class ShowTriggerForm(ModelForm):
+    name = forms.ModelChoiceField(
+        queryset=Trigger.objects.all(),
+        empty_label="Select trigger",
+        label="Trigger",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    class Meta:
+        model = Trigger
+        fields = "__all__"
+        labels = {
+            "name": "Trigger name"
+        }
+
+
 class BestPerformingForm(forms.Form):
-    PERCENTAGE_CHOICES = [(str(x), str(x)) for x in range(5,101,5)]
+    PERCENTAGE_CHOICES = [(str(x), str(x)) for x in range(5, 101, 5)]
     percentage = forms.ChoiceField(
         choices=PERCENTAGE_CHOICES,
         label="Choose threshold (%)",

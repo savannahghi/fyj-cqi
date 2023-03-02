@@ -144,31 +144,7 @@
                 {% for k,dict in dicts.items %}
                 {% if qi.id == k %}
                     <div class="col-md-4" >
-                        <div class="card">
-                          <div class="card-body">
-                            <div class="col">
-                                <div class="row ">
-                                    {% if qi.facility_name %}
-                                      <a href="{% url 'single_project' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
-                                    {% elif qi.sub_county %}
-                                      <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
-                                    {% elif qi.county %}
-                                      <a href="{% url 'single_project_county' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
-                                    {% elif qi.hub %}
-                                      <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
-                                    {% elif qi.program %}
-                                      <a href="{% url 'single_project_program' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
-                                    {% endif %}
-                                     {{ dict|safe }}
-                                </div>
-                            </div>
-                          </div>
-                            <div class="card-footer">
-                              {% for project_archived in qi.archiveproject_set.all %}
-                                <small class="text-muted">Archived on {{ project_archived.date_updated }}</small>
-                              {% endfor %}
-                            </div>
-                        </div>
+                         {{ dict|safe }}
                     </div>
                 {% endif %}
             {% endfor %}

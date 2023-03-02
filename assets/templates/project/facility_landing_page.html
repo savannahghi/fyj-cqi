@@ -9,7 +9,11 @@
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
      <div class="p-5 mb-4 bg-light rounded-3">
      <div class="d-flex justify-content-around">
-          <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+          {% if request.user.is_superuser %}
+                    <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                      {% else %}
+                    <a href="{% url 'choose_project_level' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                  {% endif %}
 
 {#         <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-outline-success">ALL PROJECTS</a>#}
           <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-outline-success">FACILITY PROJECTS</a>

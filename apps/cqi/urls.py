@@ -19,7 +19,7 @@ from apps.cqi.views import dashboard, deep_dive_facilities, load_data, monthly_d
     update_action_plan, update_lesson_learnt, update_baseline, update_fields, update_sustainable_plan, \
     delete_test_of_change, delete_project, delete_comment, delete_response, delete_resource, delete_qi_team_member, \
     delete_milestone, delete_action_plan, delete_lesson_learnt, delete_comments, delete_sustainable_plan, \
-    download_lessons, download_pdf, add_trigger
+    download_lessons, download_pdf
 
 urlpatterns = [
     path('', dashboard, name="dashboard"),
@@ -101,7 +101,6 @@ urlpatterns = [
     path('add-image/<int:pk>', add_images, name="add_images"),
     path('create-comment/<int:pk>', create_comment, name="create_comment"),
     path('add-program/', add_program, name="add_program"),
-    path('add-trigger/', add_trigger, name="add_trigger"),
 
 
     path('qi-projects-involved-in/<int:pk>', qi_team_involved, name="qi_team_involved"),

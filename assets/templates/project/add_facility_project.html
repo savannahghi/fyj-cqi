@@ -7,12 +7,14 @@
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
     <div class="p-5 mb-4 bg-light rounded-3">
       <div class="container-fluid py-5">
-      {% if "facility" in title %}
-      <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
-      {% elif "program" in title %}
-          <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
+      {% if title %}
 
+
+          <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
+          {% else %}
+          <h6 class="display-6 fw-bold text-primary">UPDATE {{ update|upper }} QI</h6>
       {% endif %}
+
 
           <div class="d-flex justify-content-between">
               <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
@@ -60,6 +62,28 @@
             </div>
             <div class="col-md-3 mt-4">
                 {{ form.program|as_crispy_field }}
+            </div>
+
+            {% elif "sub" in  title %}
+            <div class="col-md-3 mt-4">
+                {{ form.project_category|as_crispy_field }}
+            </div>
+            <div class="col-md-3 mt-4">
+                {{ form.sub_county|as_crispy_field }}
+            </div>
+            {% elif title == "county"  %}
+            <div class="col-md-3 mt-4">
+                {{ form.project_category|as_crispy_field }}
+            </div>
+            <div class="col-md-3 mt-4">
+                {{ form.county|as_crispy_field }}
+            </div>
+            {% elif title == "hub"  %}
+            <div class="col-md-3 mt-4">
+                {{ form.project_category|as_crispy_field }}
+            </div>
+            <div class="col-md-3 mt-4">
+                {{ form.hub|as_crispy_field }}
             </div>
         {% endif %}
 
@@ -112,7 +136,16 @@
             <div class="col-md-3 mt-4 pt-2">
                 <input class="btn btn-success mt-1" type="submit" value="Submit">
             </div>
+{% if messages %}
+        <ul class="messages">
+             <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                    {% for message in messages|slice:":1" %}
+                    <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
+                    {% endfor %}
+                </div>
 
+       </ul>
+    {% endif %}
         </form>
       </div>
     </div>

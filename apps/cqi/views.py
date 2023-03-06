@@ -312,6 +312,8 @@ def dashboard(request):
     facility_qi_projects = None
     subcounty_qi_projects = None
     county_qi_projects = None
+    hub_qi_projects = None
+    program_qi_projects = None
     department_qi_projects = None
     best_performing_dic = None
     dicts = None
@@ -633,7 +635,7 @@ def add_project(request):
         form = QI_ProjectsConfirmForm()
         county_form = QI_Projects_countyForm()
         trigger_form = ShowTriggerForm()
-    context = {"form": form, "county_form": county_form,"trigger_form":trigger_form}
+    context = {"form": form, "county_form": county_form, "trigger_form": trigger_form}
     return render(request, "project/add_project.html", context)
 
 
@@ -1247,153 +1249,161 @@ def archived(request):
     # hub_projects = Hub_qi_projects.objects.all().order_by('-date_updated')
     # program_projects = Program_qi_projects.objects.all().order_by('-date_updated')
 
-    # Get a list of archived qi projects
-    archived_projects_ = ArchiveProject.objects.filter(
-        Q(qi_project_id__isnull=False) |
-        Q(program_id__isnull=False) |
-        Q(county_id__isnull=False) |
-        Q(hub_id__isnull=False) |
-        Q(subcounty_id__isnull=False),
-        archive_project=True
-    ).values_list('qi_project_id', 'program_id', 'county_id', 'hub_id', 'subcounty_id')
+    try:
+        # Get a list of archived qi projects
+        archived_projects_ = ArchiveProject.objects.filter(
+            Q(qi_project_id__isnull=False) |
+            Q(program_id__isnull=False) |
+            Q(county_id__isnull=False) |
+            Q(hub_id__isnull=False) |
+            Q(subcounty_id__isnull=False),
+            archive_project=True
+        ).values_list('qi_project_id', 'program_id', 'county_id', 'hub_id', 'subcounty_id')
 
-    archived_projects = [item for project in archived_projects_ for item in project if item is not None]
+        archived_projects = [item for project in archived_projects_ for item in project if item is not None]
 
-    # Apply filters to each of the 5 models
-    qi_projects = QI_Projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
-    qi_filter = QiprojectFilter(request.GET, queryset=qi_projects)
-    filtered_qi_projects = qi_filter.qs
+        # Apply filters to each of the 5 models
+        qi_projects = QI_Projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
+        qi_filter = QiprojectFilter(request.GET, queryset=qi_projects)
+        filtered_qi_projects = qi_filter.qs
 
-    subcounty_projects = Subcounty_qi_projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
-    subcounty_filter = SubcountyQiprojectFilter(request.GET, queryset=subcounty_projects)
-    filtered_subcounty_projects = subcounty_filter.qs
+        subcounty_projects = Subcounty_qi_projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
+        subcounty_filter = SubcountyQiprojectFilter(request.GET, queryset=subcounty_projects)
+        filtered_subcounty_projects = subcounty_filter.qs
 
-    county_projects = County_qi_projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
-    county_filter = CountyQiprojectFilter(request.GET, queryset=county_projects)
-    filtered_county_projects = county_filter.qs
+        county_projects = County_qi_projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
+        county_filter = CountyQiprojectFilter(request.GET, queryset=county_projects)
+        filtered_county_projects = county_filter.qs
 
-    hub_projects = Hub_qi_projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
-    hub_filter = HubQiprojectFilter(request.GET, queryset=hub_projects)
-    filtered_hub_projects = hub_filter.qs
+        hub_projects = Hub_qi_projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
+        hub_filter = HubQiprojectFilter(request.GET, queryset=hub_projects)
+        filtered_hub_projects = hub_filter.qs
 
-    program_projects = Program_qi_projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
-    program_filter = ProgramQiprojectFilter(request.GET, queryset=program_projects)
-    filtered_program_projects = program_filter.qs
+        program_projects = Program_qi_projects.objects.filter(id__in=archived_projects).order_by('-date_updated')
+        program_filter = ProgramQiprojectFilter(request.GET, queryset=program_projects)
+        filtered_program_projects = program_filter.qs
 
-    # all_projects = list(chain(projects, subcounty_projects, hub_projects, county_projects, program_projects))
-    all_projects = list(chain(filtered_qi_projects, filtered_subcounty_projects, filtered_county_projects,
-                              filtered_hub_projects, filtered_program_projects))
-    # TODO: FINALIZE ON THE FILTER AND PAGINATION
+        # all_projects = list(chain(projects, subcounty_projects, hub_projects, county_projects, program_projects))
+        all_projects = list(chain(filtered_qi_projects, filtered_subcounty_projects, filtered_county_projects,
+                                  filtered_hub_projects, filtered_program_projects))
+        # TODO: FINALIZE ON THE FILTER AND PAGINATION
 
-    # Paginate the concatenated queryset
-    paginator = Paginator(all_projects, 10)  # 10 items per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+        # Paginate the concatenated queryset
+        paginator = Paginator(all_projects, 10)  # 10 items per page
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
 
-    # Apply pagination to the concatenated result
-    filtered_projects = pagination_(request, all_projects)
+        # Apply pagination to the concatenated result
+        filtered_projects = pagination_(request, all_projects)
 
-    # concatenated_projects = concatenate_filters(filtered_qi_projects, filtered_subcounty_projects,
-    #                                             filtered_county_projects, filtered_hub_projects,
-    #                                             filtered_program_projects)
-    # paginator = paginate(concatenated_projects)
+        # concatenated_projects = concatenate_filters(filtered_qi_projects, filtered_subcounty_projects,
+        #                                             filtered_county_projects, filtered_hub_projects,
+        #                                             filtered_program_projects)
+        # paginator = paginate(concatenated_projects)
 
-    # Get a list of tracked qi projects
-    tracked_projects_ = TestedChange.objects.filter(
-        Q(project_id__isnull=False) |
-        Q(program_project__isnull=False) |
-        Q(county_project__isnull=False) |
-        Q(hub_project__isnull=False) |
-        Q(subcounty_project__isnull=False)
-    ).values_list('project_id', 'program_project_id', 'county_project_id', 'hub_project_id', 'subcounty_project_id')
+        # Get a list of tracked qi projects
+        tracked_projects_ = TestedChange.objects.filter(
+            Q(project_id__isnull=False) |
+            Q(program_project__isnull=False) |
+            Q(county_project__isnull=False) |
+            Q(hub_project__isnull=False) |
+            Q(subcounty_project__isnull=False)
+        ).values_list('project_id', 'program_project_id', 'county_project_id', 'hub_project_id', 'subcounty_project_id')
 
-    tracked_projects = [item for project in tracked_projects_ for item in project if item is not None]
-    # Get a list of archived qi projects
-    archived_projects_ = ArchiveProject.objects.filter(
-        Q(qi_project_id__isnull=False) |
-        Q(program_id__isnull=False) |
-        Q(county_id__isnull=False) |
-        Q(hub_id__isnull=False) |
-        Q(subcounty_id__isnull=False),
-        archive_project=True
-    ).values_list('qi_project_id', 'program_id', 'county_id', 'hub_id', 'subcounty_id')
+        tracked_projects = [item for project in tracked_projects_ for item in project if item is not None]
+        # Get a list of archived qi projects
+        archived_projects_ = ArchiveProject.objects.filter(
+            Q(qi_project_id__isnull=False) |
+            Q(program_id__isnull=False) |
+            Q(county_id__isnull=False) |
+            Q(hub_id__isnull=False) |
+            Q(subcounty_id__isnull=False),
+            archive_project=True
+        ).values_list('qi_project_id', 'program_id', 'county_id', 'hub_id', 'subcounty_id')
 
-    archived_projects = [item for project in archived_projects_ for item in project if item is not None]
+        archived_projects = [item for project in archived_projects_ for item in project if item is not None]
 
-    testedChange_current = TestedChange.objects.filter(
-        Q(project_id__in=archived_projects) |
-        Q(program_project_id__in=archived_projects) |
-        Q(subcounty_project_id__in=archived_projects) |
-        Q(county_project_id__in=archived_projects) |
-        Q(hub_project_id__in=archived_projects)
-    ).order_by('-achievements')
+        testedChange_current = TestedChange.objects.filter(
+            Q(project_id__in=archived_projects) |
+            Q(program_project_id__in=archived_projects) |
+            Q(subcounty_project_id__in=archived_projects) |
+            Q(county_project_id__in=archived_projects) |
+            Q(hub_project_id__in=archived_projects)
+        ).order_by('-achievements')
 
-    # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
-    # list_of_projects = my_filters.qs
+        # my_filters = TestedChangeFilter(request.GET, queryset=list_of_projects)
+        # list_of_projects = my_filters.qs
 
-    facility_projects = [
-        {'achievements': x.achievements,
-         'month_year': x.month_year,
-         'project_id': x.project_id,
-         'tested of change': x.tested_change,
-         'facility': x.project,
-         'cqi': x.project.project_title if x.project else None,
-         'department': x.project.departments.department if x.project else None,
-         } for x in testedChange_current
-    ]
-    subcounty_projects = [
-        {'achievements': x.achievements,
-         'month_year': x.month_year,
-         'project_id': x.subcounty_project_id,
-         'tested of change': x.tested_change,
-         'facility': x.subcounty_project,
-         'cqi': x.subcounty_project.project_title if x.subcounty_project else None,
-         'department': x.subcounty_project.departments.department if x.subcounty_project else None,
-         } for x in testedChange_current
-    ]
-    # county_projects = [
-    #     {'achievements': x.achievements,
-    #      'month_year': x.month_year,
-    #      'project_id': x.county_project_id,
-    #      'tested of change': x.tested_change,
-    #      'facility': x.county_project,
-    #      'cqi': x.county_project.project_title if x.county_project else None,
-    #      'department': x.county_project.departments.department if x.county_project else None,
-    #      } for x in testedChange_current
-    # ]
-    # program_projects = [
-    #     {'achievements': x.achievements,
-    #      'month_year': x.month_year,
-    #      'project_id': x.program_project_id,
-    #      'tested of change': x.tested_change,
-    #      'facility': x.program_project,
-    #      'cqi': x.program_project.project_title if x.program_project else None,
-    #      'department': x.program_project.departments.department if x.program_project else None,
-    #      } for x in testedChange_current
-    # ]
-    # hub_projects = [
-    #     {'achievements': x.achievements,
-    #      'month_year': x.month_year,
-    #      'project_id': x.hub_project_id,
-    #      'tested of change': x.tested_change,
-    #      'facility': x.hub_project,
-    #      'cqi': x.hub_project.project_title if x.hub_project else None,
-    #      'department': x.hub_project.departments.department if x.hub_project else None,
-    #      } for x in testedChange_current
-    # ]
+        facility_projects = [
+            {'achievements': x.achievements,
+             'month_year': x.month_year,
+             'project_id': x.project_id,
+             'tested of change': x.tested_change,
+             'facility': x.project,
+             'cqi': x.project.project_title if x.project else None,
+             'department': x.project.departments.department if x.project else None,
+             } for x in testedChange_current
+        ]
+        subcounty_projects = [
+            {'achievements': x.achievements,
+             'month_year': x.month_year,
+             'project_id': x.subcounty_project_id,
+             'tested of change': x.tested_change,
+             'facility': x.subcounty_project,
+             'cqi': x.subcounty_project.project_title if x.subcounty_project else None,
+             'department': x.subcounty_project.departments.department if x.subcounty_project else None,
+             } for x in testedChange_current
+        ]
+        # county_projects = [
+        #     {'achievements': x.achievements,
+        #      'month_year': x.month_year,
+        #      'project_id': x.county_project_id,
+        #      'tested of change': x.tested_change,
+        #      'facility': x.county_project,
+        #      'cqi': x.county_project.project_title if x.county_project else None,
+        #      'department': x.county_project.departments.department if x.county_project else None,
+        #      } for x in testedChange_current
+        # ]
+        # program_projects = [
+        #     {'achievements': x.achievements,
+        #      'month_year': x.month_year,
+        #      'project_id': x.program_project_id,
+        #      'tested of change': x.tested_change,
+        #      'facility': x.program_project,
+        #      'cqi': x.program_project.project_title if x.program_project else None,
+        #      'department': x.program_project.departments.department if x.program_project else None,
+        #      } for x in testedChange_current
+        # ]
+        # hub_projects = [
+        #     {'achievements': x.achievements,
+        #      'month_year': x.month_year,
+        #      'project_id': x.hub_project_id,
+        #      'tested of change': x.tested_change,
+        #      'facility': x.hub_project,
+        #      'cqi': x.hub_project.project_title if x.hub_project else None,
+        #      'department': x.hub_project.departments.department if x.hub_project else None,
+        #      } for x in testedChange_current
+        # ]
 
-    # convert data from database to a dataframe
-    facility_projects_df = pd.DataFrame(facility_projects)
-    subcounty_projects_df = pd.DataFrame(subcounty_projects)
-    county_projects_df = pd.DataFrame(county_projects)
-    hub_projects_df = pd.DataFrame(hub_projects)
-    program_projects_df = pd.DataFrame(program_projects)
-    all_projects_df = pd.concat([facility_projects_df, subcounty_projects_df, county_projects_df,
-                                 hub_projects_df, program_projects_df])
-    list_of_projects = all_projects_df[all_projects_df['cqi'].notnull()]
+        # convert data from database to a dataframe
+        facility_projects_df = pd.DataFrame(facility_projects)
+        subcounty_projects_df = pd.DataFrame(subcounty_projects)
+        county_projects_df = pd.DataFrame(county_projects)
+        hub_projects_df = pd.DataFrame(hub_projects)
+        program_projects_df = pd.DataFrame(program_projects)
+        all_projects_df = pd.concat([facility_projects_df, subcounty_projects_df, county_projects_df,
+                                     hub_projects_df, program_projects_df])
+        list_of_projects = all_projects_df[all_projects_df['cqi'].notnull()]
 
-    if list_of_projects.shape[0] > 0:
-        pro_perfomance_trial, dicts = make_archive_charts(list_of_projects)
+        if list_of_projects.shape[0] > 0:
+            pro_perfomance_trial, dicts = make_archive_charts(list_of_projects)
+    except:
+        all_projects = None
+        qi_filter = None
+        filtered_projects = None
+        tracked_projects = None
+        archived_projects = None
+        pro_perfomance_trial = None
 
     context = {"qi_list": all_projects,
                "my_filters": qi_filter,
@@ -1408,6 +1418,7 @@ def archived(request):
                "dicts": dicts,
                }
     return render(request, "project/archived.html", context)
+
 
 def pair_iterable_for_delta_changes(iterable):
     a, b = tee(iterable)

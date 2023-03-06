@@ -110,6 +110,15 @@ class SystemAssessmentForm(ModelForm):
             'auditor_note': forms.Textarea(attrs={'size': '40','rows': '5'})
         }
 
+    # This is the constructor method of the form
+    def __init__(self, *args, **kwargs):
+        # Call the parent constructor method
+        super().__init__(*args, **kwargs)
+        # Loop through all the fields in the form
+        for field in self.fields:
+            # Set the label of each field to False
+            self.fields[field].label = False
+
     def clean(self):
         cleaned_data = super().clean()
         for field_name in ['id','modified_by', 'created_at', 'updated_at']:

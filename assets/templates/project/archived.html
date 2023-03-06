@@ -17,6 +17,7 @@
         <p>Thank you for visiting our page, and we hope that you find it useful.</p>
     </div>
     <div class="mt-3">
+    {% if my_filters %}
       <form class="row g-3">
             <div class="col-md-2">
                 {{ my_filters.form.county|as_crispy_field }}
@@ -37,6 +38,7 @@
                 <button class="btn btn-outline-primary" type="submit">search</button>
             </div>
       </form>
+    {% endif %}
       <div class="col-md-2 mt-3">
           {% if qi_list.has_other_pages %}
                 <ul class="pagination justify-content-end">

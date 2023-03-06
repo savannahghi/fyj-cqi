@@ -1,5 +1,5 @@
 {% load static %}
-{% include "project/navbar.html" %}
+{% include "pmtct/navbar_pmtct.html" %}
 <!doctype html>
 <html lang="en">
   <head>
@@ -8,7 +8,7 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.104.2">
-    <title>USAID FYJ CQI Dashboard</title>
+    <title>USAID FYJ DQA Dashboard</title>
 
     <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/dashboard/">
       <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/footers/">
@@ -21,6 +21,9 @@
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css">
 
       <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/css/select2.min.css" rel="stylesheet" />
+      <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/smoothness/jquery-ui.css">
+
+
 
 
 
@@ -120,13 +123,14 @@
         }
               .my-table {
             position: relative;
-            z-index: 1; /* this will make the table appear above the navbar */
+            {#z-index: 1; /* this will make the table appear above the navbar */#}
         }
               thead {
                   background-color: #6c757d;
   color: #fff;
           position: sticky;
           top: 56px; /* this will make the table header stick 56px below the navbar */
+                   z-index: 1; /* ensure that the thead is above other table content */
         }
 
               .comments-card {
@@ -139,14 +143,69 @@
         .full-width-input {
             width: 100%;
         }
-.card.enlarged {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(1.05);
-  z-index: 1;
-  transition: transform 0.3s ease-in-out;
+    {#    table td {#}
+    {#    width: 1em;#}
+    {#    height: 50px;#}
+    {#    text-align: left;#}
+    {#    vertical-align: top;#}
+        {#padding: 10px;#}
+
+td {
+  {#width: 50px;#}
+  {#height: 20px;#}
+  font-size: 12px;
+  {#overflow: hidden;#}
+  {#text-overflow: ellipsis;#}
+  {#white-space: nowrap;#}
 }
+
+/* Add a class of animated to the element to be animated */
+.animated {
+    /* Set the duration of the animation to 5 seconds */
+    animation-duration: 5s;
+    /* Make sure the element retains its state after the animation is complete */
+    animation-fill-mode: both;
+}
+
+/* Define the keyframes of the fade-in animation */
+@keyframes fadeIn {
+    /* Start the animation with the element having an opacity of 0 */
+    from {
+        opacity: 0;
+    }
+    /* End the animation with the element having an opacity of 1 */
+    to {
+        opacity: 1;
+    }
+}
+
+/* Add a class of fadeIn to the element to trigger the fade-in animation */
+.fadeIn {
+    /* Assign the fade-in animation to the element */
+    animation-name: fadeIn;
+}
+
+
+.flicker-button {
+  /* This selector is used to add style to the button element with the class name "flicker-button" */
+  animation: flicker 1s infinite;
+  /* The animation property is applied to the button with the value "flicker" for 1 second, with infinite repetition */
+}
+
+@keyframes flicker {
+  /* The keyframes define the animation for the "flicker" animation */
+  0% { background-color: green; }
+  /* At 0% of the animation, the background color of the button is set to green */
+  50% { background-color: red; }
+  /* At 50% of the animation, the background color of the button is set to red */
+  100% { background-color: green; }
+  /* At 100% of the animation, the background color of the button is set back to green */
+}
+
+textarea[name="description"] {
+    background-color: grey;
+}
+
     </style>
 
 
@@ -162,7 +221,7 @@
   </head>
   <body>
 <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-  <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="{% url 'dashboard' %}">USAID FAHARI YA JAMII CQI</a>
+  <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="{% url 'show_data_verification' %}">USAID FAHARI YA JAMII PMTCT</a>
   <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -171,20 +230,19 @@
     </form>
 
 
-
     <div class="navbar-nav">
-            <a class="nav-link px-3" href="{% url 'show_data_verification' %}">DQA</a>
+            <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">CQI</a>
 
         </div>
-<div class="navbar-nav">
-            <a class="nav-link px-3" href="{% url 'add_patient_details' %}">PMTCT</a>
+ <div class="navbar-nav">
+            <a class="nav-link px-3" href="{% url 'show_data_verification' %}">DQA</a>
 
         </div>
 <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'monthly_data_review' %}">Monthly data review</a>
 
         </div>
-<div class="navbar-nav">
+    <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">You are logged in as {{ user.username|title }}</a>
 
         </div>
@@ -229,8 +287,13 @@
       $("#id_end_date").datepicker();
       $("#id_due_date").datepicker();
       $("#id_month_year").datepicker();
-      $("#id_dqa_date").datepicker();
-      $("#id_due_complete_by").datepicker();
+      $("#id_date_of_birth").datepicker();
+      $("#id_date_enrolled_anc").datepicker();
+      $("#id_date_started_on_art").datepicker();
+      $("#id_update_status_date").datepicker();
+      $("#id_lmp").datepicker();
+      $("#id_edd").datepicker();
+
     });
   </script>
 
@@ -240,21 +303,21 @@
     let table = document.getElementsByClassName("my-table")[0];
     table.style.marginTop = navbarHeight + 'px';
 </script>
-
-  <!--This enables searching and filtering the dropdown-->
+<!--This enables searching and filtering the dropdown-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
     $('.select2').select2();
 });
 </script>
+{#  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>#}
+{#  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>#}
 
-  <script>
-function enlargeCard(card) {
-  card.classList.toggle("enlarged");
-}
-</script>
-
+{#  <script>#}
+{#    $(document).ready(function() {#}
+{#      $('input[type="date"]').datepicker();#}
+{#    });#}
+{#  </script>#}
   </body>
 
   <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">

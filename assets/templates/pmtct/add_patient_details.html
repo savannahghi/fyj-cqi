@@ -1,0 +1,105 @@
+{% extends 'pmtct/index_pmtct.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+ <h6 class="display-6 text-primary text-center">MTCT RAF-RISK Assessment Tool</h6>
+<hr>
+    <div class="p-5 mb-4 bg-light rounded-3">
+      <div class="container-fluid py-5">
+{#      {% if title %}#}
+{##}
+{##}
+          <h6 class="display-6 fw-bold text-primary text-center">Add patient details</h6>
+          <hr>
+{#          {% else %}#}
+{#          <h6 class="display-6 fw-bold text-primary">UPDATE {{ update|upper }} QI</h6>#}
+{#      {% endif %}#}
+
+
+{#          <div class="d-flex justify-content-between">#}
+{#              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>#}
+{#              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>#}
+{#              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>#}
+{#              {% if "facility" in title %}#}
+{#                  <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>#}
+{#                 {% elif "program" in title %}#}
+{#              <a href="{% url 'add_program' %}" class="btn btn-success" role="button">ADD PROGRAM</a>#}
+{##}
+{#              {% endif %}#}
+{##}
+{#              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>#}
+{#              <a href="{% url 'add_hub' %}" class="btn btn-success" role="button">ADD HUB</a>#}
+{#              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
+{#          </div>#}
+
+        <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+            {% csrf_token %}
+        <div class="col-md-3 mt-4">
+                {{ form.facility_name|as_crispy_field }}
+            </div>
+        <div class="col-md-3 mt-4">
+                {{ form.ccc_no|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-4">
+                {{ form.first_name|as_crispy_field }}
+            </div>
+        <div class="col-md-2 mt-4">
+                {{ form.middle_name|as_crispy_field }}
+            </div>
+        <div class="col-md-2 mt-4">
+                {{ form.last_name|as_crispy_field }}
+            </div>
+
+            <div class="col-md-2 mt-4">
+                {{ form.date_of_birth|as_crispy_field }}
+            </div>
+
+        <div class="col-md-2 mt-4">
+                {{ form.lmp|as_crispy_field }}
+            </div>
+        <div class="col-md-2 mt-4">
+                {{ form.date_enrolled_anc|as_crispy_field }}
+            </div>
+
+        <div class="col-md-2 mt-4">
+                {{ form.on_art|as_crispy_field }}
+            </div>
+        <div class="col-md-2 mt-4">
+                {{ form.date_started_on_art|as_crispy_field }}
+            </div>
+         <div class="col-md-2 mt-4">
+                {{ form.marital_status|as_crispy_field }}
+            </div>
+            <hr>
+        <div class="col-md-2 mt-4">
+                {{ form.partner_status|as_crispy_field }}
+            </div>
+
+        <div class="col-md-2 mt-4">
+                {{ form.update_status|as_crispy_field }}
+            </div>
+        <div class="col-md-2 mt-4">
+                {{ form.update_status_date|as_crispy_field }}
+            </div>
+
+            <div class="col-md-2 mt-4 pt-2">
+                <input class="btn btn-success mt-1" type="submit" value="Submit">
+            </div>
+{% if messages %}
+        <ul class="messages">
+             <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                    {% for message in messages|slice:":1" %}
+                    <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
+                    {% endfor %}
+                </div>
+
+       </ul>
+    {% endif %}
+        </form>
+      </div>
+    </div>
+</main>
+{% endblock %}

@@ -67,7 +67,16 @@
                <hr>
 
            <div class="row" >
+           {% if plot_div %}
+{#                <div class="col-md-12 mt-3" >#}
+             <div>
+  {{ plot_div|safe }}
+</div>
+{#</div>#}
+
+           {% endif %}
            {% if dicts %}
+
 
 
            <p class="text-center text-primary" >

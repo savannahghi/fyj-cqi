@@ -1,0 +1,276 @@
+{% extends 'pmtct/index_pmtct.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+ <h6 class="display-6 text-primary text-center">MTCT RAF-RISK Assessment Tool</h6>
+<hr>
+
+
+
+    <div class="p-5 mb-4 bg-light rounded-3">
+
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <div class="alert alert-info col-12" role="alert">
+        <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
+    </div>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+      <div class="container-fluid">
+          <h6 class="text-center text-primary">FILTERS</h6>
+          <form method="get" class="row g-3" autocomplete="off">
+            {% csrf_token %}
+              <div class="col-md-2">
+              {{ filter.form.facility_name|as_crispy_field }}
+            </div>
+              <div class="col-md-2">
+              {{ filter.form.first_name|as_crispy_field }}
+            </div>
+              <div class="col-md-2">
+              {{ filter.form.age|as_crispy_field }}
+            </div>
+               <div class="col-md-2">
+              {{ filter.form.age_below|as_crispy_field }}
+            </div>
+
+
+            <div class="col-md-2">
+              {{ filter.form.start_date|as_crispy_field }}
+            </div>
+            <div class="col-md-2">
+              {{ filter.form.end_date|as_crispy_field }}
+            </div>
+              <div class="col-md-2">
+              {{ filter.form.ccc_no|as_crispy_field }}
+            </div>
+              <div class="col-md-2">
+              {{ filter.form.gestation_above|as_crispy_field }}
+            </div>
+              <div class="col-md-2">
+              {{ filter.form.gestation_below|as_crispy_field }}
+            </div>
+
+            <div class="col-md-2">
+              {{ filter.form.marital_status|as_crispy_field }}
+            </div>
+            <div class="col-md-2">
+              {{ filter.form.partner_status|as_crispy_field }}
+            </div>
+
+
+
+            <div class="col-md-2">
+              {{ filter.form.on_art|as_crispy_field }}
+            </div>
+            <div class="col-md-3">
+              {{ filter.form.date_started_on_art_above|as_crispy_field }}
+            </div>
+              <div class="col-md-3">
+              {{ filter.form.date_started_on_art|as_crispy_field }}
+            </div>
+            <div class="col-md-2">
+                {{ filter.form.update_status|as_crispy_field }}
+            </div>
+
+            <div class="col-md-3 mt-4 p-1">
+              <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
+            </form>
+
+      </div>
+      </div>
+<div>
+    <p>
+  <a class="btn btn-warning" data-bs-toggle="collapse" href="#multiCollapseExample1" role="button" aria-expanded="false" aria-controls="multiCollapseExample1">MISSING RISK CATEGORIZATION DATA</a>
+  <button class="btn btn-success" type="button" data-bs-toggle="collapse" data-bs-target="#multiCollapseExample2" aria-expanded="false" aria-controls="multiCollapseExample2">WITH RISK CATEGORIZATION DATA</button>
+  <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target=".multi-collapse" aria-expanded="false" aria-controls="multiCollapseExample1 multiCollapseExample2">BOTH</button>
+</p>
+<div class="row mb-2">
+  <div class="col">
+    <div class="collapse multi-collapse" id="multiCollapseExample1">
+      <div class="card card-body">
+      <p>MISSING RISK CATEGORIZATION DATA</p>
+          <hr>
+        <ol>
+    {% for patient in filter.qs %}
+        {% if patient.id not in risk_categorization_data %}
+        <li> <a href="{% url 'add_client_characteristics_trial' patient.id %}" class="badge alert-warning mt-2">{{ patient.ccc_no}}</a></li>
+        {% endif %}
+        {% endfor %}
+    </ol>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="collapse multi-collapse" id="multiCollapseExample2">
+      <div class="card card-body">
+      <p>WITH RISK CATEGORIZATION DATA</p>
+          <hr>
+         <ol>
+    {% for patient in filter.qs %}
+        {% if patient.id in risk_categorization_data %}
+        <li> <a href="{% url 'add_client_characteristics_trial' patient.id %}" class="badge alert-info mt-2">{{ patient.ccc_no}}</a></li>
+        {% endif %}
+        {% endfor %}
+    </ol>
+      </div>
+    </div>
+  </div>
+</div>
+{% if chart_html %}
+
+
+<div class="card mb-2" >
+   <div class="card-body">
+      <div class="container">
+         <div class="col">
+            {% if chart_html %}
+            <div class="row ">
+               {{ chart_html|safe }}
+            </div>
+            {% endif %}
+
+         </div>
+      </div>
+   </div>
+</div>
+</div>
+{% endif %}
+{% if high_risk_objects %}
+<div>
+    <a class="btn btn-danger mt-2 mb-2" data-bs-toggle="collapse" href="#collapserootcause" role="button" aria-expanded="false" aria-controls="collapserootcause">
+VIEW HIGH RISK CLIENTS
+</a>
+</div>
+
+<div class="collapse bg-light mt-2" id="collapserootcause">
+       <table class="table table-striped table-hover" style="font-size: x-small;">
+    <thead class="thead-dark">
+    <tr>
+        <th>Facility Name</th>
+      <th>Name</th>
+      <th>Date of Birth</th>
+      <th>Age</th>
+      <th>CCC No</th>
+      <th>LMP</th>
+      <th>EDD</th>
+      <th>Gestation by Age</th>
+      <th>Date Enrolled ANC</th>
+      <th>Marital Status</th>
+      <th>Partner Status</th>
+      <th>On ART</th>
+      <th>Date Started on ART</th>
+      <th>Update Status</th>
+      <th>Update Status Date</th>
+
+
+    </tr>
+  </thead>
+  <tbody>
+    {% for patient in high_risk_objects %}
+    <tr>
+    <td>{{ patient.pmtct_mother.facility_name }}</td>
+      <td>{{ patient.pmtct_mother.first_name }} {{ patient.pmtct_mother.middle_name }} {{ patient.pmtct_mother.last_name }}</td>
+      <td>{{ patient.pmtct_mother.date_of_birth|date:"Y-m-d" }}</td>
+      <td>{{ patient.pmtct_mother.age }} yrs</td>
+      <td>
+          {% if patient.pmtct_mother.id in risk_categorization_data %}
+              {{ patient.pmtct_mother.ccc_no }}
+              <br>
+              <a href="{% url 'add_client_characteristics_trial' patient.pmtct_mother.id %}" class="badge alert-info mt-2">VIEW DATA</a>
+            {% else %}
+              {{ patient.pmtct_mother.ccc_no }}
+              <br>
+{#              <a href="{% url 'add_client_characteristics' patient.id %}" class="badge alert-warning mt-2">Add risk categorization data</a>#}
+              <a href="{% url 'add_client_characteristics_trial' patient.pmtct_mother.id %}" class="badge alert-warning mt-2">Add risk categorization data</a>
+          {% endif %}
+      </td>
+      <td>{{ patient.pmtct_mother.lmp|date:"Y-m-d" }}</td>
+      <td>{{ patient.pmtct_mother.edd|date:"Y-m-d" }}</td>
+      <td>{{ patient.pmtct_mother.gestation_by_age }} wks</td>
+      <td>{{ patient.pmtct_mother.date_enrolled_anc|date:"Y-m-d" }}</td>
+      <td>{{ patient.pmtct_mother.marital_status }}</td>
+      <td>{{ patient.pmtct_mother.partner_status }}</td>
+      <td>{{ patient.pmtct_mother.on_art }}</td>
+      <td>{{ patient.pmtct_mother.date_started_on_art|date:"Y-m-d" }}</td>
+      <td>{{ patient.pmtct_mother.update_status }}</td>
+      <td>{{ patient.pmtct_mother.update_status_date|date:"Y-m-d" }}</td>
+
+
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+<div>
+
+         </div>
+
+
+
+     <table class="table table-striped table-hover" style="font-size: x-small;">
+    <thead class="thead-dark">
+    <tr>
+        <th>Facility Name</th>
+      <th>Name</th>
+      <th>Date of Birth</th>
+      <th>Age</th>
+      <th>CCC No</th>
+      <th>LMP</th>
+      <th>EDD</th>
+      <th>Gestation by Age</th>
+      <th>Date Enrolled ANC</th>
+      <th>Marital Status</th>
+      <th>Partner Status</th>
+      <th>On ART</th>
+      <th>Date Started on ART</th>
+      <th>Update Status</th>
+      <th>Update Status Date</th>
+
+
+    </tr>
+  </thead>
+  <tbody>
+    {% for patient in filter.qs %}
+    <tr>
+    <td>{{ patient.facility_name }}</td>
+      <td>{{ patient.first_name }} {{ patient.middle_name }} {{ patient.last_name }}</td>
+      <td>{{ patient.date_of_birth|date:"Y-m-d" }}</td>
+      <td>{{ patient.age }} yrs</td>
+      <td>
+          {% if patient.id in risk_categorization_data %}
+              {{ patient.ccc_no }}
+              <br>
+              <a href="{% url 'add_client_characteristics_trial' patient.id %}" class="badge alert-info mt-2">VIEW DATA</a>
+            {% else %}
+              {{ patient.ccc_no }}
+              <br>
+{#              <a href="{% url 'add_client_characteristics' patient.id %}" class="badge alert-warning mt-2">Add risk categorization data</a>#}
+              <a href="{% url 'add_client_characteristics_trial' patient.id %}" class="badge alert-warning mt-2">Add risk categorization data</a>
+          {% endif %}
+      </td>
+      <td>{{ patient.lmp|date:"Y-m-d" }}</td>
+      <td>{{ patient.edd|date:"Y-m-d" }}</td>
+      <td>{{ patient.gestation_by_age }} wks</td>
+      <td>{{ patient.date_enrolled_anc|date:"Y-m-d" }}</td>
+      <td>{{ patient.marital_status }}</td>
+      <td>{{ patient.partner_status }}</td>
+      <td>{{ patient.on_art }}</td>
+      <td>{{ patient.date_started_on_art|date:"Y-m-d" }}</td>
+      <td>{{ patient.update_status }}</td>
+      <td>{{ patient.update_status_date|date:"Y-m-d" }}</td>
+
+
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</main>
+{% endblock %}

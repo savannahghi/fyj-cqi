@@ -12,34 +12,113 @@
 
 
   </div>
+    {% if messages %}
+        <ul class="messages">
+             <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                    {% for message in messages|slice:":1" %}
+                    <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
+                    {% endfor %}
+                </div>
+
+       </ul>
+        {% elif facility_project.measurement_status == "Completed-or-Closed" %}
+        <ul class="messages">
+             <div class="alert alert-info col-12 animated fadeIn" role="alert">
+
+                    <h5 class="d-flex justify-content-evenly small">
+                        The team completed the CQI project {{ facility_project.date_updated|timesince }} ago, and it achieved its objective of
+                        improving the quality of services. We encourage you to check the "lessons learned" page for more
+                        information about the project and its outcomes. If you have any questions or require further
+                        information, please get in touch with our admin team, who will be happy to assist you.
+                    </h5>
+
+                </div>
+
+       </ul>
+    {% endif %}
     <div class="d-flex justify-content-between">
     <div class="col-md-6">
         {% if "facility" in title %}
              <h6>Facility name: {{ facility_project.facility_name|upper }}</h6>
        {% elif "program" in title %}
             <h6>Program name: {{ facility_project.program|upper }}</h6>
+        {% elif  title == "subcounty" %}
+            <h6>Sub county name: {{ facility_project.sub_county|upper }}</h6>
+            {% elif title == "county" %}
+            <h6>County name: {{ facility_project.county|upper }}
+            </h6>{% elif "hub" in title %}
+            <h6>Hub name: {{ facility_project.hub|upper }}</h6>
        {% endif %}
 
     </div>
     <div class="col-md-6">
-         <a href="{% url 'facilities_landing_page' %}" class="btn btn-primary">All projects</a>
-        <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
-        {% if user.is_authenticated %}
+         <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-primary">All projects</a>
+       {% if request.user.is_superuser %}
+                    <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                      {% else %}
+                    <a href="{% url 'choose_project_level' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                  {% endif %}
+
+    {% if facility_project.measurement_status != "Completed-or-Closed" %}
+     {% if user.is_authenticated %}
             {% if user.id == facility_project.created_by.id %}
-                <a href="{% url 'update_project' facility_project.id %}" class="btn btn-warning">Update project</a>
-                {% if all_archived %}
-                    {% if facility_project.id in all_archived %}
-                        <a href="{% url 'toggle_archive_project' facility_project.id %}" class="btn btn-success">Unarchive project</a>
-                    {% else %}
-                        <a href="{% url 'toggle_archive_project' facility_project.id %}" class="btn btn-secondary">Archive project</a>
-                    {% endif %}
-                {% else %}
-                    <a href="{% url 'toggle_archive_project' facility_project.id %}" class="btn btn-success">Archive project</a>
+                {% if facility_name %}
+                    <a href="{% url 'update_project_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-warning">Update project</a>
+                {% elif program_name %}
+                    <a href="{% url 'update_project_program' facility_project.id facility_project.program.program %}" class="btn btn-warning">Update project</a>
+                {% elif subcounty_name %}
+                    <a href="{% url 'update_project_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-warning">Update project</a>
+                {% elif county_name %}
+                    <a href="{% url 'update_project_county' facility_project.id facility_project.county.county_name %}" class="btn btn-warning">Update project</a>
+                {% elif hub_name %}
+                    <a href="{% url 'update_project_hub' facility_project.id facility_project.hub %}" class="btn btn-warning">Update project</a>
                 {% endif %}
 
-{#                <a href="{% url 'delete_project' facility_project.id %}" class="btn btn-danger">Delete cqi</a>#}
+                {% if all_archived %}
+                    {% if facility_project.id in all_archived %}
+                         {% if facility_name %}
+                            <a href="{% url 'toggle_archive_project_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success">Unarchive project</a>
+                        {% elif program_name %}
+                            <a href="{% url 'toggle_archive_project_program' facility_project.id facility_project.program.program %}" class="btn btn-success">Unarchive project</a>
+                        {% elif subcounty_name %}
+                            <a href="{% url 'toggle_archive_project_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-success">Unarchive project</a>
+                        {% elif county_name %}
+                            <a href="{% url 'toggle_archive_project_county' facility_project.id facility_project.county.county_name %}" class="btn btn-success">Unarchive project</a>
+                        {% elif hub_name %}
+                            <a href="{% url 'toggle_archive_project_hub' facility_project.id facility_project.hub.hub %}" class="btn btn-success">Unarchive project</a>
+                        {% endif %}
+                    {% else %}
+                        {% if facility_name %}
+                            <a href="{% url 'toggle_archive_project_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-secondary">Archive project</a>
+                        {% elif program_name %}
+                            <a href="{% url 'toggle_archive_project_program' facility_project.id facility_project.program.program %}" class="btn btn-secondary">Archive project</a>
+                        {% elif subcounty_name %}
+                            <a href="{% url 'toggle_archive_project_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-secondary">Archive project</a>
+                        {% elif county_name %}
+                            <a href="{% url 'toggle_archive_project_county' facility_project.id facility_project.county.county_name %}" class="btn btn-secondary">Archive project</a>
+                        {% elif hub_name %}
+                            <a href="{% url 'toggle_archive_project_hub' facility_project.id facility_project.hub.hub %}" class="btn btn-secondary">Archive project</a>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    {% if facility_name %}
+                        <a href="{% url 'toggle_archive_project_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-secondary">Archive project</a>
+                    {% elif program_name %}
+                        <a href="{% url 'toggle_archive_project_program' facility_project.id facility_project.program.program %}" class="btn btn-success">Archive project</a>
+                    {% elif subcounty_name %}
+                        <a href="{% url 'toggle_archive_project_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-success">Archive project</a>
+                    {% elif county_name %}
+                        <a href="{% url 'toggle_archive_project_county' facility_project.id facility_project.county.county_name %}" class="btn btn-success">Aarchive project</a>
+                    {% elif hub_name %}
+                        <a href="{% url 'toggle_archive_project_hub' facility_project.id facility_project.hub.hub %}" class="btn btn-success">Archive project</a>
+                    {% endif %}
+                {% endif %}
             {% endif %}
         {% endif %}
+        {% else %}
+        <a href="#" class="btn btn-danger">CLOSED PROJECT</a>
+    {% endif %}
+
 
     </div>
 
@@ -175,20 +254,41 @@
                     </p>
                 </div>
 <div class="mt-2">
+{#HI THERE:::::::::::::::::::::::::::::::::::::::::::::::::::::#}
+{#user logged in :{{ user.id }}#}
+{#project creator:{{ facility_project.created_by.id }}#}
 {% if user.id == facility_project.created_by.id %}
-    {% if baseline.baseline_status.url is not null %}
-{#        {% for field in facility_project %}#}
-{#            CREATOR: {{ facility_project.created_by.id }}#}
-{#            USER ID: {{  user.id }}#}
-{#        {% endfor %}#}
-
-     <a href="{% url 'update_baseline' facility_project.id %}" class="btn btn-warning mb-3">Update Baseline status</a>
-
-
-{% else %}
-    <a href="{% url 'add_baseline_image' facility_project.id %}" class="btn btn-success mb-3">Add Baseline status</a>
-
-{% endif %}
+    {% if baseline.baseline_status.url %}
+{#         <a href="{% url 'update_baseline' facility_project.id %}" class="btn btn-warning mb-3">Update Baseline status</a>#}
+        {% if facility_name %}
+            {{ facility_project.facility_name.name }}
+            <a href="{% url 'update_baseline_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-warning mb-3">Update Baseline status</a>
+        {% elif program_name %}
+            {{ facility_project.program.program }}
+            <a href="{% url 'update_baseline_program' facility_project.id facility_project.program.program %}" class="btn btn-warning mb-3">Update Baseline status</a>
+         {% elif subcounty_name %}
+            <a href="{% url 'update_baseline_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-warning mb-3">Update Baseline status</a>
+        {% elif county_name %}
+            {{ facility_project.program.program }}
+            <a href="{% url 'update_baseline_county' facility_project.id facility_project.county %}" class="btn btn-warning mb-3">Update Baseline status</a>
+         {% elif hub_name %}
+            <a href="{% url 'update_baseline_hub' facility_project.id facility_project.hub %}" class="btn btn-warning mb-3">Update Baseline status</a>
+        {% endif %}
+    {% else %}
+        {% if facility_project.measurement_status != "Completed-or-Closed" %}
+        {% if facility_name %}
+            <a href="{% url 'add_baseline_image_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Baseline status</a>
+        {% elif program_name %}
+            <a href="{% url 'add_baseline_image_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Baseline status</a>
+         {% elif subcounty_name %}
+            <a href="{% url 'add_baseline_image_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-success mb-3">Add Baseline status</a>
+        {% elif county_name %}
+            <a href="{% url 'add_baseline_image_county' facility_project.id facility_project.county %}" class="btn btn-success mb-3">Add Baseline status</a>
+        {% elif hub_name %}
+            <a href="{% url 'add_baseline_image_hub' facility_project.id facility_project.hub %}" class="btn btn-success mb-3">Add Baseline status</a>
+        {% endif %}
+    {% endif %}
+    {% endif %}
 {% endif %}
 </div>
  <div class="container-fluid mt-2">
@@ -202,7 +302,7 @@
 {#        <a href="{% url 'add_baseline_image' facility_project.id %}" class="btn btn-success mb-3">Add Baseline status</a>#}
 {#    </div>#}
 <div class="bg-image hover-zoom magnify" >
-    <img  class=".img-fluid" src="{{MEDIA_URL}}{{baseline.baseline_status.url }}" alt="">
+    <img  class="img-fluid" src="{{baseline.baseline_status.url }}" alt="">
 </div>
     <h6 class="mt-2"><strong>PROBLEM STATEMENT :</strong></h6>
 <div class="d-flex justify-content-between">
@@ -237,7 +337,7 @@
                 </div>
     <p>{{ facility_project.problem_background }}</p>
 
-    {% if facility_project.process_analysis.url is not null %}
+{#    {% if facility_project.process_analysis.url is not null %}#}
         <h6><strong>ROOT CAUSE ANALYSIS :</strong></h6>
          <div class="d-flex justify-content-between">
                         <div>
@@ -380,20 +480,36 @@
           <div class="row">
             <div class="col-12">
                 {% if facility_project.process_analysis %}
-                    <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}" alt="">
+                    <img  class="img-fluid" src="{{ facility_project.process_analysis.url }}" alt="">
                     {% else %}
-             <img  class=".img-fluid" src="{% static 'images/default.png' %}" alt="">
+             <img  class="img-fluid" src="{% static 'images/default.png' %}" alt="">
                     {% endif %}
             </div>
           </div>
         </div>
 {% if project_images < 4 %}
+
     <div class="mt-2">
+    {% if facility_project.measurement_status != "Completed-or-Closed" %}
         <p style="font-size:x-small;">Please note that you can upload a maximum of 4 additional root cause analysis images. You currently have
             {{ project_images|sub:"4"|abs }} images remaining to upload. Click the 'Add More Images' button to upload additional
             images.
         </p>
-        <a href="{% url 'add_images' facility_project.id %}" class="btn btn-success mb-3">Add More Images</a>
+
+        {% if facility_name %}
+            <a href="{% url 'add_image_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add More Images</a>
+            {% elif program_name %}
+            <a href="{% url 'add_image_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add More Images</a>
+            {% elif subcounty_name %}
+            <a href="{% url 'add_image_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-success mb-3">Add More Images</a>
+        {% elif county_name %}
+            <a href="{% url 'add_image_county' facility_project.id facility_project.county.county_name %}" class="btn btn-success mb-3">Add More Images</a>
+            {% elif hub_name %}
+            <a href="{% url 'add_image_hub' facility_project.id facility_project.hub %}" class="btn btn-success mb-3">Add More Images</a>
+
+        {% endif %}
+        {% endif %}
+
     </div>
 {% endif %}
 
@@ -404,7 +520,7 @@
         <div class="card-body">
           <div class="col">
             <div class="row">
-              <img class="img-fluid" src="{{MEDIA_URL}}{{image.root_cause_image.url }}" alt="" style="image-resolution: normal; image-rendering: high-quality;">
+              <img class="img-fluid" src="{{image.root_cause_image.url }}" alt="" style="image-resolution: normal; image-rendering: high-quality;">
             </div>
           </div>
         </div>
@@ -427,7 +543,8 @@
 {#        <div class="bg-image hover-zoom mt-2">#}
 {#            <img  class=".img-fluid" src="{{MEDIA_URL}}{{facility_project.process_analysis.url }}" alt="">#}
 {#        </div>#}
-    {% endif %}
+{#    {% endif %}#}
+
     <h6><strong>OBJECTIVE :</strong></h6>
 <div class="d-flex justify-content-between">
     <div>
@@ -473,9 +590,23 @@
 
 
 <div class="d-flex justify-content-between">
+{% if facility_project.measurement_status != "Completed-or-Closed" %}
     <div>
-        <a href="{% url 'add_qi_team_member' facility_project.id %}" class="btn btn-success mb-3">Add Stakeholders</a>
+{#        <a href="{% url 'add_qi_team_member' facility_project.id %}" class="btn btn-success mb-3">Add Stakeholders</a>#}
+        {% if facility_name %}
+            <a href="{% url 'add_qi_team_member_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Stakeholders</a>
+        {% elif program_name %}
+            <a href="{% url 'add_qi_team_member_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Stakeholders</a>
+            {% elif subcounty_name %}
+            <a href="{% url 'add_qi_team_member_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-success mb-3">Add Stakeholders</a>
+        {% elif county_name %}
+            <a href="{% url 'add_qi_team_member_county' facility_project.id facility_project.county.county_name %}" class="btn btn-success mb-3">Add Stakeholders</a>
+            {% elif hub_name %}
+            <a href="{% url 'add_qi_team_member_hub' facility_project.id facility_project.hub %}" class="btn btn-success mb-3">Add Stakeholders</a>
+
+        {% endif %}
     </div>
+ {% endif %}
     <div>
         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapsestakeholders" role="button" aria-expanded="false" aria-controls="collapsestakeholders">
         STAKEHOLDERS IN BRIEF
@@ -539,6 +670,8 @@
               <th scope="col">Role</th>
               <th scope="col">Impact</th>
               <th scope="col">Notes</th>
+              <th scope="col"></th>
+              <th scope="col"></th>
 
     </thead>
     <tbody>
@@ -570,7 +703,20 @@
                     {{ field.notes }}
                 </td>
                 <td>
-                  <a href="{% url 'update_qi_team_member' field.id %}" class="btn btn-info" role="button">Update</a>
+{#                  <a href="{% url 'update_qi_team_member' field.id %}" class="btn btn-info" role="button">Update</a>#}
+                {% if facility_project.measurement_status != "Completed-or-Closed" %}
+                    {% if facility_name %}
+            <a href="{% url 'update_qi_team_member_facility' field.id field.qi_project.facility_name.name %}" class="btn btn-info" role="button">Update</a>
+        {% elif program_name %}
+            <a href="{% url 'update_qi_team_member_program' field.id field.program.program %}" class="btn btn-info" role="button">Update</a>
+        {% elif subcounty_name %}
+            <a href="{% url 'update_qi_team_member_subcounty' field.id field.subcounty_qi_project.sub_county %}" class="btn btn-info" role="button">Update</a>
+            {% elif county_name %}
+                        <a href="{% url 'update_qi_team_member_county' field.id field.county_qi_project.county.county_name %}" class="btn btn-info" role="button">Update</a>
+            {% elif hub_name %}
+            <a href="{% url 'update_qi_team_member_hub' field.id field.hub_qi_project.hub %}" class="btn btn-info" role="button">Update</a>
+{% endif %}
+{% endif %}
                 </td>
                     {% if user.is_authenticated %}
                       {% if user.id == field.created_by.id %}
@@ -619,7 +765,20 @@
 
     <div class="d-flex justify-content-between">
     <div>
-       <a href="{% url 'add_corrective_action' facility_project.id %}" class="btn btn-success mb-3">Add Action plan</a>
+    {% if facility_project.measurement_status != "Completed-or-Closed" %}
+{#       <a href="{% url 'add_corrective_action' facility_project.id %}" class="btn btn-success mb-3">Add Action plan</a>#}
+        {% if facility_name %}
+            <a href="{% url 'add_corrective_action_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Action plan</a>
+        {% elif program_name %}
+            <a href="{% url 'add_corrective_action_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Action plan</a>
+        {% elif subcounty_name %}
+            <a href="{% url 'add_corrective_action_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-success mb-3">Add Action plan</a>
+        {% elif county_name %}
+            <a href="{% url 'add_corrective_action_county' facility_project.id facility_project.county.county_name %}" class="btn btn-success mb-3">Add Action plan</a>
+            {% elif hub_name %}
+            <a href="{% url 'add_corrective_action_hub' facility_project.id facility_project.hub %}" class="btn btn-success mb-3">Add Action plan</a>
+{% endif %}
+{% endif %}
     </div>
     <div>
         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseactionplan" role="button" aria-expanded="false" aria-controls="collapseactionplan">
@@ -660,6 +819,8 @@
         <th scope="col">Responsible person(s)</th>
         <th scope="col">constrains</th>
         <th scope="col">indicator</th>
+        <th scope="col"></th>
+        <th scope="col"></th>
 
     </thead>
     <tbody>
@@ -714,7 +875,21 @@
                     {% endif %}
                 </td>
                 <td>
-                  <a href="{% url 'update_action_plan' action_plan.id %}" class="btn btn-info" role="button">Update</a>
+{#                  <a href="{% url 'update_action_plan' action_plan.id %}" class="btn btn-info" role="button">Update</a>#}
+                {% if facility_project.measurement_status != "Completed-or-Closed" %}
+                     {% if facility_name %}
+            <a href="{% url 'update_action_plan_facility' action_plan.id action_plan.qi_project.facility_name.name %}" class="btn btn-info" role="button">Update</a>
+        {% elif program_name %}
+            <a href="{% url 'update_action_plan_program' action_plan.id action_plan.program_qi_project.program.program %}" class="btn btn-info" role="button">Update</a>
+                                {% elif subcounty_name %}
+            <a href="{% url 'update_action_plan_subcounty' action_plan.id action_plan.subcounty_qi_project.sub_county %}" class="btn btn-info" role="button">Update</a>
+        {% elif county_name %}
+            <a href="{% url 'update_action_plan_county' action_plan.id action_plan.county_qi_project.county.county_name %}" class="btn btn-info" role="button">Update</a>
+            {% elif hub_name %}
+            <a href="{% url 'update_action_plan_hub' action_plan.id action_plan.hub_qi_project.hub.hub %}" class="btn btn-info" role="button">Update</a>
+
+                            {% endif %}
+                            {% endif %}
                 </td>
                     {% if user.is_authenticated %}
                       {% if user.id == action_plan.created_by.id %}
@@ -758,7 +933,21 @@
 
                     <div class="d-flex justify-content-between">
                         <div>
-                            <a href="{% url 'add_project_milestone' facility_project.id %}" class="btn btn-success mb-3">Add Milestones</a>
+                        {% if facility_project.measurement_status != "Completed-or-Closed" %}
+{#                            <a href="{% url 'add_project_milestone' facility_project.id %}" class="btn btn-success mb-3">Add Milestones</a>#}
+                            {% if facility_name %}
+            <a href="{% url 'add_project_milestone_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Milestones</a>
+        {% elif program_name %}
+            <a href="{% url 'add_project_milestone_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Milestones</a>
+                                {% elif subcounty_name %}
+            <a href="{% url 'add_project_milestone_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-success mb-3">Add Milestones</a>
+        {% elif county_name %}
+            <a href="{% url 'add_project_milestone_county' facility_project.id facility_project.county.county_name %}" class="btn btn-success mb-3">Add Milestones</a>
+            {% elif hub_name %}
+            <a href="{% url 'add_project_milestone_hub' facility_project.id facility_project.hub %}" class="btn btn-success mb-3">Add Milestones</a>
+
+                            {% endif %}
+                            {% endif %}
                         </div>
                         <div>
                             <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapsemilestone" role="button" aria-expanded="false" aria-controls="collapsemilestone">
@@ -794,6 +983,8 @@
               <th scope="col">End date</th>
               <th scope="col">Description</th>
               <th scope="col">Notes</th>
+              <th scope="col"></th>
+              <th scope="col"></th>
     </thead>
     <tbody>
         {% for field in milestones %}
@@ -816,7 +1007,20 @@
                 </td>
 
                 <td>
-                  <a href="{% url 'update_milestone' field.id %}" class="btn btn-info" role="button">Update</a>
+                {% if facility_project.measurement_status != "Completed-or-Closed" %}
+{#                  <a href="{% url 'update_milestone' field.id %}" class="btn btn-info" role="button">Update</a>#}
+                    {% if facility_name %}
+            <a href="{% url 'update_milestone_facility' field.id field.qi_project.facility_name.name %}" class="btn btn-info" role="button">Update</a>
+        {% elif program_name %}
+            <a href="{% url 'update_milestone_program' field.id field.program.program %}" class="btn btn-info" role="button">Update</a>
+        {% elif subcounty_name %}
+            <a href="{% url 'update_milestone_subcounty' field.id field.subcounty_qi_project.sub_county %}" class="btn btn-info" role="button">Update</a>
+            {% elif county_name %}
+                        <a href="{% url 'update_milestone_county' field.id field.county_qi_project.county.county_name %}" class="btn btn-info" role="button">Update</a>
+            {% elif hub_name %}
+            <a href="{% url 'update_milestone_hub' field.id field.hub_qi_project.hub %}" class="btn btn-info" role="button">Update</a>
+{% endif %}
+{% endif %}
                 </td>
                     {% if user.is_authenticated %}
                       {% if user.id == field.created_by.id %}
@@ -976,14 +1180,28 @@
             </div>
         </div>
     {% endif %}
+
+<div class="d-flex justify-content-between">
+<div>
     {% if user.is_authenticated %}
         {% if user.id == facility_project.created_by.id %}
-            <a href="{% url 'tested_change' facility_project.id %}" class="btn btn-warning mt-4">Add tested change</a>
+            {% if facility_project.measurement_status != "Completed-or-Closed" %}
+            {% if facility_name %}
+            <a href="{% url 'tested_change_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-warning mb-3">Add tested change</a>
+        {% elif program_name %}
+            <a href="{% url 'tested_change_program' facility_project.id facility_project.program.program %}" class="btn btn-warning mb-3">Add tested change</a>
+                {% elif subcounty_name %}
+            <a href="{% url 'tested_change_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-warning mb-3">Add tested change</a>
+        {% elif county_name %}
+            <a href="{% url 'tested_change_county' facility_project.id facility_project.county.county_name %}" class="btn btn-warning mb-3">Add tested change</a>
+            {% elif hub_name %}
+            <a href="{% url 'tested_change_hub' facility_project.id facility_project.hub %}" class="btn btn-warning mb-3">Add tested change</a>
+{% endif %}
+        {% endif %}
         {% endif %}
     {% endif %}
-<div class="d-flex justify-content-between">
-
-    <div class="mt-4">
+</div>
+    <div class="mt-2 mb-2">
         <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapsetestedchange" role="button" aria-expanded="false" aria-controls="collapsetestedchange">
         TESTED CHANGE IN BRIEF
         </a>
@@ -1053,6 +1271,7 @@
                         <th>Numerator</th>
                         <th >Denominator</th>
                         <th>Achievement</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1082,8 +1301,10 @@
                                 </td>
                         {% endif %}
                         <td>
+                            {% if facility_project.measurement_status != "Completed-or-Closed" %}
                             <a class="btn btn-info btn-sm" href="{% url 'update_test_of_change' change.id %}">Edit</a>
 {#                            <a class="btn btn-danger btn-sm" href="{% url 'delete_test_of_change' change.id %}">Delete</a>#}
+                             {% endif %}
                         </td>
                         </tr>
                     {% endfor %}
@@ -1099,16 +1320,78 @@
                         Yes
                         </a>
 {#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
-                        <a href="{% url 'show_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
+{#                        <a href="{% url 'show_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                    {% if facility_name %}
+            <a href="{% url 'show_project_comments_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-outline-primary">View QI Project comments</a>
+
+        {% elif program_name %}
+            <a href="{% url 'show_project_comments_program' facility_project.id facility_project.program.program %}" class="btn btn-outline-primary">View QI Project comments</a>
+            {% elif subcounty_name %}
+            <a href="{% url 'show_project_comments_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-outline-primary">View QI Project comments</a>
+                {% elif county_name %}
+            <a href="{% url 'show_project_comments_county' facility_project.id facility_project.county.county_name %}" class="btn btn-outline-primary">View QI Project comments</a>
+            {% elif hub_name %}
+            <a href="{% url 'show_project_comments_hub' facility_project.id facility_project.hub %}" class="btn btn-outline-primary">View QI Project comments</a>
+{% endif %}
                     </div>
                 </p>
                 <div class="collapse" id="collapseExampleTwo">
-                <form action="{% url 'create_comment' facility_project.id %}" method="post">
+                {% if facility_name %}
+{#            <a href="{% url 'create_comment_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-success mb-3">Add Action plan</a>#}
+                    <form action="{% url 'create_comment_facility' facility_project.id facility_project.facility_name.name %}" method="post">
                             {% csrf_token %}
                             <input type="hidden" name="parent" value="{{ facility_project.id }}">
                             <textarea name="content" class="form-control" style="width: 100%;"></textarea>
                             <button class="btn btn-secondary mt-2" type="submit" >Submit</button>
                         </form>
+        {% elif program_name %}
+{#            <a href="{% url 'create_comment_program' facility_project.id facility_project.program.program %}" class="btn btn-success mb-3">Add Action plan</a>#}
+        <form action="{% url 'create_comment_program' facility_project.id facility_project.program.program %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent" value="{{ facility_project.id }}">
+                            <textarea name="content" class="form-control" style="width: 100%;"></textarea>
+                            <button class="btn btn-secondary mt-2" type="submit" >Submit</button>
+                        </form>
+                    {% elif subcounty_name %}
+{#             <a href="{% url 'create_comment_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-success mb-3">Add Action plan</a>#}
+        <form action="{% url 'create_comment_subcounty' facility_project.id facility_project.sub_county %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent" value="{{ facility_project.id }}">
+                            <textarea name="content" class="form-control" style="width: 100%;"></textarea>
+                            <button class="btn btn-secondary mt-2" type="submit" >Submit</button>
+                        </form>
+                    {% elif county_name %}
+{#             <a href="{% url 'create_comment_county' facility_project.id facility_project.county.county_name %}" class="btn btn-success mb-3">Add Action plan</a>#}
+        <form action="{% url 'create_comment_county' facility_project.id facility_project.county.county_name %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent" value="{{ facility_project.id }}">
+                            <textarea name="content" class="form-control" style="width: 100%;"></textarea>
+                            <button class="btn btn-secondary mt-2" type="submit" >Submit</button>
+                        </form>
+                    {% elif hub_name %}
+{#             <a href="{% url 'create_comment_hub' facility_project.id facility_project.hub %}" class="btn btn-success mb-3">Add Action plan</a>#}
+        <form action="{% url 'create_comment_hub' facility_project.id facility_project.hub %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent" value="{{ facility_project.id }}">
+                            <textarea name="content" class="form-control" style="width: 100%;"></textarea>
+                            <button class="btn btn-secondary mt-2" type="submit" >Submit</button>
+                        </form>
+                {% endif %}
+
+
+
+
+
+
+
+
+
+{#                <form action="{% url 'create_comment' facility_project.id %}" method="post">#}
+{#                            {% csrf_token %}#}
+{#                            <input type="hidden" name="parent" value="{{ facility_project.id }}">#}
+{#                            <textarea name="content" class="form-control" style="width: 100%;"></textarea>#}
+{#                            <button class="btn btn-secondary mt-2" type="submit" >Submit</button>#}
+{#                        </form>#}
 {#                    <form action="{% url 'create_comment' facility_project.id %}" method="POST">#}
 {#                        {% csrf_token %}#}
 {#                        {{ form|crispy }}#}
@@ -1121,7 +1404,19 @@
             <p>
                 <div class="d-flex justify-content-evenly">
 {#                    <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
-                    <a href="{% url "show_project_comments" facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>
+{#                    <a href="{% url "show_project_comments" facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                {% if facility_name %}
+            <a href="{% url 'show_project_comments_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-outline-primary">View QI Project comments</a>
+
+        {% elif program_name %}
+            <a href="{% url 'show_project_comments_program' facility_project.id facility_project.program.program %}" class="btn btn-outline-primary">View QI Project comments</a>
+{% elif subcounty_name %}
+            <a href="{% url 'show_project_comments_subcounty' facility_project.id facility_project.sub_county %}" class="btn btn-outline-primary">View QI Project comments</a>
+                {% elif county_name %}
+            <a href="{% url 'show_project_comments_county' facility_project.id facility_project.county.county_name %}" class="btn btn-outline-primary">View QI Project comments</a>
+            {% elif hub_name %}
+            <a href="{% url 'show_project_comments_hub' facility_project.id facility_project.hub %}" class="btn btn-outline-primary">View QI Project comments</a>
+{% endif %}
                 </div>
         {% endif %}
         <div class="container mt-auto p-3" style="background-color: #f6f6ff;">
@@ -1155,6 +1450,12 @@
                                 <a href="{% url 'single_project' key %}" class="btn btn-primary">Go to the project</a>
                             {% elif "program" in title %}
                                 <a href="{% url 'single_project_program' key %}" class="btn btn-primary">Go to the project</a>
+                            {% elif "subcounty" in title %}
+                                <a href="{% url 'single_project_subcounty' key %}" class="btn btn-primary">Go to the project</a>
+                            {% elif "county" in title %}
+                                <a href="{% url 'single_project_county' key %}" class="btn btn-primary">Go to the project</a>
+                            {% elif "hub" in title %}
+                                <a href="{% url 'single_project_hub' key %}" class="btn btn-primary">Go to the project</a>
                             {% endif %}
                           </div>
                         </div>

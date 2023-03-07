@@ -10,27 +10,27 @@
       {% if "qi team" in title %}
           <h1 class="display-6 fw-bold text-primary">{{ title|upper}} </h1>
           {% if "facility" in level %}
-              <h4 class="display-6">FACILITY: {{ qi_project.facility_name}}</h4>
+              <h4 class="display-6">FACILITY: {{ qi_projects.facility_name}}</h4>
               {% else %}
-              <h4 class="display-6">PROGRAM: {{ qi_project.program}}</h4>
+              <h4 class="display-6">PROGRAM: {{ qi_projects.program}}</h4>
 
           {% endif %}
 
-          <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
+          <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_projects.project_title}}</h6>
 {#          {% endfor %}#}
           <div class="row mb-4">
 {#              <div class="col d-flex justify-content-between">#}
                 <div class="col-md-6">
-                       <strong>OBJECTIVE: </strong>{{ qi_project.objective }}
+                       <strong>OBJECTIVE: </strong>{{ qi_projects.objective }}
                   </div>
                   <div class="col-md-6">
-                       <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}
+                       <strong>SUB-COUNTY: </strong>{{ qi_projects.sub_county }}
                   </div>
                   <div class="col-md-6">
-                       <strong>NUMERATOR: </strong> {{ qi_project.numerator }}
+                       <strong>NUMERATOR: </strong> {{ qi_projects.numerator }}
                   </div>
                   <div class="col-md-6">
-                       <strong>DENOMINATOR: </strong>{{ qi_project.denominator }}
+                       <strong>DENOMINATOR: </strong>{{ qi_projects.denominator }}
                   </div>
 {#              </div>#}
           </div>

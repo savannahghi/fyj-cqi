@@ -1,0 +1,160 @@
+<!-- Dynamically add active class to the links -->
+{% url "add_patient_details" as add_patient_details %}
+{#{% url "add_client_characteristics" as add_client_characteristics %}#}
+{% url "show_patient_details" as show_patient_details %}
+{% url "dqa_summary" as dqa_summary %}
+{% url "show_dqa_work_plan" as show_dqa_work_plan %}
+{% url "system_assessment_table" as system_assessment_table %}
+{% url "instructions" as instructions %}
+{% url "comments" as comments %}
+{% url "resources" as resources %}
+{% url "facilities_landing_page" project_type='facility' as facilities_landing_page %}
+{% url "sub_counties_list" as sub_counties_list %}
+{% url "lesson_learnt" as lesson_learnt %}
+{% url "load_datim_data" as load_datim_data %}
+{% url 'completed_closed' pk='Completed-or-Closed' as completed_closed %}
+
+
+{% block nav %}
+<nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block bg-light sidebar collapse">
+
+      <div class="position-sticky pt-3 sidebar-sticky">
+{#      <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">#}
+{#          <span>Instructions</span>#}
+{#          <a class="link-secondary" href="#" aria-label="Add a new report">#}
+{#            <span data-feather="plus-circle" class="align-text-bottom"></span>#}
+{#          </a>#}
+{#        </h6>#}
+{#        <ul class="nav flex-column">#}
+{#          <li class="nav-item">#}
+{#            <a class="nav-link {% if request.path == instructions %} active{% endif %}" href="{% url 'instructions' %}">#}
+{#              <span data-feather="info" class="align-text-bottom"></span>#}
+{#              Instructions#}
+{#            </a>#}
+{#          </li>#}
+{#        </ul>#}
+      <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+          <span>Data entry</span>
+{#          <a class="link-secondary" href="#" aria-label="Add a new report">#}
+{#            <span data-feather="plus-circle" class="align-text-bottom"></span>#}
+{#          </a>#}
+        </h6>
+        <ul class="nav flex-column">
+{#          q#}
+{#        <li class="nav-item">#}
+{#            <a class="nav-link {% if request.path == add_client_characteristics %} active{% endif %}" href="{% url 'add_client_characteristics' %}">#}
+{#              <span data-feather="database" class="align-text-bottom"></span>#}
+{#              Add client characterisation#}
+{#            </a>#}
+{#          </li>#}
+{#        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">#}
+{#          <span>SUMMARIES</span>#}
+{#          <a class="link-secondary" href="#" aria-label="Add a new report">#}
+{#            <span data-feather="plus-circle" class="align-text-bottom"></span>#}
+{#          </a>#}
+{#        </h6>#}
+{#        <ul>#}
+{##}
+{#        </ul>#}
+        <li class="nav-item">
+            <a class="nav-link {% if request.path == add_patient_details %} active{% endif %}" aria-current="page" href="{% url 'add_patient_details' %}">
+              <span data-feather="home" class="align-text-bottom"></span>
+                Add patient details
+            </a>
+          </li>
+
+        <li class="nav-item">
+            <a class="nav-link {% if request.path == show_patient_details %} active{% endif %}" href="{% url 'show_patient_details' %}">
+              <span data-feather="book-open" class="align-text-bottom"></span>
+              Show patient details
+            </a>
+{#          </li>#}
+{#            <hr>#}
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == dqa_summary %} active{% endif %}" href="{% url 'dqa_summary' %}">#}
+{#              <span data-feather="activity" class="align-text-bottom"></span>#}
+{#              DQA summary#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == show_dqa_work_plan %} active{% endif %}" href="{% url 'show_dqa_work_plan' %}">#}
+{#              <span data-feather="briefcase" class="align-text-bottom"></span>#}
+{#              DQA Work plan#}
+{#            </a>#}
+{#          </li>#}
+{#        {% if request.user.is_superuser %}#}
+{#        <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == load_datim_data %} active{% endif %}" href="{% url 'load_datim_data' %}">#}
+{#              <span data-feather="file-text" class="align-text-bottom"></span>#}
+{#              Load DATIM data#}
+{#            </a>#}
+{#          </li>#}
+{#        {% endif %}#}
+
+        </ul>
+
+{#        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">#}
+{#          <span>Saved reports</span>#}
+{#          <a class="link-secondary" href="#" aria-label="Add a new report">#}
+{#            <span data-feather="plus-circle" class="align-text-bottom"></span>#}
+{#          </a>#}
+{#        </h6>#}
+{#        <ul class="nav flex-column mb-2">#}
+{#         <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == archived %} active{% endif %}" href="{% url 'archived' %}">#}
+{#              <span data-feather="layers" class="align-text-bottom"></span>#}
+{#              Archived Projects#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == completed_closed %} active{% endif %}" href="{{ completed_closed }}">#}
+{#              <span data-feather="check-circle" class="align-text-bottom"></span>#}
+{#              Closed projects#}
+{#            </a>#}
+{#        </li>#}
+{#        <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == lesson_learnt %} active{% endif %}" href="{% url 'lesson_learnt' %}">#}
+{#              <span data-feather="info" class="align-text-bottom"></span>#}
+{#              Lesson Learnt#}
+{#            </a>#}
+{#          </li>#}
+{#        <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == load_data %} active{% endif %}" href="{% url 'load_data' %}">#}
+{#              <span data-feather="info" class="align-text-bottom"></span>#}
+{#              Load data#}
+{#            </a>#}
+{#          </li>#}
+{#                  <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == sub_counties_list %} active{% endif %}" href="{% url 'sub_counties_list' %}">#}
+{#              <span data-feather="target" class="align-text-bottom"></span>#}
+{#              Sub-counties#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == audit_trail %} active{% endif %}" href="{% url 'audit_trail' %}">#}
+{#              <span data-feather="target" class="align-text-bottom"></span>#}
+{#              Audit trail#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == comments %} active{% endif %}" href="{% url 'comments' %}">#}
+{#              <span data-feather="file-text" class="align-text-bottom"></span>#}
+{#              Comments#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == resources %} active{% endif %}" href="{% url 'resources' %}">#}
+{#              <span data-feather="server" class="align-text-bottom"></span>#}
+{#              Resources#}
+{#            </a>#}
+{#          </li>#}
+{#          <li class="nav-item">#}
+{#             <a class="nav-link {% if request.path == deep_dive_facilities %} active{% endif %}" href="{% url 'deep_dive_facilities' %}">#}
+{#              <span data-feather="file-text" class="align-text-bottom"></span>#}
+{#              Year-end sale#}
+{#            </a>#}
+{#          </li>#}
+{#        </ul>#}
+      </div>
+    </nav>
+{% endblock %}

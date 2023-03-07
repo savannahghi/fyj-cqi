@@ -81,10 +81,10 @@
                 <h5 class="card-title"> {{ forloop.counter }}. {{ comment.qi_project_title.project_title|title }}</h5>
                   <ul>
                       <li><strong>Comment : {{ comment.comment }}</strong></li>
-                      <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by.username %}">{{ comment.commented_by.username|title }}</a></li>
+                      <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by.id %}">{{ comment.commented_by.username|title }}</a></li>
                       <li>Facility :  <a href="{% url 'facility_project' comment.qi_project_title.facility_name %}">{{ comment.qi_project_title.facility|title }}</a></li>
 
-                      <li>CQI Project created by : <a href="{% url 'qi_creators' comment.qi_project_title.created_by.username %}">{{ comment.qi_project_title.created_by.username|title }}</a> ({{ comment.commented_by.phone_number }})</li>
+                      <li>CQI Project created by : <a href="{% url 'qi_creators' comment.qi_project_title.created_by.id %}">{{ comment.qi_project_title.created_by.username|title }}</a> ({{ comment.commented_by.phone_number }})</li>
                       <li>QI Responsible people :
                           {% for team_member in comment.qi_project_title.qi_team_members.all %}
                             {{ team_member.user.first_name|title }} {{ team_member.user.last_name|title }},

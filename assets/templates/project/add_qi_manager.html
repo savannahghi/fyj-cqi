@@ -236,9 +236,9 @@
                 </div>
                   <form class="row mt-5" method="POST"  enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
-                        <div class="col-md-12 mt-4">
-                            {{ form.qi_project|as_crispy_field }}
-                        </div>
+{#                        <div class="col-md-12 mt-4">#}
+{#                            {{ form.qi_project|as_crispy_field }}#}
+{#                        </div>#}
                         <div class="col-md-6 mt-4 mb-5">
                             <div class="col-md-12 mt-4">
                                 {{ form.start_date|as_crispy_field }}

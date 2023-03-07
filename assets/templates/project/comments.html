@@ -46,11 +46,21 @@
           <div class="card-body">
 {#            <h6 class="card-title"> {{ forloop.counter }}. <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.qi_project_title.project_title|title }}</a></h6>#}
               <ul>
-                  <li><strong>Comment : <a href="{% url 'show_project_comments' comment.qi_project_title.id %}">{{ comment.id }}{{ comment.content }}</a></strong></li>
-{#                  <li><strong>Comment : <a href="#">{{ comment.content }}</a></strong></li>#}
+                {% if comment.qi_project_title %}
+                    <li><strong>Comment : <a href="{% url 'show_project_comments_facility' comment.qi_project_title.id comment.qi_project_title.facility_name.name %}">{{ comment.id }}{{ comment.content }}</a></strong></li>
+                {% elif comment.program_qi_project_title %}
+                    <li><strong>Comment : <a href="{% url 'show_project_comments_program' comment.program_qi_project_title.id comment.program_qi_project_title.program.program %}">{{ comment.id }}{{ comment.content }}</a></strong></li>
+                {% elif comment.subcounty_qi_project_title %}
+                    <li><strong>Comment : <a href="{% url 'show_project_comments_subcounty' comment.subcounty_qi_project_title.id comment.subcounty_qi_project_title.sub_county.sub_counties %}">{{ comment.id }}{{ comment.content }}</a></strong></li>
+                {% elif comment.county_project_title %}
+                    <li><strong>Comment : <a href="{% url 'show_project_comments_program' comment.county_project_title.id comment.county_project_title.county.county_name %}">{{ comment.id }}{{ comment.content }}</a></strong></li>
+                {% elif comment.hub_qi_project_title %}
+                    <li><strong>Comment : <a href="{% url 'show_project_comments_program' comment.hub_qi_project_title.id comment.hub_qi_project_title.hub.hub %}">{{ comment.id }}{{ comment.content }}</a></strong></li>
+                {% endif %}
+                {#                  <li><strong>Comment : <a href="#">{{ comment.content }}</a></strong></li>#}
 {#                  <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by.username %}">{{ comment.commented_by.username|title }}</a></li>#}
                   <li>Facility :  {{ comment.qi_project_title.facility_name|title }}</li>
-                  <li>CQI Project created by : <a href="{% url 'qi_creators' comment.author.username %}">{{ comment.author.username|title }}</a> ({{ comment.author.phone_number }})</li>
+                  <li>CQI Project created by : <a href="{% url 'qi_creators' comment.author.id %}">{{ comment.author.username|title }}</a> ({{ comment.author.phone_number }})</li>
 
                   <li>QI Responsible people :
                       {% for team_member in comment.qi_project_title.qi_team_members.all %}

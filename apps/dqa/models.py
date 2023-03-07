@@ -1,3 +1,6 @@
+import uuid
+
+from crum import get_current_user
 from django.core.validators import RegexValidator
 from django.db import models
 
@@ -18,6 +21,7 @@ from apps.cqi.models import Facilities
 
 
 class Period(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     YEAR_CHOICES = [(str(x), str(x)) for x in range(2021, 2099)]
     year = models.CharField(choices=YEAR_CHOICES, max_length=4)
     QUARTER_CHOICES = [
@@ -27,7 +31,7 @@ class Period(models.Model):
         ('Qtr4', 'Q4'),
     ]
     quarter = models.CharField(choices=QUARTER_CHOICES, max_length=4)
-    quarter_year = models.CharField(max_length=5, blank=True)
+    quarter_year = models.CharField(max_length=10, blank=True)
 
     class Meta:
         verbose_name_plural = "Periods"
@@ -42,6 +46,7 @@ class Period(models.Model):
 
 
 class Indicators(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     INDICATOR_CHOICES = [
         ('PrEP_New', 'PrEP_New'),
         ('Starting_TPT', 'Starting TPT'),
@@ -81,6 +86,7 @@ class Indicators(models.Model):
 
 
 class DataVerification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     # TODO: ALLOW USERS TO ADD INDICATORS
     INDICATOR_CHOICES = [
         ('', 'Select indicator'),
@@ -136,7 +142,8 @@ class DataVerification(models.Model):
     # TODO: 13TH FIELD SHOULD VERIFY DATA FROM FYJ DATIM PERFORMANCE. Create a model for this
     # field_13 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
 
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
 
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
@@ -162,6 +169,7 @@ class DataVerification(models.Model):
 
 
 class FyjPerformance(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     mfl_code = models.IntegerField()
     facility = models.CharField(max_length=100)
     month = models.CharField(max_length=100)
@@ -235,6 +243,7 @@ class FyjPerformance(models.Model):
 
 
 class DQAWorkPlan(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     AREAS_CHOICES = [
         ("HTS/PREVENTION/PMTCT", "HTS/PREVENTION/PMTCT"),
         ("CHART ABSTRACTION", "CHART ABSTRACTION"),
@@ -257,32 +266,39 @@ class DQAWorkPlan(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     progress = models.FloatField(null=True, blank=True)
     timeframe = models.FloatField(null=True, blank=True)
-    created_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                   default=None, on_delete=models.CASCADE)
-    modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                    default=None, on_delete=models.CASCADE, related_name='+')
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE, related_name='+')
 
 
 class SystemAssessment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     description = models.TextField()
     dropdown_option = models.CharField(max_length=50, choices=[
-                                        ("Yes", "Yes - completely"),
-                                        ("Partly", "Partly"),
-                                        ("No", "No - not at all"),
-                                        ("N/A", "N/A")
-                                    ], blank=True, null=True)
+        ("Yes", "Yes - completely"),
+        ("Partly", "Partly"),
+        ("No", "No - not at all"),
+        ("N/A", "N/A")
+    ], blank=True, null=True)
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
     quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE, blank=True, null=True)
     # component = models.CharField(max_length=250, blank=True, null=True)
     auditor_note = models.CharField(max_length=250, blank=True, null=True)
     supporting_documentation_required = models.CharField(max_length=10,
-                                                          choices=[("", "-"), ("Yes", "Yes"), ("No", "No")]
+                                                         choices=[("", "-"), ("Yes", "Yes"), ("No", "No")]
                                                          , blank=True, null=True)
     dqa_date = models.DateField(blank=True, null=True)
     calculations = models.FloatField(null=True, blank=True)
-    created_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                   default=None, on_delete=models.CASCADE)
-    modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
-                                    default=None, on_delete=models.CASCADE, related_name='+')
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE, related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.facility_name} - {self.quarter_year}"
+
+    class Meta:
+        unique_together = (("quarter_year", "description", "facility_name"),)

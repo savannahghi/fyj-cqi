@@ -44,6 +44,10 @@
                 {{ form.sub_county|as_crispy_field }}
                 <a href="{% url 'add_subcounty' %}" class="btn btn-success mt-4 btn-block" role="button">ADD SUBCOUNTY</a>
             </div>
+            <div class="col-md-4 mt-4">
+                {{ trigger_form.name|as_crispy_field }}
+                <a href="{% url 'add_trigger' %}" class="btn btn-success mt-4 btn-block" role="button">ADD TRIGGER</a>
+            </div>
         </form>
           <p>If a field is missing, please add by clicking respective buttons above before proceeding</p>
 {#          <div class="d-flex justify-content-between mt-3 mb-3">#}

@@ -1,13 +1,17 @@
 from datetime import timezone
 
+from django.db.models import Avg, Q
 from django.forms import modelformset_factory
 from django.utils import timezone
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objs as go
+import plotly.offline as opy
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction, DatabaseError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
@@ -18,6 +22,7 @@ from apps.dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm
     DQAWorkPlanForm, SystemAssessmentForm, DateSelectionForm
 from apps.dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan, SystemAssessment
 from apps.cqi.views import bar_chart
+from apps.cqi.models import Facilities
 
 
 def load_system_data(request):
@@ -37,7 +42,7 @@ def load_system_data(request):
 def load_data(request):
     if request.method == 'POST':
         file = request.FILES['file']
-        # Read the data from the excel file into a pandas DataFrame
+        # Read the data from the Excel file into a pandas DataFrame
         keyword = "perf"
         xls_file = pd.ExcelFile(file)
         sheet_names = [sheet for sheet in xls_file.sheet_names if keyword.upper() in sheet.upper()]
@@ -103,7 +108,6 @@ def load_data(request):
                 # Notify the user that the data is incorrect
                 messages.error(request, f'Kindly confirm if {file} has all data columns.The file has'
                                         f'{len(df.columns)} columns')
-                print(df.columns)
                 redirect('load_data')
         else:
             # Notify the user that the data already exists
@@ -176,8 +180,6 @@ def add_data_verification(request):
         if form.is_valid():
             # Get the selected indicator and facility name from the form data
             selected_indicator = form.cleaned_data['indicator']
-            # print("selected_indicator:::::::::::::::::::::::::::::::")
-            # print(selected_indicator)
             selected_facility = form.cleaned_data['facility_name']
 
             # Try to save the form data
@@ -576,7 +578,6 @@ def add_data_verification(request):
 
             # Handle the IntegrityError exception
             except IntegrityError as e:
-                print(e)
                 # Notify the user that the data already exists
                 messages.error(request, f'Data for {selected_facility}, {request.session["selected_quarter"]}, '
                                         f'{selected_indicator} '
@@ -621,8 +622,6 @@ def show_data_verification(request):
         selected_quarter = form.cleaned_data['quarter']
         selected_year = year_form.cleaned_data['year']
         selected_facility = facility_form.cleaned_data['name']
-        print("selected_facility.mfl_code:::::::::::::::")
-        print(selected_facility.mfl_code)
         year_suffix = selected_year[-2:]
         quarters = {
             selected_quarter: [
@@ -639,9 +638,6 @@ def show_data_verification(request):
         quarters = {}
 
     quarter_year = f"{selected_quarter}-{year_suffix}"
-    print(selected_quarter)
-    print(selected_year)
-    print(selected_facility)
     data_verification = DataVerification.objects.filter(quarter_year__quarter=selected_quarter,
                                                         quarter_year__year=selected_year,
                                                         facility_name=selected_facility,
@@ -722,10 +718,7 @@ def update_data_verification(request, pk):
             selected_quarter = item.quarter_year.quarter
             selected_quarter_year = item.quarter_year.id
             selected_year = item.quarter_year.year
-            print("selected_quarter_year:::::::::::::::::::::::::::::::")
-            print(selected_quarter_year)
             selected_facility = form.cleaned_data['facility_name']
-            print(selected_facility)
 
             form.save()
             # Get the saved data for the selected quarter, year, and facility name
@@ -734,8 +727,6 @@ def update_data_verification(request, pk):
                 quarter_year__year=selected_year,
                 facility_name=selected_facility,
             )
-            for i in data_verification:
-                print(i.indicator)
             if data_verification:
                 # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
                 # years' are saved in the database
@@ -1107,12 +1098,8 @@ def update_data_verification(request, pk):
             return HttpResponseRedirect(request.session['page_from'])
     else:
         quarter_year = item.quarter_year.quarter_year
-        print("item::::::::::::::::::::")
-        print(quarter_year)
         year_suffix = quarter_year[-2:]
         selected_quarter = quarter_year[:4]
-        print(selected_quarter)
-        print(year_suffix)
         quarters = {
             selected_quarter: [
                 f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}'
@@ -1212,6 +1199,7 @@ def dqa_summary(request):
     form = QuarterSelectionForm(request.POST or None)
     year_form = YearSelectionForm(request.POST or None)
     facility_form = FacilitySelectionForm(request.POST or None)
+    plot_div=None
 
     selected_quarter = "Qtr1"
     selected_year = "2021"
@@ -1222,23 +1210,7 @@ def dqa_summary(request):
         selected_quarter = form.cleaned_data['quarter']
         selected_year = year_form.cleaned_data['year']
         selected_facility = facility_form.cleaned_data['name']
-        print("selected_facility.mfl_code:::::::::::::::")
-        print(selected_facility.mfl_code)
         year_suffix = selected_year[-2:]
-    #     quarters = {
-    #         selected_quarter: [
-    #             f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}', 'Total'
-    #         ] if selected_quarter == 'Qtr1' else [
-    #             f'Jan-{year_suffix}', f'Feb-{year_suffix}', f'Mar-{year_suffix}', 'Total'
-    #         ] if selected_quarter == 'Qtr2' else [
-    #             f'Apr-{year_suffix}', f'May-{year_suffix}', f'Jun-{year_suffix}', 'Total'
-    #         ] if selected_quarter == 'Qtr3' else [
-    #             f'Jul-{year_suffix}', f'Aug-{year_suffix}', f'Sep-{year_suffix}', 'Total'
-    #         ]
-    #     }
-    # else:
-    #     quarters = {}
-
     quarter_year = f"{selected_quarter}-{year_suffix}"
 
     dicts = {}
@@ -1345,12 +1317,10 @@ def dqa_summary(request):
         merged_df['performance'] = merged_df['performance'].fillna(0)
         merged_df['performance'] = merged_df['performance'].astype(int)
         # merged_df = merged_df.sort_values('indicator')
-        # print(merged_df)
         # dicts = {}
         #
         # for indy in merged_df['indicator'].unique():
         #     merged_df_viz = merged_df[merged_df['indicator'] == indy]
-        #     # print(merged_df_viz)
         #     quarter = merged_df_viz['quarter_year'].unique()[0]
         #     dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
 
@@ -1378,6 +1348,63 @@ def dqa_summary(request):
             # DataFrame
             dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
 
+        # retrieves a queryset of SystemAssessment objects that have the specified quarter_year and facility_name.
+        system_assessments = SystemAssessment.objects.filter(
+            quarter_year__quarter_year=quarter_year,
+            facility_name=selected_facility
+        )
+        if system_assessments:
+            avg_calculations = system_assessments.aggregate(
+                avg_calculations_5=Avg('calculations', filter=Q(pk__lt=system_assessments[5].pk)),
+                avg_calculations_5_12=Avg('calculations',
+                                          filter=Q(pk__gte=system_assessments[5].pk, pk__lt=system_assessments[12].pk)),
+                avg_calculations_12_17=Avg('calculations',
+                                           filter=Q(pk__gte=system_assessments[12].pk,
+                                                    pk__lt=system_assessments[17].pk)),
+                avg_calculations_17_21=Avg('calculations',
+                                           filter=Q(pk__gte=system_assessments[17].pk,
+                                                    pk__lt=system_assessments[21].pk)),
+                avg_calculations_21_25=Avg('calculations', filter=Q(pk__gte=system_assessments[21].pk))
+            )
+
+            data = [
+                go.Scatterpolar(
+                    r=[avg_calculations['avg_calculations_5'], avg_calculations['avg_calculations_5_12'],
+                       avg_calculations['avg_calculations_12_17'], avg_calculations['avg_calculations_17_21'],
+                       avg_calculations['avg_calculations_21_25']],
+                    theta=['M&E Structure, Functions and Capabilities', 'Data Management Processes',
+                           'Indicator Definitions and Reporting Guidelines',
+                           'Data-collection and Reporting Forms / Tools','EMR Systems'],
+                    fill='toself'
+                )
+            ]
+
+            layout = go.Layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 5]
+                    )
+                ),
+                showlegend=False
+            )
+
+            fig = go.Figure(data=data, layout=layout)
+            # set the chart title
+            fig.update_layout(
+                title={
+                    'text': f"System Assessment Averages for {selected_facility} ({quarter_year})",
+                    'y': 0.95,
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top'
+                },
+            )
+
+            plot_div = opy.plot(fig, auto_open=False, output_type='div')
+        else:
+            messages.info(request, f"No System assessment data for {selected_facility}")
+
     context = {
         "dicts": dicts,
         "dqa": dqa,
@@ -1386,6 +1413,7 @@ def dqa_summary(request):
         "facility_form": facility_form,
         "selected_facility": selected_facility,
         "quarter_year": quarter_year,
+        "plot_div":plot_div,
     }
     return render(request, 'dqa/dqa_summary.html', context)
 
@@ -1454,172 +1482,213 @@ def show_dqa_work_plan(request):
     return render(request, 'dqa/dqa_work_plan_list.html', context)
 
 
-# @login_required(login_url='login')
-# def add_dqa_action_plan(request, pk):
-#     # facility_project = QI_Projects.objects.get(id=pk)
-#
-#     try:
-#         facility_project = get_object_or_404(QI_Projects, id=pk)
-#         qi_project = QI_Projects.objects.get(id=pk)
-#         facility = facility_project.facility_name
-#         qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
-#         level = "facility"
-#     except:
-#         facility_project = get_object_or_404(Program_qi_projects, id=pk)
-#         qi_project = Program_qi_projects.objects.get(id=pk)
-#         facility = facility_project.program
-#         qi_team_members = Qi_team_members.objects.filter(program_qi_project=facility_project)
-#         level = "program"
-#
-#     qi_projects = facility_project
-#
-#     today = timezone.now().date()
-#     # check the page user is from
-#     if request.method == "GET":
-#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-#
-#     if request.method == "POST":
-#         form = ActionPlanForm(facility, qi_projects, request.POST)
-#         if form.is_valid():
-#             # form.save()
-#             post = form.save(commit=False)
-#             if level == "facility":
-#                 post.facility = Facilities.objects.get(id=facility_project.facility_name_id)
-#                 post.qi_project = qi_project
-#                 post.program = None
-#             elif level == "program":
-#                 post.facility = None
-#                 post.program = Program.objects.get(id=facility_project.program_id)
-#                 post.program_qi_project = qi_project
-#
-#             post.created_by = request.user
-#             #
-#             post.progress = (post.due_date - today).days
-#             post.timeframe = (post.due_date - post.start_date).days
-#             post.save()
-#
-#             # Save many-to-many relationships
-#             form.save_m2m()
-#             # redirect back to the page the user was from after saving the form
-#             return HttpResponseRedirect(request.session['page_from'])
-#     else:
-#         form = ActionPlanForm(facility, qi_projects)
-#     context = {"form": form,
-#                "title": "Add Action Plan",
-#                "qi_team_members": qi_team_members,
-#                "qi_project": qi_project,
-#                "level": level
-#                }
-#     return render(request, "cqi/add_qi_manager.html", context)
+def add_system_verification(request):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    quarter_form = QuarterSelectionForm(request.POST or None)
+    year_form = YearSelectionForm(request.POST or None)
+    facility_form = FacilitySelectionForm(request.POST or None)
+    date_form = DateSelectionForm(request.POST or None)
+    descriptions = [
+        "There is a documented structure/chart that clearly identifies positions that have data management "
+        "responsibilities at the Facility.",
+        "Positions dedicated to M&E and data management systems in the facility are filled.",
+        "There is a training plan which includes staff involved in data-collection and reporting at all levels in the "
+        "reporting process.",
+        "All relevant staff have received training on the data management processes and tools.",
+        "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and "
+        "timeliness) before submission to the Sub County.",
+        "The facility has data quality SOPs for monthly reporting processes and quality checks",
+        "The facility conducts internal data quality checks and validation before submission of reports",
+        "The facility has conducted a data quality audit in the last 6 months",
+        "There is a documented data improvement action plan? Verify by seeing",
+        "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, "
+        "completeness and timeliness).",
+        "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, "
+        "MDT feedback data template",
+        "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts",
+        "The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 "
+        "indicators.",
+        "The facility staff are very clear on what they are supposed to report on.",
+        "The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.",
+        "The facility staff are very clear on to whom the reports should be submitted.",
+        "The facility staff are very clear on when the reports are due.",
+        "The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)",
+        "Clear instructions have been provided to the facility on how to complete the data collection and reporting "
+        "forms/tools.",
+        "The facility has the revised HTS register in all service delivery points and a clear inventory is available "
+        "detailing the number of HTS registers in use by service delivery point",
+        "HIV client files are well organised and stored in a secure location",
+        "Do you use your EMR to generate reports?",
+        "There is a clearly documented and actively implemented database administration procedure in place. This "
+        "includes backup/recovery procedures, security admininstration, and user administration.",
+        "The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)",
+        "The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,"
+        "What is your main challenge regarding data management and reporting?"]
+    initial_data = [{'description': description} for description in descriptions]
+
+    SystemAssessmentFormSet = modelformset_factory(
+        SystemAssessment,
+        form=SystemAssessmentForm,
+        extra=25
+
+    )
+    formset = SystemAssessmentFormSet(queryset=SystemAssessment.objects.none(), initial=initial_data)
+    if request.method == "POST":
+        formset = SystemAssessmentFormSet(request.POST, initial=initial_data)
+        if formset.is_valid() and quarter_form.is_valid() and year_form.is_valid() and date_form.is_valid() and facility_form.is_valid():
+            selected_quarter = quarter_form.cleaned_data['quarter']
+            selected_facility = facility_form.cleaned_data['name']
+            selected_year = year_form.cleaned_data['year']
+            selected_date = date_form.cleaned_data['date']
+            instances = formset.save(commit=False)
+            # Check if all forms in formset are filled
+            if not all([form.has_changed() for form in formset.forms]):
+                messages.error(request, "Please fill all rows before saving.")
+            else:
+                try:
+                    with transaction.atomic():
+                        for form, instance in zip(formset.forms, instances):
+                            # Set instance fields from form data
+                            instance.dropdown_option = form.cleaned_data['dropdown_option']
+                            instance.auditor_note = form.cleaned_data['auditor_note']
+                            instance.supporting_documentation_required = form.cleaned_data[
+                                'supporting_documentation_required']
+                            instance.dqa_date = selected_date
+                            instance.created_by = request.user
+                            if instance.dropdown_option == 'Yes':
+                                instance.calculations = 3
+                            elif instance.dropdown_option == 'Partly':
+                                instance.calculations = 2
+                            elif instance.dropdown_option == 'No':
+                                instance.calculations = 1
+                            # Get or create the Facility instance
+                            facility, created = Facilities.objects.get_or_create(name=selected_facility)
+                            instance.facility_name = facility
+                            # Get or create the Period instance
+                            period, created = Period.objects.get_or_create(quarter=selected_quarter, year=selected_year)
+                            instance.quarter_year = period
+                            instance.save()
+                        messages.success(request, "Successfully saved to the database!")
+                except DatabaseError:
+                    messages.error(request,
+                                   "Database Error: An error occurred while saving to the database. Data already "
+                                   "exists!")
+
+    context = {
+        "formset": formset,
+        "quarter_form": quarter_form,
+        "year_form": year_form,
+        "facility_form": facility_form,
+        "date_form": date_form,
+    }
+    return render(request, 'dqa/add_system_assessment.html', context)
 
 
-# def add_system_verification(request):
+# def system_assessment_table(request):
 #     if request.method == "GET":
 #         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 #
 #     quarter_form = QuarterSelectionForm(request.POST or None)
 #     year_form = YearSelectionForm(request.POST or None)
-#     system_assessments = SystemAssessment.objects.all()
 #     facility_form = FacilitySelectionForm(request.POST or None)
 #     date_form = DateSelectionForm(request.POST or None)
-#     SystemAssessmentFormSet = modelformset_factory(SystemAssessment, fields=(
-#         'dropdown_option', 'auditor_note', 'facility_name',
-#         'supporting_documentation_required'), extra=0)
+#     system_assessments = None
 #
-#     selected_quarter = "Qtr1"
-#     selected_year = "2021"
-#     year_suffix = selected_year[-2:]
-#
-#     if quarter_form.is_valid() and year_form.is_valid() and date_form.is_valid() and facility_form.is_valid():
+#     if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
 #         selected_quarter = quarter_form.cleaned_data['quarter']
 #         selected_facility = facility_form.cleaned_data['name']
-#         request.session['selected_quarter'] = selected_quarter
-#         request.session['selected_facility'] = selected_facility.name
-#
 #         selected_year = year_form.cleaned_data['year']
-#         selected_date = date_form.cleaned_data['date']
-#         request.session['selected_year'] = selected_year
+#
 #         year_suffix = selected_year[-2:]
 #         quarter_year = f"{selected_quarter}-{year_suffix}"
 #
-#     # Check if the request method is POST and the submit_data button was pressed
-#     if 'submit_data' in request.POST:
-#         formset = SystemAssessmentFormSet(request.POST,
-#                                           queryset=SystemAssessment.objects.filter(
-#                                               facility_name=selected_facility, quarter_year=quarter_year))
-#         if formset.is_valid():
-#             instances = formset.save(commit=False)
-#             for instance in instances:
-#                 instance.facility_name = selected_facility
-#                 instance.dqa_date = selected_date
-#                 instance.quarter_year = quarter_year
-#                 instance.created_by = request.user
-#                 instance.save()
-#         else:
-#             print("invalid form")
-#             formset = SystemAssessmentFormSet(queryset=system_assessments)
+#         system_assessments = SystemAssessment.objects.filter(quarter_year__quarter_year=quarter_year,
+#                                                              facility_name=selected_facility)
+#         average_calculations_5 = system_assessments[:5].aggregate(Avg('calculations'))['calculations__avg']
+#         average_calculations_5_12 = system_assessments[5:12].aggregate(Avg('calculations'))['calculations__avg']
+#         average_calculations_12_17 = system_assessments[12:17].aggregate(Avg('calculations'))['calculations__avg']
+#         average_calculations_17_21 = system_assessments[17:21].aggregate(Avg('calculations'))['calculations__avg']
+#         average_calculations_21_25 = system_assessments[21:25].aggregate(Avg('calculations'))['calculations__avg']
+#         if not system_assessments:
+#             messages.error(request, f"System assessment data was not found for {selected_facility} ({quarter_year})")
 #
-#
-#     # If the request method is not POST or the submit_data button was not pressed
-#     else:
-#
-#         formset = SystemAssessmentFormSet(queryset=system_assessments)
-#         # forms = formset
 #     context = {
-#         # "form": form,
-#         "forms": formset,
-#         # "quarters": quarters,
 #         "quarter_form": quarter_form,
 #         "year_form": year_form,
-#         # "year_suffix": year_suffix,
-#         "system_assessments": system_assessments,
 #         "facility_form": facility_form,
 #         "date_form": date_form,
+#         'system_assessments': system_assessments,
+#         "average_calculations_5": average_calculations_5,
+#         "average_calculations_5_12": average_calculations_5_12,
+#         "average_calculations_12_17": average_calculations_12_17,
+#         "average_calculations_17_21": average_calculations_17_21,
+#         "average_calculations_21_25": average_calculations_21_25,
 #     }
-#
-#     # Render the template with the context
-#     return render(request, 'dqa/add_system_assessment.html', context)
-def add_system_verification(request):
-    descriptions = ['description1', 'description2', 'description25']
-    initial_data = [{'description': description} for description in descriptions]
-    print(initial_data)
+#     return render(request, 'dqa/show_system_assessment.html', context)
+def system_assessment_table(request):
+    average_calculations_5 = None
+    average_calculations_5_12 = None
+    average_calculations_12_17 = None
+    average_calculations_17_21 = None
+    average_calculations_21_25 = None
 
-    SystemAssessmentFormSet = modelformset_factory(
-        SystemAssessment,
-        form=SystemAssessmentForm,
-        extra=0,
-    )
+    quarter_form = QuarterSelectionForm(request.POST or None)
+    year_form = YearSelectionForm(request.POST or None)
+    facility_form = FacilitySelectionForm(request.POST or None)
+    date_form = DateSelectionForm(request.POST or None)
+    system_assessments = None
 
-    if request.method == 'POST':
-        formset = SystemAssessmentFormSet(request.POST, initial=initial_data)
-        if formset.is_valid():
-            instances = formset.save(commit=False)
-            for instance in instances:
-                instance.dropdown_option = formset.cleaned_data[formset.forms.index(instance)]['dropdown_option']
-                instance.auditor_note = formset.cleaned_data[formset.forms.index(instance)]['auditor_note']
-                instance.supporting_documentation_required = formset.cleaned_data[formset.forms.index(instance)][
-                    'supporting_documentation_required']
-                instance.facility_name = request.user.facility  # Or however you want to determine the facility
-                # instance.quarter_year = get_current_quarter_year()  # Replace with your own function to determine the current quarter year
-                instance.dqa_date = timezone.now().date()
-                instance.created_by = request.user
-                if instance.dropdown_option == 'Yes':
-                    instance.calculations = 3
-                elif instance.dropdown_option == 'Partly':
-                    instance.calculations = 2
-                elif instance.dropdown_option == 'No':
-                    instance.calculations = 1
-                instance.save()
-    else:
-        # formset = SystemAssessmentFormSet(initial=initial_data)
-        initial_data = [{'description': 'description1'}, {'description': 'description2'},
-                        {'description': 'description3'}]
-        formset = SystemAssessmentFormSet(queryset=SystemAssessment.objects.none(), initial=initial_data)
+    if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
+        selected_quarter = quarter_form.cleaned_data['quarter']
+        selected_facility = facility_form.cleaned_data['name']
+        selected_year = year_form.cleaned_data['year']
 
+        year_suffix = selected_year[-2:]
+        quarter_year = f"{selected_quarter}-{year_suffix}"
+        # retrieves a queryset of SystemAssessment objects that have the specified quarter_year and facility_name.
+        system_assessments = SystemAssessment.objects.filter(
+            quarter_year__quarter_year=quarter_year,
+            facility_name=selected_facility
+        )
+
+        if system_assessments:
+            avg_calculations = system_assessments.aggregate(
+                avg_calculations_5=Avg('calculations', filter=Q(pk__lt=system_assessments[5].pk)),
+                avg_calculations_5_12=Avg('calculations',
+                                          filter=Q(pk__gte=system_assessments[5].pk, pk__lt=system_assessments[12].pk)),
+                avg_calculations_12_17=Avg('calculations',
+                                           filter=Q(pk__gte=system_assessments[12].pk, pk__lt=system_assessments[17].pk)),
+                avg_calculations_17_21=Avg('calculations',
+                                           filter=Q(pk__gte=system_assessments[17].pk, pk__lt=system_assessments[21].pk)),
+                avg_calculations_21_25=Avg('calculations', filter=Q(pk__gte=system_assessments[21].pk))
+            )
+            average_calculations_5 = avg_calculations['avg_calculations_5']
+            average_calculations_5_12 = avg_calculations['avg_calculations_5_12']
+            average_calculations_12_17 = avg_calculations['avg_calculations_12_17']
+            average_calculations_17_21 = avg_calculations['avg_calculations_17_21']
+            average_calculations_21_25 = avg_calculations['avg_calculations_21_25']
+
+
+
+        if not system_assessments:
+            messages.error(request, f"System assessment data was not found for {selected_facility} ({quarter_year})")
 
     context = {
-        'formset': formset,
+        "quarter_form": quarter_form,
+        "year_form": year_form,
+        "facility_form": facility_form,
+        "date_form": date_form,
+        'system_assessments': system_assessments,
+        "average_calculations_5": average_calculations_5,
+        "average_calculations_5_12": average_calculations_5_12,
+        "average_calculations_12_17": average_calculations_12_17,
+        "average_calculations_17_21": average_calculations_17_21,
+        "average_calculations_21_25": average_calculations_21_25,
     }
-    # return render(request, 'add_system_verification.html', context)
+    return render(request, 'dqa/show_system_assessment.html', context)
 
-    return render(request, 'dqa/add_system_assessment.html', context)
+
+def instructions(request):
+    return render(request,'dqa/instructions.html')

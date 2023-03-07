@@ -4,6 +4,16 @@
 {% block content %}
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
+{% if messages %}
+        <ul class="messages">
+             <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                    {% for message in messages|slice:":1" %}
+                    <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
+                    {% endfor %}
+                </div>
+
+       </ul>
+    {% endif %}
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h4 >DEEP ANALYSIS OF ONGOING QI PROJECTS</h4>
       </div>
@@ -90,9 +100,20 @@
                   <div class="col-md-8">
                         <div class="card h-100" >
                           <div class="card-body">
-                            <h6 class="card-title"><a href="{% url 'single_project' qi.id %}">{{ qi.project_title }}</a></h6>
+{#                            <h6 class="card-title"><a href="{% url 'single_project' qi.id %}">{{ qi.project_title }}</a></h6>#}
+                          {% if qi.facility_name %}
+                          <h6 class="card-title"><a href="{% url 'single_project' qi.id %}">{{ qi.project_title }}</a></h6>
+                        {% elif qi.sub_county %}
+                          <h6 class="card-title"><a href="{% url 'single_project_subcounty' qi.id %}">{{ qi.project_title }}</a></h6>
+                        {% elif qi.county %}
+                          <h6 class="card-title"><a href="{% url 'single_project_county' qi.id %}">{{ qi.project_title }}</a></h6>
+                        {% elif qi.hub %}
+                          <h6 class="card-title"><a href="{% url 'single_project_hub' qi.id %}">{{ qi.project_title }}</a></h6>
+                        {% elif qi.program %}
+                          <h6 class="card-title"><a href="{% url 'single_project_program' qi.id %}">{{ qi.project_title }}</a></h6>
+                        {% endif %}
                               <ul >
-                                  <li>Facility : <a href="{% url 'facility_project' qi.facility_name %}">{{ qi.facility_name }}</a></li>
+                                  <li>Facility : {{ qi.facility_name }}</li>
                                   <li>Problem background : {{ qi.problem_background }}</li>
                                   <li>Objective : {{ qi.objective }}</li>
                                   <li>Setting : {{ qi.settings }}  Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>
@@ -119,7 +140,17 @@
                           {% if user.id == qi.created_by.id %}
 {#                                      <div class="d-flex justify-content-start" >#}
                                           {% for project_archived in qi.archiveproject_set.all %}
-                                              <a href="{% url 'toggle_archive_project' project_archived.qi_project_id %}" class="btn btn-secondary">Unarchive project</a>
+                                              {% if project_archived.qi_project_id %}
+                                                    <a href="{% url 'toggle_archive_project_facility' project_archived.qi_project_id project_archived.qi_project.facility_name.name %}" class="btn btn-success">Unarchive project</a>
+                                                {% elif project_archived.program_id %}
+                                                    <a href="{% url 'toggle_archive_project_program' project_archived.program_id project_archived.program.program.program %}" class="btn btn-success">Unarchive project</a>
+                                                {% elif project_archived.subcounty_id %}
+                                                    <a href="{% url 'toggle_archive_project_subcounty' project_archived.subcounty_id project_archived.subcounty.sub_county %}" class="btn btn-success">Unarchive project</a>
+                                                {% elif project_archived.county_id %}
+                                                    <a href="{% url 'toggle_archive_project_county' project_archived.county_id project_archived.county.county.county_name %}" class="btn btn-success">Unarchive project</a>
+                                                {% elif project_archived.hub_id %}
+                                                    <a href="{% url 'toggle_archive_project_hub' project_archived.hub_id project_archived.hub.hub.hub %}" class="btn btn-success">Unarchive project</a>
+                                                {% endif %}
                                           {% endfor %}
 {#                                      </div>#}
                                 {% endif %}
@@ -135,7 +166,18 @@
 {#                                  <div class="container">#}
                                     <div class="col">
                                         <div class="row ">
-                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
+{#                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>#}
+                                            {% if qi.facility_name %}
+                                              <a href="{% url 'single_project' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
+                                            {% elif qi.sub_county %}
+                                              <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
+                                            {% elif qi.county %}
+                                              <a href="{% url 'single_project_county' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
+                                            {% elif qi.hub %}
+                                              <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
+                                            {% elif qi.program %}
+                                              <a href="{% url 'single_project_program' qi.id %}" class="btn btn-success">{{ qi.project_title }}</a>
+                                            {% endif %}
                                              {{ dict|safe }}
                                         </div>
                                     </div>

@@ -160,20 +160,20 @@
                 <td>{{ qi_manager.email }}</td>
                 <td>{{ qi_manager.designation }}</td>
 
-                {% if qi_manager.num_projects > 0 %}
+                {% if qi_manager.combined_sum > 0 %}
 {#                  <td class="text-center text-white" style="background-color: green">#}
                   <td>
-                        <strong class="badge alert-success">{{ qi_manager.num_projects }}</strong>
+                        <strong class="badge alert-success text-center">{{ qi_manager.combined_sum }}</strong>
                   </td>
                 {% else %}
 {#                     <td class="text-center text-white" style="background-color: red">#}
                      <td >
-                        <strong class="badge alert-danger">{{ qi_manager.num_projects }}</strong>
+                        <strong class="badge alert-danger text-center">{{ qi_manager.combined_sum }}</strong>
                      </td>
                 {% endif %}
             <td>{{ qi_manager.date_created|date:"D j M Y H:i" }}</td>
             <td>
-                {% if qi_manager.num_projects > 0 %}
+                {% if qi_manager.combined_sum > 0 %}
                     <a href="{% url 'qi_managers_filter_project' qi_manager.id %}" class="btn btn-secondary" role="button">View Projects</a>
                   {% endif %}
             </td>

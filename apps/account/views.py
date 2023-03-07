@@ -56,7 +56,7 @@ def login_page(request):
         if user is not None:
 
             login(request, user)
-            redirect("facilities_landing_page", project_type="facility")
+            return redirect("facilities_landing_page", project_type="facility")
 
     return render(request, "account/login_page.html", {})
 

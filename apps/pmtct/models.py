@@ -111,41 +111,41 @@ class PatientDetails(models.Model):
         super().save(*args, **kwargs)
 
 
-class RiskCategorization(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    CHOICES = [
-        ("Y", "Y"),
-        ("N", "N"),
-        ("NA", "NA"),
-        ("-", "-"),
-    ]
-    pmtct_mother = models.ForeignKey(PatientDetails, on_delete=models.CASCADE)
-    client_characteristics = models.TextField()
-    baseline_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    early_anc = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    mid_anc = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    late_gestation = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    six_weeks_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    fourteen_weeks_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    six_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    nine_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    twelve_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    eighteen_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    twenty_four_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
-    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE)
-    date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
-    date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
-    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                    on_delete=models.CASCADE, related_name='+')
-
-    class Meta:
-        verbose_name_plural = "Risk Categorization"
-        unique_together = (("pmtct_mother", "client_characteristics"),)
-        # ordering=["pmtct_mother"]
-
-    def __str__(self):
-        return str(self.pmtct_mother.id)
+# class RiskCategorization(models.Model):
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     CHOICES = [
+#         ("Y", "Y"),
+#         ("N", "N"),
+#         ("NA", "NA"),
+#         ("-", "-"),
+#     ]
+#     pmtct_mother = models.ForeignKey(PatientDetails, on_delete=models.CASCADE)
+#     client_characteristics = models.TextField()
+#     baseline_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     early_anc = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     mid_anc = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     late_gestation = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     six_weeks_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     fourteen_weeks_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     six_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     nine_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     twelve_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     eighteen_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     twenty_four_month_assessment = models.CharField(max_length=50, choices=CHOICES,blank=True,null=True)
+#     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+#                                    on_delete=models.CASCADE)
+#     date_created = models.DateTimeField(auto_now_add=True, auto_now=False)
+#     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
+#     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+#                                     on_delete=models.CASCADE, related_name='+')
+#
+#     class Meta:
+#         verbose_name_plural = "Risk Categorization"
+#         unique_together = (("pmtct_mother", "client_characteristics"),)
+#         # ordering=["pmtct_mother"]
+#
+#     def __str__(self):
+#         return str(self.pmtct_mother.id)
 
 
 class RiskCategorizationTrial(models.Model):

@@ -135,7 +135,7 @@
     </table>
       {% for form in data_info|slice:"1" %}
     <div class="col-md-2 mt-2 pt-3">
-        <a href="{% url 'update_client_characteristics' form.pmtct_mother.id %}" class="btn btn-success" role="button">Update</a>
+        <a href="{% url 'update_client_characteristics_trial' form.pmtct_mother.id %}" class="btn btn-success" role="button">Update</a>
 {#      <input class="btn btn-success mt-1" type="submit" value="Update">#}
     </div>
        {% endfor %}

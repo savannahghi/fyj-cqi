@@ -11,8 +11,8 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 
 # Create your views here.
-from apps.pmtct.form import PatientDetailsForm, RiskCategorizationForm, RiskCategorizationTrialForm
-from apps.pmtct.models import PatientDetails, RiskCategorization, RiskCategorizationTrial
+from apps.pmtct.form import PatientDetailsForm, RiskCategorizationTrialForm
+from apps.pmtct.models import PatientDetails,  RiskCategorizationTrial
 
 from datetime import datetime, timedelta
 
@@ -174,23 +174,23 @@ def show_patient_details(request):
     not_in_data_info_ids = all_patient_ids - data_info_ids
 
     num_patients_not_in_data_info = len(not_in_data_info_ids)
-    stability_df = [
-        {'pmtct_mother': x.pmtct_mother.id,
-         'baseline_assessment': x.baseline_assessment,
-         'early_anc': x.early_anc,
-         'mid_anc': x.mid_anc,
-         "late_gestation": x.late_gestation,
-         "six_weeks_assessment": x.six_weeks_assessment,
-         "fourteen_weeks_assessment": x.fourteen_weeks_assessment,
-         "six_month_assessment": x.six_month_assessment,
-         "nine_month_assessment": x.nine_month_assessment,
-         "twelve_month_assessment": x.twelve_month_assessment,
-         "eighteen_month_assessment": x.eighteen_month_assessment,
-         "twenty_four_month_assessment": x.twenty_four_month_assessment,
-         } for x in data_infos
-    ]
-    stability_df = pd.DataFrame(stability_df)
-    if stability_df.shape[0] > 0:
+    if data_infos:
+        stability_df = [
+            {'pmtct_mother': x.pmtct_mother.id,
+             'baseline_assessment': x.baseline_assessment,
+             'early_anc': x.early_anc,
+             'mid_anc': x.mid_anc,
+             "late_gestation": x.late_gestation,
+             "six_weeks_assessment": x.six_weeks_assessment,
+             "fourteen_weeks_assessment": x.fourteen_weeks_assessment,
+             "six_month_assessment": x.six_month_assessment,
+             "nine_month_assessment": x.nine_month_assessment,
+             "twelve_month_assessment": x.twelve_month_assessment,
+             "eighteen_month_assessment": x.eighteen_month_assessment,
+             "twenty_four_month_assessment": x.twenty_four_month_assessment,
+             } for x in data_infos
+        ]
+        stability_df = pd.DataFrame(stability_df)
         chart_html = show_stability(stability_df, num_patients_not_in_data_info)
     else:
         chart_html = None
@@ -202,10 +202,11 @@ def show_patient_details(request):
         Q(nine_month_assessment='Y') | Q(twelve_month_assessment='Y') | Q(eighteen_month_assessment='Y')
     )
 
-    # Retrieve the pmtct_mother_id field from the high risk objects
-    high_risk_pmtct_mother_ids = [obj.pmtct_mother_id for obj in high_risk_objects]
-    print("pmtct_mother_ids::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-    print(high_risk_pmtct_mother_ids)
+    if high_risk_objects:
+        # Retrieve the pmtct_mother_id field from the high risk objects
+        high_risk_pmtct_mother_ids = [obj.pmtct_mother_id for obj in high_risk_objects]
+    else:
+        high_risk_pmtct_mother_ids = None
     context = {
         "filter": patient_filter,
         "risk_categorization_data": data_info,
@@ -218,12 +219,12 @@ def show_patient_details(request):
     return render(request, 'pmtct/show_patient_data.html', context)
 
 
-def try_adding_details(request, pk):
-    patient = PatientDetails.objects.filter(id=pk)
-    context = {
-        "filter": patient,
-    }
-    return render(request, 'pmtct/add_client_characterisation.html', context)
+# def try_adding_details(request, pk):
+#     patient = PatientDetails.objects.filter(id=pk)
+#     context = {
+#         "filter": patient,
+#     }
+#     return render(request, 'pmtct/add_client_characterisation.html', context)
 
 
 def validate_choice_fields(formset):
@@ -232,186 +233,186 @@ def validate_choice_fields(formset):
             raise ValidationError("Please fill in at least one choice field.")
 
 
-def add_client_characteristics(request, pk):
-    if request.method == "GET":
-        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    patient_info = PatientDetails.objects.get(id=pk)
-    data_info = RiskCategorization.objects.filter(pmtct_mother_id=pk).first()
-
-    pt_details_form = PatientDetailsForm(request.POST or None)
-    client_characteristics = [
-        "Is the client a newly HIV Positive (<3mnths)",
-        "Is the client an adolescent <19 years of age?",
-        "Is the client an adolescent @ School>20yrs",
-        "Is the client’s current VL >200 copies/ml",
-        "Client has poor adherence : Delayed ART",
-        "Client has poor adherence : Missed >1 clinic appointments in the last scheduled 3 visits",
-        "Client has poor adherence : LTFU/IIT",
-        "Client has poor adherence : Declined ART",
-        "Client has poor adherence : Missed ART doses",
-        "The client NOT disclosed to partner",
-        "Does the client have any social family issues and/or severe poverty that could hinder optimal adherence or "
-        "other related issues",
-        "Is the client experiencing intimate partner violence or at risk of intimate partner violence?",
-        "Does the client have active comorbidities? TB, DM, OIs, painful, swollen/cracked nipples, etc.",
-        "Is the client a lost to follow up/IIT who has returned to care",
-        "Client has malnourished HEI; SAM, MAM.",
-        "Does the client have a mental disability or require close care? Use PHQ9 to assess"
-    ]
-    # initialize data and make pmtct_mother not required in the RiskCategorizationForm
-    initial_data = [{'client_characteristics': client_characteristic, 'pmtct_mother': patient_info.id} for
-                    client_characteristic in
-                    client_characteristics]
-
-    RiskCategorizationFormSet = modelformset_factory(
-        RiskCategorization,
-        form=RiskCategorizationForm,
-        extra=16
-
-    )
-    formset = RiskCategorizationFormSet(queryset=RiskCategorization.objects.none(), initial=initial_data)
-    if request.method == "POST":
-        # manipulate request.post data before passing it to the RiskCategorizationFormSet constructor
-        post_data = request.POST.copy()
-        for key, value in post_data.items():
-            if value == '':
-                post_data[key] = '-'
-        formset = RiskCategorizationFormSet(post_data, initial=initial_data)
-        if formset.is_valid():
-            try:
-                with transaction.atomic():
-                    for form in formset:
-                        instance = form.save(commit=False)
-                        instance.created_by = request.user
-                        instance.pmtct_mother = patient_info
-                        instance.save()
-                        messages.success(request, 'Risk Categorization data has been saved successfully.')
-                return redirect("add_client_characteristics", pk=patient_info.id)
-            except DatabaseError:
-                messages.error(request,
-                               "Database Error: An error occurred while saving data to the database. Data already "
-                               "exists!")
-            except ValidationError as e:
-                messages.error(request, str(e))
-    context = {
-        "formset": formset,
-        "pt_details_form": pt_details_form,
-        "patient": patient_info,
-        "data_info": data_info,
-    }
-    return render(request, 'pmtct/add_client_characterisation.html', context)
-
-
-def show_client_characterisation(request, pk):
-    data_info = RiskCategorization.objects.filter(pmtct_mother_id=pk)
-    patient_info = PatientDetails.objects.get(id=pk)
-
-    # pt_details_form = PatientDetailsForm(request.POST or None)
-    client_characteristics = [
-        "Is the client a newly HIV Positive (<3mnths)",
-        "Is the client an adolescent <19 years of age?",
-        "Is the client an adolescent @ School>20yrs",
-        "Is the client’s current VL >200 copies/ml",
-        "Client has poor adherence : Delayed ART",
-        "Client has poor adherence : Missed >1 clinic appointments in the last scheduled 3 visits",
-        "Client has poor adherence : LTFU/IIT",
-        "Client has poor adherence : Declined ART",
-        "Client has poor adherence : Missed ART doses",
-        "The client NOT disclosed to partner",
-        "Does the client have any social family issues and/or severe poverty that could hinder optimal adherence or "
-        "other related issues",
-        "Is the client experiencing intimate partner violence or at risk of intimate partner violence?",
-        "Does the client have active comorbidities? TB, DM, OIs, painful, swollen/cracked nipples, etc.",
-        "Is the client a lost to follow up/IIT who has returned to care",
-        "Client has malnourished HEI; SAM, MAM.",
-        "Does the client have a mental disability or require close care? Use PHQ9 to assess"
-    ]
-    # initialize data and make pmtct_mother not required in the RiskCategorizationForm
-    initial_data = [{'client_characteristics': client_characteristic, 'pmtct_mother': patient_info.id} for
-                    client_characteristic in
-                    client_characteristics]
-
-    RiskCategorizationFormSet = modelformset_factory(
-        RiskCategorization,
-        form=RiskCategorizationForm,
-        extra=16
-
-    )
-    formset = RiskCategorizationFormSet(queryset=RiskCategorization.objects.none(), initial=initial_data)
-
-    context = {
-        "data_info": data_info,
-        "patient": patient_info,
-        "formset": formset,
-    }
-    return render(request, 'pmtct/show_client_characterisation.html', context)
+# def add_client_characteristics(request, pk):
+#     if request.method == "GET":
+#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+#     patient_info = PatientDetails.objects.get(id=pk)
+#     data_info = RiskCategorization.objects.filter(pmtct_mother_id=pk).first()
+#
+#     pt_details_form = PatientDetailsForm(request.POST or None)
+#     client_characteristics = [
+#         "Is the client a newly HIV Positive (<3mnths)",
+#         "Is the client an adolescent <19 years of age?",
+#         "Is the client an adolescent @ School>20yrs",
+#         "Is the client’s current VL >200 copies/ml",
+#         "Client has poor adherence : Delayed ART",
+#         "Client has poor adherence : Missed >1 clinic appointments in the last scheduled 3 visits",
+#         "Client has poor adherence : LTFU/IIT",
+#         "Client has poor adherence : Declined ART",
+#         "Client has poor adherence : Missed ART doses",
+#         "The client NOT disclosed to partner",
+#         "Does the client have any social family issues and/or severe poverty that could hinder optimal adherence or "
+#         "other related issues",
+#         "Is the client experiencing intimate partner violence or at risk of intimate partner violence?",
+#         "Does the client have active comorbidities? TB, DM, OIs, painful, swollen/cracked nipples, etc.",
+#         "Is the client a lost to follow up/IIT who has returned to care",
+#         "Client has malnourished HEI; SAM, MAM.",
+#         "Does the client have a mental disability or require close care? Use PHQ9 to assess"
+#     ]
+#     # initialize data and make pmtct_mother not required in the RiskCategorizationForm
+#     initial_data = [{'client_characteristics': client_characteristic, 'pmtct_mother': patient_info.id} for
+#                     client_characteristic in
+#                     client_characteristics]
+#
+#     RiskCategorizationFormSet = modelformset_factory(
+#         RiskCategorization,
+#         form=RiskCategorizationForm,
+#         extra=16
+#
+#     )
+#     formset = RiskCategorizationFormSet(queryset=RiskCategorization.objects.none(), initial=initial_data)
+#     if request.method == "POST":
+#         # manipulate request.post data before passing it to the RiskCategorizationFormSet constructor
+#         post_data = request.POST.copy()
+#         for key, value in post_data.items():
+#             if value == '':
+#                 post_data[key] = '-'
+#         formset = RiskCategorizationFormSet(post_data, initial=initial_data)
+#         if formset.is_valid():
+#             try:
+#                 with transaction.atomic():
+#                     for form in formset:
+#                         instance = form.save(commit=False)
+#                         instance.created_by = request.user
+#                         instance.pmtct_mother = patient_info
+#                         instance.save()
+#                         messages.success(request, 'Risk Categorization data has been saved successfully.')
+#                 return redirect("add_client_characteristics", pk=patient_info.id)
+#             except DatabaseError:
+#                 messages.error(request,
+#                                "Database Error: An error occurred while saving data to the database. Data already "
+#                                "exists!")
+#             except ValidationError as e:
+#                 messages.error(request, str(e))
+#     context = {
+#         "formset": formset,
+#         "pt_details_form": pt_details_form,
+#         "patient": patient_info,
+#         "data_info": data_info,
+#     }
+#     return render(request, 'pmtct/add_client_characterisation.html', context)
 
 
-def update_client_characteristics(request, pk):
-    if request.method == "GET":
-        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    patient_info = RiskCategorization.objects.filter(pmtct_mother_id=pk).first()
-    patient_infos = RiskCategorization.objects.filter(pmtct_mother_id=pk).order_by('id')
+# def show_client_characterisation(request, pk):
+#     data_info = RiskCategorization.objects.filter(pmtct_mother_id=pk)
+#     patient_info = PatientDetails.objects.get(id=pk)
+#
+#     # pt_details_form = PatientDetailsForm(request.POST or None)
+#     client_characteristics = [
+#         "Is the client a newly HIV Positive (<3mnths)",
+#         "Is the client an adolescent <19 years of age?",
+#         "Is the client an adolescent @ School>20yrs",
+#         "Is the client’s current VL >200 copies/ml",
+#         "Client has poor adherence : Delayed ART",
+#         "Client has poor adherence : Missed >1 clinic appointments in the last scheduled 3 visits",
+#         "Client has poor adherence : LTFU/IIT",
+#         "Client has poor adherence : Declined ART",
+#         "Client has poor adherence : Missed ART doses",
+#         "The client NOT disclosed to partner",
+#         "Does the client have any social family issues and/or severe poverty that could hinder optimal adherence or "
+#         "other related issues",
+#         "Is the client experiencing intimate partner violence or at risk of intimate partner violence?",
+#         "Does the client have active comorbidities? TB, DM, OIs, painful, swollen/cracked nipples, etc.",
+#         "Is the client a lost to follow up/IIT who has returned to care",
+#         "Client has malnourished HEI; SAM, MAM.",
+#         "Does the client have a mental disability or require close care? Use PHQ9 to assess"
+#     ]
+#     # initialize data and make pmtct_mother not required in the RiskCategorizationForm
+#     initial_data = [{'client_characteristics': client_characteristic, 'pmtct_mother': patient_info.id} for
+#                     client_characteristic in
+#                     client_characteristics]
+#
+#     RiskCategorizationFormSet = modelformset_factory(
+#         RiskCategorization,
+#         form=RiskCategorizationForm,
+#         extra=16
+#
+#     )
+#     formset = RiskCategorizationFormSet(queryset=RiskCategorization.objects.none(), initial=initial_data)
+#
+#     context = {
+#         "data_info": data_info,
+#         "patient": patient_info,
+#         "formset": formset,
+#     }
+#     return render(request, 'pmtct/show_client_characterisation.html', context)
 
-    pt_details_form = PatientDetailsForm(request.POST or None)
 
-    client_characteristics = [
-        "Is the client a newly HIV Positive (<3mnths)",
-        "Is the client an adolescent <19 years of age?",
-        "Is the client an adolescent @ School>20yrs",
-        "Is the client’s current VL >200 copies/ml",
-        "Client has poor adherence : Delayed ART",
-        "Client has poor adherence : Missed >1 clinic appointments in the last scheduled 3 visits",
-        "Client has poor adherence : LTFU/IIT",
-        "Client has poor adherence : Declined ART",
-        "Client has poor adherence : Missed ART doses",
-        "The client NOT disclosed to partner",
-        "Does the client have any social family issues and/or severe poverty that could hinder optimal adherence or "
-        "other related issues",
-        "Is the client experiencing intimate partner violence or at risk of intimate partner violence?",
-        "Does the client have active comorbidities? TB, DM, OIs, painful, swollen/cracked nipples, etc.",
-        "Is the client a lost to follow up/IIT who has returned to care",
-        "Client has malnourished HEI; SAM, MAM.",
-        "Does the client have a mental disability or require close care? Use PHQ9 to assess"
-    ]
-    ids = [{'id': x.id} for x in patient_infos]
-    # initialize data and make pmtct_mother not required in the RiskCategorizationForm
-    initial_data = [{'client_characteristics': client_characteristic, 'pmtct_mother': patient_info.id} for
-                    client_characteristic in client_characteristics]
-
-    RiskCategorizationFormSet = modelformset_factory(
-        RiskCategorization,
-        form=RiskCategorizationForm,
-        extra=0,
-
-    )
-    formset = RiskCategorizationFormSet(queryset=patient_infos)
-    # Set the ID field of each form in the formset
-    for form in formset:
-        form.fields['id'].widget.attrs['value'] = form.instance.id
-
-    if request.method == "POST":
-        # manipulate request.post data before passing it to the RiskCategorizationFormSet constructor
-        post_data = request.POST.copy()
-        for key, value in post_data.items():
-            if value == '':
-                post_data[key] = '-'
-
-        for i, item in enumerate(ids):
-            key = f'form-{i}-id'
-            if key in post_data and post_data[key][0] == '-':
-                post_data[key] = item['id']
-
-        formset = RiskCategorizationFormSet(post_data, initial=initial_data, queryset=patient_info)
-
-        if formset.is_valid():
-            formset.save()
-    context = {
-        "formset": formset,
-        "pt_details_form": pt_details_form,
-        "patient": patient_info,
-    }
-    return render(request, 'pmtct/add_client_characterisation.html', context)
+# def update_client_characteristics(request, pk):
+#     if request.method == "GET":
+#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+#     patient_info = RiskCategorization.objects.filter(pmtct_mother_id=pk).first()
+#     patient_infos = RiskCategorization.objects.filter(pmtct_mother_id=pk).order_by('id')
+#
+#     pt_details_form = PatientDetailsForm(request.POST or None)
+#
+#     client_characteristics = [
+#         "Is the client a newly HIV Positive (<3mnths)",
+#         "Is the client an adolescent <19 years of age?",
+#         "Is the client an adolescent @ School>20yrs",
+#         "Is the client’s current VL >200 copies/ml",
+#         "Client has poor adherence : Delayed ART",
+#         "Client has poor adherence : Missed >1 clinic appointments in the last scheduled 3 visits",
+#         "Client has poor adherence : LTFU/IIT",
+#         "Client has poor adherence : Declined ART",
+#         "Client has poor adherence : Missed ART doses",
+#         "The client NOT disclosed to partner",
+#         "Does the client have any social family issues and/or severe poverty that could hinder optimal adherence or "
+#         "other related issues",
+#         "Is the client experiencing intimate partner violence or at risk of intimate partner violence?",
+#         "Does the client have active comorbidities? TB, DM, OIs, painful, swollen/cracked nipples, etc.",
+#         "Is the client a lost to follow up/IIT who has returned to care",
+#         "Client has malnourished HEI; SAM, MAM.",
+#         "Does the client have a mental disability or require close care? Use PHQ9 to assess"
+#     ]
+#     ids = [{'id': x.id} for x in patient_infos]
+#     # initialize data and make pmtct_mother not required in the RiskCategorizationForm
+#     initial_data = [{'client_characteristics': client_characteristic, 'pmtct_mother': patient_info.id} for
+#                     client_characteristic in client_characteristics]
+#
+#     RiskCategorizationFormSet = modelformset_factory(
+#         RiskCategorization,
+#         form=RiskCategorizationForm,
+#         extra=0,
+#
+#     )
+#     formset = RiskCategorizationFormSet(queryset=patient_infos)
+#     # Set the ID field of each form in the formset
+#     for form in formset:
+#         form.fields['id'].widget.attrs['value'] = form.instance.id
+#
+#     if request.method == "POST":
+#         # manipulate request.post data before passing it to the RiskCategorizationFormSet constructor
+#         post_data = request.POST.copy()
+#         for key, value in post_data.items():
+#             if value == '':
+#                 post_data[key] = '-'
+#
+#         for i, item in enumerate(ids):
+#             key = f'form-{i}-id'
+#             if key in post_data and post_data[key][0] == '-':
+#                 post_data[key] = item['id']
+#
+#         formset = RiskCategorizationFormSet(post_data, initial=initial_data, queryset=patient_info)
+#
+#         if formset.is_valid():
+#             formset.save()
+#     context = {
+#         "formset": formset,
+#         "pt_details_form": pt_details_form,
+#         "patient": patient_info,
+#     }
+#     return render(request, 'pmtct/add_client_characterisation.html', context)
 
 
 def add_client_characteristics_trial(request, pk):

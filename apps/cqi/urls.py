@@ -65,11 +65,11 @@ urlpatterns = [
     path('qicreator-all-projects/<str:pk>', qicreator_filter_project, name="qicreator_filter_project"),
     path('county-all-projects/<str:pk>', county_filter_project, name="county_filter_project"),
     path('subcounty-all-projects/<str:pk>', sub_county_filter_project, name="sub_county_filter_project"),
-    path('qi-creator/<int:pk>', qi_creator, name="qi_creators"),
-    path('qiteam-member-projects/<int:pk>', qiteam_member_filter_project, name="qiteam_member_filter_project"),
+    path('qi-creator/<uuid:pk>', qi_creator, name="qi_creators"),
+    path('qiteam-member-projects/<uuid:pk>', qiteam_member_filter_project, name="qiteam_member_filter_project"),
 
     path('qi-managers-projects/<uuid:pk>', qi_managers_projects, name="qi_managers_projects"),
-    path('action_plans_for_responsible_person/<int:pk>', action_plans_for_responsible_person, name="action_plans_for_responsible_person"),
+    path('action_plans_for_responsible_person/<uuid:pk>', action_plans_for_responsible_person, name="action_plans_for_responsible_person"),
     path('canceled-projects/<str:pk>', canceled_projects, name="canceled_projects"),
     path('not-started/<str:pk>', not_started, name="not_started"),
     path('completed-closed/<str:pk>', completed_closed, name="completed_closed"),
@@ -184,7 +184,7 @@ urlpatterns = [
     path('add-trigger/', add_trigger, name="add_trigger"),
 
 
-    path('qi-projects-involved-in/<int:pk>', qi_team_involved, name="qi_team_involved"),
+    path('qi-projects-involved-in/<uuid:pk>', qi_team_involved, name="qi_team_involved"),
 
     # path('facilities-landing-page/', facilities_landing_page, name="facilities_landing_page"),
 

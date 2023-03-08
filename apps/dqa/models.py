@@ -169,6 +169,7 @@ class DataVerification(models.Model):
 
 
 class FyjPerformance(models.Model):
+    # TODO: RESTRICT MULTIPLE DATA ENTRY TO THE DATABASE FOR THE SAME PERIOD AND SAME FACILITY
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     mfl_code = models.IntegerField()
     facility = models.CharField(max_length=100)

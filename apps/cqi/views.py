@@ -35,6 +35,7 @@ from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, Proje
 from .filters import *
 
 import plotly.express as px
+from plotly.offline import plot
 from io import BytesIO
 from reportlab.pdfgen import canvas
 
@@ -3683,7 +3684,7 @@ def line_chart(df, x_axis, y_axis, title):
     # fig.update_traces(textfont_size=14,textfont_color='red',textfont_weight='bold')
     # fig.update_traces(texttemplate='%{text:.s}')
 
-    return fig.to_html()
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def line_chart_no_targets(df, x_axis, y_axis, title):
@@ -3755,7 +3756,7 @@ def line_chart_no_targets(df, x_axis, y_axis, title):
     )
     # fig.update_traces(texttemplate='%{text:.s}')
 
-    return fig.to_html()
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def bar_chart_horizontal(df, x_axis, y_axis, title):
@@ -3778,7 +3779,7 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
     # })
     # fig.update_traces(texttemplate='%{text:.s}')
 
-    return fig.to_html()
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def bar_chart(df, x_axis, y_axis, title):
@@ -3828,7 +3829,7 @@ def bar_chart(df, x_axis, y_axis, title):
     )
     # fig.update_traces(texttemplate='%{text:.s}')
 
-    return fig.to_html()
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def prepare_trends(df, title=""):

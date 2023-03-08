@@ -574,7 +574,8 @@ def add_data_verification(request):
                             pass
 
                 # Redirect the user to the show_data_verification view
-                return redirect("show_data_verification")
+                # return redirect("show_data_verification")
+                return HttpResponseRedirect(request.path_info)
 
             # Handle the IntegrityError exception
             except IntegrityError as e:

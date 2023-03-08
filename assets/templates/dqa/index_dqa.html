@@ -244,11 +244,6 @@ textarea[name="description"] {
         </div>
     <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">You are logged in as {{ user.username|title }}</a>
-
-        </div>
-<div class="navbar-nav">
-            <a class="nav-link px-3" href="{% url 'add_patient_details' %}">PMTCT</a>
-
         </div>
         {% if user.is_authenticated and user.is_staff %}
         <div class="navbar-nav">

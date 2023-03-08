@@ -92,7 +92,7 @@ class DataVerification(models.Model):
         ('', 'Select indicator'),
         ('PrEP_New', 'PrEP_New'),
         ('Starting_TPT', 'Starting TPT'),
-        ('Starting_TPTs', 'Starting TPTs'),
+        # ('Starting_TPTs', 'Starting TPTs'),
         ('GBV_Sexual violence', 'GBV_Sexual violence'),
         ('GBV_Emotional and /Physical Violence', 'GBV_Emotional and /Physical Violence'),
         ('Cervical Cancer Screening (Women on ART)', 'Cervical Cancer Screening (Women on ART)'),

@@ -1,3 +1,4 @@
+import base64
 from datetime import timezone
 
 from django.db.models import Avg, Q
@@ -5,9 +6,11 @@ from django.forms import modelformset_factory
 from django.utils import timezone
 
 import pandas as pd
+from plotly.offline import plot
 import plotly.express as px
 import plotly.graph_objs as go
 import plotly.offline as opy
+
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -574,7 +577,8 @@ def add_data_verification(request):
                             pass
 
                 # Redirect the user to the show_data_verification view
-                return redirect("show_data_verification")
+                # return redirect("show_data_verification")
+                return HttpResponseRedirect(request.path_info)
 
             # Handle the IntegrityError exception
             except IntegrityError as e:
@@ -1192,14 +1196,14 @@ def bar_chart(df, x_axis, y_axis, title=None):
     )
 
     fig.update_layout(showlegend=False)
-    return fig.to_html()
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def dqa_summary(request):
     form = QuarterSelectionForm(request.POST or None)
     year_form = YearSelectionForm(request.POST or None)
     facility_form = FacilitySelectionForm(request.POST or None)
-    plot_div=None
+    plot_div = None
 
     selected_quarter = "Qtr1"
     selected_year = "2021"
@@ -1374,7 +1378,7 @@ def dqa_summary(request):
                        avg_calculations['avg_calculations_21_25']],
                     theta=['M&E Structure, Functions and Capabilities', 'Data Management Processes',
                            'Indicator Definitions and Reporting Guidelines',
-                           'Data-collection and Reporting Forms / Tools','EMR Systems'],
+                           'Data-collection and Reporting Forms / Tools', 'EMR Systems'],
                     fill='toself'
                 )
             ]
@@ -1413,7 +1417,7 @@ def dqa_summary(request):
         "facility_form": facility_form,
         "selected_facility": selected_facility,
         "quarter_year": quarter_year,
-        "plot_div":plot_div,
+        "plot_div": plot_div,
     }
     return render(request, 'dqa/dqa_summary.html', context)
 
@@ -1659,9 +1663,11 @@ def system_assessment_table(request):
                 avg_calculations_5_12=Avg('calculations',
                                           filter=Q(pk__gte=system_assessments[5].pk, pk__lt=system_assessments[12].pk)),
                 avg_calculations_12_17=Avg('calculations',
-                                           filter=Q(pk__gte=system_assessments[12].pk, pk__lt=system_assessments[17].pk)),
+                                           filter=Q(pk__gte=system_assessments[12].pk,
+                                                    pk__lt=system_assessments[17].pk)),
                 avg_calculations_17_21=Avg('calculations',
-                                           filter=Q(pk__gte=system_assessments[17].pk, pk__lt=system_assessments[21].pk)),
+                                           filter=Q(pk__gte=system_assessments[17].pk,
+                                                    pk__lt=system_assessments[21].pk)),
                 avg_calculations_21_25=Avg('calculations', filter=Q(pk__gte=system_assessments[21].pk))
             )
             average_calculations_5 = avg_calculations['avg_calculations_5']
@@ -1669,8 +1675,6 @@ def system_assessment_table(request):
             average_calculations_12_17 = avg_calculations['avg_calculations_12_17']
             average_calculations_17_21 = avg_calculations['avg_calculations_17_21']
             average_calculations_21_25 = avg_calculations['avg_calculations_21_25']
-
-
 
         if not system_assessments:
             messages.error(request, f"System assessment data was not found for {selected_facility} ({quarter_year})")
@@ -1691,4 +1695,4 @@ def system_assessment_table(request):
 
 
 def instructions(request):
-    return render(request,'dqa/instructions.html')
+    return render(request, 'dqa/instructions.html')

@@ -1,6 +1,7 @@
 from itertools import chain
 import pandas as pd
 import plotly.express as px
+from plotly.offline import plot
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction, DatabaseError, IntegrityError
@@ -115,8 +116,8 @@ def show_stability(stability_df, num_patients_not_in_data_info=None):
             font_family="Rockwell"
         )
     )
-    chart_html = fig.to_html()
-    return chart_html
+
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def add_patient_details(request):

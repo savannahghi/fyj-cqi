@@ -94,6 +94,12 @@
               Load DATIM data
             </a>
           </li>
+          <li class="nav-item">
+             <a class="nav-link {% if request.path == load_data %} active{% endif %}" href="{% url 'load_data' %}">
+              <span data-feather="file-text" class="align-text-bottom"></span>
+              Load FYJ facilities
+            </a>
+          </li>
         {% endif %}
 
         </ul>

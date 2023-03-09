@@ -146,7 +146,7 @@ class Trigger(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure Trigger name is in title case"""
-        self.name = self.name.title()
+        self.name = self.name.upper()
         super().save(*args, **kwargs)
 
 
@@ -163,7 +163,7 @@ class Department(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure department name is in title case"""
-        self.department = self.department.title()
+        self.department = self.department.upper()
         super().save(*args, **kwargs)
 
 
@@ -180,7 +180,7 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure County name is in title case"""
-        self.category = self.category.title()
+        self.category = self.category.upper()
         super().save(*args, **kwargs)
 
 

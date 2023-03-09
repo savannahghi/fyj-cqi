@@ -92,7 +92,7 @@ class DataVerification(models.Model):
         ('', 'Select indicator'),
         ('PrEP_New', 'PrEP_New'),
         ('Starting_TPT', 'Starting TPT'),
-        ('Starting_TPTs', 'Starting TPTs'),
+        # ('Starting_TPTs', 'Starting TPTs'),
         ('GBV_Sexual violence', 'GBV_Sexual violence'),
         ('GBV_Emotional and /Physical Violence', 'GBV_Emotional and /Physical Violence'),
         ('Cervical Cancer Screening (Women on ART)', 'Cervical Cancer Screening (Women on ART)'),
@@ -169,6 +169,7 @@ class DataVerification(models.Model):
 
 
 class FyjPerformance(models.Model):
+    # TODO: RESTRICT MULTIPLE DATA ENTRY TO THE DATABASE FOR THE SAME PERIOD AND SAME FACILITY
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     mfl_code = models.IntegerField()
     facility = models.CharField(max_length=100)

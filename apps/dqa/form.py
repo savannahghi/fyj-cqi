@@ -65,16 +65,20 @@ class DateSelectionForm(forms.Form):
 
 
 class FacilitySelectionForm(forms.Form):
-    # facilities = forms.ModelChoiceField(
-    #     queryset=Facilities.objects.all(),
-    #     empty_label="Select facility",
-    #     widget=forms.Select(attrs={'class': 'form-control'}),
-    # )
     name = forms.ModelChoiceField(
         queryset=Facilities.objects.all(),
         empty_label="Select facility",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
+        initial=None  # Add this line to set the initial value to None
     )
+
+    def __init__(self, *args, **kwargs):
+        initial = kwargs.get('initial', {})
+        print('Initial value:', initial.get('name'))
+        super().__init__(*args, **kwargs)
+        self.fields['name'].initial = initial.get('name')
+        print("YYYYYYYYYYYYYYYYYY:::::::::::::::::::::::::::::::::::")
+        print('Form field initial value:', self.fields['name'].initial)
 
 
 class DQAWorkPlanForm(ModelForm):
@@ -106,8 +110,8 @@ class SystemAssessmentForm(ModelForm):
         model = SystemAssessment
         fields = ['description', 'dropdown_option', 'auditor_note', 'supporting_documentation_required']
         widgets = {
-            'description': Textarea(attrs={'readonly': 'readonly','rows': '5'}),
-            'auditor_note': forms.Textarea(attrs={'size': '40','rows': '5'})
+            'description': Textarea(attrs={'readonly': 'readonly', 'rows': '5'}),
+            'auditor_note': forms.Textarea(attrs={'size': '40', 'rows': '5'})
         }
 
     # This is the constructor method of the form
@@ -121,7 +125,7 @@ class SystemAssessmentForm(ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        for field_name in ['id','modified_by', 'created_at', 'updated_at']:
+        for field_name in ['id', 'modified_by', 'created_at', 'updated_at']:
             if field_name in cleaned_data:
                 del cleaned_data[field_name]
         return cleaned_data

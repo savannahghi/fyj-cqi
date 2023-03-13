@@ -139,8 +139,6 @@ class DataVerification(models.Model):
     field_10 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
     field_11 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
     total_khis = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100, blank=True)
-    # TODO: 13TH FIELD SHOULD VERIFY DATA FROM FYJ DATIM PERFORMANCE. Create a model for this
-    # field_13 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
 
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
@@ -169,7 +167,6 @@ class DataVerification(models.Model):
 
 
 class FyjPerformance(models.Model):
-    # TODO: RESTRICT MULTIPLE DATA ENTRY TO THE DATABASE FOR THE SAME PERIOD AND SAME FACILITY
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     mfl_code = models.IntegerField()
     facility = models.CharField(max_length=100)
@@ -207,6 +204,9 @@ class FyjPerformance(models.Model):
     tb_stat_d = models.IntegerField()
     ipt = models.IntegerField()
     quarter_year = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        unique_together = (('mfl_code', 'quarter_year'),)
 
     def __str__(self):
         return f"{self.facility} - {self.month}"
@@ -270,7 +270,7 @@ class DQAWorkPlan(models.Model):
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
 
 
 class SystemAssessment(models.Model):
@@ -294,7 +294,7 @@ class SystemAssessment(models.Model):
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

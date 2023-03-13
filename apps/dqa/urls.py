@@ -2,7 +2,7 @@ from django.urls import path
 
 from apps.dqa.views import add_data_verification, add_period, show_data_verification, update_data_verification, \
     delete_data_verification, load_data, dqa_summary, dqa_work_plan_create, show_dqa_work_plan, load_system_data, \
-    add_system_verification, system_assessment_table, instructions
+    add_system_verification, system_assessment_table, instructions, update_system_assessment, generate_pdf
 
 urlpatterns = [
     path('add-data-verification/', add_data_verification,name="add_data_verification"),
@@ -20,6 +20,8 @@ urlpatterns = [
     path('dqa-plan/', show_dqa_work_plan, name='show_dqa_work_plan'),
 
     path('update-data-verification/<uuid:pk>', update_data_verification,name="update_data_verification"),
+    path('update-system-assessment/<uuid:pk>', update_system_assessment,name="update_system_assessment"),
     path('delete-data-verification/<uuid:pk>', delete_data_verification,name="delete_data_verification"),
+    path('dqa_summary_pdf/', generate_pdf, name='dqa_summary_pdf'),
 
 ]

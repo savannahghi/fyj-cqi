@@ -1,8 +1,11 @@
-import base64
+import ast
+
+import io
 from datetime import timezone
 
-from django.db.models import Avg, Q
+from django.db.models import Case, When, IntegerField
 from django.forms import modelformset_factory
+from django.urls import reverse
 from django.utils import timezone
 
 import pandas as pd
@@ -11,14 +14,14 @@ import plotly.express as px
 import plotly.graph_objs as go
 import plotly.offline as opy
 
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction, DatabaseError
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 
 # Create your views here.
+from reportlab.pdfgen import canvas
 
 from apps.dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm, YearSelectionForm, \
     FacilitySelectionForm, \
@@ -53,60 +56,61 @@ def load_data(request):
             dfs = pd.read_excel(file, sheet_name=sheet_names)
             df = pd.concat([df.assign(sheet_name=name) for name, df in dfs.items()])
             df = df[list(df.columns[:35])]
-            # except:
-            #     df = pd.read_excel(file)
-            # except:
-            #     df = pd.read_csv(file)
+            try:
+                with transaction.atomic():
+                    if len(df.columns) == 35:
+                        df.fillna(0, inplace=True)
+                        process_cols = [col for col in df.columns if col not in [df.columns[1], df.columns[2]]]
+                        for col in process_cols:
+                            df[col] = df[col].astype(int)
+                        df[df.columns[1]] = df[df.columns[1]].astype(str)
+                        df[df.columns[2]] = df[df.columns[2]].astype(str)
 
-            if len(df.columns) == 35:
-                df.fillna(0, inplace=True)
-                process_cols = [col for col in df.columns if col not in [df.columns[1], df.columns[2]]]
-                for col in process_cols:
-                    df[col] = df[col].astype(int)
-                df[df.columns[1]] = df[df.columns[1]].astype(str)
-                df[df.columns[2]] = df[df.columns[2]].astype(str)
+                        # Iterate over each row in the DataFrame
+                        for index, row in df.iterrows():
+                            performance = FyjPerformance()
+                            performance.mfl_code = row[df.columns[0]]
+                            performance.facility = row[df.columns[1]]
+                            performance.month = row[df.columns[2]]
+                            performance.tst_p = row[df.columns[3]]
+                            performance.tst_a = row[df.columns[4]]
+                            performance.tst_t = row[df.columns[5]]
+                            performance.tst_pos_p = row[df.columns[6]]
+                            performance.tst_pos_a = row[df.columns[7]]
+                            performance.tst_pos_t = row[df.columns[8]]
+                            performance.tx_new_p = row[df.columns[9]]
+                            performance.tx_new_a = row[df.columns[10]]
+                            performance.tx_new_t = row[df.columns[11]]
+                            performance.tx_curr_p = row[df.columns[12]]
+                            performance.tx_curr_a = row[df.columns[13]]
+                            performance.tx_curr_t = row[df.columns[14]]
+                            performance.pmtct_stat_d = row[df.columns[15]]
+                            performance.pmtct_stat_n = row[df.columns[16]]
+                            performance.pmtct_pos = row[df.columns[17]]
+                            performance.pmtct_arv = row[df.columns[18]]
+                            performance.pmtct_inf_arv = row[df.columns[19]]
+                            performance.pmtct_eid = row[df.columns[20]]
+                            performance.hei_pos = row[df.columns[21]]
+                            performance.hei_pos_art = row[df.columns[22]]
+                            performance.prep_new = row[df.columns[23]]
+                            performance.gbv_sexual = row[df.columns[24]]
+                            performance.gbv_emotional_physical = row[df.columns[25]]
+                            performance.kp_anc = row[df.columns[26]]
+                            performance.new_pos_anc = row[df.columns[27]]
+                            performance.on_haart_anc = row[df.columns[28]]
+                            performance.new_on_haart_anc = row[df.columns[29]]
+                            performance.pos_l_d = row[df.columns[30]]
+                            performance.pos_pnc = row[df.columns[31]]
+                            performance.cx_ca = row[df.columns[32]]
+                            performance.tb_stat_d = row[df.columns[33]]
+                            performance.ipt = row[df.columns[34]]
+                            performance.save()
+                        messages.error(request, f'Data successfully saved in the database!')
+                        return redirect('show_data_verification')
+            except IntegrityError:
+                quarter_year = row[df.columns[2]]
+                messages.error(request, f"Data for  {quarter_year} already exists.")
 
-                # Iterate over each row in the DataFrame
-                for index, row in df.iterrows():
-                    performance = FyjPerformance()
-                    performance.mfl_code = row[df.columns[0]]
-                    performance.facility = row[df.columns[1]]
-                    performance.month = row[df.columns[2]]
-                    performance.tst_p = row[df.columns[3]]
-                    performance.tst_a = row[df.columns[4]]
-                    performance.tst_t = row[df.columns[5]]
-                    performance.tst_pos_p = row[df.columns[6]]
-                    performance.tst_pos_a = row[df.columns[7]]
-                    performance.tst_pos_t = row[df.columns[8]]
-                    performance.tx_new_p = row[df.columns[9]]
-                    performance.tx_new_a = row[df.columns[10]]
-                    performance.tx_new_t = row[df.columns[11]]
-                    performance.tx_curr_p = row[df.columns[12]]
-                    performance.tx_curr_a = row[df.columns[13]]
-                    performance.tx_curr_t = row[df.columns[14]]
-                    performance.pmtct_stat_d = row[df.columns[15]]
-                    performance.pmtct_stat_n = row[df.columns[16]]
-                    performance.pmtct_pos = row[df.columns[17]]
-                    performance.pmtct_arv = row[df.columns[18]]
-                    performance.pmtct_inf_arv = row[df.columns[19]]
-                    performance.pmtct_eid = row[df.columns[20]]
-                    performance.hei_pos = row[df.columns[21]]
-                    performance.hei_pos_art = row[df.columns[22]]
-                    performance.prep_new = row[df.columns[23]]
-                    performance.gbv_sexual = row[df.columns[24]]
-                    performance.gbv_emotional_physical = row[df.columns[25]]
-                    performance.kp_anc = row[df.columns[26]]
-                    performance.new_pos_anc = row[df.columns[27]]
-                    performance.on_haart_anc = row[df.columns[28]]
-                    performance.new_on_haart_anc = row[df.columns[29]]
-                    performance.pos_l_d = row[df.columns[30]]
-                    performance.pos_pnc = row[df.columns[31]]
-                    performance.cx_ca = row[df.columns[32]]
-                    performance.tb_stat_d = row[df.columns[33]]
-                    performance.ipt = row[df.columns[34]]
-                    performance.save()
-                messages.error(request, f'Data successfully saved in the database!')
-                return redirect('show_data_verification')
             else:
                 # Notify the user that the data is incorrect
                 messages.error(request, f'Kindly confirm if {file} has all data columns.The file has'
@@ -119,6 +123,37 @@ def load_data(request):
 
         # return redirect('show_data_verification')
     return render(request, 'dqa/upload.html')
+
+
+def calculate_averages(system_assessments, description_list):
+    list_of_projects = [
+        {'description': x.description,
+         'calculations': x.calculations,
+         'quarter_id': x.quarter_year_id,
+         'facility_id': x.facility_name_id,
+         } for x in system_assessments
+    ]
+    # convert data from database to a dataframe
+    df = pd.DataFrame(list_of_projects)
+
+    # Slice the dataframe by description
+    df_list = [df[df['description'].isin(description_list[:5])],
+               df[df['description'].isin(description_list[5:12])],
+               df[df['description'].isin(description_list[12:17])],
+               df[df['description'].isin(description_list[17:21])],
+               df[df['description'].isin(description_list[21:])]]
+
+    # Calculate the average of the calculations column for each dataframe
+    values = []
+    for i in range(len(df_list)):
+        avg_calc = df_list[i]['calculations'].mean()
+        values.append(round(avg_calc, 1))
+
+    keys = ["average_calculations_5", "average_calculations_5_12", "average_calculations_12_17",
+            "average_calculations_17_21", "average_calculations_21_25"]
+
+    average_dictionary = dict(zip(keys, values))
+    return average_dictionary
 
 
 def add_period(request):
@@ -1199,6 +1234,34 @@ def bar_chart(df, x_axis, y_axis, title=None):
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
+def generate_pdf(request, context):
+    # Create a file-like buffer to receive PDF data.
+    buffer = io.BytesIO()
+
+    # Create the PDF object, using the buffer as its "file."
+    p = canvas.Canvas(buffer)
+
+    # Draw things on the PDFReportLab. Here's where the PDF generation happens.
+    # See the  documentation for the full list of functionality.
+    p.drawString(100, 750, "Hello world.")
+
+    # Loop through the context dictionary and write the values to the PDF
+    y_offset = 700
+    for key, value in context.items():
+        p.drawString(100, y_offset, f"{key}: {value}")
+        y_offset -= 20
+
+    # Close the PDF object cleanly, and we're done.
+    p.showPage()
+    p.save()
+
+    # File response with the PDF data.
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="dqa summary.pdf"'
+    return response
+
+
 def dqa_summary(request):
     form = QuarterSelectionForm(request.POST or None)
     year_form = YearSelectionForm(request.POST or None)
@@ -1206,7 +1269,6 @@ def dqa_summary(request):
     plot_div = None
 
     selected_quarter = "Qtr1"
-    selected_year = "2021"
     year_suffix = "21"
     selected_facility = None
 
@@ -1216,6 +1278,42 @@ def dqa_summary(request):
         selected_facility = facility_form.cleaned_data['name']
         year_suffix = selected_year[-2:]
     quarter_year = f"{selected_quarter}-{year_suffix}"
+    description_list = [
+        "There is a documented structure/chart that clearly identifies positions that have data management "
+        "responsibilities at the Facility.",
+        "Positions dedicated to M&E and data management systems in the facility are filled.",
+        "There is a training plan which includes staff involved in data-collection and reporting at all levels in the "
+        "reporting process.",
+        "All relevant staff have received training on the data management processes and tools.",
+        "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and "
+        "timeliness) before submission to the Sub County.",
+        "The facility has data quality SOPs for monthly reporting processes and quality checks",
+        "The facility conducts internal data quality checks and validation before submission of reports",
+        "The facility has conducted a data quality audit in the last 6 months",
+        "There is a documented data improvement action plan? Verify by seeing",
+        "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, "
+        "completeness and timeliness).",
+        "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, "
+        "MDT feedback data template",
+        "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts",
+        "The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 "
+        "indicators.",
+        "The facility staff are very clear on what they are supposed to report on.",
+        "The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.",
+        "The facility staff are very clear on to whom the reports should be submitted.",
+        "The facility staff are very clear on when the reports are due.",
+        "The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)",
+        "Clear instructions have been provided to the facility on how to complete the data collection and reporting "
+        "forms/tools.",
+        "The facility has the revised HTS register in all service delivery points and a clear inventory is available "
+        "detailing the number of HTS registers in use by service delivery point",
+        "HIV client files are well organised and stored in a secure location",
+        "Do you use your EMR to generate reports?",
+        "There is a clearly documented and actively implemented database administration procedure in place. This "
+        "includes backup/recovery procedures, security admininstration, and user administration.",
+        "The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)",
+        "The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,"
+        "What is your main challenge regarding data management and reporting?"]
 
     dicts = {}
     dqa = None
@@ -1320,14 +1418,6 @@ def dqa_summary(request):
 
         merged_df['performance'] = merged_df['performance'].fillna(0)
         merged_df['performance'] = merged_df['performance'].astype(int)
-        # merged_df = merged_df.sort_values('indicator')
-        # dicts = {}
-        #
-        # for indy in merged_df['indicator'].unique():
-        #     merged_df_viz = merged_df[merged_df['indicator'] == indy]
-        #     quarter = merged_df_viz['quarter_year'].unique()[0]
-        #     dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
-
         # Define a new DataFrame object by grouping the 'merged_df' DataFrame by 'indicator' column and calculating
         # the standard deviation of 'performance' column. The idea is to have the indicator with the greatest
         # disparities in the performance column come first.
@@ -1358,24 +1448,13 @@ def dqa_summary(request):
             facility_name=selected_facility
         )
         if system_assessments:
-            avg_calculations = system_assessments.aggregate(
-                avg_calculations_5=Avg('calculations', filter=Q(pk__lt=system_assessments[5].pk)),
-                avg_calculations_5_12=Avg('calculations',
-                                          filter=Q(pk__gte=system_assessments[5].pk, pk__lt=system_assessments[12].pk)),
-                avg_calculations_12_17=Avg('calculations',
-                                           filter=Q(pk__gte=system_assessments[12].pk,
-                                                    pk__lt=system_assessments[17].pk)),
-                avg_calculations_17_21=Avg('calculations',
-                                           filter=Q(pk__gte=system_assessments[17].pk,
-                                                    pk__lt=system_assessments[21].pk)),
-                avg_calculations_21_25=Avg('calculations', filter=Q(pk__gte=system_assessments[21].pk))
-            )
-
+            average_dictionary = calculate_averages(system_assessments, description_list)
             data = [
                 go.Scatterpolar(
-                    r=[avg_calculations['avg_calculations_5'], avg_calculations['avg_calculations_5_12'],
-                       avg_calculations['avg_calculations_12_17'], avg_calculations['avg_calculations_17_21'],
-                       avg_calculations['avg_calculations_21_25']],
+                    r=[average_dictionary['average_calculations_5'], average_dictionary['average_calculations_5_12'],
+                       average_dictionary['average_calculations_12_17'],
+                       average_dictionary['average_calculations_17_21'],
+                       average_dictionary['average_calculations_21_25']],
                     theta=['M&E Structure, Functions and Capabilities', 'Data Management Processes',
                            'Indicator Definitions and Reporting Guidelines',
                            'Data-collection and Reporting Forms / Tools', 'EMR Systems'],
@@ -1384,6 +1463,7 @@ def dqa_summary(request):
             ]
 
             layout = go.Layout(
+                height=400,  # set the chart's height to 500 pixels
                 polar=dict(
                     radialaxis=dict(
                         visible=True,
@@ -1406,6 +1486,7 @@ def dqa_summary(request):
             )
 
             plot_div = opy.plot(fig, auto_open=False, output_type='div')
+
         else:
             messages.info(request, f"No System assessment data for {selected_facility}")
 
@@ -1445,7 +1526,7 @@ def dqa_work_plan_create(request, pk, quarter_year):
     context = {
         'form': form,
         'title': 'Add DQA Work Plan',
-        'facility': facility.facility_name,
+        'facility': facility.facility_name.name,
         'mfl_code': facility.facility_name.mfl_code,
         'date_modified': facility.date_modified,
     }
@@ -1590,59 +1671,60 @@ def add_system_verification(request):
     return render(request, 'dqa/add_system_assessment.html', context)
 
 
-# def system_assessment_table(request):
-#     if request.method == "GET":
-#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-#
-#     quarter_form = QuarterSelectionForm(request.POST or None)
-#     year_form = YearSelectionForm(request.POST or None)
-#     facility_form = FacilitySelectionForm(request.POST or None)
-#     date_form = DateSelectionForm(request.POST or None)
-#     system_assessments = None
-#
-#     if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
-#         selected_quarter = quarter_form.cleaned_data['quarter']
-#         selected_facility = facility_form.cleaned_data['name']
-#         selected_year = year_form.cleaned_data['year']
-#
-#         year_suffix = selected_year[-2:]
-#         quarter_year = f"{selected_quarter}-{year_suffix}"
-#
-#         system_assessments = SystemAssessment.objects.filter(quarter_year__quarter_year=quarter_year,
-#                                                              facility_name=selected_facility)
-#         average_calculations_5 = system_assessments[:5].aggregate(Avg('calculations'))['calculations__avg']
-#         average_calculations_5_12 = system_assessments[5:12].aggregate(Avg('calculations'))['calculations__avg']
-#         average_calculations_12_17 = system_assessments[12:17].aggregate(Avg('calculations'))['calculations__avg']
-#         average_calculations_17_21 = system_assessments[17:21].aggregate(Avg('calculations'))['calculations__avg']
-#         average_calculations_21_25 = system_assessments[21:25].aggregate(Avg('calculations'))['calculations__avg']
-#         if not system_assessments:
-#             messages.error(request, f"System assessment data was not found for {selected_facility} ({quarter_year})")
-#
-#     context = {
-#         "quarter_form": quarter_form,
-#         "year_form": year_form,
-#         "facility_form": facility_form,
-#         "date_form": date_form,
-#         'system_assessments': system_assessments,
-#         "average_calculations_5": average_calculations_5,
-#         "average_calculations_5_12": average_calculations_5_12,
-#         "average_calculations_12_17": average_calculations_12_17,
-#         "average_calculations_17_21": average_calculations_17_21,
-#         "average_calculations_21_25": average_calculations_21_25,
-#     }
-#     return render(request, 'dqa/show_system_assessment.html', context)
 def system_assessment_table(request):
-    average_calculations_5 = None
-    average_calculations_5_12 = None
-    average_calculations_12_17 = None
-    average_calculations_17_21 = None
-    average_calculations_21_25 = None
+    # Get the query parameters from the URL
+    quarter_form_initial = request.GET.get('quarter_form')
+    year_form_initial = request.GET.get('year_form')
+    facility_form_initial = request.GET.get('facility_form')
 
-    quarter_form = QuarterSelectionForm(request.POST or None)
-    year_form = YearSelectionForm(request.POST or None)
-    facility_form = FacilitySelectionForm(request.POST or None)
+    # Parse the string values into dictionary objects
+    quarter_form_initial = ast.literal_eval(quarter_form_initial) if quarter_form_initial else {}
+    year_form_initial = ast.literal_eval(year_form_initial) if year_form_initial else {}
+    facility_form_initial = ast.literal_eval(facility_form_initial) if facility_form_initial else {}
+
+    quarter_form = QuarterSelectionForm(request.POST or None, initial=quarter_form_initial)
+    year_form = YearSelectionForm(request.POST or None, initial=year_form_initial)
+    facility_form = FacilitySelectionForm(request.POST or None, initial=facility_form_initial)
+
     date_form = DateSelectionForm(request.POST or None)
     system_assessments = None
+    average_dictionary = None
+    description_list = [
+        "There is a documented structure/chart that clearly identifies positions that have data management "
+        "responsibilities at the Facility.",
+        "Positions dedicated to M&E and data management systems in the facility are filled.",
+        "There is a training plan which includes staff involved in data-collection and reporting at all levels in the "
+        "reporting process.",
+        "All relevant staff have received training on the data management processes and tools.",
+        "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and "
+        "timeliness) before submission to the Sub County.",
+        "The facility has data quality SOPs for monthly reporting processes and quality checks",
+        "The facility conducts internal data quality checks and validation before submission of reports",
+        "The facility has conducted a data quality audit in the last 6 months",
+        "There is a documented data improvement action plan? Verify by seeing",
+        "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, "
+        "completeness and timeliness).",
+        "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, "
+        "MDT feedback data template",
+        "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts",
+        "The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 "
+        "indicators.",
+        "The facility staff are very clear on what they are supposed to report on.",
+        "The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.",
+        "The facility staff are very clear on to whom the reports should be submitted.",
+        "The facility staff are very clear on when the reports are due.",
+        "The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)",
+        "Clear instructions have been provided to the facility on how to complete the data collection and reporting "
+        "forms/tools.",
+        "The facility has the revised HTS register in all service delivery points and a clear inventory is available "
+        "detailing the number of HTS registers in use by service delivery point",
+        "HIV client files are well organised and stored in a secure location",
+        "Do you use your EMR to generate reports?",
+        "There is a clearly documented and actively implemented database administration procedure in place. This "
+        "includes backup/recovery procedures, security admininstration, and user administration.",
+        "The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)",
+        "The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,"
+        "What is your main challenge regarding data management and reporting?"]
 
     if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = quarter_form.cleaned_data['quarter']
@@ -1655,29 +1737,31 @@ def system_assessment_table(request):
         system_assessments = SystemAssessment.objects.filter(
             quarter_year__quarter_year=quarter_year,
             facility_name=selected_facility
-        )
-
-        if system_assessments:
-            avg_calculations = system_assessments.aggregate(
-                avg_calculations_5=Avg('calculations', filter=Q(pk__lt=system_assessments[5].pk)),
-                avg_calculations_5_12=Avg('calculations',
-                                          filter=Q(pk__gte=system_assessments[5].pk, pk__lt=system_assessments[12].pk)),
-                avg_calculations_12_17=Avg('calculations',
-                                           filter=Q(pk__gte=system_assessments[12].pk,
-                                                    pk__lt=system_assessments[17].pk)),
-                avg_calculations_17_21=Avg('calculations',
-                                           filter=Q(pk__gte=system_assessments[17].pk,
-                                                    pk__lt=system_assessments[21].pk)),
-                avg_calculations_21_25=Avg('calculations', filter=Q(pk__gte=system_assessments[21].pk))
+        ).order_by(
+            Case(
+                *[When(description=d, then=pos) for pos, d in enumerate(description_list)],
+                output_field=IntegerField()
             )
-            average_calculations_5 = avg_calculations['avg_calculations_5']
-            average_calculations_5_12 = avg_calculations['avg_calculations_5_12']
-            average_calculations_12_17 = avg_calculations['avg_calculations_12_17']
-            average_calculations_17_21 = avg_calculations['avg_calculations_17_21']
-            average_calculations_21_25 = avg_calculations['avg_calculations_21_25']
+        )
+        if system_assessments:
+            average_dictionary = calculate_averages(system_assessments, description_list)
 
         if not system_assessments:
             messages.error(request, f"System assessment data was not found for {selected_facility} ({quarter_year})")
+
+    if quarter_form_initial:
+        # retrieves a queryset of SystemAssessment objects that have the specified quarter_year and facility_name.
+        system_assessments = SystemAssessment.objects.filter(
+            quarter_year__quarter_year=quarter_form_initial['quarter'],
+            facility_name=Facilities.objects.get(name=facility_form_initial["name"])
+        ).order_by(
+            Case(
+                *[When(description=d, then=pos) for pos, d in enumerate(description_list)],
+                output_field=IntegerField()
+            )
+        )
+        if system_assessments:
+            average_dictionary = calculate_averages(system_assessments, description_list)
 
     context = {
         "quarter_form": quarter_form,
@@ -1685,14 +1769,56 @@ def system_assessment_table(request):
         "facility_form": facility_form,
         "date_form": date_form,
         'system_assessments': system_assessments,
-        "average_calculations_5": average_calculations_5,
-        "average_calculations_5_12": average_calculations_5_12,
-        "average_calculations_12_17": average_calculations_12_17,
-        "average_calculations_17_21": average_calculations_17_21,
-        "average_calculations_21_25": average_calculations_21_25,
+        "average_dictionary": average_dictionary,
     }
     return render(request, 'dqa/show_system_assessment.html', context)
 
 
 def instructions(request):
     return render(request, 'dqa/instructions.html')
+
+
+@login_required(login_url='login')
+def update_system_assessment(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = SystemAssessment.objects.get(id=pk)
+    if request.method == "POST":
+        form = SystemAssessmentForm(request.POST, instance=item)
+        if form.is_valid():
+            instance = form.save(commit=False)
+            instance.dropdown_option = form.cleaned_data['dropdown_option']
+            instance.auditor_note = form.cleaned_data['auditor_note']
+            instance.supporting_documentation_required = form.cleaned_data[
+                'supporting_documentation_required']
+            instance.dqa_date = item.dqa_date
+            instance.created_by = request.user
+            if instance.dropdown_option == 'Yes':
+                instance.calculations = 3
+            elif instance.dropdown_option == 'Partly':
+                instance.calculations = 2
+            elif instance.dropdown_option == 'No':
+                instance.calculations = 1
+            # Get or create the Facility instance
+            instance.facility_name = item.facility_name
+            # Get the Period instance
+            instance.quarter_year = item.quarter_year
+            instance.save()
+            # Set the initial values for the forms
+            quarter_form_initial = {'quarter': item.quarter_year.quarter_year}
+            year_form_initial = {'year': item.quarter_year.year}
+            facility_form_initial = {"name": item.facility_name.name}
+
+            messages.success(request, "Record successfully updated!")
+            # Redirect to the system assessment table view with the initial values for the forms
+            url = reverse('system_assessment_table')
+            url = f'{url}?quarter_form={quarter_form_initial}&year_form={year_form_initial}&facility_form={facility_form_initial}'
+            return redirect(url)
+            # return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = SystemAssessmentForm(instance=item)
+    context = {
+        "form": form,
+        "title": "update"
+    }
+    return render(request, 'dqa/update_system_assessment.html', context)

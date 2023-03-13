@@ -52,7 +52,7 @@
                 <div class="col-md-10">
                {% if dqa %}
                    {% for data in dqa|slice:":1" %}
-                        <h4 class="h5">FACILITY: {{ data.facility_name.facilities }} </h4>
+                        <h4 class="h5">FACILITY: {{ data.facility_name.name }} </h4>
                         <h6 class="h6">MFL CODE: {{ data.facility_name.mfl_code }} </h6>
                         <h6 class="h6">DATE OF AUDIT: {{ data.date_modified }} </h6>
                    {% endfor %}
@@ -61,46 +61,38 @@
                            {% if dicts %}
                                 <a href="{% url 'dqa_work_plan_create' selected_facility.id quarter_year %}" class="btn btn-success" role="button">ADD DQA WORK PLAN</a>
                             {% endif %}
+
+
                        </div>
                {% endif %}
            </div>
                <hr>
 
            <div class="row" >
-           {% if plot_div %}
-{#                <div class="col-md-12 mt-3" >#}
-             <div>
-  {{ plot_div|safe }}
-</div>
-{#</div>#}
-
-           {% endif %}
+            {% if plot_div %}
+                 <div>
+                    {{ plot_div|safe }}
+                </div>
+            {% endif %}
            {% if dicts %}
+               <p class="text-center text-primary" >
+                   The DQA summary charts below are ordered from the indicators with the greatest discrepancies to the least.
+               </p>
 
-
-
-           <p class="text-center text-primary" >
-               The DQA summary charts below are ordered from the indicators with the greatest discrepancies to the least.
-           </p>
-
-            {% for indicator,fig in dicts.items %}
-                      <div class="col-md-4 mt-3" >
-                        <div class="card " >
-{#                          <div class="card-body">#}
+                {% for indicator,fig in dicts.items %}
+                          <div class="col-md-4 mt-3" >
+                            <div class="card " >
                                 <div class="col">
                                     <div class="text text-center">
                                         {{ indicator }}
                                     </div>
                                     <div class="row" >
-
                                         {{ fig|safe }}
                                     </div>
                                 </div>
-{#                          </div>#}
-                        </div>
-                      </div>
-
-            {% endfor %}
+                            </div>
+                          </div>
+                {% endfor %}
             {% endif %}
             </div>
            </div>

@@ -56,9 +56,6 @@
         </div>
       </form>
 {% if system_assessments %}
-
-
-
 <table class="table table-striped table-hover" style="font-size: x-small;">
   <thead class="thead-dark text-center">
     <tr>
@@ -68,6 +65,7 @@
         <th>Calculations</th>
       <th>Auditor Note</th>
       <th>Supporting Documentation Required</th>
+        <th></th>
     </tr>
   </thead>
   <tbody>
@@ -114,6 +112,7 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
+      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
       </tr>
     {% endfor %}
    <tr>
@@ -121,10 +120,14 @@
         <td class="fw-bold">Average</td>
         <td></td>
         <td>
-            <strong>{{ average_calculations_5|floatformat:"1" }}</strong>
-
+            {% for key,value in average_dictionary.items %}
+                {% if key == "average_calculations_5" %}
+                    <strong>{{value}}</strong>
+                {% endif %}
+            {% endfor %}
         </td>
 
+        <td></td>
         <td></td>
         <td></td>
     </tr>
@@ -137,6 +140,7 @@
         <th>Calculations</th>
       <th>Auditor Note</th>
       <th>Supporting Documentation Required</th>
+        <th></th>
     </tr>
   </thead>
   <tbody>
@@ -184,6 +188,7 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
+      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
 
       </tr>
     {% endfor %}
@@ -192,10 +197,14 @@
         <td class="fw-bold">Average</td>
         <td></td>
         <td>
-            <strong> {{ average_calculations_5_12|floatformat:"1" }}</strong>
-
+            {% for key,value in average_dictionary.items %}
+                {% if key == "average_calculations_5_12" %}
+                    <strong>{{value}}</strong>
+                {% endif %}
+            {% endfor %}
         </td>
 
+        <td></td>
         <td></td>
         <td></td>
     </tr>
@@ -208,6 +217,7 @@
         <th>Calculations</th>
       <th>Auditor Note</th>
       <th>Supporting Documentation Required</th>
+        <th></th>
     </tr>
   </thead>
 
@@ -256,6 +266,7 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
+      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
       </tr>
     {% endfor %}
   <tr>
@@ -263,10 +274,14 @@
         <td class="fw-bold">Average</td>
         <td></td>
         <td>
-            <strong>{{ average_calculations_12_17|floatformat:"1" }}</strong>
-
+            {% for key,value in average_dictionary.items %}
+                {% if key == "average_calculations_12_17" %}
+                    <strong>{{value}}</strong>
+                {% endif %}
+            {% endfor %}
         </td>
 
+        <td></td>
         <td></td>
         <td></td>
     </tr>
@@ -279,6 +294,7 @@
         <th>Calculations</th>
       <th>Auditor Note</th>
       <th>Supporting Documentation Required</th>
+        <th></th>
     </tr>
   </thead>
 <tbody>
@@ -326,6 +342,7 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
+      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
       </tr>
     {% endfor %}
 <tr>
@@ -333,10 +350,14 @@
         <td class="fw-bold">Average</td>
         <td></td>
         <td>
-            <strong>{{ average_calculations_17_21|floatformat:"1" }}</strong>
-
+            {% for key,value in average_dictionary.items %}
+                {% if key == "average_calculations_17_21" %}
+                    <strong>{{value}}</strong>
+                {% endif %}
+            {% endfor %}
         </td>
 
+        <td></td>
         <td></td>
         <td></td>
     </tr>
@@ -349,6 +370,7 @@
         <th>Calculations</th>
       <th>Auditor Note</th>
       <th>Supporting Documentation Required</th>
+        <th></th>
     </tr>
   </thead>
 <tbody>
@@ -395,6 +417,7 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
+      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
       </tr>
     {% endfor %}
 <tr>
@@ -402,9 +425,14 @@
         <td class="fw-bold">Average</td>
         <td></td>
         <td>
-            <strong>{{ average_calculations_21_25|floatformat:"1" }}</strong>
+            {% for key,value in average_dictionary.items %}
+                {% if key == "average_calculations_21_25" %}
+                    <strong>{{value}}</strong>
+                {% endif %}
+            {% endfor %}
         </td>
 
+        <td></td>
         <td></td>
         <td></td>
     </tr>

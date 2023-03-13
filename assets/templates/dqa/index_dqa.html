@@ -238,10 +238,10 @@ textarea[name="description"] {
             <a class="nav-link px-3" href="{% url 'add_patient_details' %}">PMTCT</a>
 
         </div>
-<div class="navbar-nav">
-            <a class="nav-link px-3" href="{% url 'monthly_data_review' %}">Monthly data review</a>
-
-        </div>
+{#<div class="navbar-nav">#}
+{#            <a class="nav-link px-3" href="{% url 'monthly_data_review' %}">Monthly data review</a>#}
+{##}
+{#        </div>#}
     <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">You are logged in as {{ user.username|title }}</a>
         </div>

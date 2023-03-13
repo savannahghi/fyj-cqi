@@ -72,6 +72,7 @@ class FacilitySelectionForm(forms.Form):
         initial=None  # Add this line to set the initial value to None
     )
 
+
     def __init__(self, *args, **kwargs):
         initial = kwargs.get('initial', {})
         print('Initial value:', initial.get('name'))

@@ -55,6 +55,7 @@
                         <h4 class="h5">FACILITY: {{ data.facility_name.name }} </h4>
                         <h6 class="h6">MFL CODE: {{ data.facility_name.mfl_code }} </h6>
                         <h6 class="h6">DATE OF AUDIT: {{ data.date_modified }} </h6>
+                        <h6 class="h6">PERIOD: {{ quarter_year }} </h6>
                    {% endfor %}
                    </div >
                        <div class="col-md-2">
@@ -81,13 +82,13 @@
 
                 {% for indicator,fig in dicts.items %}
                           <div class="col-md-4 mt-3" >
-                            <div class="card " >
+                            <div class="card">
                                 <div class="col">
                                     <div class="text text-center">
                                         {{ indicator }}
                                     </div>
                                     <div class="row" >
-                                        {{ fig|safe }}
+                                        <div class="chart-container">{{ fig|safe }}</div>
                                     </div>
                                 </div>
                             </div>

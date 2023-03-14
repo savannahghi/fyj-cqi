@@ -205,6 +205,10 @@ td {
 textarea[name="description"] {
     background-color: grey;
 }
+.chart-container {
+    {#height: 300px; /* adjust to your desired height */#}
+    width: 100%; /* make the chart take up the full width of the container */
+}
 
     </style>
 
@@ -286,7 +290,8 @@ textarea[name="description"] {
       $("#id_end_date").datepicker();
       $("#id_due_date").datepicker();
       $("#id_month_year").datepicker();
-      {#$("#id_date").datepicker();#}
+       $("#id_dqa_date").datepicker();
+      $("#id_due_complete_by").datepicker();
 
     });
   </script>

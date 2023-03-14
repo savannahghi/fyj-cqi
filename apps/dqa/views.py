@@ -145,15 +145,20 @@ def calculate_averages(system_assessments, description_list):
 
     # Calculate the average of the calculations column for each dataframe
     values = []
+    expected_counts = []
     for i in range(len(df_list)):
-        avg_calc = df_list[i]['calculations'].mean()
-        values.append(round(avg_calc, 1))
+        cal_values = df_list[i]['calculations'].dropna()
+        num_values = cal_values.count()
+        avg_calc = cal_values.mean()
+        values.append(round(avg_calc, 2))
+        expected_counts.append(num_values*3)
 
     keys = ["average_calculations_5", "average_calculations_5_12", "average_calculations_12_17",
             "average_calculations_17_21", "average_calculations_21_25"]
 
     average_dictionary = dict(zip(keys, values))
-    return average_dictionary
+    expected_counts_dictionary = dict(zip(keys, expected_counts))
+    return average_dictionary, expected_counts_dictionary
 
 
 def add_period(request):
@@ -222,405 +227,406 @@ def add_data_verification(request):
 
             # Try to save the form data
             try:
-                # Get the instance of the form data but don't commit it yet
-                post = form.save(commit=False)
+                with transaction.atomic():
+                    # Get the instance of the form data but don't commit it yet
+                    post = form.save(commit=False)
 
-                # Set the user who created the data
-                post.created_by = request.user
+                    # Set the user who created the data
+                    post.created_by = request.user
 
-                # Get or create the period instance
-                period, created = Period.objects.get_or_create(quarter=request.session['selected_quarter'],
-                                                               year=request.session['selected_year'])
+                    # Get or create the period instance
+                    period, created = Period.objects.get_or_create(quarter=request.session['selected_quarter'],
+                                                                   year=request.session['selected_year'])
 
-                # Set the quarter_year field of the form data
-                post.quarter_year = period
+                    # Set the quarter_year field of the form data
+                    post.quarter_year = period
 
-                # Save the form data
-                post.save()
-                # Get the saved data for the selected quarter, year, and facility name
-                data_verification = DataVerification.objects.filter(
-                    quarter_year__quarter=request.session['selected_quarter'],
-                    quarter_year__year=request.session['selected_year'],
-                    facility_name=selected_facility,
-                )
-                if data_verification:
-                    # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
-                    # years' are saved in the database
-                    positive_15_plus = data_verification.filter(indicator='Number tested Positive aged 15+ years')
-                    positive_less_15 = data_verification.filter(indicator='Number tested Positive aged <15 years')
+                    # Save the form data
+                    post.save()
+                    # Get the saved data for the selected quarter, year, and facility name
+                    data_verification = DataVerification.objects.filter(
+                        quarter_year__quarter=request.session['selected_quarter'],
+                        quarter_year__year=request.session['selected_year'],
+                        facility_name=selected_facility,
+                    )
+                    if data_verification:
+                        # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
+                        # years' are saved in the database
+                        positive_15_plus = data_verification.filter(indicator='Number tested Positive aged 15+ years')
+                        positive_less_15 = data_verification.filter(indicator='Number tested Positive aged <15 years')
 
-                    # If both values are saved in the database, calculate the sum
-                    if positive_15_plus and positive_less_15:
+                        # If both values are saved in the database, calculate the sum
+                        if positive_15_plus and positive_less_15:
 
-                        field_1 = 0
-                        field_2 = 0
-                        field_3 = 0
-                        total_source = 0
-                        field_5 = 0
-                        field_6 = 0
-                        field_7 = 0
-                        total_731moh = 0
-                        field_9 = 0
-                        field_10 = 0
-                        field_11 = 0
-                        total_khis = 0
+                            field_1 = 0
+                            field_2 = 0
+                            field_3 = 0
+                            total_source = 0
+                            field_5 = 0
+                            field_6 = 0
+                            field_7 = 0
+                            total_731moh = 0
+                            field_9 = 0
+                            field_10 = 0
+                            field_11 = 0
+                            total_khis = 0
 
-                        #  returns a new queryset containing all the elements from both querysets.
-                        combined_queryset = positive_less_15 | positive_15_plus
+                            #  returns a new queryset containing all the elements from both querysets.
+                            combined_queryset = positive_less_15 | positive_15_plus
 
-                        for data in combined_queryset:
-                            field_1 += int(data.field_1)
-                            field_2 += int(data.field_2)
-                            field_3 += int(data.field_3)
-                            total_source += int(data.total_source)
-                            field_5 += int(data.field_5)
-                            field_6 += int(data.field_6)
-                            field_7 += int(data.field_7)
-                            total_731moh += int(data.total_731moh)
-                            field_9 += int(data.field_9)
-                            field_10 += int(data.field_10)
-                            field_11 += int(data.field_11)
-                            total_khis += int(data.total_khis)
+                            for data in combined_queryset:
+                                field_1 += int(data.field_1)
+                                field_2 += int(data.field_2)
+                                field_3 += int(data.field_3)
+                                total_source += int(data.total_source)
+                                field_5 += int(data.field_5)
+                                field_6 += int(data.field_6)
+                                field_7 += int(data.field_7)
+                                total_731moh += int(data.total_731moh)
+                                field_9 += int(data.field_9)
+                                field_10 += int(data.field_10)
+                                field_11 += int(data.field_11)
+                                total_khis += int(data.total_khis)
 
-                        try:
-                            DataVerification.objects.create(indicator='Number tested Positive _Total',
-                                                            field_1=field_1,
-                                                            field_2=field_2,
-                                                            field_3=field_3,
-                                                            total_source=total_source,
-                                                            field_5=field_5,
-                                                            field_6=field_6,
-                                                            field_7=field_7,
-                                                            total_731moh=total_731moh,
-                                                            field_9=field_9,
-                                                            field_10=field_10,
-                                                            field_11=field_11,
-                                                            total_khis=total_khis,
-                                                            created_by=request.user,
-                                                            quarter_year=period,
-                                                            facility_name=selected_facility)
-                        except IntegrityError:
-                            # handle the scenario where a duplicate instance is trying to be created
-                            # for example, return an error message to the user
-                            pass
+                            try:
+                                DataVerification.objects.create(indicator='Number tested Positive _Total',
+                                                                field_1=field_1,
+                                                                field_2=field_2,
+                                                                field_3=field_3,
+                                                                total_source=total_source,
+                                                                field_5=field_5,
+                                                                field_6=field_6,
+                                                                field_7=field_7,
+                                                                total_731moh=total_731moh,
+                                                                field_9=field_9,
+                                                                field_10=field_10,
+                                                                field_11=field_11,
+                                                                total_khis=total_khis,
+                                                                created_by=request.user,
+                                                                quarter_year=period,
+                                                                facility_name=selected_facility)
+                            except IntegrityError:
+                                # handle the scenario where a duplicate instance is trying to be created
+                                # for example, return an error message to the user
+                                pass
 
-                    # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
-                    # years' are saved in the database
-                    infant_anc = data_verification.filter(indicator='Infant ARV Prophyl_ANC')
-                    infant_ld = data_verification.filter(indicator='Infant ARV Prophyl_L&D')
-                    infant_pnc = data_verification.filter(indicator='Infant ARV Prophyl_PNC<= 6 weeks')
+                        # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
+                        # years' are saved in the database
+                        infant_anc = data_verification.filter(indicator='Infant ARV Prophyl_ANC')
+                        infant_ld = data_verification.filter(indicator='Infant ARV Prophyl_L&D')
+                        infant_pnc = data_verification.filter(indicator='Infant ARV Prophyl_PNC<= 6 weeks')
 
-                    # # If both values are saved in the database, calculate the sum
-                    if infant_anc and infant_ld and infant_pnc:
+                        # # If both values are saved in the database, calculate the sum
+                        if infant_anc and infant_ld and infant_pnc:
 
-                        field_1 = 0
-                        field_2 = 0
-                        field_3 = 0
-                        total_source = 0
-                        field_5 = 0
-                        field_6 = 0
-                        field_7 = 0
-                        total_731moh = 0
-                        field_9 = 0
-                        field_10 = 0
-                        field_11 = 0
-                        total_khis = 0
-                        #  returns a new queryset containing all the elements from both querysets.
-                        combined_queryset = infant_anc | infant_ld | infant_pnc
+                            field_1 = 0
+                            field_2 = 0
+                            field_3 = 0
+                            total_source = 0
+                            field_5 = 0
+                            field_6 = 0
+                            field_7 = 0
+                            total_731moh = 0
+                            field_9 = 0
+                            field_10 = 0
+                            field_11 = 0
+                            total_khis = 0
+                            #  returns a new queryset containing all the elements from both querysets.
+                            combined_queryset = infant_anc | infant_ld | infant_pnc
 
-                        for data in combined_queryset:
-                            field_1 += int(data.field_1)
-                            field_2 += int(data.field_2)
-                            field_3 += int(data.field_3)
-                            total_source += int(data.total_source)
-                            field_5 += int(data.field_5)
-                            field_6 += int(data.field_6)
-                            field_7 += int(data.field_7)
-                            total_731moh += int(data.total_731moh)
-                            field_9 += int(data.field_9)
-                            field_10 += int(data.field_10)
-                            field_11 += int(data.field_11)
-                            total_khis += int(data.total_khis)
+                            for data in combined_queryset:
+                                field_1 += int(data.field_1)
+                                field_2 += int(data.field_2)
+                                field_3 += int(data.field_3)
+                                total_source += int(data.total_source)
+                                field_5 += int(data.field_5)
+                                field_6 += int(data.field_6)
+                                field_7 += int(data.field_7)
+                                total_731moh += int(data.total_731moh)
+                                field_9 += int(data.field_9)
+                                field_10 += int(data.field_10)
+                                field_11 += int(data.field_11)
+                                total_khis += int(data.total_khis)
 
-                        try:
-                            DataVerification.objects.create(indicator='Total Infant prophylaxis',
-                                                            field_1=field_1,
-                                                            field_2=field_2,
-                                                            field_3=field_3,
-                                                            total_source=total_source,
-                                                            field_5=field_5,
-                                                            field_6=field_6,
-                                                            field_7=field_7,
-                                                            total_731moh=total_731moh,
-                                                            field_9=field_9,
-                                                            field_10=field_10,
-                                                            field_11=field_11,
-                                                            total_khis=total_khis,
-                                                            created_by=request.user,
-                                                            quarter_year=period,
-                                                            facility_name=selected_facility)
-                        except IntegrityError:
-                            # handle the scenario where a duplicate instance is trying to be created
-                            # for example, return an error message to the user
-                            pass
+                            try:
+                                DataVerification.objects.create(indicator='Total Infant prophylaxis',
+                                                                field_1=field_1,
+                                                                field_2=field_2,
+                                                                field_3=field_3,
+                                                                total_source=total_source,
+                                                                field_5=field_5,
+                                                                field_6=field_6,
+                                                                field_7=field_7,
+                                                                total_731moh=total_731moh,
+                                                                field_9=field_9,
+                                                                field_10=field_10,
+                                                                field_11=field_11,
+                                                                total_khis=total_khis,
+                                                                created_by=request.user,
+                                                                quarter_year=period,
+                                                                facility_name=selected_facility)
+                            except IntegrityError:
+                                # handle the scenario where a duplicate instance is trying to be created
+                                # for example, return an error message to the user
+                                pass
 
-                    # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
-                    # years' are saved in the database
-                    kp_anc = data_verification.filter(indicator='On HAART at 1st ANC')
-                    new_art_anc = data_verification.filter(indicator='Start HAART ANC')
-                    new_art_ld = data_verification.filter(indicator='Start HAART_L&D')
-                    new_art_pnc = data_verification.filter(indicator='Start HAART_PNC<= 6 weeks')
+                        # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
+                        # years' are saved in the database
+                        kp_anc = data_verification.filter(indicator='On HAART at 1st ANC')
+                        new_art_anc = data_verification.filter(indicator='Start HAART ANC')
+                        new_art_ld = data_verification.filter(indicator='Start HAART_L&D')
+                        new_art_pnc = data_verification.filter(indicator='Start HAART_PNC<= 6 weeks')
 
-                    # # If both values are saved in the database, calculate the sum
-                    if kp_anc and new_art_anc and new_art_ld and new_art_pnc:
+                        # # If both values are saved in the database, calculate the sum
+                        if kp_anc and new_art_anc and new_art_ld and new_art_pnc:
 
-                        field_1 = 0
-                        field_2 = 0
-                        field_3 = 0
-                        total_source = 0
-                        field_5 = 0
-                        field_6 = 0
-                        field_7 = 0
-                        total_731moh = 0
-                        field_9 = 0
-                        field_10 = 0
-                        field_11 = 0
-                        total_khis = 0
+                            field_1 = 0
+                            field_2 = 0
+                            field_3 = 0
+                            total_source = 0
+                            field_5 = 0
+                            field_6 = 0
+                            field_7 = 0
+                            total_731moh = 0
+                            field_9 = 0
+                            field_10 = 0
+                            field_11 = 0
+                            total_khis = 0
 
-                        #  returns a new queryset containing all the elements from both querysets.
-                        combined_queryset = kp_anc | new_art_anc | new_art_ld | new_art_pnc
+                            #  returns a new queryset containing all the elements from both querysets.
+                            combined_queryset = kp_anc | new_art_anc | new_art_ld | new_art_pnc
 
-                        for data in combined_queryset:
-                            field_1 += int(data.field_1)
-                            field_2 += int(data.field_2)
-                            field_3 += int(data.field_3)
-                            total_source += int(data.total_source)
-                            field_5 += int(data.field_5)
-                            field_6 += int(data.field_6)
-                            field_7 += int(data.field_7)
-                            total_731moh += int(data.total_731moh)
-                            field_9 += int(data.field_9)
-                            field_10 += int(data.field_10)
-                            field_11 += int(data.field_11)
-                            total_khis += int(data.total_khis)
-                        try:
-                            DataVerification.objects.create(indicator='Maternal HAART Total ',
-                                                            field_1=field_1,
-                                                            field_2=field_2,
-                                                            field_3=field_3,
-                                                            total_source=total_source,
-                                                            field_5=field_5,
-                                                            field_6=field_6,
-                                                            field_7=field_7,
-                                                            total_731moh=total_731moh,
-                                                            field_9=field_9,
-                                                            field_10=field_10,
-                                                            field_11=field_11,
-                                                            total_khis=total_khis,
-                                                            created_by=request.user,
-                                                            quarter_year=period,
-                                                            facility_name=selected_facility)
-                        except IntegrityError:
-                            # handle the scenario where a duplicate instance is trying to be created
-                            # for example, return an error message to the user
-                            pass
+                            for data in combined_queryset:
+                                field_1 += int(data.field_1)
+                                field_2 += int(data.field_2)
+                                field_3 += int(data.field_3)
+                                total_source += int(data.total_source)
+                                field_5 += int(data.field_5)
+                                field_6 += int(data.field_6)
+                                field_7 += int(data.field_7)
+                                total_731moh += int(data.total_731moh)
+                                field_9 += int(data.field_9)
+                                field_10 += int(data.field_10)
+                                field_11 += int(data.field_11)
+                                total_khis += int(data.total_khis)
+                            try:
+                                DataVerification.objects.create(indicator='Maternal HAART Total ',
+                                                                field_1=field_1,
+                                                                field_2=field_2,
+                                                                field_3=field_3,
+                                                                total_source=total_source,
+                                                                field_5=field_5,
+                                                                field_6=field_6,
+                                                                field_7=field_7,
+                                                                total_731moh=total_731moh,
+                                                                field_9=field_9,
+                                                                field_10=field_10,
+                                                                field_11=field_11,
+                                                                total_khis=total_khis,
+                                                                created_by=request.user,
+                                                                quarter_year=period,
+                                                                facility_name=selected_facility)
+                            except IntegrityError:
+                                # handle the scenario where a duplicate instance is trying to be created
+                                # for example, return an error message to the user
+                                pass
 
-                    # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
-                    # years' are saved in the database
-                    tx_new_less_15 = data_verification.filter(
-                        indicator='Under 15yrs Starting on ART')
-                    tx_new_above_15 = data_verification.filter(
-                        indicator='Above 15yrs Starting on ART ')
+                        # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
+                        # years' are saved in the database
+                        tx_new_less_15 = data_verification.filter(
+                            indicator='Under 15yrs Starting on ART')
+                        tx_new_above_15 = data_verification.filter(
+                            indicator='Above 15yrs Starting on ART ')
 
-                    # If both values are saved in the database, calculate the sum
-                    if tx_new_above_15 and tx_new_less_15:
+                        # If both values are saved in the database, calculate the sum
+                        if tx_new_above_15 and tx_new_less_15:
 
-                        field_1 = 0
-                        field_2 = 0
-                        field_3 = 0
-                        total_source = 0
-                        field_5 = 0
-                        field_6 = 0
-                        field_7 = 0
-                        total_731moh = 0
-                        field_9 = 0
-                        field_10 = 0
-                        field_11 = 0
-                        total_khis = 0
+                            field_1 = 0
+                            field_2 = 0
+                            field_3 = 0
+                            total_source = 0
+                            field_5 = 0
+                            field_6 = 0
+                            field_7 = 0
+                            total_731moh = 0
+                            field_9 = 0
+                            field_10 = 0
+                            field_11 = 0
+                            total_khis = 0
 
-                        #  returns a new queryset containing all the elements from both querysets.
-                        combined_queryset = tx_new_less_15 | tx_new_above_15
+                            #  returns a new queryset containing all the elements from both querysets.
+                            combined_queryset = tx_new_less_15 | tx_new_above_15
 
-                        for data in combined_queryset:
-                            field_1 += int(data.field_1)
-                            field_2 += int(data.field_2)
-                            field_3 += int(data.field_3)
-                            total_source += int(data.total_source)
-                            field_5 += int(data.field_5)
-                            field_6 += int(data.field_6)
-                            field_7 += int(data.field_7)
-                            total_731moh += int(data.total_731moh)
-                            field_9 += int(data.field_9)
-                            field_10 += int(data.field_10)
-                            field_11 += int(data.field_11)
-                            total_khis += int(data.total_khis)
+                            for data in combined_queryset:
+                                field_1 += int(data.field_1)
+                                field_2 += int(data.field_2)
+                                field_3 += int(data.field_3)
+                                total_source += int(data.total_source)
+                                field_5 += int(data.field_5)
+                                field_6 += int(data.field_6)
+                                field_7 += int(data.field_7)
+                                total_731moh += int(data.total_731moh)
+                                field_9 += int(data.field_9)
+                                field_10 += int(data.field_10)
+                                field_11 += int(data.field_11)
+                                total_khis += int(data.total_khis)
 
-                        try:
-                            DataVerification.objects.create(indicator='Number of adults and children starting ART',
-                                                            field_1=field_1,
-                                                            field_2=field_2,
-                                                            field_3=field_3,
-                                                            total_source=total_source,
-                                                            field_5=field_5,
-                                                            field_6=field_6,
-                                                            field_7=field_7,
-                                                            total_731moh=total_731moh,
-                                                            field_9=field_9,
-                                                            field_10=field_10,
-                                                            field_11=field_11,
-                                                            total_khis=total_khis,
-                                                            created_by=request.user,
-                                                            quarter_year=period,
-                                                            facility_name=selected_facility)
-                        except IntegrityError:
-                            # handle the scenario where a duplicate instance is trying to be created
-                            # for example, return an error message to the user
-                            pass
+                            try:
+                                DataVerification.objects.create(indicator='Number of adults and children starting ART',
+                                                                field_1=field_1,
+                                                                field_2=field_2,
+                                                                field_3=field_3,
+                                                                total_source=total_source,
+                                                                field_5=field_5,
+                                                                field_6=field_6,
+                                                                field_7=field_7,
+                                                                total_731moh=total_731moh,
+                                                                field_9=field_9,
+                                                                field_10=field_10,
+                                                                field_11=field_11,
+                                                                total_khis=total_khis,
+                                                                created_by=request.user,
+                                                                quarter_year=period,
+                                                                facility_name=selected_facility)
+                            except IntegrityError:
+                                # handle the scenario where a duplicate instance is trying to be created
+                                # for example, return an error message to the user
+                                pass
 
-                    # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
-                    # years' are saved in the database
-                    tx_curr_less_15 = data_verification.filter(
-                        indicator='Currently on ART <15Years')
-                    tx_curr_above_15 = data_verification.filter(
-                        indicator='Currently on ART 15+ years')
+                        # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
+                        # years' are saved in the database
+                        tx_curr_less_15 = data_verification.filter(
+                            indicator='Currently on ART <15Years')
+                        tx_curr_above_15 = data_verification.filter(
+                            indicator='Currently on ART 15+ years')
 
-                    # If both values are saved in the database, calculate the sum
-                    if tx_curr_above_15 and tx_curr_less_15:
+                        # If both values are saved in the database, calculate the sum
+                        if tx_curr_above_15 and tx_curr_less_15:
 
-                        field_1 = 0
-                        field_2 = 0
-                        field_3 = 0
-                        total_source = 0
-                        field_5 = 0
-                        field_6 = 0
-                        field_7 = 0
-                        total_731moh = 0
-                        field_9 = 0
-                        field_10 = 0
-                        field_11 = 0
-                        total_khis = 0
+                            field_1 = 0
+                            field_2 = 0
+                            field_3 = 0
+                            total_source = 0
+                            field_5 = 0
+                            field_6 = 0
+                            field_7 = 0
+                            total_731moh = 0
+                            field_9 = 0
+                            field_10 = 0
+                            field_11 = 0
+                            total_khis = 0
 
-                        #  returns a new queryset containing all the elements from both querysets.
-                        combined_queryset = tx_curr_less_15 | tx_curr_above_15
+                            #  returns a new queryset containing all the elements from both querysets.
+                            combined_queryset = tx_curr_less_15 | tx_curr_above_15
 
-                        for data in combined_queryset:
-                            field_1 += int(data.field_1)
-                            field_2 += int(data.field_2)
-                            field_3 += int(data.field_3)
-                            total_source += int(data.total_source)
-                            field_5 += int(data.field_5)
-                            field_6 += int(data.field_6)
-                            field_7 += int(data.field_7)
-                            total_731moh += int(data.total_731moh)
-                            field_9 += int(data.field_9)
-                            field_10 += int(data.field_10)
-                            field_11 += int(data.field_11)
-                            total_khis += int(data.total_khis)
+                            for data in combined_queryset:
+                                field_1 += int(data.field_1)
+                                field_2 += int(data.field_2)
+                                field_3 += int(data.field_3)
+                                total_source += int(data.total_source)
+                                field_5 += int(data.field_5)
+                                field_6 += int(data.field_6)
+                                field_7 += int(data.field_7)
+                                total_731moh += int(data.total_731moh)
+                                field_9 += int(data.field_9)
+                                field_10 += int(data.field_10)
+                                field_11 += int(data.field_11)
+                                total_khis += int(data.total_khis)
 
-                        try:
-                            DataVerification.objects.create(
-                                indicator='Number of adults and children Currently on ART',
-                                field_1=field_1,
-                                field_2=field_2,
-                                field_3=field_3,
-                                total_source=total_source,
-                                field_5=field_5,
-                                field_6=field_6,
-                                field_7=field_7,
-                                total_731moh=total_731moh,
-                                field_9=field_9,
-                                field_10=field_10,
-                                field_11=field_11,
-                                total_khis=total_khis,
-                                created_by=request.user,
-                                quarter_year=period,
-                                facility_name=selected_facility)
-                        except IntegrityError:
-                            # handle the scenario where a duplicate instance is trying to be created
-                            # for example, return an error message to the user
-                            pass
+                            try:
+                                DataVerification.objects.create(
+                                    indicator='Number of adults and children Currently on ART',
+                                    field_1=field_1,
+                                    field_2=field_2,
+                                    field_3=field_3,
+                                    total_source=total_source,
+                                    field_5=field_5,
+                                    field_6=field_6,
+                                    field_7=field_7,
+                                    total_731moh=total_731moh,
+                                    field_9=field_9,
+                                    field_10=field_10,
+                                    field_11=field_11,
+                                    total_khis=total_khis,
+                                    created_by=request.user,
+                                    quarter_year=period,
+                                    facility_name=selected_facility)
+                            except IntegrityError:
+                                # handle the scenario where a duplicate instance is trying to be created
+                                # for example, return an error message to the user
+                                pass
 
-                    # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
-                    # years' are saved in the database
-                    kp_anc_pos = data_verification.filter(indicator='Known Positive at 1st ANC')
-                    pos_anc = data_verification.filter(indicator='Positive Results_ANC')
-                    pos_ld = data_verification.filter(indicator='Positive Results_L&D')
-                    pos_pnc = data_verification.filter(indicator='Positive Results_PNC<=6 weeks')
+                        # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
+                        # years' are saved in the database
+                        kp_anc_pos = data_verification.filter(indicator='Known Positive at 1st ANC')
+                        pos_anc = data_verification.filter(indicator='Positive Results_ANC')
+                        pos_ld = data_verification.filter(indicator='Positive Results_L&D')
+                        pos_pnc = data_verification.filter(indicator='Positive Results_PNC<=6 weeks')
 
-                    # # If both values are saved in the database, calculate the sum
-                    if kp_anc_pos and pos_anc and pos_ld and pos_pnc:
+                        # # If both values are saved in the database, calculate the sum
+                        if kp_anc_pos and pos_anc and pos_ld and pos_pnc:
 
-                        field_1 = 0
-                        field_2 = 0
-                        field_3 = 0
-                        total_source = 0
-                        field_5 = 0
-                        field_6 = 0
-                        field_7 = 0
-                        total_731moh = 0
-                        field_9 = 0
-                        field_10 = 0
-                        field_11 = 0
-                        total_khis = 0
+                            field_1 = 0
+                            field_2 = 0
+                            field_3 = 0
+                            total_source = 0
+                            field_5 = 0
+                            field_6 = 0
+                            field_7 = 0
+                            total_731moh = 0
+                            field_9 = 0
+                            field_10 = 0
+                            field_11 = 0
+                            total_khis = 0
 
-                        #  returns a new queryset containing all the elements from both querysets.
-                        combined_queryset = kp_anc_pos | pos_anc | pos_ld | pos_pnc
+                            #  returns a new queryset containing all the elements from both querysets.
+                            combined_queryset = kp_anc_pos | pos_anc | pos_ld | pos_pnc
 
-                        for data in combined_queryset:
-                            field_1 += int(data.field_1)
-                            field_2 += int(data.field_2)
-                            field_3 += int(data.field_3)
-                            total_source += int(data.total_source)
-                            field_5 += int(data.field_5)
-                            field_6 += int(data.field_6)
-                            field_7 += int(data.field_7)
-                            total_731moh += int(data.total_731moh)
-                            field_9 += int(data.field_9)
-                            field_10 += int(data.field_10)
-                            field_11 += int(data.field_11)
-                            total_khis += int(data.total_khis)
-                        try:
-                            DataVerification.objects.create(indicator='Total Positive (PMTCT)',
-                                                            field_1=field_1,
-                                                            field_2=field_2,
-                                                            field_3=field_3,
-                                                            total_source=total_source,
-                                                            field_5=field_5,
-                                                            field_6=field_6,
-                                                            field_7=field_7,
-                                                            total_731moh=total_731moh,
-                                                            field_9=field_9,
-                                                            field_10=field_10,
-                                                            field_11=field_11,
-                                                            total_khis=total_khis,
-                                                            created_by=request.user,
-                                                            quarter_year=period,
-                                                            facility_name=selected_facility)
-                        except IntegrityError:
-                            # handle the scenario where a duplicate instance is trying to be created
-                            # for example, return an error message to the user
-                            pass
+                            for data in combined_queryset:
+                                field_1 += int(data.field_1)
+                                field_2 += int(data.field_2)
+                                field_3 += int(data.field_3)
+                                total_source += int(data.total_source)
+                                field_5 += int(data.field_5)
+                                field_6 += int(data.field_6)
+                                field_7 += int(data.field_7)
+                                total_731moh += int(data.total_731moh)
+                                field_9 += int(data.field_9)
+                                field_10 += int(data.field_10)
+                                field_11 += int(data.field_11)
+                                total_khis += int(data.total_khis)
+                            try:
+                                DataVerification.objects.create(indicator='Total Positive (PMTCT)',
+                                                                field_1=field_1,
+                                                                field_2=field_2,
+                                                                field_3=field_3,
+                                                                total_source=total_source,
+                                                                field_5=field_5,
+                                                                field_6=field_6,
+                                                                field_7=field_7,
+                                                                total_731moh=total_731moh,
+                                                                field_9=field_9,
+                                                                field_10=field_10,
+                                                                field_11=field_11,
+                                                                total_khis=total_khis,
+                                                                created_by=request.user,
+                                                                quarter_year=period,
+                                                                facility_name=selected_facility)
+                            except IntegrityError:
+                                # handle the scenario where a duplicate instance is trying to be created
+                                # for example, return an error message to the user
+                                pass
 
-                # Redirect the user to the show_data_verification view
-                # return redirect("show_data_verification")
-                return HttpResponseRedirect(request.path_info)
+                    # Redirect the user to the show_data_verification view
+                    # return redirect("show_data_verification")
+                    return HttpResponseRedirect(request.path_info)
 
             # Handle the IntegrityError exception
             except IntegrityError as e:
                 # Notify the user that the data already exists
                 messages.error(request, f'Data for {selected_facility}, {request.session["selected_quarter"]}, '
                                         f'{selected_indicator} '
-                                        f'already exists.')
+                                        f'already exists!')
         # If the form data is not valid
         else:
             # Create a new instance of the DataVerificationForm with the invalid data
@@ -1448,7 +1454,7 @@ def dqa_summary(request):
             facility_name=selected_facility
         )
         if system_assessments:
-            average_dictionary = calculate_averages(system_assessments, description_list)
+            average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments, description_list)
             data = [
                 go.Scatterpolar(
                     r=[average_dictionary['average_calculations_5'], average_dictionary['average_calculations_5_12'],
@@ -1531,7 +1537,7 @@ def dqa_work_plan_create(request, pk, quarter_year):
         'date_modified': facility.date_modified,
     }
 
-    return render(request, 'project/add_qi_manager.html', context)
+    return render(request, 'dqa/add_qi_manager.html', context)
 
 
 def show_dqa_work_plan(request):
@@ -1689,6 +1695,7 @@ def system_assessment_table(request):
     date_form = DateSelectionForm(request.POST or None)
     system_assessments = None
     average_dictionary = None
+    expected_counts_dictionary = None
     description_list = [
         "There is a documented structure/chart that clearly identifies positions that have data management "
         "responsibilities at the Facility.",
@@ -1744,7 +1751,7 @@ def system_assessment_table(request):
             )
         )
         if system_assessments:
-            average_dictionary = calculate_averages(system_assessments, description_list)
+            average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments, description_list)
 
         if not system_assessments:
             messages.error(request, f"System assessment data was not found for {selected_facility} ({quarter_year})")
@@ -1761,7 +1768,7 @@ def system_assessment_table(request):
             )
         )
         if system_assessments:
-            average_dictionary = calculate_averages(system_assessments, description_list)
+            average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments, description_list)
 
     context = {
         "quarter_form": quarter_form,
@@ -1770,6 +1777,7 @@ def system_assessment_table(request):
         "date_form": date_form,
         'system_assessments': system_assessments,
         "average_dictionary": average_dictionary,
+        "expected_counts_dictionary": expected_counts_dictionary,
     }
     return render(request, 'dqa/show_system_assessment.html', context)
 
@@ -1822,3 +1830,32 @@ def update_system_assessment(request, pk):
         "title": "update"
     }
     return render(request, 'dqa/update_system_assessment.html', context)
+
+
+@login_required(login_url='login')
+def update_dqa_workplan(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = DQAWorkPlan.objects.get(id=pk)
+    today = timezone.now().date()
+    if request.method == "POST":
+        form = DQAWorkPlanForm(request.POST, instance=item)
+        if form.is_valid():
+            dqa_work_plan = form.save(commit=False)
+            dqa_work_plan.facility_name = item.facility_name
+            dqa_work_plan.quarter_year = item.quarter_year
+            dqa_work_plan.created_by = request.user
+            dqa_work_plan.progress = (dqa_work_plan.due_complete_by - today).days
+            dqa_work_plan.timeframe = (dqa_work_plan.due_complete_by - dqa_work_plan.dqa_date).days
+            dqa_work_plan.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = DQAWorkPlanForm(instance=item)
+    context = {
+        "form": form,
+        'title': 'Update DQA Work Plan',
+        'facility': item.facility_name.name,
+        'mfl_code': item.facility_name.mfl_code,
+        'date_modified': item.updated_at,
+    }
+    return render(request, 'dqa/add_qi_manager.html', context)

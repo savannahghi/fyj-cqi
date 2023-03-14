@@ -10,14 +10,12 @@
     <div class="p-5 mb-4 bg-light rounded-3">
 
     {% if messages %}
-    <ul class="messages">
         {% for message in messages %}
             <div class="alert alert-info col-12" role="alert">
         <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
     </div>
 {#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
         {% endfor %}
-    </ul>
 {% endif %}
 
       <div class="container-fluid">
@@ -117,19 +115,40 @@
     {% endfor %}
    <tr>
         <td></td>
-        <td class="fw-bold">Average</td>
+        <td class="fw-bold">
+            Average
+        </td>
         <td></td>
-        <td>
             {% for key,value in average_dictionary.items %}
+                {% if key == "average_calculations_5" %}
+                    {% if value == 3 %}
+                        <td class="text-center text-black" style="background-color: green">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value > 2  and value < 3%}
+                        <td class="text-center text-black" style="background-color: yellow">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value < 1.9 %}
+                        <td class="text-center text-black" style="background-color: red">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% else %}
+                        <td class="text-center text-black" style="background-color: ghostwhite">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+
+        <td></td>
+        <td><strong>Denominator: </strong></td>
+        <td>{% for key,value in expected_counts_dictionary.items %}
                 {% if key == "average_calculations_5" %}
                     <strong>{{value}}</strong>
                 {% endif %}
             {% endfor %}
         </td>
-
-        <td></td>
-        <td></td>
-        <td></td>
     </tr>
   </tbody>
 <thead class="thead-dark text-center">
@@ -196,17 +215,36 @@
         <td></td>
         <td class="fw-bold">Average</td>
         <td></td>
-        <td>
             {% for key,value in average_dictionary.items %}
+                {% if key == "average_calculations_5_12" %}
+                    {% if value == 3 %}
+                        <td class="text-center text-black" style="background-color: green">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value > 2  and value < 3%}
+                        <td class="text-center text-black" style="background-color: yellow">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value < 1.9 %}
+                        <td class="text-center text-black" style="background-color: red">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% else %}
+                        <td class="text-center text-black" style="background-color: ghostwhite">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+
+        <td></td>
+        <td><strong>Denominator: </strong></td>
+        <td>{% for key,value in expected_counts_dictionary.items %}
                 {% if key == "average_calculations_5_12" %}
                     <strong>{{value}}</strong>
                 {% endif %}
             {% endfor %}
         </td>
-
-        <td></td>
-        <td></td>
-        <td></td>
     </tr>
   </tbody>
 <thead class="thead-dark text-center">
@@ -273,17 +311,36 @@
         <td></td>
         <td class="fw-bold">Average</td>
         <td></td>
-        <td>
             {% for key,value in average_dictionary.items %}
+                {% if key == "average_calculations_12_17" %}
+                    {% if value == 3 %}
+                        <td class="text-center text-black" style="background-color: green">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value > 2  and value < 3%}
+                        <td class="text-center text-black" style="background-color: yellow">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value < 1.9 %}
+                        <td class="text-center text-black" style="background-color: red">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% else %}
+                        <td class="text-center text-black" style="background-color: ghostwhite">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+
+        <td></td>
+        <td><strong>Denominator: </strong></td>
+        <td>{% for key,value in expected_counts_dictionary.items %}
                 {% if key == "average_calculations_12_17" %}
                     <strong>{{value}}</strong>
                 {% endif %}
             {% endfor %}
         </td>
-
-        <td></td>
-        <td></td>
-        <td></td>
     </tr>
   </tbody>
 <thead class="thead-dark text-center">
@@ -349,17 +406,35 @@
         <td></td>
         <td class="fw-bold">Average</td>
         <td></td>
-        <td>
             {% for key,value in average_dictionary.items %}
+                {% if key == "average_calculations_17_21" %}
+                    {% if value == 3 %}
+                        <td class="text-center text-black" style="background-color: green">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value > 2  and value < 3%}
+                        <td class="text-center text-black" style="background-color: yellow">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value < 1.9 %}
+                        <td class="text-center text-black" style="background-color: red">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% else %}
+                        <td class="text-center text-black" style="background-color: ghostwhite">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        <td></td>
+        <td><strong>Denominator: </strong></td>
+        <td>{% for key,value in expected_counts_dictionary.items %}
                 {% if key == "average_calculations_17_21" %}
                     <strong>{{value}}</strong>
                 {% endif %}
             {% endfor %}
         </td>
-
-        <td></td>
-        <td></td>
-        <td></td>
     </tr>
   </tbody>
 <thead class="thead-dark text-center">
@@ -424,17 +499,37 @@
         <td></td>
         <td class="fw-bold">Average</td>
         <td></td>
-        <td>
             {% for key,value in average_dictionary.items %}
                 {% if key == "average_calculations_21_25" %}
-                    <strong>{{value}}</strong>
+                    {% if value == 3 %}
+                        <td class="text-center text-black" style="background-color: green">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value > 2  and value < 3%}
+                        <td class="text-center text-black" style="background-color: yellow">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% elif value < 1.9 %}
+                        <td class="text-center text-black" style="background-color: red">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% else %}
+                        <td class="text-center text-black" style="background-color: ghostwhite">
+                        <strong>{{ value }}</strong>
+                        </td>
+                    {% endif %}
                 {% endif %}
             {% endfor %}
         </td>
 
         <td></td>
-        <td></td>
-        <td></td>
+        <td><strong>Denominator: </strong></td>
+        <td>{% for key,value in expected_counts_dictionary.items %}
+                {% if key == "average_calculations_21_25" %}
+                    <strong>{{value}}</strong>
+                {% endif %}
+            {% endfor %}
+        </td>
     </tr>
 
   </tbody>

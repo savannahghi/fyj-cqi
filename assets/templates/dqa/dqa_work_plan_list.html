@@ -96,7 +96,7 @@
 
                         <br>
                     <br>
-                    <span style="font-size: 8px" class="badge alert-warning">Timeframe: {{ action_plan.timeframe|add:"0" }} days</span>
+                    <span style="font-size: 8px" class="badge alert-warning">Timeframe: {{ action_plan.timeframe|abs|add:"0" }} days</span>
 
 
 
@@ -133,7 +133,7 @@
                {{ action_plan.comments }}
           </td>
                 <td>
-{#                  <a href="{% url 'update_action_plan' action_plan.id %}" class="btn btn-info" role="button">Update</a>#}
+                  <a href="{% url 'update_dqa_workplan' action_plan.id %}" class="btn btn-info" role="button">Update</a>
                 </td>
                     {% if user.is_authenticated %}
                       {% if user.id == action_plan.created_by.id %}

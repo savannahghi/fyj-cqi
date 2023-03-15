@@ -1292,6 +1292,8 @@ def dqa_summary(request):
     selected_quarter = "Qtr1"
     year_suffix = "21"
     selected_facility = None
+    average_dictionary = None
+    site_avg = None
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
@@ -1470,6 +1472,7 @@ def dqa_summary(request):
         )
         if system_assessments:
             average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments, description_list)
+            site_avg = round(sum(average_dictionary.values()) / len(average_dictionary), 2)
             data = [
                 go.Scatterpolar(
                     r=[average_dictionary['average_calculations_5'], average_dictionary['average_calculations_5_12'],
@@ -1520,6 +1523,8 @@ def dqa_summary(request):
         "selected_facility": selected_facility,
         "quarter_year": quarter_year,
         "plot_div": plot_div,
+        "average_dictionary": average_dictionary,
+        "site_avg":site_avg
     }
     return render(request, 'dqa/dqa_summary.html', context)
 

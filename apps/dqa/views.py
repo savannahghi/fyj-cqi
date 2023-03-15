@@ -118,7 +118,7 @@ def load_data(request):
                 redirect('load_data')
         else:
             # Notify the user that the data already exists
-            messages.error(request, f"Uploaded file does not have a sheet name performance.")
+            messages.error(request, f"Uploaded file does not have a sheet named 'performance'.")
             redirect('load_data')
 
         # return redirect('show_data_verification')
@@ -151,7 +151,7 @@ def calculate_averages(system_assessments, description_list):
         num_values = cal_values.count()
         avg_calc = cal_values.mean()
         values.append(round(avg_calc, 2))
-        expected_counts.append(num_values*3)
+        expected_counts.append(num_values * 3)
 
     keys = ["average_calculations_5", "average_calculations_5_12", "average_calculations_12_17",
             "average_calculations_17_21", "average_calculations_21_25"]
@@ -195,7 +195,13 @@ def add_data_verification(request):
 
         selected_year = year_form.cleaned_data['year']
         request.session['selected_year'] = selected_year
-        year_suffix = selected_year[-2:]
+
+        selected_year = int(selected_year)
+        if selected_quarter == "Qtr1":
+            selected_year -= 1
+            year_suffix = str(selected_year)[-2:]
+        else:
+            year_suffix = str(selected_year)[-2:]
         quarters = {
             selected_quarter: [
                 f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}'
@@ -662,12 +668,20 @@ def show_data_verification(request):
     selected_year = "2021"
     year_suffix = "21"
     selected_facility = None
+    request.session['selected_year_'] = ""
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
         selected_year = year_form.cleaned_data['year']
+        request.session['selected_year_'] = selected_year
         selected_facility = facility_form.cleaned_data['name']
         year_suffix = selected_year[-2:]
+        selected_year = int(selected_year)
+        if selected_quarter == "Qtr1":
+            selected_year -= 1
+            year_suffix = str(selected_year)[-2:]
+        else:
+            year_suffix = str(selected_year)[-2:]
         quarters = {
             selected_quarter: [
                 f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}', 'Total'
@@ -681,7 +695,8 @@ def show_data_verification(request):
         }
     else:
         quarters = {}
-
+    selected_year = request.session['selected_year_']
+    year_suffix = selected_year[-2:]
     quarter_year = f"{selected_quarter}-{year_suffix}"
     data_verification = DataVerification.objects.filter(quarter_year__quarter=selected_quarter,
                                                         quarter_year__year=selected_year,
@@ -1277,6 +1292,8 @@ def dqa_summary(request):
     selected_quarter = "Qtr1"
     year_suffix = "21"
     selected_facility = None
+    average_dictionary = None
+    site_avg = None
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
@@ -1455,6 +1472,7 @@ def dqa_summary(request):
         )
         if system_assessments:
             average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments, description_list)
+            site_avg = round(sum(average_dictionary.values()) / len(average_dictionary), 2)
             data = [
                 go.Scatterpolar(
                     r=[average_dictionary['average_calculations_5'], average_dictionary['average_calculations_5_12'],
@@ -1505,6 +1523,8 @@ def dqa_summary(request):
         "selected_facility": selected_facility,
         "quarter_year": quarter_year,
         "plot_div": plot_div,
+        "average_dictionary": average_dictionary,
+        "site_avg":site_avg
     }
     return render(request, 'dqa/dqa_summary.html', context)
 
@@ -1654,6 +1674,8 @@ def add_system_verification(request):
                                 instance.calculations = 2
                             elif instance.dropdown_option == 'No':
                                 instance.calculations = 1
+                            elif instance.dropdown_option == 'N/A':
+                                instance.calculations = None
                             # Get or create the Facility instance
                             facility, created = Facilities.objects.get_or_create(name=selected_facility)
                             instance.facility_name = facility
@@ -1807,6 +1829,8 @@ def update_system_assessment(request, pk):
                 instance.calculations = 2
             elif instance.dropdown_option == 'No':
                 instance.calculations = 1
+            elif instance.dropdown_option == 'N/A':
+                instance.calculations = None
             # Get or create the Facility instance
             instance.facility_name = item.facility_name
             # Get the Period instance

@@ -221,6 +221,7 @@ class FyjPerformance(models.Model):
 
         # Get the month string
         month = month_str.split()[0]
+        quarter = None
 
         # Determine the quarter based on the month while handling both full month names and abbreviated names
         if month in ["October", "November", "December", "Oct", "Nov", "Dec"]:
@@ -235,6 +236,10 @@ class FyjPerformance(models.Model):
         elif month in ["July", "August", "September", "Jul", "Aug", "Sep"]:
             # If the month is July, August, or September, the quarter is Qtr4
             quarter = "Qtr4"
+
+        # Increment the year by 1 if the quarter is Qtr1
+        if quarter == "Qtr1":
+            year += 1
 
         # Construct the quarter-year string
         self.quarter_year = quarter + "-" + str(year)[-2:]

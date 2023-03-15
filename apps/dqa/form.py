@@ -53,7 +53,8 @@ class YearSelectionForm(forms.Form):
     current_year = datetime.datetime.now().year
     YEAR_CHOICES = [(str(x), str(x)) for x in range(2021, current_year + 1)]
     year = forms.ChoiceField(
-        choices=YEAR_CHOICES
+        choices=YEAR_CHOICES,
+        label="FY"
     )
 
 
@@ -71,7 +72,6 @@ class FacilitySelectionForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control select2'}),
         initial=None  # Add this line to set the initial value to None
     )
-
 
     def __init__(self, *args, **kwargs):
         initial = kwargs.get('initial', {})

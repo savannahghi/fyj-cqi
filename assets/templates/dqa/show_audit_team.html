@@ -1,5 +1,4 @@
 {% extends 'dqa/index_dqa.html' %}
-{% load crispy_forms_filters %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -9,14 +8,24 @@
     <div class="p-5 mb-4 bg-light rounded-3">
       <div class="container-fluid py-5">
       {% if messages %}
-{#                <ul class="messages">#}
+                <ul class="messages">
+                    {% if messages|length >= 1 %}
+                        {% for message in messages|slice:":1" %}
+                            {% if "dqa" in message|lower %}
+                                <div class="mb-3">
+                                    <a href="{% url 'add_data_verification' %}" class="btn btn-success flicker-button" role="button"> ADD FACILITY DQA DATA </a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+
                         <div class="alert alert-info col-12 animated fadeIn" role="alert">
                             {% for message in messages|slice:":1" %}
                             <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
                             {% endfor %}
                         </div>
 
-{#               </ul>#}
+               </ul>
            {% endif %}
       {% if "facility" in title %}
       <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
@@ -25,8 +34,6 @@
           {% elif title == "audit team" %}
           <h6 class="display-6 fw-bold text-primary">ADD {{ title|upper }} MEMBERS</h6>
           {% elif title == "update audit team" %}
-          <h6 class="display-6 fw-bold text-primary">{{ title|upper }} MEMBER'S DETAILS</h6>
-          {% elif title == "show team" %}
           <h6 class="display-6 fw-bold text-primary">{{ title|upper }} MEMBER'S DETAILS</h6>
       {% endif %}
         <div class="col-md-7">
@@ -61,24 +68,6 @@
           <div class="col-md-6 mt-4">
             {{ form.organization|as_crispy_field }}
         </div>
-          {% elif "show team" in title  %}
-
-          <p class="text-primary">"To add a member to the audit team, please navigate to the DQA summary page of the
-              relevant facility. Please note that the maximum number of audit team members that can be added is 15. Only
-              users who have access to the DQA summary page for a facility can add audit team members."
-          </p>
-          <p> Please choose quarter, year, facility and then submit </p>
-
-
-            <div class="col-md-2 mt-2">
-                {{ form.quarter|as_crispy_field }}
-            </div>
-            <div class="col-md-2 mt-2">
-                {{ year_form.year|as_crispy_field }}
-            </div>
-        <div class="col-md-4 mt-2">
-                {{ facility_form.name|as_crispy_field }}
-            </div>
       {% else %}
         <div class="col-md-2 mt-4">
             {{ period_form.quarter|as_crispy_field }}
@@ -124,13 +113,7 @@
             <td class="text-center text-black">
                {{ team.quarter_year.quarter_year }}
             </td>
-            {% if user.is_authenticated %}
-              {% if user.id == team.created_by.id or user.is_superuser %}
-                    <td>
-                        <a href="{% url 'update_audit_team' team.id %}" class="btn btn-info" role="button">Update</a>
-                    </td>
-              {% endif %}
-            {% endif %}
+        <td><a href="{% url 'update_audit_team' team.id %}" class="btn btn-info" role="button">Update</a></td>
         </tr>
         {% endfor %}
       </tbody>

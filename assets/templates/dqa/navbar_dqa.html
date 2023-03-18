@@ -4,6 +4,7 @@
 {% url "add_system_verification" as add_system_verification %}
 {% url "dqa_summary" as dqa_summary %}
 {% url "show_dqa_work_plan" as show_dqa_work_plan %}
+{% url "show_audit_team" as show_audit_team %}
 {% url "system_assessment_table" as system_assessment_table %}
 {% url "instructions" as instructions %}
 {% url "comments" as comments %}
@@ -85,6 +86,12 @@
              <a class="nav-link {% if request.path == show_dqa_work_plan %} active{% endif %}" href="{% url 'show_dqa_work_plan' %}">
               <span data-feather="briefcase" class="align-text-bottom"></span>
               DQA Work plan
+            </a>
+          </li>
+        <li class="nav-item">
+             <a class="nav-link {% if request.path == show_audit_team %} active{% endif %}" href="{% url 'show_audit_team' %}">
+              <span data-feather="briefcase" class="align-text-bottom"></span>
+              Audit team
             </a>
           </li>
         {% if request.user.is_superuser %}

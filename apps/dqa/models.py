@@ -1,6 +1,7 @@
 import uuid
 
 from crum import get_current_user
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 
@@ -308,3 +309,30 @@ class SystemAssessment(models.Model):
 
     class Meta:
         unique_together = (("quarter_year", "description", "facility_name"),)
+
+
+class AuditTeam(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    name = models.CharField(max_length=255)
+    carder = models.CharField(max_length=255)
+    organization = models.CharField(max_length=255)
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
+    quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE, blank=True, null=True)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                    on_delete=models.CASCADE, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.name) + "-" + str(self.quarter_year)
+
+    def save(self, *args, **kwargs):
+        # Check if there are already 15 records with the same facility_name and quarter_year combination but allow
+        # updating existing records
+        if AuditTeam.objects.filter(facility_name=self.facility_name, quarter_year=self.quarter_year).exclude(pk=self.pk).count() >= 15:
+            raise ValidationError('Only 15 audit team members are allowed per facility per quarter.')
+
+        # Call the super method to save the record
+        super().save(*args, **kwargs)

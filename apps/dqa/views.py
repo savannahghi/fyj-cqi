@@ -1,7 +1,19 @@
 import ast
+import os
 
-import io
-from datetime import timezone
+import matplotlib
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from reportlab.platypus import TableStyle, Table
+
+matplotlib.use('Agg')
+matplotlib.rcParams['agg.path.chunksize'] = 10000
+
+from io import BytesIO
+import json
+from datetime import timezone, datetime
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 from django.db.models import Case, When, IntegerField
 from django.forms import modelformset_factory
@@ -9,6 +21,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 import pandas as pd
+from django.views import View
 from plotly.offline import plot
 import plotly.express as px
 import plotly.graph_objs as go
@@ -21,12 +34,15 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 
 # Create your views here.
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
 from apps.dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm, YearSelectionForm, \
-    FacilitySelectionForm, \
-    DQAWorkPlanForm, SystemAssessmentForm, DateSelectionForm
-from apps.dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan, SystemAssessment
+    FacilitySelectionForm, DQAWorkPlanForm, SystemAssessmentForm, DateSelectionForm, AuditTeamForm
+from apps.dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan, SystemAssessment, \
+    AuditTeam
 from apps.cqi.views import bar_chart
 from apps.cqi.models import Facilities
 
@@ -184,8 +200,6 @@ def add_data_verification(request):
     quarter_form = QuarterSelectionForm(request.POST or None)
     year_form = YearSelectionForm(request.POST or None)
     forms = DataVerificationForm()
-
-    selected_quarter = "Qtr1"
     selected_year = "2021"
     year_suffix = selected_year[-2:]
 
@@ -665,8 +679,6 @@ def show_data_verification(request):
     facility_form = FacilitySelectionForm(request.POST or None)
 
     selected_quarter = "Qtr1"
-    selected_year = "2021"
-    year_suffix = "21"
     selected_facility = None
     request.session['selected_year_'] = ""
 
@@ -769,6 +781,7 @@ def show_data_verification(request):
 def update_data_verification(request, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    quarters = None
     item = DataVerification.objects.get(id=pk)
     if request.method == "POST":
         form = DataVerificationForm(request.POST, instance=item)
@@ -1255,32 +1268,558 @@ def bar_chart(df, x_axis, y_axis, title=None):
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def generate_pdf(request, context):
-    # Create a file-like buffer to receive PDF data.
-    buffer = io.BytesIO()
+def bar_chart_report(df, x_axis, y_axis, selected_facility, indy=None, quarter=None):
+    chart_name = None
+    fig, ax = plt.subplots(figsize=(8, 5))
 
-    # Create the PDF object, using the buffer as its "file."
-    p = canvas.Canvas(buffer)
+    sns.barplot(x=x_axis, y=y_axis, data=df, palette={
+        'Source': '#5B9BD5',
+        'MOH 731': '#ED7D31',
+        'KHIS': '#A5A5A5',
+        'DATIM': '#FFC000',
+    })
 
-    # Draw things on the PDFReportLab. Here's where the PDF generation happens.
-    # See the  documentation for the full list of functionality.
-    p.drawString(100, 750, "Hello world.")
+    ax.set_xlabel(x_axis, fontsize=10)
+    ax.set_ylabel(y_axis, fontsize=10)
 
-    # Loop through the context dictionary and write the values to the PDF
-    y_offset = 700
-    for key, value in context.items():
-        p.drawString(100, y_offset, f"{key}: {value}")
-        y_offset -= 20
+    if indy is not None:
+        ax.set_title(f"{indy} {quarter}", fontsize=14, fontweight='bold')
 
-    # Close the PDF object cleanly, and we're done.
-    p.showPage()
-    p.save()
+    ax.tick_params(labelsize=10)
+    sns.despine()
 
-    # File response with the PDF data.
+    plt.tight_layout()
+
+    # Add labels to the bars
+    for i, val in enumerate(df[y_axis]):
+        ax.text(i, val, int(val), horizontalalignment='center', fontsize=10, fontweight='bold')
+
+    if indy is not None:
+        # create the full path for the file
+        file_path = os.path.join(settings.MEDIA_ROOT, f'{indy}.png')
+        facility_mfl = selected_facility.mfl_code
+        date_str = datetime.now().strftime("%Y-%m-%d")  # Get current date and time as string
+        chart_name = f"{indy}_{facility_mfl}_{date_str}.png"  # Combine facility name, date/time, and random UUID to create a unique file name
+        file_path = os.path.join(settings.MEDIA_ROOT, chart_name)  # create the full path for the file
+
+        # save the file
+        fig.savefig(file_path, dpi=150, bbox_inches='tight', pad_inches=0.2)
+
+    return fig, chart_name
+
+
+# def bar_chart_report(df, x_axis, y_axis, indy=None, quarter=None):
+#     fig, ax = plt.subplots(figsize=(8, 5))
+#
+#     sns.barplot(x=x_axis, y=y_axis, data=df, palette={
+#         'Source': '#5B9BD5',
+#         'MOH 731': '#ED7D31',
+#         'KHIS': '#A5A5A5',
+#         'DATIM': '#FFC000',
+#     })
+#
+#     ax.set_xlabel(x_axis, fontsize=10)
+#     ax.set_ylabel(y_axis, fontsize=10)
+#
+#     if indy is not None:
+#         ax.set_title(f"{indy} {quarter}", fontsize=14, fontweight='bold')
+#
+#     ax.tick_params(labelsize=10)
+#     # Manually set the visibility of spines to False
+#     for spine in ax.spines.values():
+#         spine.set_visible(False)
+#
+#     plt.tight_layout()
+#
+#     # Add labels to the bars
+#     for i, val in enumerate(df[y_axis]):
+#         ax.text(i, val, int(val), horizontalalignment='center', fontsize=10, fontweight='bold')
+#
+#     # Draw the figure before saving
+#     fig.canvas.draw()
+#
+#     # Save the figure as a bytes object instead of a file
+#     bytes_io = BytesIO()
+#     fig.savefig(bytes_io, format='png', dpi=150, bbox_inches='tight', pad_inches=0.2)
+#     bytes_io.seek(0)
+#     image_bytes = bytes_io.getvalue()
+#
+#     # Close the figure to free up memory
+#     plt.close(fig)
+#
+#     return image_bytes
+
+
+# def generate_pdf(request):
+#     # Get data for rendering the HTML template here...
+#
+#     # Render the HTML template
+#     template = get_template('my_template.html')
+#     html = template.render({
+#         'dqa': dqa,
+#         'average_dictionary': average_dictionary,
+#         'quarter_year': quarter_year,
+#         'dicts': dicts,
+#         'selected_facility': selected_facility,
+#     })
+#
+#     # Generate PDF using ReportLab
+#     pdf_file = BytesIO()
+#     pisa.CreatePDF(BytesIO(html.encode("UTF-8")), pdf_file)
+#
+#     # Create a response object with the PDF file
+#     response = HttpResponse(content_type='application/pdf')
+#     response['Content-Disposition'] = 'attachment; filename="my_report.pdf"'
+#     response.write(pdf_file.getvalue())
+#
+#     return response
+
+
+def polar_chart_report(df, selected_facility, quarter_year):
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection='polar')
+    sns.lineplot(x='category', y='value', data=df, sort=False, linewidth=2, color='green', marker='o',
+                 markersize=10, ax=ax)
+    ax.set_theta_zero_location('N')
+    ax.set_theta_direction(-1)
+    ax.set_ylim(0, 5)
+
+    plt.title(f"System Assessment Averages for {selected_facility} ({quarter_year})", y=1.15, fontsize=12)
+    plt.tight_layout()
+
+    # Draw the figure before saving
+    fig.canvas.draw()
+
+    # Save the PNG image to a buffer instead of a file
+    buffer = BytesIO()
+    plt.savefig(buffer, format='png', dpi=150, bbox_inches='tight', pad_inches=0.2)
     buffer.seek(0)
-    response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="dqa summary.pdf"'
-    return response
+    png_data = buffer.read()
+    buffer.close()
+
+    return png_data
+
+
+class GeneratePDF(View):
+    def get(self, request):
+        # Retrieve the selected facility from the session and convert it back to a dictionary
+        selected_facility_json = request.session.get('selected_facility')
+        selected_facility_dict = json.loads(selected_facility_json)
+
+        # Create a Facility object from the dictionary
+        selected_facility = Facilities.objects.get(id=selected_facility_dict['id'])
+
+        quarter_year = request.session['quarter_year']
+
+        description_list = [
+            "There is a documented structure/chart that clearly identifies positions that have data management "
+            "responsibilities at the Facility.",
+            "Positions dedicated to M&E and data management systems in the facility are filled.",
+            "There is a training plan which includes staff involved in data-collection and reporting at all levels in the "
+            "reporting process.",
+            "All relevant staff have received training on the data management processes and tools.",
+            "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and "
+            "timeliness) before submission to the Sub County.",
+            "The facility has data quality SOPs for monthly reporting processes and quality checks",
+            "The facility conducts internal data quality checks and validation before submission of reports",
+            "The facility has conducted a data quality audit in the last 6 months",
+            "There is a documented data improvement action plan? Verify by seeing",
+            "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, "
+            "completeness and timeliness).",
+            "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, "
+            "MDT feedback data template",
+            "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts",
+            "The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 "
+            "indicators.",
+            "The facility staff are very clear on what they are supposed to report on.",
+            "The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.",
+            "The facility staff are very clear on to whom the reports should be submitted.",
+            "The facility staff are very clear on when the reports are due.",
+            "The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)",
+            "Clear instructions have been provided to the facility on how to complete the data collection and reporting "
+            "forms/tools.",
+            "The facility has the revised HTS register in all service delivery points and a clear inventory is available "
+            "detailing the number of HTS registers in use by service delivery point",
+            "HIV client files are well organised and stored in a secure location",
+            "Do you use your EMR to generate reports?",
+            "There is a clearly documented and actively implemented database administration procedure in place. This "
+            "includes backup/recovery procedures, security admininstration, and user administration.",
+            "The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)",
+            "The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,"
+            "What is your main challenge regarding data management and reporting?"]
+
+        dicts = {}
+        dqa = None
+        average_dictionary = None
+
+        name = None
+        mfl_code = None
+        date = None
+        site_avg = None
+        polar_chart = ""
+        charts = []
+
+        # if "submit_data" in request.POST:
+        dqa = DataVerification.objects.filter(facility_name__mfl_code=selected_facility.mfl_code,
+                                              quarter_year__quarter_year=quarter_year)
+        fyj_perf = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
+                                                 quarter_year=quarter_year).values()
+        if dqa:
+            # loop through both models QI_Projects and Program_qi_projects using two separate lists
+            dqa_df = [
+                {'indicator': x.indicator,
+                 'facility': x.facility_name.name,
+                 'mfl_code': x.facility_name.mfl_code,
+                 'Source': x.total_source,
+                 "MOH 731": x.total_731moh,
+                 "KHIS": x.total_khis,
+                 "quarter_year": x.quarter_year.quarter_year,
+                 } for x in dqa
+            ]
+            # Finally, you can create a dataframe from this list of dictionaries.
+            dqa_df = pd.DataFrame(dqa_df)
+            indicators_to_use = ['Total Infant prophylaxis', 'Maternal HAART Total ', 'Number tested Positive _Total',
+                                 'Total Positive (PMTCT)', 'Number of adults and children starting ART', 'Starting_TPT',
+                                 'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
+                                 'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
+                                 'Cervical Cancer Screening (Women on ART)'
+
+                                 ]
+            dqa_df = dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
+
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Number of adults and children Currently on ART",
+                                                              "Number Current on ART Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Number of adults and children starting ART",
+                                                              "Number Starting ART Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Number tested Positive _Total",
+                                                              "Number Tested Positive Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Starting_TPT", "Number Starting IPT Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("PrEP_New", "Number initiated on PrEP")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Sexual violence", "Gend_GBV Sexual Violence")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Emotional and /Physical Violence",
+                                                              "Gend_GBV_Physical and Emotional")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("Cervical Cancer Screening (Women on ART)",
+                                                              "Number Screened for Cervical Cancer")
+            dqa_df['indicator'] = dqa_df['indicator'].replace("New & Relapse TB_Cases", "New & Relapse TB cases")
+            dqa_df['indicator'] = dqa_df['indicator'].replace('Maternal HAART Total ', "Maternal HAART Total")
+            if dqa_df.empty:
+                messages.info(request, f"A few DQA indicators for {selected_facility} have been capture but not "
+                                       f"enough for data visualization")
+            if fyj_perf:
+                fyj_perf_df = pd.DataFrame(list(fyj_perf))
+                for col in fyj_perf_df.columns[4:-1]:
+                    fyj_perf_df[col] = fyj_perf_df[col].astype(int)
+                fyj_perf_df['Maternal HAART Total'] = fyj_perf_df['on_haart_anc'] + fyj_perf_df['new_on_haart_anc']
+                fyj_perf_df['Total Positive (PMTCT)'] = fyj_perf_df['kp_anc'] + fyj_perf_df['new_pos_anc']
+                fyj_perf_df['Number Tested Positive Total'] = fyj_perf_df['tst_pos_p'] + fyj_perf_df['tst_pos_a']
+                fyj_perf_df['Number Starting ART Total'] = fyj_perf_df['tx_new_p'] + fyj_perf_df['tx_new_a']
+                fyj_perf_df['Number Current on ART Total'] = fyj_perf_df['tx_curr_p'] + fyj_perf_df['tx_curr_a']
+                fyj_perf_df['Total Infant prophylaxis'] = 0
+
+                fyj_perf_df = fyj_perf_df.rename(
+                    columns={"prep_new": "Number initiated on PrEP", "gbv_sexual": "Gend_GBV Sexual Violence",
+                             "gbv_emotional_physical": "Gend_GBV_Physical and Emotional",
+                             "cx_ca": "Number Screened for Cervical Cancer",
+                             "tb_stat_d": "New & Relapse TB cases", "ipt": "Number Starting IPT Total"})
+
+                indicators_to_use_perf = ['mfl_code', 'quarter_year', "Number initiated on PrEP",
+                                          'Maternal HAART Total', 'Number Tested Positive Total',
+                                          'Total Positive (PMTCT)', 'Number Starting ART Total',
+                                          'New & Relapse TB cases', 'Number Starting IPT Total',
+                                          'Number Current on ART Total', "Gend_GBV Sexual Violence",
+                                          'Gend_GBV_Physical and Emotional', 'Number Screened for Cervical Cancer',
+                                          'Total Infant prophylaxis'
+
+                                          ]
+                fyj_perf_df = fyj_perf_df[indicators_to_use_perf]
+
+                fyj_perf_df = pd.melt(fyj_perf_df, id_vars=['mfl_code', 'quarter_year'],
+                                      value_vars=list(fyj_perf_df.columns[2:]),
+                                      var_name='indicator', value_name='DATIM')
+                if dqa_df.empty:
+                    messages.info(request, f"A few DATIM indicators for {selected_facility} have been capture but not "
+                                           f"enough for data visualization")
+
+
+            else:
+                fyj_perf_df = pd.DataFrame(columns=['mfl_code', 'quarter_year', 'indicator', 'DATIM'])
+                messages.info(request, f"No DATIM data for {selected_facility}!")
+
+            merged_df = dqa_df.merge(fyj_perf_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
+
+            merged_df = merged_df[
+                ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
+            merged_df = pd.melt(merged_df, id_vars=['mfl_code', 'facility', 'indicator', 'quarter_year'],
+                                value_vars=list(merged_df.columns[4:]),
+                                var_name='data sources', value_name='performance')
+
+            merged_df['performance'] = merged_df['performance'].fillna(0)
+            merged_df['performance'] = merged_df['performance'].astype(int)
+            # Define a new DataFrame object by grouping the 'merged_df' DataFrame by 'indicator' column and calculating
+            # the standard deviation of 'performance' column. The idea is to have the indicator with the greatest
+            # disparities in the performance column come first.
+            grouped = merged_df.groupby("indicator")["performance"].std().reset_index()
+            # Sort the 'grouped' DataFrame in descending order based on 'performance' column
+            grouped = grouped.sort_values("performance", ascending=False)
+            # Extract the 'indicator' column from the sorted 'grouped' DataFrame and assign it to a new variable called
+            # 'grouped'
+            grouped = grouped["indicator"]
+            # Create an empty dictionary object to store the bar charts for each 'indicator' in 'grouped'
+            dicts = {}
+            charts = []
+            # Loop through each 'indicator' in 'grouped'
+            for indy in grouped:
+                # Create a new DataFrame object called 'merged_df_viz' containing only the rows where 'indicator' column
+                # matches the current 'indy' value
+                merged_df_viz = merged_df[merged_df['indicator'] == indy]
+                # Extract the unique value from the 'quarter_year' column in 'merged_df_viz' and assign it to a variable
+                # called 'quarter'
+                quarter = merged_df_viz['quarter_year'].unique()[0]
+                # Create a new key-value pair in the 'dicts' dictionary, where the key is a string containing the 'indy'
+                # value and the 'quarter' value, and the value is a bar chart object created using the 'merged_df_viz'
+                # DataFrame
+                dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
+                fig, chart_name = bar_chart_report(merged_df_viz, "data sources", "performance", selected_facility,
+                                                   indy=indy, quarter=quarter)
+                charts.append(chart_name)
+
+            # retrieves a queryset of SystemAssessment objects that have the specified quarter_year and facility_name.
+            system_assessments = SystemAssessment.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name=selected_facility
+            )
+            # if system_assessments:
+            average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments,
+                                                                                description_list)
+            site_avg = round(sum(average_dictionary.values()) / len(average_dictionary), 2)
+
+            data = [
+                {
+                    'category': 'M&E Structure, Functions and Capabilities',
+                    'value': average_dictionary['average_calculations_5']
+                },
+                {
+                    'category': 'Data Management Processes',
+                    'value': average_dictionary['average_calculations_5_12']
+                },
+                {
+                    'category': 'Indicator Definitions and Reporting Guidelines',
+                    'value': average_dictionary['average_calculations_12_17']
+                },
+                {
+                    'category': 'Data-collection and Reporting Forms / Tools',
+                    'value': average_dictionary['average_calculations_17_21']
+                },
+                {
+                    'category': 'EMR Systems',
+                    'value': average_dictionary['average_calculations_21_25']
+                }
+            ]
+
+            df = pd.DataFrame(data)
+            fig = plt.figure(figsize=(8, 8))
+            ax = fig.add_subplot(111, projection='polar')
+            sns.lineplot(x='category', y='value', data=df, sort=False, linewidth=2, color='green', marker='o',
+                         markersize=10, ax=ax)
+            ax.set_theta_zero_location('N')
+            ax.set_theta_direction(-1)
+            ax.set_ylim(0, 5)
+
+            plt.title(f"System Assessment Averages for {selected_facility} ({quarter_year})", y=1.15, fontsize=12)
+            plt.tight_layout()
+
+            facility_mfl = selected_facility.mfl_code
+            date_str = datetime.now().strftime("%Y-%m-%d")  # Get current date and time as string
+            polar_chart = f"polar_chart_{facility_mfl}_{date_str}.png"
+            file_path = os.path.join(settings.MEDIA_ROOT, polar_chart)  # create the full path for the file
+
+            # save the file
+            plt.savefig(file_path, dpi=150, bbox_inches='tight', pad_inches=0.2)
+            plt.close()  # close the current figure
+
+        # Create a new PDF object using ReportLab
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'filename="dqa summary.pdf"'
+        pdf = canvas.Canvas(response, pagesize=letter)
+
+        # Write some content to the PDF
+        for data in dqa:
+            name = data.facility_name.name
+            mfl_code = data.facility_name.mfl_code
+            # date = data.date_modified.strftime('%B %d, %Y, %I:%M %p')
+            # Convert datetime object to the client's timezone
+            client_timezone = timezone.get_current_timezone()
+            date = data.date_modified.astimezone(client_timezone).strftime('%B %d, %Y, %I:%M %p')
+
+        period = quarter_year
+        avg_me = average_dictionary['average_calculations_5']
+        avg_data_mnx = average_dictionary['average_calculations_5_12']
+        avg_indicator = average_dictionary['average_calculations_12_17']
+        avg_data_collect = average_dictionary['average_calculations_17_21']
+        avg_emr = average_dictionary['average_calculations_21_25']
+
+        # change page size
+        pdf.translate(inch, inch)
+        pdf.setFont("Courier-Bold", 18)
+        # write the facility name in the top left corner of the page
+        pdf.drawString(180, 650, "DQA SUMMARY")
+        y = 640
+        pdf.line(x1=10, y1=y, x2=500, y2=y)
+        # facility info
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(10, 620, f"Facility: {name}")
+        pdf.drawString(10, 600, f"MFL Code: {mfl_code}")
+        pdf.drawString(10, 580, f"Date Of Audit: {date}")
+        pdf.drawString(10, 560, f"Review Period: {period}")
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(310, 625, f"COLOR CODE")
+        pdf.drawString(420, 625, f"RANGE")
+        # rectangles
+        pdf.rect(x=300, y=550, width=200, height=70, stroke=1, fill=0)
+        pdf.setFillColor(colors.green)
+        pdf.rect(x=300, y=550, width=100, height=70, stroke=1, fill=1)
+        pdf.setFillColor(colors.yellow)
+        pdf.rect(x=300, y=550, width=100, height=46, stroke=1, fill=1)
+        pdf.rect(x=300, y=550, width=200, height=46, stroke=1, fill=0)
+        pdf.setFillColor(colors.red)
+        pdf.rect(x=300, y=550, width=100, height=23, stroke=1, fill=1)
+        pdf.rect(x=300, y=550, width=200, height=23, stroke=1, fill=0)
+
+        # color codes
+        pdf.setFont("Helvetica", 12)
+        pdf.setFillColor(colors.black)
+        pdf.drawString(310, 600, f"GREEN")
+        pdf.drawString(310, 580, f"YELLOW")
+        pdf.drawString(310, 560, f"RED")
+        # Range
+        pdf.drawString(420, 600, f">= 2.5")
+        pdf.drawString(420, 580, f">= 1.5 - < 2.5")
+        pdf.drawString(420, 560, f"< 1.5")
+        # y=540
+        # pdf.line(x1=10,y1=y,x2=500,y2=y)
+        pdf.drawString(180, 520, "SYSTEMS ASSESSMENT RESULTS")
+
+        # rectangles
+        pdf.rect(x=10, y=440, width=490, height=70, stroke=1, fill=0)
+        pdf.rect(x=10, y=440, width=70, height=70, stroke=1, fill=0)
+        pdf.rect(x=10, y=440, width=140, height=70, stroke=1, fill=0)
+        pdf.rect(x=10, y=440, width=210, height=70, stroke=1, fill=0)
+        pdf.rect(x=10, y=440, width=280, height=70, stroke=1, fill=0)
+        pdf.rect(x=10, y=440, width=350, height=70, stroke=1, fill=0)
+        pdf.rect(x=10, y=440, width=420, height=70, stroke=1, fill=0)
+
+        pdf.rect(x=10, y=440, width=490, height=20, stroke=1, fill=0)
+        pdf.rect(x=10, y=440, width=490, height=50, stroke=1, fill=0)
+        pdf.setFont("Helvetica", 7)
+        pdf.drawString(12, 493, "SUMMARY TABLE")
+        pdf.drawString(110, 493, "I")
+        pdf.drawString(180, 493, "II")
+        pdf.drawString(250, 493, "III")
+        pdf.drawString(320, 493, "IV")
+        pdf.drawString(390, 493, "V")
+
+        pdf.drawString(12, 480, "Assessment of Data")
+        pdf.drawString(83, 480, "M&E Structure")
+        pdf.drawString(83, 472, "Functions and")
+        pdf.drawString(83, 464, "Capabilities")
+
+        pdf.drawString(153, 480, "Data")
+        pdf.drawString(153, 472, "Management")
+        pdf.drawString(153, 464, "Processes")
+
+        pdf.drawString(223, 480, "Indicator Definitions")
+        pdf.drawString(223, 472, "and Reporting ")
+        pdf.drawString(223, 464, "Guidelines")
+
+        pdf.drawString(293, 480, "Data-collection ")
+        pdf.drawString(293, 472, "and Reporting ")
+        pdf.drawString(293, 464, "Forms / Tools")
+
+        pdf.drawString(363, 480, "EMR Systems")
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(433, 480, "Site Average")
+        pdf.setFont("Helvetica", 7)
+
+        pdf.drawString(12, 472, "Management and")
+        pdf.drawString(12, 464, "Reporting Systems")
+        pdf.drawString(12, 452, "Average")
+        pdf.drawString(12, 443, "(per functional area)")
+
+        pdf.drawString(110, 445, f"{avg_me}")
+        pdf.drawString(180, 445, f"{avg_data_mnx}")
+        pdf.drawString(250, 445, f"{avg_indicator}")
+        pdf.drawString(320, 445, f"{avg_data_collect}")
+        pdf.drawString(390, 445, f"{avg_emr}")
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(460, 445, f"{site_avg}")
+
+        image_path = os.path.join(settings.MEDIA_ROOT, polar_chart)
+        pdf.drawImage(image=image_path, x=100, y=100, width=300, height=300)
+        pdf.setFont("Helvetica", 7)
+        pdf.drawString(20, 20, "The DQA summary charts below are ordered from the indicators with the "
+                               "greatest discrepancies to the least.")
+        pdf.setFont("Helvetica", 4)
+        pdf.setFillColor(colors.grey)
+        pdf.drawString(10, 10, f"Report generated by : {request.user}    Time: {datetime.now()}")
+        pdf.setFont("Helvetica-Bold", 12)
+        coordinates = [
+            (70, 590), (325, 590),
+            (70, 430), (325, 430),
+            (70, 270), (325, 270),
+            (70, 110), (325, 110),
+            (70, 590), (325, 590),
+            (70, 430), (325, 430),
+        ]
+
+        for i, image_path in enumerate(charts):
+            if i % 8 == 0:  # start new page every 8 images
+                pdf.showPage()
+                # pdf.translate(inch, inch)
+                pdf.drawString(280, 750, "DATA VERIFICATION")
+
+                pdf.setFont("Helvetica", 4)
+                pdf.setFillColor(colors.grey)
+                pdf.drawString(80, 30, f"Report generated by : {request.user}    Time: {datetime.now()}")
+            try:
+                x, y = coordinates[i]
+                image_path = os.path.join(settings.MEDIA_ROOT, image_path)
+                pdf.drawImage(image=image_path, x=x, y=y, width=260, height=150)
+            except IndexError:
+                pass
+        pdf.setFont("Helvetica", 12)
+        pdf.setFillColor(colors.black)
+        pdf.drawString(280, 400, f"AUDIT TEAM ")
+
+        audit_team = AuditTeam.objects.filter(facility_name__id=selected_facility.id,
+                                              quarter_year__quarter_year=quarter_year)
+
+        # Create a list to hold the data for the table
+        data = [['Name', 'Carder', 'Organization', 'Facility Name', 'Review Period']]
+        # Loop through the audit_team queryset and append the required fields to the data list
+        for audit in audit_team:
+            data.append([audit.name, audit.carder, audit.organization, audit.facility_name.name, audit.quarter_year])
+
+        # Define the table style
+        table_style = TableStyle(
+            [('BACKGROUND', (0, 0), (-1, 0), colors.grey), ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+             ('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+             ('FONTSIZE', (0, 0), (-1, 0), 8), ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+             ('BACKGROUND', (0, 1), (-1, -1), colors.beige), ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'), ('FONTSIZE', (0, 1), (-1, -1), 12),
+             ('BOTTOMPADDING', (0, 1), (-1, -1), 6), ('GRID', (0, 0), (-1, -1), 1, colors.black)])
+
+        # Create the table object and apply the table style
+        table = Table(data)
+        table.setStyle(table_style)
+
+        # Define the initial position for the table
+        x, y = 80, 390
+        # Add the table to the PDF object
+        table.wrapOn(pdf, 0, 0)
+        table_height = table._height
+        table.drawOn(pdf, x, y - table_height)
+        pdf.save()
+        return response
 
 
 def dqa_summary(request):
@@ -1294,6 +1833,7 @@ def dqa_summary(request):
     selected_facility = None
     average_dictionary = None
     site_avg = None
+    audit_team = None
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
@@ -1301,6 +1841,21 @@ def dqa_summary(request):
         selected_facility = facility_form.cleaned_data['name']
         year_suffix = selected_year[-2:]
     quarter_year = f"{selected_quarter}-{year_suffix}"
+
+    if selected_facility:
+        selected_facility_dict = {
+            'id': str(selected_facility.id),
+            'name': selected_facility.name,
+            # Add other fields as necessary
+        }
+
+        # Convert the dictionary to a JSON string
+        selected_facility_json = json.dumps(selected_facility_dict)
+
+        # Store the JSON string in the session
+        request.session['selected_facility'] = selected_facility_json
+        request.session['quarter_year'] = quarter_year
+
     description_list = [
         "There is a documented structure/chart that clearly identifies positions that have data management "
         "responsibilities at the Facility.",
@@ -1379,7 +1934,7 @@ def dqa_summary(request):
             dqa_df['indicator'] = dqa_df['indicator'].replace("PrEP_New", "Number initiated on PrEP")
             dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Sexual violence", "Gend_GBV Sexual Violence")
             dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Emotional and /Physical Violence",
-                                                              "Gend_GBV_Physical and /Emotional")
+                                                              "Gend_GBV_Physical and Emotional")
             dqa_df['indicator'] = dqa_df['indicator'].replace("Cervical Cancer Screening (Women on ART)",
                                                               "Number Screened for Cervical Cancer")
             dqa_df['indicator'] = dqa_df['indicator'].replace("New & Relapse TB_Cases", "New & Relapse TB cases")
@@ -1404,7 +1959,7 @@ def dqa_summary(request):
 
             fyj_perf_df = fyj_perf_df.rename(
                 columns={"prep_new": "Number initiated on PrEP", "gbv_sexual": "Gend_GBV Sexual Violence",
-                         "gbv_emotional_physical": "Gend_GBV_Physical and /Emotional",
+                         "gbv_emotional_physical": "Gend_GBV_Physical and Emotional",
                          "cx_ca": "Number Screened for Cervical Cancer",
                          "tb_stat_d": "New & Relapse TB cases", "ipt": "Number Starting IPT Total"})
 
@@ -1413,7 +1968,7 @@ def dqa_summary(request):
                                       'Total Positive (PMTCT)', 'Number Starting ART Total',
                                       'New & Relapse TB cases', 'Number Starting IPT Total',
                                       'Number Current on ART Total', "Gend_GBV Sexual Violence",
-                                      'Gend_GBV_Physical and /Emotional', 'Number Screened for Cervical Cancer',
+                                      'Gend_GBV_Physical and Emotional', 'Number Screened for Cervical Cancer',
                                       'Total Infant prophylaxis'
 
                                       ]
@@ -1513,6 +2068,13 @@ def dqa_summary(request):
 
         else:
             messages.info(request, f"No System assessment data for {selected_facility}")
+        audit_team = AuditTeam.objects.filter(facility_name__id=selected_facility.id,
+                                              quarter_year__quarter_year=quarter_year)
+        if not audit_team:
+            messages.info(request,
+                          f"No audit team assigned for {selected_facility}  {quarter_year}. Please ensure that data"
+                          f" verification and system assessment data has been entered before assigning an audit team. "
+                          f"Once all data is verified, the 'Add audit team' button will be available on this page.")
 
     context = {
         "dicts": dicts,
@@ -1524,7 +2086,8 @@ def dqa_summary(request):
         "quarter_year": quarter_year,
         "plot_div": plot_div,
         "average_dictionary": average_dictionary,
-        "site_avg":site_avg
+        "site_avg": site_avg,
+        "audit_team": audit_team,
     }
     return render(request, 'dqa/dqa_summary.html', context)
 
@@ -1564,12 +2127,9 @@ def show_dqa_work_plan(request):
     form = QuarterSelectionForm(request.POST or None)
     year_form = YearSelectionForm(request.POST or None)
     facility_form = FacilitySelectionForm(request.POST or None)
-
-    selected_quarter = "Qtr1"
-    selected_year = "2021"
-    year_suffix = "21"
     selected_facility = None
     work_plan = None
+    quarter_year = None
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
@@ -1883,3 +2443,111 @@ def update_dqa_workplan(request, pk):
         'date_modified': item.updated_at,
     }
     return render(request, 'dqa/add_qi_manager.html', context)
+
+
+def add_audit_team(request, pk, quarter_year):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    if request.method == 'POST':
+        form = AuditTeamForm(request.POST)
+        if form.is_valid():
+            try:
+                post = form.save(commit=False)
+                post.facility_name = Facilities.objects.get(id=pk)
+                post.quarter_year = Period.objects.get(quarter_year=quarter_year)
+                post.save()
+                return HttpResponseRedirect(request.path_info)
+            except ValidationError as e:
+                error_msg = str(e)
+                error_msg = error_msg[1:-1]  # remove the first and last characters (brackets)
+                messages.error(request, error_msg)
+    else:
+        form = AuditTeamForm()
+    audit_team = AuditTeam.objects.filter(facility_name__id=pk, quarter_year__quarter_year=quarter_year)
+
+    context = {
+        "form": form,
+        "title": "audit team",
+        "audit_team": audit_team,
+        "quarter_year": quarter_year,
+    }
+    return render(request, 'dqa/add_period.html', context)
+
+
+@login_required(login_url='login')
+def update_audit_team(request, pk):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = AuditTeam.objects.get(id=pk)
+    if request.method == "POST":
+        form = AuditTeamForm(request.POST, instance=item)
+        if form.is_valid():
+            audit_team = form.save(commit=False)
+            audit_team.facility_name = item.facility_name
+            audit_team.quarter_year = item.quarter_year
+            audit_team.save()
+            # return HttpResponseRedirect(request.session['page_from'])
+            # Set the initial values for the forms
+            quarter_form_initial = {'quarter': item.quarter_year.quarter_year}
+            year_form_initial = {'year': item.quarter_year.year}
+            facility_form_initial = {"name": item.facility_name.name}
+
+            messages.success(request, "Record successfully updated!")
+            # Redirect to the system assessment table view with the initial values for the forms
+            url = reverse('show_audit_team')
+            url = f'{url}?quarter_form={quarter_form_initial}&year_form={year_form_initial}&facility_form={facility_form_initial}'
+            return redirect(url)
+    else:
+        form = AuditTeamForm(instance=item)
+    context = {
+        "form": form,
+        'title': 'update audit team',
+        'facility': item.facility_name.name,
+        'mfl_code': item.facility_name.mfl_code,
+        'date_modified': item.updated_at,
+    }
+    return render(request, 'dqa/add_period.html', context)
+
+
+@login_required(login_url='login')
+def show_audit_team(request):
+    # Get the query parameters from the URL
+    quarter_form_initial = request.GET.get('quarter_form')
+    year_form_initial = request.GET.get('year_form')
+    facility_form_initial = request.GET.get('facility_form')
+
+    # Parse the string values into dictionary objects
+    quarter_form_initial = ast.literal_eval(quarter_form_initial) if quarter_form_initial else {}
+    year_form_initial = ast.literal_eval(year_form_initial) if year_form_initial else {}
+    facility_form_initial = ast.literal_eval(facility_form_initial) if facility_form_initial else {}
+
+    form = QuarterSelectionForm(request.POST or None, initial=quarter_form_initial)
+    year_form = YearSelectionForm(request.POST or None, initial=year_form_initial)
+    facility_form = FacilitySelectionForm(request.POST or None, initial=facility_form_initial)
+
+    audit_team = None
+    quarter_year = None
+
+    if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
+        selected_quarter = form.cleaned_data['quarter']
+        selected_year = year_form.cleaned_data['year']
+        selected_facility = facility_form.cleaned_data['name']
+        year_suffix = selected_year[-2:]
+        quarter_year = f"{selected_quarter}-{year_suffix}"
+        audit_team = AuditTeam.objects.filter(facility_name__id=selected_facility.id,
+                                              quarter_year__quarter_year=quarter_year)
+    elif facility_form_initial:
+        selected_quarter = quarter_form_initial['quarter']
+        selected_facility = facility_form_initial['name']
+        audit_team = AuditTeam.objects.filter(facility_name=Facilities.objects.get(name=selected_facility),
+                                              quarter_year__quarter_year=selected_quarter)
+
+    context = {
+        "audit_team": audit_team,
+        'form': form,
+        "year_form": year_form,
+        "facility_form": facility_form,
+        'title': 'show team',
+        "quarter_year": quarter_year,
+    }
+    return render(request, 'dqa/add_period.html', context)

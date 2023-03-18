@@ -3,7 +3,7 @@ import datetime
 from django.forms import ModelForm, Textarea
 from django import forms
 
-from apps.dqa.models import DataVerification, Period, DQAWorkPlan, SystemAssessment
+from apps.dqa.models import DataVerification, Period, DQAWorkPlan, SystemAssessment, AuditTeam
 from apps.cqi.models import Facilities
 
 
@@ -78,8 +78,6 @@ class FacilitySelectionForm(forms.Form):
         print('Initial value:', initial.get('name'))
         super().__init__(*args, **kwargs)
         self.fields['name'].initial = initial.get('name')
-        print("YYYYYYYYYYYYYYYYYY:::::::::::::::::::::::::::::::::::")
-        print('Form field initial value:', self.fields['name'].initial)
 
 
 class DQAWorkPlanForm(ModelForm):
@@ -134,3 +132,12 @@ class SystemAssessmentForm(ModelForm):
     #     cleaned_data = super().clean()
     #     if not all(cleaned_data.values()):
     #         raise forms.ValidationError("All fields are required.")
+
+
+class AuditTeamForm(ModelForm):
+    class Meta:
+        model = AuditTeam
+        exclude = ['facility_name', 'modified_by', 'created_by','quarter_year']
+        labels = {
+            'name': 'Name (First and Last name)',
+        }

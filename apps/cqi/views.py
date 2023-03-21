@@ -938,7 +938,9 @@ def add_resources(request):
     if request.method == "POST":
         form = ResourcesForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            post = form.save(commit=False)
+            post.uploaded_by = request.user
+            post.save()
             return HttpResponseRedirect(request.session['page_from'])
             # form = Qi_managersForm(prefix='expected')
     else:

@@ -261,7 +261,6 @@
     {% if baseline.baseline_status.url %}
 {#         <a href="{% url 'update_baseline' facility_project.id %}" class="btn btn-warning mb-3">Update Baseline status</a>#}
         {% if facility_name %}
-            {{ facility_project.facility_name.name }}
             <a href="{% url 'update_baseline_facility' facility_project.id facility_project.facility_name.name %}" class="btn btn-warning mb-3">Update Baseline status</a>
         {% elif program_name %}
             {{ facility_project.program.program }}

@@ -3,7 +3,7 @@ import datetime
 from django.forms import ModelForm, Textarea
 from django import forms
 
-from apps.dqa.models import DataVerification, Period, DQAWorkPlan, SystemAssessment
+from apps.dqa.models import DataVerification, Period, DQAWorkPlan, SystemAssessment, AuditTeam
 from apps.cqi.models import Facilities
 
 
@@ -53,7 +53,8 @@ class YearSelectionForm(forms.Form):
     current_year = datetime.datetime.now().year
     YEAR_CHOICES = [(str(x), str(x)) for x in range(2021, current_year + 1)]
     year = forms.ChoiceField(
-        choices=YEAR_CHOICES
+        choices=YEAR_CHOICES,
+        label="FY"
     )
 
 
@@ -65,16 +66,18 @@ class DateSelectionForm(forms.Form):
 
 
 class FacilitySelectionForm(forms.Form):
-    # facilities = forms.ModelChoiceField(
-    #     queryset=Facilities.objects.all(),
-    #     empty_label="Select facility",
-    #     widget=forms.Select(attrs={'class': 'form-control'}),
-    # )
     name = forms.ModelChoiceField(
         queryset=Facilities.objects.all(),
         empty_label="Select facility",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
+        initial=None  # Add this line to set the initial value to None
     )
+
+    def __init__(self, *args, **kwargs):
+        initial = kwargs.get('initial', {})
+        print('Initial value:', initial.get('name'))
+        super().__init__(*args, **kwargs)
+        self.fields['name'].initial = initial.get('name')
 
 
 class DQAWorkPlanForm(ModelForm):
@@ -106,8 +109,8 @@ class SystemAssessmentForm(ModelForm):
         model = SystemAssessment
         fields = ['description', 'dropdown_option', 'auditor_note', 'supporting_documentation_required']
         widgets = {
-            'description': Textarea(attrs={'readonly': 'readonly','rows': '5'}),
-            'auditor_note': forms.Textarea(attrs={'size': '40','rows': '5'})
+            'description': Textarea(attrs={'readonly': 'readonly', 'rows': '5'}),
+            'auditor_note': forms.Textarea(attrs={'size': '40', 'rows': '5'})
         }
 
     # This is the constructor method of the form
@@ -121,7 +124,7 @@ class SystemAssessmentForm(ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        for field_name in ['id','modified_by', 'created_at', 'updated_at']:
+        for field_name in ['id', 'modified_by', 'created_at', 'updated_at']:
             if field_name in cleaned_data:
                 del cleaned_data[field_name]
         return cleaned_data
@@ -129,3 +132,12 @@ class SystemAssessmentForm(ModelForm):
     #     cleaned_data = super().clean()
     #     if not all(cleaned_data.values()):
     #         raise forms.ValidationError("All fields are required.")
+
+
+class AuditTeamForm(ModelForm):
+    class Meta:
+        model = AuditTeam
+        exclude = ['facility_name', 'modified_by', 'created_by','quarter_year']
+        labels = {
+            'name': 'Name (First and Last name)',
+        }

@@ -1,6 +1,7 @@
 import uuid
 
 from crum import get_current_user
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 
@@ -92,7 +93,7 @@ class DataVerification(models.Model):
         ('', 'Select indicator'),
         ('PrEP_New', 'PrEP_New'),
         ('Starting_TPT', 'Starting TPT'),
-        ('Starting_TPTs', 'Starting TPTs'),
+        # ('Starting_TPTs', 'Starting TPTs'),
         ('GBV_Sexual violence', 'GBV_Sexual violence'),
         ('GBV_Emotional and /Physical Violence', 'GBV_Emotional and /Physical Violence'),
         ('Cervical Cancer Screening (Women on ART)', 'Cervical Cancer Screening (Women on ART)'),
@@ -139,8 +140,6 @@ class DataVerification(models.Model):
     field_10 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
     field_11 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
     total_khis = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100, blank=True)
-    # TODO: 13TH FIELD SHOULD VERIFY DATA FROM FYJ DATIM PERFORMANCE. Create a model for this
-    # field_13 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
 
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
@@ -207,6 +206,9 @@ class FyjPerformance(models.Model):
     ipt = models.IntegerField()
     quarter_year = models.CharField(max_length=100, blank=True, null=True)
 
+    class Meta:
+        unique_together = (('mfl_code', 'quarter_year'),)
+
     def __str__(self):
         return f"{self.facility} - {self.month}"
 
@@ -220,6 +222,7 @@ class FyjPerformance(models.Model):
 
         # Get the month string
         month = month_str.split()[0]
+        quarter = None
 
         # Determine the quarter based on the month while handling both full month names and abbreviated names
         if month in ["October", "November", "December", "Oct", "Nov", "Dec"]:
@@ -234,6 +237,10 @@ class FyjPerformance(models.Model):
         elif month in ["July", "August", "September", "Jul", "Aug", "Sep"]:
             # If the month is July, August, or September, the quarter is Qtr4
             quarter = "Qtr4"
+
+        # Increment the year by 1 if the quarter is Qtr1
+        if quarter == "Qtr1":
+            year += 1
 
         # Construct the quarter-year string
         self.quarter_year = quarter + "-" + str(year)[-2:]
@@ -269,7 +276,7 @@ class DQAWorkPlan(models.Model):
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
 
 
 class SystemAssessment(models.Model):
@@ -293,7 +300,7 @@ class SystemAssessment(models.Model):
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -302,3 +309,30 @@ class SystemAssessment(models.Model):
 
     class Meta:
         unique_together = (("quarter_year", "description", "facility_name"),)
+
+
+class AuditTeam(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    name = models.CharField(max_length=255)
+    carder = models.CharField(max_length=255)
+    organization = models.CharField(max_length=255)
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
+    quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE, blank=True, null=True)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                    on_delete=models.CASCADE, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.name) + "-" + str(self.quarter_year)
+
+    def save(self, *args, **kwargs):
+        # Check if there are already 15 records with the same facility_name and quarter_year combination but allow
+        # updating existing records
+        if AuditTeam.objects.filter(facility_name=self.facility_name, quarter_year=self.quarter_year).exclude(pk=self.pk).count() >= 15:
+            raise ValidationError('Only 15 audit team members are allowed per facility per quarter.')
+
+        # Call the super method to save the record
+        super().save(*args, **kwargs)

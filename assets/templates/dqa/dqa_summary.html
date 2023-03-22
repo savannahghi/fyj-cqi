@@ -49,58 +49,270 @@
 
         </form>
            <div class="row">
-                <div class="col-md-10">
+                <div class="col-md-7">
                {% if dqa %}
                    {% for data in dqa|slice:":1" %}
-                        <h4 class="h5">FACILITY: {{ data.facility_name.facilities }} </h4>
-                        <h6 class="h6">MFL CODE: {{ data.facility_name.mfl_code }} </h6>
-                        <h6 class="h6">DATE OF AUDIT: {{ data.date_modified }} </h6>
+                        <h4 class="h5">Facility: {{ data.facility_name.name }} </h4>
+                        <h6 class="h6">MFL Code: {{ data.facility_name.mfl_code }} </h6>
+                        <h6 class="h6">Date Of Audit: {{ data.date_modified }} </h6>
+                        <h6 class="h6">Period: {{ quarter_year }} </h6>
+                        <h6 class="h6">Number Of Audit Team: {{ audit_team.count }} </h6>
                    {% endfor %}
                    </div >
+                   {% if average_dictionary %}
+                       <div class="col-md-3">
+{#                       <a href="{% url 'dqa_summary_pdf' %}" class="btn btn-warning mb-2" role="button">DOWNLOAD PDF</a>#}
+                           {% if audit_team %}
+                                <a href="{% url 'generate-pdf' %}" class="btn btn-warning mb-2" role="button">DOWNLOAD PDF</a>
+                               {% if audit_team.count < 15 %}
+                                    <a href="{% url 'add_audit_team' selected_facility.id quarter_year %}" class="btn btn-success flicker-button mb-2" role="button">Add audit team</a>
+                               {% endif %}
+                           {% else %}
+                               {% if audit_team.count < 15 %}
+                                    <a href="{% url 'add_audit_team' selected_facility.id quarter_year %}" class="btn btn-success flicker-button mb-2" role="button">Add audit team</a>
+                               {% endif %}
+                       {% endif %}
+                        <table class="table table-striped table-hover" style="font-size: x-small;">
+      <thead class="thead-dark text-center">
+          <tr>
+              <th colspan="2" >COLOUR CODE KEY</th>
+          </tr>
+        <tr>
+          <th>Color code</th>
+          <th>Range</th>
+        </tr>
+      </thead>
+      <tbody>
+
+       <tr>
+            <td class="text-center text-black" style="background-color: green; border: 1px solid black;">
+                        <strong>Green</strong>
+                        </td>
+            <td class="text-primary text-center">
+               <strong> >= 2.5</strong>
+            </td>
+
+        </tr>
+      <tr>
+            <td class="text-center text-black" style="background-color: yellow; border: 1px solid black;">
+                        <strong>Yellow</strong>
+                        </td>
+            <td class="text-primary text-center">
+              <strong> >= 1.5 and < 2.5</strong>
+            </td>
+
+          <tr>
+            <td class="text-center text-black" style="background-color: red; border: 1px solid black;">
+                        <strong>Red</strong>
+                        </td>
+            <td class="text-primary text-center">
+               <strong> < 1.5</strong>
+            </td>
+
+        </tr>
+        </tr>
+      </tbody>
+    </table>
+                       </div>
+                   {% endif %}
                        <div class="col-md-2">
                            {% if dicts %}
-                                <a href="{% url 'dqa_work_plan_create' selected_facility.id quarter_year %}" class="btn btn-success" role="button">ADD DQA WORK PLAN</a>
+                                <a href="{% url 'dqa_work_plan_create' selected_facility.id quarter_year %}" class="btn btn-success flicker-button" role="button">ADD DQA WORK PLAN</a>
                             {% endif %}
+
+
                        </div>
                {% endif %}
            </div>
                <hr>
+            <div>
+               {% if average_dictionary %}
+                  <h6 class="text-primary text-center">SYSTEMS ASSESSMENT RESULTS</h6>
+
+<table class="table table-striped table-hover" style="font-size: x-small;">
+  <thead class="thead-dark text-center">
+  <tr>
+      <th>SUMMARY TABLE</th>
+      <th>I</th>
+      <th>II</th>
+      <th>III</th>
+      <th>IV</th>
+      <th>V</th>
+      <th></th>
+  </tr>
+    <tr>
+      <th class="text-warning">
+            Assessment of Data Management
+            <br>
+          and Reporting Systems
+      </th>
+      <th>M&E Structure, Functions and Capabilities</th>
+        <th>Data Management Processes</th>
+        <th>Indicator Definitions and Reporting Guidelines</th>
+      <th>Data-collection and Reporting Forms / Tools</th>
+      <th>EMR Systems</th>
+        <th class="text-warning">Site Average</th>
+    </tr>
+  </thead>
+  <tbody>
+
+   <tr>
+        <td class="text-primary">
+            Average (per functional area)
+        </td>
+        {% for key,value in average_dictionary.items %}
+            {% if key == "average_calculations_5" %}
+                {% if value >= 2.5 %}
+                    <td class="text-center text-black" style="background-color: green; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value >= 1.5 and value < 2.5 %}
+                    <td class="text-center text-black" style="background-color: yellow; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value < 1.5 %}
+                    <td class="text-center text-black" style="background-color: red; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% else %}
+                    <td class="text-center text-black" style="background-color: ghostwhite">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {% for key,value in average_dictionary.items %}
+            {% if key == "average_calculations_5_12" %}
+                {% if value >= 2.5 %}
+                    <td class="text-center text-black" style="background-color: green; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value >= 1.5 and value < 2.5 %}
+                    <td class="text-center text-black" style="background-color: yellow; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value < 1.5 %}
+                    <td class="text-center text-black" style="background-color: red; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% else %}
+                    <td class="text-center text-black" style="background-color: ghostwhite">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {% for key,value in average_dictionary.items %}
+            {% if key == "average_calculations_12_17" %}
+                {% if value >= 2.5 %}
+                    <td class="text-center text-black" style="background-color: green; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value >= 1.5 and value < 2.5 %}
+                    <td class="text-center text-black" style="background-color: yellow; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value < 1.5 %}
+                    <td class="text-center text-black" style="background-color: red; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% else %}
+                    <td class="text-center text-black" style="background-color: ghostwhite">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {% for key,value in average_dictionary.items %}
+            {% if key == "average_calculations_17_21" %}
+                {% if value >= 2.5 %}
+                    <td class="text-center text-black" style="background-color: green; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value >= 1.5 and value < 2.5 %}
+                    <td class="text-center text-black" style="background-color: yellow; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value < 1.5 %}
+                    <td class="text-center text-black" style="background-color: red; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% else %}
+                    <td class="text-center text-black" style="background-color: ghostwhite">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {% for key,value in average_dictionary.items %}
+            {% if key == "average_calculations_21_25" %}
+                {% if value >= 2.5 %}
+                    <td class="text-center text-black" style="background-color: green; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value >= 1.5 and value < 2.5 %}
+                    <td class="text-center text-black" style="background-color: yellow; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% elif value < 1.5 %}
+                    <td class="text-center text-black" style="background-color: red; border: 1px solid black;">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% else %}
+                    <td class="text-center text-black" style="background-color: ghostwhite">
+                    <strong>{{ value }}</strong>
+                    </td>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {% if site_avg >= 2.5 %}
+            <td class="text-center text-black" style="background-color: green; border: 2px solid #6c757d;">
+            <strong>{{ site_avg }}</strong>
+            </td>
+        {% elif site_avg > 1.5 and site_avg < 2.5 %}
+            <td class="text-center text-black" style="background-color: yellow; border: 2px solid #6c757d;">
+            <strong>{{ site_avg }}</strong>
+            </td>
+        {% elif site_avg < 1.5 %}
+            <td class="text-center text-black" style="background-color: red; border: 2px solid #6c757d;">
+            <strong>{{ value }}</strong>
+            </td>
+        {% else %}
+            <td class="text-center text-black" style="background-color: ghostwhite; border: 2px solid #6c757d;">
+            <strong>{{ site_avg }}</strong>
+            </td>
+        {% endif %}
+    </tr>
+  </tbody>
+</table>
+      {% endif %}
+           </div>
 
            <div class="row" >
-           {% if plot_div %}
-{#                <div class="col-md-12 mt-3" >#}
-             <div>
-  {{ plot_div|safe }}
-</div>
-{#</div>#}
-
-           {% endif %}
+            {% if plot_div %}
+                 <div>
+                    {{ plot_div|safe }}
+                </div>
+            {% endif %}
            {% if dicts %}
+               <p class="text-center text-primary" >
+                   The DQA summary charts below are ordered from the indicators with the greatest discrepancies to the least.
+               </p>
 
-
-
-           <p class="text-center text-primary" >
-               The DQA summary charts below are ordered from the indicators with the greatest discrepancies to the least.
-           </p>
-
-            {% for indicator,fig in dicts.items %}
-                      <div class="col-md-4 mt-3" >
-                        <div class="card " >
-{#                          <div class="card-body">#}
+                {% for indicator,fig in dicts.items %}
+                          <div class="col-md-4 mt-3" >
+                            <div class="card">
                                 <div class="col">
                                     <div class="text text-center">
                                         {{ indicator }}
                                     </div>
                                     <div class="row" >
-
-                                        {{ fig|safe }}
+                                        <div class="chart-container">{{ fig|safe }}</div>
                                     </div>
                                 </div>
-{#                          </div>#}
-                        </div>
-                      </div>
-
-            {% endfor %}
+                            </div>
+                          </div>
+                {% endfor %}
             {% endif %}
             </div>
            </div>

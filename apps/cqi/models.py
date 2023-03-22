@@ -146,7 +146,7 @@ class Trigger(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure Trigger name is in title case"""
-        self.name = self.name.title()
+        self.name = self.name.upper()
         super().save(*args, **kwargs)
 
 
@@ -163,7 +163,7 @@ class Department(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure department name is in title case"""
-        self.department = self.department.title()
+        self.department = self.department.upper()
         super().save(*args, **kwargs)
 
 
@@ -180,7 +180,7 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure County name is in title case"""
-        self.category = self.category.title()
+        self.category = self.category.upper()
         super().save(*args, **kwargs)
 
 
@@ -238,7 +238,7 @@ class QI_Projects(models.Model):
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -333,7 +333,7 @@ class Subcounty_qi_projects(models.Model):
     #                                 default=None, on_delete=models.CASCADE, related_name='+')
 
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -418,7 +418,7 @@ class County_qi_projects(models.Model):
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -495,7 +495,7 @@ class Hub_qi_projects(models.Model):
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -572,7 +572,7 @@ class Program_qi_projects(models.Model):
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
@@ -637,6 +637,7 @@ class TestedChange(models.Model):
 
     def __str__(self):
         return str(self.project)
+
     # return self.tested_change
 
     def save(self, *args, **kwargs):
@@ -715,7 +716,7 @@ class Resources(models.Model):
     resource_name = models.CharField(max_length=250)
     resource_type = models.CharField(max_length=250, choices=RESOURCE_TYPE)
     resource = models.FileField(upload_to='resources')
-    uploaded_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    uploaded_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
     description = models.TextField(max_length=1000)
 
     uploaded_date = models.DateTimeField(auto_now_add=True, auto_now=False)
@@ -941,7 +942,7 @@ class Lesson_learned(models.Model):
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
-                                   on_delete=models.CASCADE, related_name='+')
+                                    on_delete=models.CASCADE, related_name='+')
     future_plans = models.TextField()
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)

@@ -2,6 +2,9 @@ import logging
 
 from .base import *  # noqa
 from .base import env
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 ###############################################################################
 # READ ENVIRONMENT
@@ -154,3 +157,27 @@ LOGGING = {
         },
     },
 }
+
+
+
+###############################################################################
+# SENTRY
+###############################################################################
+
+SENTRY_DSN = env.str("SENTRY_DSN")
+SENTRY_LOG_LEVEL = env.int("DJANGO_SENTRY_LOG_LEVEL", logging.INFO)
+
+sentry_logging = LoggingIntegration(
+    level=SENTRY_LOG_LEVEL,  # Capture info and above as breadcrumbs
+    event_level=logging.ERROR,  # Send errors as events
+)
+integrations = [
+    sentry_logging,
+    DjangoIntegration(),
+]
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    integrations=integrations,
+    environment=env.str("SENTRY_ENVIRONMENT", default="production"),
+    traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=1.0),
+)

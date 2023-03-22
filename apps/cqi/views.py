@@ -35,12 +35,15 @@ from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, Proje
 from .filters import *
 
 import plotly.express as px
+from plotly.offline import plot
 from io import BytesIO
 from reportlab.pdfgen import canvas
 
 
 @transaction.atomic
 def load_data(request):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == 'POST':
         file = request.FILES['file']
         # Read the data from the excel file into a pandas DataFrame
@@ -139,6 +142,8 @@ def download_pdf(request):
 
 
 def download_lessons(request):
+    if not request.user.first_name:
+        return redirect("profile")
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="lessons.csv"'
 
@@ -309,6 +314,8 @@ def create_project_dataframes(county_qi_list, hub_qi_list, program_qi_list):
 
 @login_required(login_url='login')
 def dashboard(request):
+    if not request.user.first_name:
+        return redirect("profile")
     facility_qi_projects = None
     subcounty_qi_projects = None
     county_qi_projects = None
@@ -576,6 +583,8 @@ def dashboard(request):
 
 @login_required(login_url='login')
 def update_qi_managers(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Qi_managers.objects.get(id=pk)
@@ -595,6 +604,8 @@ def update_qi_managers(request, pk):
 
 @login_required(login_url='login')
 def add_project(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -638,13 +649,15 @@ def add_project(request):
     context = {"form": form, "county_form": county_form, "trigger_form": trigger_form}
     return render(request, "project/add_project.html", context)
 
-
+@login_required(login_url='login')
 def choose_project_level(request):
     return render(request, "project/choose_project.html")
 
 
 @login_required(login_url='login')
 def add_project_facility(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -694,6 +707,8 @@ def add_project_facility(request):
 
 @login_required(login_url='login')
 def add_qi_manager(request):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "ADD QI MANAGER"
     # check the page user is from
     if request.method == "GET":
@@ -717,6 +732,8 @@ def add_qi_manager(request):
 
 @login_required(login_url='login')
 def add_department(request):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "ADD DEPARTMENT"
     # check the page user is from
     if request.method == "GET":
@@ -740,6 +757,8 @@ def add_department(request):
 
 @login_required(login_url='login')
 def add_category(request):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "ADD PROJECT COMPONENT"
     # check the page user is from
     if request.method == "GET":
@@ -763,6 +782,8 @@ def add_category(request):
 
 @login_required(login_url='login')
 def add_subcounty(request):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "ADD SUB-COUNTY"
     # check the page user is from
     if request.method == "GET":
@@ -783,15 +804,19 @@ def add_subcounty(request):
     context = {"form": form, "title": title}
     return render(request, "project/add_subcounty.html", context)
 
-
+@login_required(login_url='login')
 def sub_counties_list(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # TODO: add other insights like number of ongoing projects,
     sub_counties = Sub_counties.objects.all().order_by('counties__county_name')
     context = {'sub_counties': sub_counties}
     return render(request, 'project/sub_counties_list.html', context)
 
-
+@login_required(login_url='login')
 def update_fields(request):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "POST":
         form = Sub_countiesForm(request.POST)
         try:
@@ -810,6 +835,8 @@ def update_fields(request):
 
 @login_required(login_url='login')
 def update_sub_counties(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     sub_counties = get_object_or_404(Sub_counties, pk=pk)
@@ -834,6 +861,8 @@ def update_sub_counties(request, pk):
 
 @login_required(login_url='login')
 def update_hub(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     hub = get_object_or_404(Hub, pk=pk)
@@ -858,6 +887,8 @@ def update_hub(request, pk):
 
 @login_required(login_url='login')
 def add_facility(request):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "ADD FACILITY"
     # check the page user is from
     if request.method == "GET":
@@ -879,8 +910,10 @@ def add_facility(request):
     context = {"form": form, "title": title}
     return render(request, "project/add_qi_manager.html", context)
 
-
+@login_required(login_url='login')
 def add_hub(request):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "ADD HUB"
     # check the page user is from
     if request.method == "GET":
@@ -905,6 +938,8 @@ def add_hub(request):
 
 @login_required(login_url='login')
 def add_county(request):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "ADD COUNTY"
     # check the page user is from
     if request.method == "GET":
@@ -929,6 +964,8 @@ def add_county(request):
 
 @login_required(login_url='login')
 def add_resources(request):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "ADD RESOURCES"
     # check the page user is from
     if request.method == "GET":
@@ -937,7 +974,9 @@ def add_resources(request):
     if request.method == "POST":
         form = ResourcesForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            post = form.save(commit=False)
+            post.uploaded_by = request.user
+            post.save()
             return HttpResponseRedirect(request.session['page_from'])
             # form = Qi_managersForm(prefix='expected')
     else:
@@ -948,6 +987,8 @@ def add_resources(request):
 
 @login_required(login_url='login')
 def add_project_subcounty(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -984,6 +1025,8 @@ def add_project_subcounty(request):
 
 @login_required(login_url='login')
 def add_project_county(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -1003,6 +1046,8 @@ def add_project_county(request):
 
 @login_required(login_url='login')
 def add_project_hub(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -1025,6 +1070,8 @@ def add_project_hub(request):
 
 @login_required(login_url='login')
 def add_project_program(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -1044,6 +1091,8 @@ def add_project_program(request):
 
 @login_required(login_url='login')
 def add_program(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -1063,6 +1112,8 @@ def add_program(request):
 
 @login_required(login_url='login')
 def add_trigger(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -1083,6 +1134,8 @@ def add_trigger(request):
 @login_required(login_url='login')
 def update_project(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                    county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -1191,9 +1244,11 @@ def update_project(request, pk, program_name=None, facility_name=None, subcounty
 
 @login_required(login_url='login')
 def deep_dive_facilities(request):
+    if not request.user.first_name:
+        return redirect("profile")
     return render(request, "project/deep_dive_facilities.html")
 
-
+@login_required(login_url='login')
 def make_archive_charts(list_of_projects):
     dfs = []
     for project in list_of_projects['project_id'].unique():
@@ -1229,8 +1284,10 @@ def make_archive_charts(list_of_projects):
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
         return pro_perfomance_trial, dicts
 
-
+@login_required(login_url='login')
 def archived(request):
+    if not request.user.first_name:
+        return redirect("profile")
     facility_proj_performance = None
     departments_viz = None
     status_viz = None
@@ -1428,6 +1485,8 @@ def pair_iterable_for_delta_changes(iterable):
 
 @login_required(login_url='login')
 def facilities_landing_page(request, project_type):
+    if not request.user.first_name:
+        return redirect("profile")
     facility_proj_performance = None
     departments_viz = None
     status_viz = None
@@ -1514,6 +1573,8 @@ def facilities_landing_page(request, project_type):
 
 @login_required(login_url='login')
 def program_landing_page(request):
+    if not request.user.first_name:
+        return redirect("profile")
     facility_proj_performance = None
     departments_viz = None
     status_viz = None
@@ -1568,6 +1629,8 @@ def program_landing_page(request):
 
 @login_required(login_url='login')
 def facility_project(request, pk, project_type):
+    if not request.user.first_name:
+        return redirect("profile")
     if project_type == "facility":
         projects = QI_Projects.objects.filter(facility_name__id=pk).order_by("-date_updated")
         facility_name = projects.first().facility_name.name
@@ -1599,6 +1662,8 @@ def facility_project(request, pk, project_type):
 
 @login_required(login_url='login')
 def department_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = QI_Projects.objects.filter(departments__department=pk)
 
     facility_name = pk
@@ -1634,6 +1699,8 @@ def department_project(request, pk):
 
 @login_required(login_url='login')
 def department_filter_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects_tracked = []
     projects = QI_Projects.objects.filter(departments__department=pk)
     program_projects = Program_qi_projects.objects.filter(departments__department=pk)
@@ -1760,6 +1827,8 @@ def department_filter_project(request, pk):
 
 @login_required(login_url='login')
 def qi_managers_filter_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects_tracked = []
 
     projects = QI_Projects.objects.filter(qi_manager__id=pk)
@@ -1870,6 +1939,8 @@ def qi_managers_filter_project(request, pk):
 
 @login_required(login_url='login')
 def facility_filter_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects_tracked = []
     projects = QI_Projects.objects.filter(facility_name__name=pk).order_by("-date_updated")
     subcounty_projects = Subcounty_qi_projects.objects.filter(sub_county__sub_counties=pk).order_by("-date_updated")
@@ -1995,6 +2066,8 @@ def facility_filter_project(request, pk):
 
 @login_required(login_url='login')
 def qicreator_filter_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     pro_perfomance_trial = {}
     projects_tracked = []
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
@@ -2133,6 +2206,8 @@ def qicreator_filter_project(request, pk):
 
 @login_required(login_url='login')
 def county_filter_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects_tracked = []
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     projects = QI_Projects.objects.filter(county__county_name=pk)
@@ -2229,6 +2304,8 @@ def county_filter_project(request, pk):
 
 @login_required(login_url='login')
 def sub_county_filter_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects_tracked = []
     # projects = QI_Projects.objects.filter(facility=pk).order_by("-date_updated")
     projects = QI_Projects.objects.filter(sub_county__sub_counties=pk)
@@ -2292,6 +2369,8 @@ def sub_county_filter_project(request, pk):
 
 @login_required(login_url='login')
 def canceled_projects(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = QI_Projects.objects.filter(measurement_status=pk)
     facility_name = pk
     context = {"projects": projects,
@@ -2303,6 +2382,8 @@ def canceled_projects(request, pk):
 
 @login_required(login_url='login')
 def not_started(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = QI_Projects.objects.filter(measurement_status=pk)
     facility_name = pk
     context = {"projects": projects,
@@ -2311,8 +2392,10 @@ def not_started(request, pk):
                }
     return render(request, "project/department_projects.html", context)
 
-
+@login_required(login_url='login')
 def postponed(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = QI_Projects.objects.filter(measurement_status=pk)
     facility_name = pk
 
@@ -2345,6 +2428,8 @@ def postponed(request, pk):
 
 @login_required(login_url='login')
 def qi_creator(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = QI_Projects.objects.filter(created_by__id=pk)
     program_projects = Program_qi_projects.objects.filter(created_by__id=pk)
     subcounty_projects = Subcounty_qi_projects.objects.filter(created_by__id=pk)
@@ -2372,6 +2457,8 @@ def qi_creator(request, pk):
 
 @login_required(login_url='login')
 def qi_managers_projects(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = QI_Projects.objects.filter(qi_manager__id=pk)
     subcounty_projects = Subcounty_qi_projects.objects.filter(qi_manager__id=pk)
     county_projects = County_qi_projects.objects.filter(qi_manager__id=pk)
@@ -2399,6 +2486,8 @@ def qi_managers_projects(request, pk):
 
 @login_required(login_url='login')
 def completed_closed(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = QI_Projects.objects.filter(measurement_status=pk)
     lesson_learnt = Lesson_learned.objects.values_list('project_name_id', flat=True)
     facility_name = pk
@@ -2413,6 +2502,8 @@ def completed_closed(request, pk):
 
 @login_required(login_url='login')
 def completed_closed_program(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = Program_qi_projects.objects.filter(measurement_status=pk)
     lesson_learnt = Lesson_learned.objects.values_list('program_id', flat=True)
     facility_name = pk
@@ -2427,6 +2518,8 @@ def completed_closed_program(request, pk):
 
 @login_required(login_url='login')
 def completed_closed_subcounty(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = Subcounty_qi_projects.objects.filter(measurement_status=pk)
     lesson_learnt = Lesson_learned.objects.values_list('subcounty_id', flat=True)
     facility_name = pk
@@ -2441,6 +2534,8 @@ def completed_closed_subcounty(request, pk):
 
 @login_required(login_url='login')
 def completed_closed_county(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = County_qi_projects.objects.filter(measurement_status=pk)
     lesson_learnt = Lesson_learned.objects.values_list('county_id', flat=True)
     facility_name = pk
@@ -2455,6 +2550,8 @@ def completed_closed_county(request, pk):
 
 @login_required(login_url='login')
 def completed_closed_hub(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = Hub_qi_projects.objects.filter(measurement_status=pk)
     lesson_learnt = Lesson_learned.objects.values_list('hub_id', flat=True)
     facility_name = pk
@@ -2469,6 +2566,8 @@ def completed_closed_hub(request, pk):
 
 @login_required(login_url='login')
 def lesson_learnt(request):
+    if not request.user.first_name:
+        return redirect("profile")
     """
     This view handles the display of all the lesson_learnt and their related qi_project information.
     It uses the Lesson_learned model to retrieve all the lesson_learnt and annotates the queryset
@@ -2517,6 +2616,8 @@ def lesson_learnt(request):
 @login_required(login_url='login')
 def add_lesson_learnt(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                       county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     if facility_name:
         project_name = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         program = None
@@ -2585,6 +2686,8 @@ def add_lesson_learnt(request, pk, program_name=None, facility_name=None, subcou
 @login_required(login_url='login')
 def update_lesson_learnt(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                          county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     lesson_learnt = Lesson_learned.objects.get(id=pk)
     if facility_name:
         project = QI_Projects.objects.get(id=lesson_learnt.project_name_id, facility_name__name=facility_name)
@@ -2626,6 +2729,8 @@ def update_lesson_learnt(request, pk, program_name=None, facility_name=None, sub
 
 @login_required(login_url='login')
 def delete_lesson_learnt(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -2642,6 +2747,8 @@ def delete_lesson_learnt(request, pk):
 
 @login_required(login_url='login')
 def ongoing(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = QI_Projects.objects.filter(measurement_status=pk)
 
     facility_name = pk
@@ -2654,6 +2761,8 @@ def ongoing(request, pk):
 
 @login_required(login_url='login')
 def measurement_frequency(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = QI_Projects.objects.filter(measurement_frequency=pk)
 
     facility_name = pk
@@ -2690,6 +2799,8 @@ def measurement_frequency(request, pk):
 @login_required(login_url='login')
 def toggle_archive_project(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                            county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     try:
@@ -2799,6 +2910,8 @@ def toggle_archive_project(request, pk, program_name=None, facility_name=None, s
 @login_required(login_url='login')
 def tested_change(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                   county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     if facility_name:
         qi_project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         facility = qi_project.facility_name
@@ -2862,6 +2975,8 @@ def tested_change(request, pk, program_name=None, facility_name=None, subcounty_
 
 @login_required(login_url='login')
 def update_test_of_change(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = TestedChange.objects.get(id=pk)
@@ -2882,6 +2997,8 @@ def update_test_of_change(request, pk):
 
 @login_required(login_url='login')
 def delete_test_of_change(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -2898,6 +3015,8 @@ def delete_test_of_change(request, pk):
 
 @login_required(login_url='login')
 def delete_response(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -2914,6 +3033,8 @@ def delete_response(request, pk):
 
 @login_required(login_url='login')
 def delete_resource(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -2930,6 +3051,8 @@ def delete_resource(request, pk):
 
 @login_required(login_url='login')
 def update_profile(request):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     # item = CustomUser.objects.get(id=pk)
@@ -2948,6 +3071,8 @@ def update_profile(request):
 
 @login_required(login_url='login')
 def deep_dive_chmt(request):
+    if not request.user.first_name:
+        return redirect("profile")
     return render(request, "project/deep_dive_chmt.html")
     # return render(request, "cqi/calendar.html")
 
@@ -2955,6 +3080,8 @@ def deep_dive_chmt(request):
 @login_required(login_url='login')
 def add_qi_team_member(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                        county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
     if facility_name:
         facility = Facilities.objects.get(name=facility_name)
@@ -3039,6 +3166,8 @@ def add_qi_team_member(request, pk, program_name=None, facility_name=None, subco
 
 @login_required(login_url='login')
 def delete_qi_team_member(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -3056,6 +3185,8 @@ def delete_qi_team_member(request, pk):
 @login_required(login_url='login')
 def update_qi_team_member(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                           county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Qi_team_members.objects.get(id=pk)
@@ -3093,6 +3224,8 @@ def update_qi_team_member(request, pk, program_name=None, facility_name=None, su
 
 @login_required(login_url='login')
 def qi_team_members(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # # User = get_user_model()
     # # team = User.objects.all()
     # context = {"team": team}
@@ -3237,6 +3370,8 @@ def qi_team_members(request):
 #     return render(request, 'cqi/qi_team_members.html', context)
 @login_required(login_url='login')
 def qi_team_members_view(request):
+    if not request.user.first_name:
+        return redirect("profile")
     """
     Get the data of qi team members with the number of projects created and participated.
     :return: Queryset of qi team members with the number of projects created and participated
@@ -3264,6 +3399,8 @@ def qi_team_members_view(request):
 
 @login_required(login_url='login')
 def qi_team_involved(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     projects = Qi_team_members.objects.filter(user__id=pk)
 
     facility_name = pk
@@ -3349,6 +3486,8 @@ def qi_team_involved(request, pk):
 
 @login_required(login_url='login')
 def qi_managers_view(request):
+    if not request.user.first_name:
+        return redirect("profile")
     """
     A view that displays the first name, last name, email, and number of projects
     for each QI manager in a table.
@@ -3394,6 +3533,8 @@ def audit_trail(request):
 
 @login_required(login_url='login')
 def comments_no_response(request):
+    if not request.user.first_name:
+        return redirect("profile")
     """
     This view retrieves all comments that are either parent comments or comments that don't have any parent comment.
     It uses the Comment model and filters out comments that have a parent comment. The filtered comments are then
@@ -3414,6 +3555,8 @@ def comments_no_response(request):
 
 @login_required(login_url='login')
 def comments_with_response(request):
+    if not request.user.first_name:
+        return redirect("profile")
     all_comments = Comment.objects.filter(
         id__in=Comment.objects.exclude(parent_id=None).values_list("parent_id", flat=True)
     ).prefetch_related('qi_project_title__qi_team_members').order_by('-comment_updated')
@@ -3426,6 +3569,8 @@ def comments_with_response(request):
 
 @login_required(login_url='login')
 def single_project_comments(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     #  retrieve all related ProjectResponses for each comment along with the comment, in a single query and you can
     #  access the responses directly from the comment obj.
     all_comments = ProjectComments.objects.filter(
@@ -3490,6 +3635,8 @@ def single_project_comments(request, pk):
 
 @login_required(login_url='login')
 def update_comments(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = ProjectComments.objects.get(id=pk)
@@ -3509,6 +3656,8 @@ def update_comments(request, pk):
 
 @login_required(login_url='login')
 def update_resource(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Resources.objects.get(id=pk)
@@ -3528,6 +3677,8 @@ def update_resource(request, pk):
 
 @login_required(login_url='login')
 def comments_response(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     all_comments = ProjectResponses.objects.filter(id=pk).order_by('-response_updated_date')
@@ -3556,6 +3707,8 @@ def comments_response(request, pk):
 
 @login_required(login_url='login')
 def project_responses(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     all_comments = ProjectResponses.objects.filter(qi_project_title__id=pk).order_by('-comment_updated')
 
     facility_project = QI_Projects.objects.get(id=pk)
@@ -3583,6 +3736,8 @@ def project_responses(request, pk):
 
 @login_required(login_url='login')
 def update_response(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = ProjectResponses.objects.get(id=pk)
@@ -3602,6 +3757,8 @@ def update_response(request, pk):
 
 @login_required(login_url='login')
 def resources(request):
+    if not request.user.first_name:
+        return redirect("profile")
     all_resources = Resources.objects.all()
 
     my_filters = ResourcesFilter(request.GET, queryset=all_resources)
@@ -3683,7 +3840,7 @@ def line_chart(df, x_axis, y_axis, title):
     # fig.update_traces(textfont_size=14,textfont_color='red',textfont_weight='bold')
     # fig.update_traces(texttemplate='%{text:.s}')
 
-    return fig.to_html()
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def line_chart_no_targets(df, x_axis, y_axis, title):
@@ -3755,7 +3912,7 @@ def line_chart_no_targets(df, x_axis, y_axis, title):
     )
     # fig.update_traces(texttemplate='%{text:.s}')
 
-    return fig.to_html()
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def bar_chart_horizontal(df, x_axis, y_axis, title):
@@ -3778,7 +3935,7 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
     # })
     # fig.update_traces(texttemplate='%{text:.s}')
 
-    return fig.to_html()
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def bar_chart(df, x_axis, y_axis, title):
@@ -3828,7 +3985,7 @@ def bar_chart(df, x_axis, y_axis, title):
     )
     # fig.update_traces(texttemplate='%{text:.s}')
 
-    return fig.to_html()
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
 def prepare_trends(df, title=""):
@@ -3853,6 +4010,8 @@ def prepare_trends_big_size(df, title=""):
 
 @login_required(login_url='login')
 def single_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
     try:
         all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('qi_project_id', flat=True)
@@ -3998,6 +4157,8 @@ def single_project(request, pk):
 
 @login_required(login_url='login')
 def single_project_program(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
     try:
         all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('program_id', flat=True)
@@ -4141,6 +4302,8 @@ def single_project_program(request, pk):
 
 @login_required(login_url='login')
 def single_project_subcounty(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
     try:
         all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('subcounty_id', flat=True)
@@ -4285,6 +4448,8 @@ def single_project_subcounty(request, pk):
 
 @login_required(login_url='login')
 def single_project_county(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
     try:
         all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('county_id', flat=True)
@@ -4427,8 +4592,10 @@ def single_project_county(request, pk):
 
     return render(request, "project/individual_qi_project.html", context)
 
-
+@login_required(login_url='login')
 def single_project_hub(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     # TODO: Include VIZ for QI CREATED PER MONTH,QUARTER,YEAR,(PER FACILITY,HUB,SUB-COUNTY,COUNTY,PROGRAM)
     try:
         all_archived = ArchiveProject.objects.filter(archive_project=True).values_list('hub_id', flat=True)
@@ -4575,6 +4742,8 @@ def single_project_hub(request, pk):
 
 @login_required(login_url='login')
 def untracked_projects(request, project_type):
+    if not request.user.first_name:
+        return redirect("profile")
     if project_type == "facility":
         all_projects = QI_Projects.objects.all()
         tracked_projects = TestedChange.objects.values_list('project_id', flat=True)
@@ -4597,8 +4766,10 @@ def untracked_projects(request, project_type):
     }
     return render(request, "project/untracked_projects.html", context)
 
-
+@login_required(login_url='login')
 def add_stake_holders(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     facility_project = QI_Projects.objects.get(id=pk)
 
     if request.method == "GET":
@@ -4695,9 +4866,11 @@ def add_stake_holders(request, pk):
 #
 #                }
 #     return render(request, 'project/baseline_images.html', context)
-
+@login_required(login_url='login')
 def add_baseline_image(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                        county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
     if facility_name:
         facility = Facilities.objects.get(name=facility_name)
@@ -4927,7 +5100,7 @@ def add_baseline_image(request, pk, program_name=None, facility_name=None, subco
 # from django.apps import apps
 # from django.shortcuts import render, HttpResponseRedirect
 # from django.http import Http404
-@login_required(login_url='login')
+# @login_required(login_url='login')
 # def update_baseline(request, pk):
 #     """
 #     View to handle the update of the baseline status of a QI cqi.
@@ -5020,8 +5193,11 @@ def add_baseline_image(request, pk, program_name=None, facility_name=None, subco
 #         "qi_project": qi_project,
 #     }
 #     return render(request, 'project/add_milestones.html', context)
+@login_required(login_url='login')
 def update_baseline(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                     county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "Update baseline status"
     # check the page user is from
     if request.method == "GET":
@@ -5118,6 +5294,8 @@ def update_baseline(request, pk, program_name=None, facility_name=None, subcount
 
 @login_required(login_url='login')
 def delete_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -5134,6 +5312,8 @@ def delete_project(request, pk):
 
 @login_required(login_url='login')
 def delete_comment(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -5251,8 +5431,11 @@ def delete_comment(request, pk):
 #         facility = None
 #         qi_project = None
 #         program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
+@login_required(login_url='login')
 def add_project_milestone(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                           county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     title = "ADD PROJECT MILESTONE"
     # check the page user is from
     if request.method == "GET":
@@ -5319,6 +5502,8 @@ def add_project_milestone(request, pk, program_name=None, facility_name=None, su
 @login_required(login_url='login')
 def update_milestone(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                      county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Milestone.objects.get(id=pk)
@@ -5349,6 +5534,8 @@ def update_milestone(request, pk, program_name=None, facility_name=None, subcoun
 
 @login_required(login_url='login')
 def delete_milestone(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -5366,6 +5553,8 @@ def delete_milestone(request, pk):
 @login_required(login_url='login')
 def add_corrective_action(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                           county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     # facility_project = QI_Projects.objects.get(id=pk)
 
     if facility_name:
@@ -5475,6 +5664,8 @@ def add_corrective_action(request, pk, program_name=None, facility_name=None, su
 @login_required(login_url='login')
 def update_action_plan(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                        county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     # facility_project = get_object_or_404(QI_Projects, id=pk)
     # qi_team_members = Qi_team_members.objects.filter(qi_project=facility_project)
     if request.method == "GET":
@@ -5543,6 +5734,8 @@ def update_action_plan(request, pk, program_name=None, facility_name=None, subco
 
 @login_required(login_url='login')
 def delete_action_plan(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -5601,9 +5794,11 @@ def delete_action_plan(request, pk):
 #     else:
 #         form = CommentForm()
 #     return render(request, 'project/create_comment.html', {'form': form})
-
+@login_required(login_url='login')
 def create_comment(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                    county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     comment = None
     qi_project = None
     program_qi_project = None
@@ -5673,8 +5868,10 @@ def create_comment(request, pk, program_name=None, facility_name=None, subcounty
 
 
 #
-
+@login_required(login_url='login')
 def update_comments(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     comment = Comment.objects.get(id=pk)
 
     try:
@@ -5706,8 +5903,10 @@ def update_comments(request, pk):
 
     return render(request, "project/add_lesson_learnt.html", context)
 
-
+@login_required(login_url='login')
 def delete_comments(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -5742,9 +5941,11 @@ def delete_comments(request, pk):
 #         comments = Comment.objects.filter(id=pk).order_by('-created_at')
 #     context = {'all_comments': comments, "title": "COMMENTS", "qi_project": project, }
 #     return render(request, 'project/comments_trial.html', context)
-
+@login_required(login_url='login')
 def show_project_comments(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                           county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     if facility_name:
         project = QI_Projects.objects.get(id=pk, facility_name__name=facility_name)
         level = "facility"
@@ -5795,8 +5996,10 @@ def show_project_comments(request, pk, program_name=None, facility_name=None, su
                }
     return render(request, 'project/comments_trial.html', context)
 
-
+@login_required(login_url='login')
 def show_all_comments(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # all_comments = ProjectComments.objects.all().order_by('-comment_updated')
     all_comments = Comment.objects.filter(parent_id=None).prefetch_related(
         'qi_project_title__qi_team_members').order_by(
@@ -5808,7 +6011,7 @@ def show_all_comments(request):
     }
     return render(request, "project/comments_trial.html", context)
 
-
+@login_required(login_url='login')
 def like_dislike(request, pk):
     """
     A view function that handles the liking and disliking of a comment.
@@ -5863,6 +6066,8 @@ def like_dislike(request, pk):
 @login_required(login_url='login')
 def add_sustainmentplan(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                         county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     # qi_project=QI_Projects.objects.get(id=pk)
     # lesson=Lesson_learned.objects.filter(project_name=qi_project)
     if facility_name:
@@ -5934,8 +6139,10 @@ def add_sustainmentplan(request, pk, program_name=None, facility_name=None, subc
     context = {"form": form, "title": title, "qi_project": qi_project, "lesson_learnt": lesson, }
     return render(request, "project/add_qi_manager.html", context)
 
-
+@login_required(login_url='login')
 def show_sustainmentPlan(request):
+    if not request.user.first_name:
+        return redirect("profile")
     plan = SustainmentPlan.objects.all()
 
     context = {
@@ -5943,9 +6150,11 @@ def show_sustainmentPlan(request):
     }
     return render(request, "project/sustainment_plan.html", context)
 
-
+@login_required(login_url='login')
 def update_sustainable_plan(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                             county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     item = SustainmentPlan.objects.get(id=pk)
     if facility_name:
         qi_project = QI_Projects.objects.get(id=item.qi_project_id)
@@ -5979,6 +6188,8 @@ def update_sustainable_plan(request, pk, program_name=None, facility_name=None, 
 
 @login_required(login_url='login')
 def delete_sustainable_plan(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -5995,12 +6206,16 @@ def delete_sustainable_plan(request, pk):
 
 @login_required(login_url='login')
 def monthly_data_review(request):
+    if not request.user.first_name:
+        return redirect("profile")
     return render(request, 'project/monthly_data_review_summary.html')
 
 
 @login_required(login_url='login')
 def add_images(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                county_name=None):
+    if not request.user.first_name:
+        return redirect("profile")
     # ADAPTED FOR QI_PROJECTS AND PROGRAM_QI_PROJECTS
     if facility_name:
         facility = Facilities.objects.get(name=facility_name)
@@ -6075,8 +6290,10 @@ def add_images(request, pk, program_name=None, facility_name=None, subcounty_nam
                }
     return render(request, 'project/baseline_images.html', context)
 
-
+@login_required(login_url='login')
 def action_plans_for_responsible_person(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     responsible_person = Qi_team_members.objects.filter(user_id=pk).first()
     action_plans = ActionPlan.objects.filter(responsible__user_id=pk)
 
@@ -6089,6 +6306,8 @@ def action_plans_for_responsible_person(request, pk):
 
 @login_required(login_url='login')
 def qiteam_member_filter_project(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     # get all the Qi_team_members where the user is a member
     qi_team_members = Qi_team_members.objects.filter(user_id=pk)
     qi_team_members = Qi_team_members.objects.filter(user_id=pk)

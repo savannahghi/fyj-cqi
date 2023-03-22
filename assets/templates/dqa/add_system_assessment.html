@@ -8,18 +8,13 @@
  <h6 class="display-6 text-primary text-center">Systems Assessment</h6>
 <hr>
     <div class="p-5 mb-4 bg-light rounded-3">
-
     {% if messages %}
-    <ul class="messages">
-
         {% for message in messages %}
             <div class="alert alert-info col-12 animated fadeIn" role="alert">
-        <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
-    </div>
-            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>
+                <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
+            </div>
         {% endfor %}
-    </ul>
-{% endif %}
+    {% endif %}
 
       <div class="container-fluid">
       {% if "facility" in title %}
@@ -37,7 +32,7 @@
 {#              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
 {#          </div>#}
       <div>
-        <a href="{% url 'show_data_verification' %}" class="btn btn-secondary mb-5" role="button">VIEW DQA DATA</a>
+        <a href="{% url 'system_assessment_table' %}" class="btn btn-secondary mb-5" role="button">VIEW SYSTEM ASSESSMENT DATA</a>
    </div>
       <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
         {% csrf_token %}

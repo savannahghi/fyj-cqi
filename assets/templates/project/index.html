@@ -21,7 +21,7 @@
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css">
 
       <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/css/select2.min.css" rel="stylesheet" />
-
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
 
     <style>
@@ -173,17 +173,17 @@
 
 
     <div class="navbar-nav">
-            <a class="nav-link px-3" href="{% url 'show_data_verification' %}">DQA</a>
+            <a class="nav-link px-3" href="{% url 'add_data_verification' %}">DQA</a>
 
         </div>
 <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'add_patient_details' %}">PMTCT</a>
 
         </div>
-<div class="navbar-nav">
-            <a class="nav-link px-3" href="{% url 'monthly_data_review' %}">Monthly data review</a>
-
-        </div>
+{#<div class="navbar-nav">#}
+{#            <a class="nav-link px-3" href="{% url 'monthly_data_review' %}">Monthly data review</a>#}
+{##}
+{#        </div>#}
 <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">You are logged in as {{ user.username|title }}</a>
 

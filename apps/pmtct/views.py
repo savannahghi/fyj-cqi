@@ -1,6 +1,8 @@
 from itertools import chain
 import pandas as pd
 import plotly.express as px
+from django.contrib.auth.decorators import login_required
+from plotly.offline import plot
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction, DatabaseError, IntegrityError
@@ -12,7 +14,7 @@ from django.shortcuts import render, redirect
 
 # Create your views here.
 from apps.pmtct.form import PatientDetailsForm, RiskCategorizationTrialForm
-from apps.pmtct.models import PatientDetails,  RiskCategorizationTrial
+from apps.pmtct.models import PatientDetails, RiskCategorizationTrial
 
 from datetime import datetime, timedelta
 
@@ -115,11 +117,14 @@ def show_stability(stability_df, num_patients_not_in_data_info=None):
             font_family="Rockwell"
         )
     )
-    chart_html = fig.to_html()
-    return chart_html
+
+    return plot(fig, include_plotlyjs=False, output_type="div")
 
 
+@login_required(login_url='login')
 def add_patient_details(request):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     if request.method == 'POST':
@@ -162,7 +167,10 @@ def add_patient_details(request):
     return render(request, 'pmtct/add_patient_details.html', context)
 
 
+@login_required(login_url='login')
 def show_patient_details(request):
+    if not request.user.first_name:
+        return redirect("profile")
     patient_filter = PatientDetailsFilter(request.GET, queryset=PatientDetails.objects.all().order_by('edd'))
     filtered_patients = patient_filter.qs.values_list('id', flat=True)
     data_infos = RiskCategorizationTrial.objects.filter(pmtct_mother_id__in=filtered_patients)
@@ -211,9 +219,8 @@ def show_patient_details(request):
         "filter": patient_filter,
         "risk_categorization_data": data_info,
         "chart_html": chart_html,
-        "high_risk_pmtct_mother_ids":high_risk_pmtct_mother_ids,
-        "high_risk_objects":high_risk_objects
-
+        "high_risk_pmtct_mother_ids": high_risk_pmtct_mother_ids,
+        "high_risk_objects": high_risk_objects
 
     }
     return render(request, 'pmtct/show_patient_data.html', context)
@@ -225,7 +232,6 @@ def show_patient_details(request):
 #         "filter": patient,
 #     }
 #     return render(request, 'pmtct/add_client_characterisation.html', context)
-
 
 def validate_choice_fields(formset):
     for form in formset.forms:
@@ -414,8 +420,10 @@ def validate_choice_fields(formset):
 #     }
 #     return render(request, 'pmtct/add_client_characterisation.html', context)
 
-
+@login_required(login_url='login')
 def add_client_characteristics_trial(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     patient_info = PatientDetails.objects.get(id=pk)
@@ -467,7 +475,10 @@ def add_client_characteristics_trial(request, pk):
     return render(request, 'pmtct/add_client_characterisations.html', context)
 
 
+@login_required(login_url='login')
 def update_client_characteristics_trial(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 

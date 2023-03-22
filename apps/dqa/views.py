@@ -47,7 +47,10 @@ from apps.cqi.views import bar_chart
 from apps.cqi.models import Facilities
 
 
+@login_required(login_url='login')
 def load_system_data(request):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == 'POST':
         file = request.FILES['file']
         df = pd.read_excel(file, usecols=[0])
@@ -61,7 +64,10 @@ def load_system_data(request):
         return render(request, 'dqa/upload.html')
 
 
+@login_required(login_url='login')
 def load_data(request):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == 'POST':
         file = request.FILES['file']
         # Read the data from the Excel file into a pandas DataFrame
@@ -177,7 +183,10 @@ def calculate_averages(system_assessments, description_list):
     return average_dictionary, expected_counts_dictionary
 
 
+@login_required(login_url='login')
 def add_period(request):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     if request.method == 'POST':
@@ -193,7 +202,10 @@ def add_period(request):
     return render(request, 'dqa/add_period.html', context)
 
 
+@login_required(login_url='login')
 def add_data_verification(request):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -673,7 +685,10 @@ def add_data_verification(request):
     return render(request, 'dqa/add_data_verification.html', context)
 
 
+@login_required(login_url='login')
 def show_data_verification(request):
+    if not request.user.first_name:
+        return redirect("profile")
     form = QuarterSelectionForm(request.POST or None)
     year_form = YearSelectionForm(request.POST or None)
     facility_form = FacilitySelectionForm(request.POST or None)
@@ -779,6 +794,8 @@ def show_data_verification(request):
 
 @login_required(login_url='login')
 def update_data_verification(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     quarters = None
@@ -1195,6 +1212,8 @@ def update_data_verification(request, pk):
 
 @login_required(login_url='login')
 def delete_data_verification(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -1268,7 +1287,7 @@ def bar_chart(df, x_axis, y_axis, title=None):
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def bar_chart_report(df, x_axis, y_axis,indy=None, quarter=None):
+def bar_chart_report(df, x_axis, y_axis, indy=None, quarter=None):
     image = None
     fig, ax = plt.subplots(figsize=(8, 5))
 
@@ -1444,6 +1463,8 @@ def create_polar(df, pdf, selected_facility, quarter_year):
 
 class GeneratePDF(View):
     def get(self, request):
+        if request.user.is_authenticated and not request.user.first_name:
+            return redirect("profile")
         # Retrieve the selected facility from the session and convert it back to a dictionary
         selected_facility_json = request.session.get('selected_facility')
         selected_facility_dict = json.loads(selected_facility_json)
@@ -1660,36 +1681,15 @@ class GeneratePDF(View):
                 }
             ]
             df = pd.DataFrame(data)
-            # fig = plt.figure(figsize=(8, 8))
-            # ax = fig.add_subplot(111, projection='polar')
-            # sns.lineplot(x='category', y='value', data=df, sort=False, linewidth=2, color='green', marker='o',
-            #              markersize=10, ax=ax)
-            # ax.set_theta_zero_location('N')
-            # ax.set_theta_direction(-1)
-            # ax.set_ylim(0, 5)
-            #
-            # plt.title(f"System Assessment Averages for {selected_facility} ({quarter_year})", y=1.15, fontsize=12)
-            # plt.tight_layout()
-            #
-            # facility_mfl = selected_facility.mfl_code
-            # date_str = datetime.now().strftime("%Y-%m-%d")  # Get current date and time as string
-            # polar_chart = f"polar_chart_{facility_mfl}_{date_str}.png"
-            # file_path = os.path.join(settings.MEDIA_ROOT, polar_chart)  # create the full path for the file
-            #
-            # # save the file
-            # plt.savefig(file_path, dpi=150, bbox_inches='tight', pad_inches=0.2)
-            # plt.close()  # close the current figure
-
         # Create a new PDF object using ReportLab
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'filename="dqa summary.pdf"'
+        response['Content-Disposition'] = f'filename="dqa summary {selected_facility} {quarter_year}.pdf"'
         pdf = canvas.Canvas(response, pagesize=letter)
 
         # Write some content to the PDF
         for data in dqa:
             name = data.facility_name.name
             mfl_code = data.facility_name.mfl_code
-            # date = data.date_modified.strftime('%B %d, %Y, %I:%M %p')
             # Convert datetime object to the client's timezone
             client_timezone = timezone.get_current_timezone()
             date = data.date_modified.astimezone(client_timezone).strftime('%B %d, %Y, %I:%M %p')
@@ -1801,6 +1801,8 @@ class GeneratePDF(View):
         pdf.drawString(20, 0.75 * inch, "The DQA summary charts below are ordered from the indicators with the "
                                         "greatest discrepancies to the least.")
         pdf.saveState()
+        print("USER::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+        print(request.user)
         add_footer(pdf, request.user)
         pdf.restoreState()
         pdf.setFont("Helvetica-Bold", 12)
@@ -1837,7 +1839,7 @@ class GeneratePDF(View):
         data = [['Name', 'Carder', 'Organization', 'Review Period']]
         # Loop through the audit_team queryset and append the required fields to the data list
         for audit in audit_team:
-            data.append([audit.name, audit.carder, audit.organization,audit.quarter_year])
+            data.append([audit.name, audit.carder, audit.organization, audit.quarter_year])
 
         # Define the table style
         table_style = TableStyle(
@@ -1925,7 +1927,10 @@ class GeneratePDF(View):
         return response
 
 
+@login_required(login_url='login')
 def dqa_summary(request):
+    if not request.user.first_name:
+        return redirect("profile")
     form = QuarterSelectionForm(request.POST or None)
     year_form = YearSelectionForm(request.POST or None)
     facility_form = FacilitySelectionForm(request.POST or None)
@@ -2195,7 +2200,10 @@ def dqa_summary(request):
     return render(request, 'dqa/dqa_summary.html', context)
 
 
+@login_required(login_url='login')
 def dqa_work_plan_create(request, pk, quarter_year):
+    if not request.user.first_name:
+        return redirect("profile")
     facility = DataVerification.objects.filter(facility_name_id=pk,
                                                quarter_year__quarter_year=quarter_year
                                                ).order_by('-date_modified').first()
@@ -2226,7 +2234,10 @@ def dqa_work_plan_create(request, pk, quarter_year):
     return render(request, 'dqa/add_qi_manager.html', context)
 
 
+@login_required(login_url='login')
 def show_dqa_work_plan(request):
+    if not request.user.first_name:
+        return redirect("profile")
     form = QuarterSelectionForm(request.POST or None)
     year_form = YearSelectionForm(request.POST or None)
     facility_form = FacilitySelectionForm(request.POST or None)
@@ -2256,7 +2267,12 @@ def show_dqa_work_plan(request):
     return render(request, 'dqa/dqa_work_plan_list.html', context)
 
 
+@login_required(login_url='login')
 def add_system_verification(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
@@ -2362,7 +2378,10 @@ def add_system_verification(request):
     return render(request, 'dqa/add_system_assessment.html', context)
 
 
+@login_required(login_url='login')
 def system_assessment_table(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # Get the query parameters from the URL
     quarter_form_initial = request.GET.get('quarter_form')
     year_form_initial = request.GET.get('year_form')
@@ -2467,12 +2486,17 @@ def system_assessment_table(request):
     return render(request, 'dqa/show_system_assessment.html', context)
 
 
+@login_required(login_url='login')
 def instructions(request):
+    if not request.user.first_name:
+        return redirect("profile")
     return render(request, 'dqa/instructions.html')
 
 
 @login_required(login_url='login')
 def update_system_assessment(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = SystemAssessment.objects.get(id=pk)
@@ -2521,6 +2545,8 @@ def update_system_assessment(request, pk):
 
 @login_required(login_url='login')
 def update_dqa_workplan(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = DQAWorkPlan.objects.get(id=pk)
@@ -2548,7 +2574,12 @@ def update_dqa_workplan(request, pk):
     return render(request, 'dqa/add_qi_manager.html', context)
 
 
+@login_required(login_url='login')
 def add_audit_team(request, pk, quarter_year):
+    if not request.user.first_name:
+        return redirect("profile")
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     if request.method == 'POST':
@@ -2579,6 +2610,8 @@ def add_audit_team(request, pk, quarter_year):
 
 @login_required(login_url='login')
 def update_audit_team(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = AuditTeam.objects.get(id=pk)
@@ -2614,6 +2647,8 @@ def update_audit_team(request, pk):
 
 @login_required(login_url='login')
 def show_audit_team(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # Get the query parameters from the URL
     quarter_form_initial = request.GET.get('quarter_form')
     year_form_initial = request.GET.get('year_form')

@@ -8,15 +8,11 @@ from django.shortcuts import render, redirect
 from apps.account.forms import CustomUserForm, UpdateUserForm
 
 
-# from user.forms import CreateUserForm
-
 @login_required(login_url='login')
 def register(request):
     form = CustomUserForm()
-    # form = CreateUserForm()
     if request.method == "POST":
         form = CustomUserForm(request.POST)
-        # form = CreateUserForm(request.POST)
         if form.is_valid():
             form.save()
             user = form.cleaned_data.get("username")
@@ -28,24 +24,25 @@ def register(request):
 
     return render(request, "account/registration.html", {"form": form})
 
+
 @login_required(login_url='login')
 def update_profile(request):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    # form = CustomUserForm()
-    # form = UserCreationForm()
     if request.method == "POST":
-        form = UpdateUserForm(request.POST,instance=request.user)
-        # form = UserCreationForm(request.POST)
+        form = UpdateUserForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
-            user = form.cleaned_data.get("username")
-            messages.success(request, f"Account was successfully update")
+            messages.success(request, f"Your profile details were successfully updated")
             return HttpResponseRedirect(request.session['page_from'])
+        else:
+            messages.error(request, "There was an error updating your profile. Please check the form and try again.")
     else:
         form = UpdateUserForm(instance=request.user)
+        messages.error(request, "Please complete your profile information to continue. Note that if you change "
+                                "your username, you will use the new username for your next login.")
 
-    return render(request, "project/add_milestones.html", {"form": form,"profile":"profile"})
+    return render(request, "project/add_milestones.html", {"form": form, "profile": "profile"})
 
 
 def login_page(request):
@@ -54,7 +51,6 @@ def login_page(request):
         password = request.POST.get("password")
         user = authenticate(request, username=username, password=password)
         if user is not None:
-
             login(request, user)
             return redirect("facilities_landing_page", project_type="facility")
 
@@ -64,4 +60,3 @@ def login_page(request):
 def logout_page(request):
     logout(request)
     return redirect("login")
-

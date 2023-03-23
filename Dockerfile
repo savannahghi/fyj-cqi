@@ -8,6 +8,7 @@ WORKDIR ${APP_HOME}
 
 COPY . ${APP_HOME}
 
+
 # Python build stage
 FROM python as python-build-stage
 
@@ -28,6 +29,7 @@ RUN pip wheel --wheel-dir /usr/src/app/wheels  \
   -r ${BUILD_ENVIRONMENT}.txt
 
 
+
 # Python 'run' stage
 FROM python as python-run-stage
 ARG BUILD_ENVIRONMENT=prod
@@ -36,6 +38,7 @@ ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV BUILD_ENV ${BUILD_ENVIRONMENT}
 WORKDIR ${APP_HOME}
+
 
 # Install required system dependencies
 RUN apt-get update && apt-get install --no-install-recommends -y \
@@ -49,19 +52,25 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
 
+
 # Copy python dependency wheels from python-build-stage
 COPY --from=python-build-stage /usr/src/app/wheels  /wheels/
+
 
 # Use wheels to install python dependencies
 RUN pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
   && rm -rf /wheels/
 
 
-COPY ./entrypoint /entrypoint
-RUN sed -i 's/\r$//g' /entrypoint
-RUN chmod +x /entrypoint
-
 # Copy application code to WORKDIR
 COPY --from=python ${APP_HOME} ${APP_HOME}
 
-ENTRYPOINT ["/entrypoint"]
+
+# Run the web service on container startup.
+# Timeout is set to 0 to disable the timeouts of the workers to allow Cloud
+# Run to handle instance scaling.
+CMD gunicorn config.asgi \
+    --bind 0.0.0.0:$PORT \
+    --timeout 0 \
+    --chdir=/app \
+    -k uvicorn.workers.UvicornWorker

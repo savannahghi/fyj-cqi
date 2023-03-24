@@ -1,6 +1,7 @@
 steps:
-  # build the container image
-  - name: "gcr.io/cloud-builders/docker"
+  # Build the container image
+  - id: "build image"
+    name: "gcr.io/cloud-builders/docker"
     args:
       [
         "build",
@@ -10,12 +11,56 @@ steps:
       ]
 
   # Push the container image to Container Registry
-  - name: "gcr.io/cloud-builders/docker"
+  - id: "push image"
+    name: "gcr.io/cloud-builders/docker"
     args:
-      ["push", "europe-west1-docker.pkg.dev/$PROJECT_ID/fyj/cqi-server-${_DEPLOYMENT_TYPE}:$COMMIT_SHA"]
+      [
+        "push",
+        "europe-west1-docker.pkg.dev/$PROJECT_ID/fyj/cqi-server-${_DEPLOYMENT_TYPE}:$COMMIT_SHA"
+      ]
+
+  # Apply the latest migrations
+  - id: "apply migrations"
+    name: "gcr.io/google-appengine/exec-wrapper"
+    args:
+      [
+        "-i", "europe-west1-docker.pkg.dev/$PROJECT_ID/fyj/cqi-server-${_DEPLOYMENT_TYPE}:$COMMIT_SHA",
+        "-s", "${_CLOUDSQL_INSTANCE_CONNECTION_NAME}",
+        "-e", "DJANGO_SETTINGS_MODULE=config.settings.prod",
+        "-e", "GOOGLE_CLOUD_PROJECT=$PROJECT_ID",
+        "-e", "SETTINGS_NAME=${_SETTINGS_NAME}",
+        "--", "python", "/app/manage.py", "migrate",
+      ]
+
+  # Create cache table
+  - id: "create cache table"
+    name: "gcr.io/google-appengine/exec-wrapper"
+    args:
+      [
+        "-i", "europe-west1-docker.pkg.dev/$PROJECT_ID/fyj/cqi-server-${_DEPLOYMENT_TYPE}:$COMMIT_SHA",
+        "-s", "${_CLOUDSQL_INSTANCE_CONNECTION_NAME}",
+        "-e", "DJANGO_SETTINGS_MODULE=config.settings.prod",
+        "-e", "GOOGLE_CLOUD_PROJECT=$PROJECT_ID",
+        "-e", "SETTINGS_NAME=${_SETTINGS_NAME}",
+        "--", "python", "/app/manage.py", "createcachetable",
+      ]
+
+  # Collect static files
+  - id: "collect static files"
+    name: "gcr.io/google-appengine/exec-wrapper"
+    args:
+      [
+        "-i", "europe-west1-docker.pkg.dev/$PROJECT_ID/fyj/cqi-server-${_DEPLOYMENT_TYPE}:$COMMIT_SHA",
+        "-s", "${_CLOUDSQL_INSTANCE_CONNECTION_NAME}",
+        "-e", "DJANGO_SETTINGS_MODULE=config.settings.prod",
+        "-e", "GOOGLE_CLOUD_PROJECT=$PROJECT_ID",
+        "-e", "SETTINGS_NAME=${_SETTINGS_NAME}",
+        "--", "python", "/app/manage.py", "collectstatic", "--noinput"
+      ]
 
   # Deploy an image from Container Registry to Cloud Run
-  - name: "gcr.io/cloud-builders/gcloud"
+  - id: "deploy to cloud run"
+    name: "gcr.io/cloud-builders/gcloud"
     args: [
       "beta",
       "run",

@@ -11,25 +11,42 @@
            <div class="col-md-12">
            <h6 class="display-6 text-primary text-center">HIV DQA Facility Data Verification Assessment Tool</h6>
                <hr>
+{#           {% if messages %}#}
+{#                <ul class="messages">#}
+{#                    {% if messages|length >= 1 %}#}
+{#                        {% for message in messages|slice:":1" %}#}
+{#                            {% if "dqa" in message|lower %}#}
+{#                                <div class="mb-3">#}
+{#                                    <a href="{% url 'add_data_verification' %}" class="btn btn-success flicker-button" role="button"> ADD FACILITY DQA DATA </a>#}
+{#                                </div>#}
+{#                            {% endif %}#}
+{#                        {% endfor %}#}
+{#                    {% endif %}#}
+{##}
+{#                        <div class="alert alert-info col-12 animated fadeIn" role="alert">#}
+{#                            {% for message in messages|slice:":1" %}#}
+{#                            <h5 class="small">{{ message }}</h5>#}
+{#                            {% endfor %}#}
+{#                        </div>#}
+{##}
+{#               </ul>#}
            {% if messages %}
-                <ul class="messages">
-                    {% if messages|length >= 1 %}
-                        {% for message in messages|slice:":1" %}
-                            {% if "dqa" in message|lower %}
+               {% if messages|length >= 1 %}
+                        {% for message in messages %}
+                            {% if "dqa indicator" in message|lower %}
                                 <div class="mb-3">
                                     <a href="{% url 'add_data_verification' %}" class="btn btn-success flicker-button" role="button"> ADD FACILITY DQA DATA </a>
                                 </div>
                             {% endif %}
                         {% endfor %}
                     {% endif %}
-
-                        <div class="alert alert-info col-12 animated fadeIn" role="alert">
-                            {% for message in messages|slice:":1" %}
-                            <h5 class="small">{{ message }}</h5>
-                            {% endfor %}
-                        </div>
-
-               </ul>
+        <!--group the messages by their text and display only one message for each unique text-->
+    {% regroup messages by message as message_list %}
+    {% for message in message_list %}
+        <div class="alert alert-info col-12 animated fadeIn" role="alert">
+            <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
+        </div>
+    {% endfor %}
            {% endif %}
            {% if data_verification %}
                {% for data in data_verification|slice:":1" %}
@@ -64,24 +81,24 @@
         <div class="col-md-2 mt-2 pt-3">
             <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
         </div>
-    {% if messages %}
-
-
-        {% for message in messages|slice:":1" %}
-            {% if "dqa" not in message|lower %}
-                <div class="col-md-2 mt-2 pt-3">
-                    <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>
-                </div>
-                {% else %}
-                <div class="col-md-2 mt-2 pt-3"></div>
-            {% endif %}
-        {% endfor %}
-
-    {% else %}
+{#    {% if messages %}#}
+{##}
+{##}
+{#        {% for message in messages|slice:":1" %}#}
+{#            {% if "dqa" not in message|lower %}#}
+{#                <div class="col-md-2 mt-2 pt-3">#}
+{#                    <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>#}
+{#                </div>#}
+{#                {% else %}#}
+{#                <div class="col-md-2 mt-2 pt-3"></div>#}
+{#            {% endif %}#}
+{#        {% endfor %}#}
+{##}
+{#    {% else %}#}
 {#                <div class="col-md-2 mt-2 pt-3">#}
 {#            <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>#}
 {#        </div>#}
-    {% endif %}
+{#    {% endif %}#}
 {#        <div class="col-md-2 mt-2 pt-3">#}
 {#            <a href="{% url 'add_data_verification' %}" class="btn btn-success" role="button"> ADD FACILITY DQA DATA </a>#}
 {#        </div>#}
@@ -140,6 +157,9 @@
     </thead>
 
     <tbody>
+    {% if data_verification and khis_performance and fyj_performance %}
+
+
       {% for data in data_verification %}
         <tr>
         <!-- INDICATORS -->
@@ -797,6 +817,7 @@
         {% endif %}
         </tr>
         {% endfor %}
+     {% endif %}
 
 
 

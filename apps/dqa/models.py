@@ -79,6 +79,9 @@ class Indicators(models.Model):
         ('Currently on ART <15Years', 'Currently on ART <15Years'),
         ('Currently on ART 15+ years', 'Currently on ART 15+ years'),
         ('Number of adults and children Currently on ART', 'Number of adults and children Currently on ART'),
+        ('TX_ML', 'TX_ML'),
+        ('RTT', 'RTT'),
+        ('TB_PREV', 'TB_PREV'),
     ]
     indicator = models.CharField(choices=INDICATOR_CHOICES, max_length=250)
 
@@ -121,6 +124,9 @@ class DataVerification(models.Model):
         ('New & Relapse TB_Cases', 'New & Relapse TB_Cases'),
         ('Currently on ART <15Years', 'Currently on ART <15Years'),
         ('Currently on ART 15+ years', 'Currently on ART 15+ years'),
+        ('TX_ML', 'TX_ML'),
+        ('RTT', 'RTT'),
+        ('TB_PREV', 'TB_PREV'),
         # ('Number of adults and children Currently on ART', 'Number of adults and children Currently on ART'),
     ]
     indicator = models.CharField(choices=INDICATOR_CHOICES, max_length=250)
@@ -136,10 +142,10 @@ class DataVerification(models.Model):
     field_6 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
     field_7 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
     total_731moh = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100, blank=True)
-    field_9 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
-    field_10 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
-    field_11 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
-    total_khis = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100, blank=True)
+    # field_9 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
+    # field_10 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
+    # field_11 = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100)
+    # total_khis = models.CharField(validators=[RegexValidator(r'^\d+$')], max_length=100, blank=True)
 
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
@@ -163,7 +169,7 @@ class DataVerification(models.Model):
     def save(self, *args, **kwargs):
         self.total_source = int(self.field_1) + int(self.field_2) + int(self.field_3)
         self.total_731moh = int(self.field_5) + int(self.field_6) + int(self.field_7)
-        self.total_khis = int(self.field_9) + int(self.field_10) + int(self.field_11)
+        # self.total_khis = int(self.field_9) + int(self.field_10) + int(self.field_11)
         super().save(*args, **kwargs)
 
 
@@ -331,8 +337,103 @@ class AuditTeam(models.Model):
     def save(self, *args, **kwargs):
         # Check if there are already 15 records with the same facility_name and quarter_year combination but allow
         # updating existing records
-        if AuditTeam.objects.filter(facility_name=self.facility_name, quarter_year=self.quarter_year).exclude(pk=self.pk).count() >= 15:
+        if AuditTeam.objects.filter(facility_name=self.facility_name, quarter_year=self.quarter_year).exclude(
+                pk=self.pk).count() >= 15:
             raise ValidationError('Only 15 audit team members are allowed per facility per quarter.')
 
         # Call the super method to save the record
         super().save(*args, **kwargs)
+
+
+class KhisPerformance(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    mfl_code = models.IntegerField()
+    facility = models.CharField(max_length=100)
+    month = models.CharField(max_length=100)
+    tst_p = models.IntegerField()
+    tst_a = models.IntegerField()
+    tst_t = models.IntegerField()
+    tst_pos_p = models.IntegerField()
+    tst_pos_a = models.IntegerField()
+    tst_pos_t = models.IntegerField()
+    tx_new_p = models.IntegerField()
+    tx_new_a = models.IntegerField()
+    tx_new_t = models.IntegerField()
+    tx_curr_p = models.IntegerField()
+    tx_curr_a = models.IntegerField()
+    tx_curr_t = models.IntegerField()
+    pmtct_stat_d = models.IntegerField()
+    pmtct_stat_n = models.IntegerField()
+    pmtct_pos = models.IntegerField()
+    pmtct_arv = models.IntegerField()
+    pmtct_inf_arv = models.IntegerField()
+    prep_new = models.IntegerField()
+    gbv_sexual = models.IntegerField()
+    infant_arv_prophyl_anc = models.IntegerField()
+    infant_arv_prophyl_l_d = models.IntegerField()
+    infant_arv_prophyl_lt8wks_pnc = models.IntegerField()
+    haart_l_d = models.IntegerField()
+    pos_results_pnc_lt6wks = models.IntegerField()
+    start_haart_pnc_lt6wks = models.IntegerField()
+    kp_anc = models.IntegerField()
+    new_pos_anc = models.IntegerField()
+    on_haart_anc = models.IntegerField()
+    new_on_haart_anc = models.IntegerField()
+    pos_l_d = models.IntegerField()
+    pos_pnc = models.IntegerField()
+    cx_ca = models.IntegerField()
+    tb_stat_d = models.IntegerField()
+    ipt = models.IntegerField()
+    anc_initial_test = models.IntegerField()
+    first_anc_visits = models.IntegerField()
+    quarter_year = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        unique_together = (('mfl_code', 'month'),)
+
+    def __str__(self):
+        return f"{self.facility} - {self.month}"
+
+    def save(self, *args, **kwargs):
+        # Get the month and year string from the `month` field
+        month_str = self.month
+        year_str = month_str.split()[-1]
+
+        # Convert the year string to an integer
+        year = int(year_str)
+
+        # Get the month string
+        month = month_str.split()[0]
+        quarter = None
+
+        # Determine the quarter based on the month while handling both full month names and abbreviated names
+        if month in ["October", "November", "December", "Oct", "Nov", "Dec"]:
+            # If the month is October, November, or December, the quarter is Qtr1
+            quarter = "Qtr1"
+        elif month in ["January", "February", "March", "Jan", "Feb", "Mar"]:
+            # If the month is January, February, or March, the quarter is Qtr2
+            quarter = "Qtr2"
+        elif month in ["April", "May", "June", "Apr", "Jun"]:
+            # If the month is April, May, or June, the quarter is Qtr3
+            quarter = "Qtr3"
+        elif month in ["July", "August", "September", "Jul", "Aug", "Sep"]:
+            # If the month is July, August, or September, the quarter is Qtr4
+            quarter = "Qtr4"
+
+        # Increment the year by 1 if the quarter is Qtr1
+        if quarter == "Qtr1":
+            year += 1
+
+        # Construct the quarter-year string
+        self.quarter_year = quarter + "-" + str(year)[-2:]
+
+        # Call the parent save method to save the object
+        super().save(*args, **kwargs)
+
+
+class UpdateButtonSettings(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    hide_button_time = models.TimeField()
+
+    def __str__(self):
+        return str(self.hide_button_time)

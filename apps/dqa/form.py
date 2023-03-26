@@ -3,7 +3,7 @@ import datetime
 from django.forms import ModelForm, Textarea
 from django import forms
 
-from apps.dqa.models import DataVerification, Period, DQAWorkPlan, SystemAssessment, AuditTeam
+from apps.dqa.models import DataVerification, Period, DQAWorkPlan, SystemAssessment, AuditTeam, UpdateButtonSettings
 from apps.cqi.models import Facilities
 
 
@@ -141,3 +141,19 @@ class AuditTeamForm(ModelForm):
         labels = {
             'name': 'Name (First and Last name)',
         }
+
+
+class UpdateButtonSettingsForm(forms.ModelForm):
+    class Meta:
+        model = UpdateButtonSettings
+        fields = ('hide_button_time',)
+        widgets = {'hide_button_time': forms.TimeInput(format='%H:%M')}
+        labels = {
+            'hide_button_time': 'Time to hide update button in DQA module',
+        }
+
+    def clean_hide_button_time(self):
+        hide_button_time = self.cleaned_data['hide_button_time']
+        if hide_button_time.hour < 17:
+            raise forms.ValidationError("The hide button time must be after 5pm.")
+        return hide_button_time

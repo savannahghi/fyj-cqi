@@ -9,7 +9,7 @@
 <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-4">
 {% if work_plan %}
     {% for action_plan in work_plan  %}
-    <h6 class="display-6 text-primary text-center">{{ action_plan.facility_name.facilities }} DQA Workplan </h6>
+    <h6 class="display-6 text-primary text-center">{{ action_plan.facility_name.name }} DQA Workplan </h6>
     <hr>
 {% endfor %}
 {% else %}

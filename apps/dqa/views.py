@@ -1,7 +1,9 @@
 import ast
 
 import matplotlib
+import pytz
 from django.core.exceptions import ValidationError
+from django.db.models.functions import Cast, Concat
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import TableStyle, Table, Paragraph
@@ -11,11 +13,11 @@ matplotlib.rcParams['agg.path.chunksize'] = 10000
 
 from io import BytesIO
 import json
-from datetime import timezone, datetime
+from datetime import timezone, datetime, timedelta, time
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from django.db.models import Case, When, IntegerField
+from django.db.models import Case, When, IntegerField, DateField, ExpressionWrapper, Value, CharField, Sum
 from django.forms import modelformset_factory
 from django.urls import reverse
 from django.utils import timezone
@@ -40,11 +42,221 @@ from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
 from apps.dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm, YearSelectionForm, \
-    FacilitySelectionForm, DQAWorkPlanForm, SystemAssessmentForm, DateSelectionForm, AuditTeamForm
+    FacilitySelectionForm, DQAWorkPlanForm, SystemAssessmentForm, DateSelectionForm, AuditTeamForm, \
+    UpdateButtonSettingsForm
 from apps.dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan, SystemAssessment, \
-    AuditTeam
+    AuditTeam, KhisPerformance, UpdateButtonSettings
 from apps.cqi.views import bar_chart
 from apps.cqi.models import Facilities
+
+from datetime import datetime
+import pytz
+from django.utils import timezone
+from .models import UpdateButtonSettings
+
+
+def disable_update_buttons(audit_team):
+    ############################################################
+    # DISABLE UPDATE BUTTONS AFTER 6PM KENYAN TIME             #
+    ############################################################
+    local_tz = pytz.timezone("Africa/Nairobi")
+    settings = UpdateButtonSettings.objects.first()
+    hide_button_time = settings.hide_button_time
+    for data in audit_team:
+        try:
+            data_entry_date = data.date_created.astimezone(local_tz).date()
+        except AttributeError:
+            data_entry_date = data.created_at.astimezone(local_tz).date()
+        hide_button_datetime = timezone.make_aware(datetime.combine(data_entry_date, hide_button_time))
+        now = timezone.now().astimezone(local_tz)
+        if now > hide_button_datetime:
+            data.hide_update_button = True
+        else:
+            data.hide_update_button = False
+
+
+def khis_data_prep(df):
+    # df = pd.read_excel("FYJ_KHIS Data _ Oct - Dec'22.xlsx")
+    df['month'] = pd.to_datetime(df['month'])
+    df['month'] = df['month'].dt.strftime('%b %Y')
+
+    df = df[['mfl', 'month', 'mois', 'facility', 'UniqID', 'PrEP_New_dhis', 'dhis_start_ipt_total', 'sGBV_Seen_dhis',
+             'dhis_screen_cacx_new_f18', 'dhis_tested_9', 'dhis_tested_14m', 'dhis_tested_14f', 'dhis_tested_19m',
+             'dhis_tested_19f', 'dhis_tested_24m', 'dhis_tested_24f', 'dhis_tested_25m', 'dhis_tested_25f',
+             'dhis_pos_lt9', 'dhis_pos_14m', 'dhis_pos_14f', 'dhis_pos_19m', 'dhis_pos_19f', 'dhis_pos_24m',
+             'dhis_pos_24f', 'dhis_pos_25m', 'dhis_pos_25f', 'known_pos_at_first_anc', 'pos_results_anc',
+             'on_haart_at_first_anc', 'start_haart_anc', 'infant_arv_prophyl_anc', 'pos_results_LD', 'start_haart_LD',
+             'infant_arv_prophyl_LD', 'pos_results_pnc_lt6wks', 'start_haart_pnc_lt6wks',
+             'infant_arv_prophyl_lt8wks_pnc', 'dhis_start_art_lt1', 'dhis_start_art_9', 'dhis_start_art_14m',
+             'dhis_start_art_14f', 'dhis_start_art_19m', 'dhis_start_art_19f', 'dhis_start_art_24m',
+             'dhis_start_art_24f', 'dhis_start_art_25m', 'dhis_start_art_25f', 'dhis_tb_cases_new', 'dhis_on_art_lt1',
+             'dhis_on_art_9', 'dhis_on_art_14m', 'dhis_on_art_14f', 'dhis_on_art_19m', 'dhis_on_art_19f',
+             'dhis_on_art_24m', 'dhis_on_art_24f', 'dhis_on_art_25m', 'dhis_on_art_25f', 'kps_at_first_anc',
+             'anc_initial_test', 'first_anc_visits', 'pos_pnc_gt6weeks_to_6_mon'
+             ]]
+
+    for i in df.columns[5:]:
+        df[i] = df[i].astype(int)
+
+    df['TX_New_p'] = df['dhis_start_art_lt1'] + df['dhis_start_art_9'] + df['dhis_start_art_14m'] + df[
+        'dhis_start_art_14f']
+    df['TX_New_a'] = df['dhis_start_art_19m'] + df['dhis_start_art_19f'] + df['dhis_start_art_24m'] + df[
+        'dhis_start_art_24f'] + df['dhis_start_art_25m'] + df['dhis_start_art_25f']
+
+    df['TX_New_t'] = df['dhis_start_art_lt1'] + df['dhis_start_art_9'] + df['dhis_start_art_14m'] + df[
+        'dhis_start_art_14f'] + df['dhis_start_art_19m'] + df['dhis_start_art_19f'] + df['dhis_start_art_24m'] + df[
+                         'dhis_start_art_24f'] + df['dhis_start_art_25m'] + df['dhis_start_art_25f']
+
+    df['TX_Curr_p'] = df['dhis_on_art_lt1'] + df['dhis_on_art_9'] + df['dhis_on_art_14m'] + df['dhis_on_art_14f']
+    df['TX_Curr_a'] = df['dhis_on_art_19m'] + df['dhis_on_art_19f'] + df['dhis_on_art_24m'] + df['dhis_on_art_24f'] + \
+                      df['dhis_on_art_25m'] + df['dhis_on_art_25f']
+
+    df['TX_Curr_t'] = df['dhis_on_art_lt1'] + df['dhis_on_art_9'] + df['dhis_on_art_14m'] + df['dhis_on_art_14f'] + df[
+        'dhis_on_art_19m'] + df['dhis_on_art_19f'] + df['dhis_on_art_24m'] + df['dhis_on_art_24f'] + df[
+                          'dhis_on_art_25m'] + df['dhis_on_art_25f']
+
+    df['TST_t'] = df['dhis_tested_9'] + df['dhis_tested_14m'] + df['dhis_tested_14f'] + df['dhis_tested_19m'] + df[
+        'dhis_tested_19f'] + df['dhis_tested_24m'] + df['dhis_tested_24f'] + df['dhis_tested_25m'] + df[
+                      'dhis_tested_25f']
+
+    df['TST_p'] = df['dhis_tested_9'] + df['dhis_tested_14m'] + df['dhis_tested_14f']
+
+    df['TST_a'] = df['dhis_tested_19m'] + df['dhis_tested_19f'] + df['dhis_tested_24m'] + df['dhis_tested_24f'] + df[
+        'dhis_tested_25m'] + df['dhis_tested_25f']
+
+    df['TST_pos_p'] = df['dhis_pos_lt9'] + df['dhis_pos_14m'] + df['dhis_pos_14f']
+    df['TST_pos_a'] = df['dhis_pos_19m'] + df['dhis_pos_19f'] + df['dhis_pos_24m'] + df['dhis_pos_24f'] + df[
+        'dhis_pos_25m'] + df['dhis_pos_25f']
+
+    df['TST_pos_t'] = df['dhis_pos_lt9'] + df['dhis_pos_14m'] + df['dhis_pos_14f'] + df['dhis_pos_19m'] + df[
+        'dhis_pos_19f'] + df['dhis_pos_24m'] + df['dhis_pos_24f'] + df['dhis_pos_25m'] + df['dhis_pos_25f']
+
+    df['PMTCT_STAT_N'] = df['kps_at_first_anc'] + df['anc_initial_test']
+    df['PMTCT_STAT_D'] = df['first_anc_visits']
+    df['PMTCT_Pos'] = df['kps_at_first_anc'] + df['pos_results_anc']
+    df['PMTCT_ARV'] = df['start_haart_anc'] + df['on_haart_at_first_anc']
+    df['PMTCT_INF_ARV'] = df['infant_arv_prophyl_anc'] + df['infant_arv_prophyl_lt8wks_pnc'] + df[
+        'infant_arv_prophyl_LD']
+    df['Pos_PNC'] = df['pos_results_pnc_lt6wks'] + df['pos_pnc_gt6weeks_to_6_mon']
+
+    columns_to_drop = ['dhis_on_art_19m', 'dhis_on_art_19f', 'dhis_on_art_24m', 'dhis_on_art_24f', 'dhis_on_art_25m',
+                       'dhis_on_art_25f', 'dhis_on_art_lt1', 'dhis_on_art_9', 'dhis_on_art_14m', 'dhis_on_art_14f',
+                       'dhis_start_art_lt1', 'dhis_start_art_9', 'dhis_start_art_14m', 'dhis_start_art_14f',
+                       'dhis_start_art_19m', 'dhis_start_art_19f', 'dhis_start_art_24m', 'dhis_start_art_24f',
+                       'dhis_start_art_25m', 'dhis_start_art_25f', 'dhis_tested_9', 'dhis_tested_14m',
+                       'dhis_tested_14f', 'dhis_tested_19m', 'dhis_tested_19f', 'dhis_tested_24m', 'dhis_tested_24f',
+                       'dhis_tested_25m', 'dhis_tested_25f', 'dhis_pos_lt9', 'dhis_pos_14m', 'dhis_pos_14f',
+                       'dhis_pos_19m', 'dhis_pos_19f', 'dhis_pos_24m', 'dhis_pos_24f', 'dhis_pos_25m', 'dhis_pos_25f',
+                       'mois', 'UniqID', 'kps_at_first_anc', 'pos_pnc_gt6weeks_to_6_mon']
+
+    df = df.drop(columns_to_drop, axis=1)
+
+    df = df.rename(columns={
+        'PrEP_New_dhis': 'PrEP_New', 'dhis_start_ipt_total': 'IPT', 'sGBV_Seen_dhis': 'GBV_Sexual',
+        'dhis_screen_cacx_new_f18': 'CXCA', 'known_pos_at_first_anc': 'KP_ANC', 'pos_results_anc': 'Newpos_ANC',
+        'on_haart_at_first_anc': 'on HAART _ANC', 'start_haart_anc': 'New on HAART_ANC', 'pos_results_LD': 'Pos_L&D',
+        'start_haart_LD': 'haart_l_d', 'dhis_tb_cases_new': 'TB_STAT_D', "mfl": "MFL", "facility": "Facility",
+        "month": "Month"
+    })
+    columns_to_use = ['MFL', 'Facility', 'Month', 'TST_p', 'TST_a', 'TST_t', 'TST_pos_p',
+                      'TST_pos_a', 'TST_pos_t', 'TX_New_p', 'TX_New_a', 'TX_New_t',
+                      'TX_Curr_p', 'TX_Curr_a', 'TX_Curr_t', 'PMTCT_STAT_D', 'PMTCT_STAT_N',
+                      'PMTCT_Pos', 'PMTCT_ARV', 'PMTCT_INF_ARV',
+                      'PrEP_New', 'GBV_Sexual', 'infant_arv_prophyl_anc',
+                      'infant_arv_prophyl_LD', 'infant_arv_prophyl_lt8wks_pnc',
+                      'haart_l_d',
+                      'pos_results_pnc_lt6wks', 'start_haart_pnc_lt6wks',
+                      'KP_ANC',
+                      'Newpos_ANC', 'on HAART _ANC', 'New on HAART_ANC', 'Pos_L&D', 'Pos_PNC',
+                      'CXCA', 'TB_STAT_D', 'IPT', 'anc_initial_test', 'first_anc_visits', ]
+    df = df[columns_to_use]
+    return df
+
+
+@login_required(login_url='login')
+def load_khis_data(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == 'POST':
+        file = request.FILES['file']
+        # Read the data from the Excel file into a pandas DataFrame
+        keyword = "his"
+        keyword1 = "731"
+        xls_file = pd.ExcelFile(file)
+        sheet_names = [sheet for sheet in xls_file.sheet_names if
+                       keyword.upper() in sheet.upper() or keyword1.upper() in sheet.upper()]
+        if sheet_names:
+            dfs = pd.read_excel(file, sheet_name=sheet_names)
+            df = pd.concat([df.assign(sheet_name=name) for name, df in dfs.items()])
+            df = khis_data_prep(df)
+            try:
+                with transaction.atomic():
+                    if len(df.columns) == 39:
+                        df.fillna(0, inplace=True)
+                        process_cols = [col for col in df.columns if col not in [df.columns[1], df.columns[2]]]
+                        for col in process_cols:
+                            df[col] = df[col].astype(int)
+                        df[df.columns[1]] = df[df.columns[1]].astype(str)
+                        df[df.columns[2]] = df[df.columns[2]].astype(str)
+
+                        # Iterate over each row in the DataFrame
+                        for index, row in df.iterrows():
+                            performance = KhisPerformance()
+                            performance.mfl_code = row[df.columns[0]]
+                            performance.facility = row[df.columns[1]]
+                            performance.month = row[df.columns[2]]
+                            performance.tst_p = row[df.columns[3]]
+                            performance.tst_a = row[df.columns[4]]
+                            performance.tst_t = row[df.columns[5]]
+                            performance.tst_pos_p = row[df.columns[6]]
+                            performance.tst_pos_a = row[df.columns[7]]
+                            performance.tst_pos_t = row[df.columns[8]]
+                            performance.tx_new_p = row[df.columns[9]]
+                            performance.tx_new_a = row[df.columns[10]]
+                            performance.tx_new_t = row[df.columns[11]]
+                            performance.tx_curr_p = row[df.columns[12]]
+                            performance.tx_curr_a = row[df.columns[13]]
+                            performance.tx_curr_t = row[df.columns[14]]
+                            performance.pmtct_stat_d = row[df.columns[15]]
+                            performance.pmtct_stat_n = row[df.columns[16]]
+                            performance.pmtct_pos = row[df.columns[17]]
+                            performance.pmtct_arv = row[df.columns[18]]
+                            performance.pmtct_inf_arv = row[df.columns[19]]
+                            performance.prep_new = row[df.columns[20]]
+                            performance.gbv_sexual = row[df.columns[21]]
+                            performance.infant_arv_prophyl_anc = row[df.columns[22]]
+                            performance.infant_arv_prophyl_l_d = row[df.columns[23]]
+                            performance.infant_arv_prophyl_lt8wks_pnc = row[df.columns[24]]
+                            performance.haart_l_d = row[df.columns[25]]
+                            performance.pos_results_pnc_lt6wks = row[df.columns[26]]
+                            performance.start_haart_pnc_lt6wks = row[df.columns[27]]
+                            performance.kp_anc = row[df.columns[28]]
+                            performance.new_pos_anc = row[df.columns[29]]
+                            performance.on_haart_anc = row[df.columns[30]]
+                            performance.new_on_haart_anc = row[df.columns[31]]
+                            performance.pos_l_d = row[df.columns[32]]
+                            performance.pos_pnc = row[df.columns[33]]
+                            performance.cx_ca = row[df.columns[34]]
+                            performance.tb_stat_d = row[df.columns[35]]
+                            performance.ipt = row[df.columns[36]]
+                            performance.anc_initial_test = row[df.columns[37]]
+                            performance.first_anc_visits = row[df.columns[38]]
+                            performance.save()
+                        messages.error(request, f'Data successfully saved in the database!')
+                        return redirect('show_data_verification')
+                    else:
+                        # Notify the user that the data is not correct
+                        messages.error(request, f'Kindly confirm if {file} has all data columns.The file has'
+                                                f'{len(df.columns)} columns')
+                        redirect('load_data')
+            except IntegrityError:
+                month_list = ', '.join(str(month) for month in df['Month'].unique())
+                error_msg = f"KHIS Data for {month_list} already exists."
+                messages.error(request, error_msg)
+        else:
+            messages.error(request, f"Uploaded file does not have a sheet named 'KHIS or DHIS or MOH 731'.")
+            redirect('load_khis_data')
+    return render(request, 'dqa/upload.html')
 
 
 @login_required(login_url='login')
@@ -281,7 +493,9 @@ def add_data_verification(request):
                         quarter_year__year=request.session['selected_year'],
                         facility_name=selected_facility,
                     )
+
                     if data_verification:
+
                         # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
                         # years' are saved in the database
                         positive_15_plus = data_verification.filter(indicator='Number tested Positive aged 15+ years')
@@ -289,58 +503,59 @@ def add_data_verification(request):
 
                         # If both values are saved in the database, calculate the sum
                         if positive_15_plus and positive_less_15:
+                            with transaction.atomic():
 
-                            field_1 = 0
-                            field_2 = 0
-                            field_3 = 0
-                            total_source = 0
-                            field_5 = 0
-                            field_6 = 0
-                            field_7 = 0
-                            total_731moh = 0
-                            field_9 = 0
-                            field_10 = 0
-                            field_11 = 0
-                            total_khis = 0
+                                field_1 = 0
+                                field_2 = 0
+                                field_3 = 0
+                                total_source = 0
+                                field_5 = 0
+                                field_6 = 0
+                                field_7 = 0
+                                total_731moh = 0
+                                field_9 = 0
+                                field_10 = 0
+                                field_11 = 0
+                                total_khis = 0
 
-                            #  returns a new queryset containing all the elements from both querysets.
-                            combined_queryset = positive_less_15 | positive_15_plus
+                                #  returns a new queryset containing all the elements from both querysets.
+                                combined_queryset = positive_less_15 | positive_15_plus
 
-                            for data in combined_queryset:
-                                field_1 += int(data.field_1)
-                                field_2 += int(data.field_2)
-                                field_3 += int(data.field_3)
-                                total_source += int(data.total_source)
-                                field_5 += int(data.field_5)
-                                field_6 += int(data.field_6)
-                                field_7 += int(data.field_7)
-                                total_731moh += int(data.total_731moh)
-                                field_9 += int(data.field_9)
-                                field_10 += int(data.field_10)
-                                field_11 += int(data.field_11)
-                                total_khis += int(data.total_khis)
+                                for data in combined_queryset:
+                                    field_1 += int(data.field_1)
+                                    field_2 += int(data.field_2)
+                                    field_3 += int(data.field_3)
+                                    total_source += int(data.total_source)
+                                    field_5 += int(data.field_5)
+                                    field_6 += int(data.field_6)
+                                    field_7 += int(data.field_7)
+                                    total_731moh += int(data.total_731moh)
+                                    # field_9 += int(data.field_9)
+                                    # field_10 += int(data.field_10)
+                                    # field_11 += int(data.field_11)
+                                    # total_khis += int(data.total_khis)
 
-                            try:
-                                DataVerification.objects.create(indicator='Number tested Positive _Total',
-                                                                field_1=field_1,
-                                                                field_2=field_2,
-                                                                field_3=field_3,
-                                                                total_source=total_source,
-                                                                field_5=field_5,
-                                                                field_6=field_6,
-                                                                field_7=field_7,
-                                                                total_731moh=total_731moh,
-                                                                field_9=field_9,
-                                                                field_10=field_10,
-                                                                field_11=field_11,
-                                                                total_khis=total_khis,
-                                                                created_by=request.user,
-                                                                quarter_year=period,
-                                                                facility_name=selected_facility)
-                            except IntegrityError:
-                                # handle the scenario where a duplicate instance is trying to be created
-                                # for example, return an error message to the user
-                                pass
+                                try:
+                                    DataVerification.objects.create(indicator='Number tested Positive _Total',
+                                                                    field_1=field_1,
+                                                                    field_2=field_2,
+                                                                    field_3=field_3,
+                                                                    total_source=total_source,
+                                                                    field_5=field_5,
+                                                                    field_6=field_6,
+                                                                    field_7=field_7,
+                                                                    total_731moh=total_731moh,
+                                                                    # field_9=field_9,
+                                                                    # field_10=field_10,
+                                                                    # field_11=field_11,
+                                                                    # total_khis=total_khis,
+                                                                    created_by=request.user,
+                                                                    quarter_year=period,
+                                                                    facility_name=selected_facility)
+                                except IntegrityError:
+                                    # handle the scenario where a duplicate instance is trying to be created
+                                    # for example, return an error message to the user
+                                    pass
 
                         # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
                         # years' are saved in the database
@@ -350,57 +565,57 @@ def add_data_verification(request):
 
                         # # If both values are saved in the database, calculate the sum
                         if infant_anc and infant_ld and infant_pnc:
+                            with transaction.atomic():
+                                field_1 = 0
+                                field_2 = 0
+                                field_3 = 0
+                                total_source = 0
+                                field_5 = 0
+                                field_6 = 0
+                                field_7 = 0
+                                total_731moh = 0
+                                field_9 = 0
+                                field_10 = 0
+                                field_11 = 0
+                                total_khis = 0
+                                #  returns a new queryset containing all the elements from both querysets.
+                                combined_queryset = infant_anc | infant_ld | infant_pnc
 
-                            field_1 = 0
-                            field_2 = 0
-                            field_3 = 0
-                            total_source = 0
-                            field_5 = 0
-                            field_6 = 0
-                            field_7 = 0
-                            total_731moh = 0
-                            field_9 = 0
-                            field_10 = 0
-                            field_11 = 0
-                            total_khis = 0
-                            #  returns a new queryset containing all the elements from both querysets.
-                            combined_queryset = infant_anc | infant_ld | infant_pnc
+                                for data in combined_queryset:
+                                    field_1 += int(data.field_1)
+                                    field_2 += int(data.field_2)
+                                    field_3 += int(data.field_3)
+                                    total_source += int(data.total_source)
+                                    field_5 += int(data.field_5)
+                                    field_6 += int(data.field_6)
+                                    field_7 += int(data.field_7)
+                                    total_731moh += int(data.total_731moh)
+                                    # field_9 += int(data.field_9)
+                                    # field_10 += int(data.field_10)
+                                    # field_11 += int(data.field_11)
+                                    # total_khis += int(data.total_khis)
 
-                            for data in combined_queryset:
-                                field_1 += int(data.field_1)
-                                field_2 += int(data.field_2)
-                                field_3 += int(data.field_3)
-                                total_source += int(data.total_source)
-                                field_5 += int(data.field_5)
-                                field_6 += int(data.field_6)
-                                field_7 += int(data.field_7)
-                                total_731moh += int(data.total_731moh)
-                                field_9 += int(data.field_9)
-                                field_10 += int(data.field_10)
-                                field_11 += int(data.field_11)
-                                total_khis += int(data.total_khis)
-
-                            try:
-                                DataVerification.objects.create(indicator='Total Infant prophylaxis',
-                                                                field_1=field_1,
-                                                                field_2=field_2,
-                                                                field_3=field_3,
-                                                                total_source=total_source,
-                                                                field_5=field_5,
-                                                                field_6=field_6,
-                                                                field_7=field_7,
-                                                                total_731moh=total_731moh,
-                                                                field_9=field_9,
-                                                                field_10=field_10,
-                                                                field_11=field_11,
-                                                                total_khis=total_khis,
-                                                                created_by=request.user,
-                                                                quarter_year=period,
-                                                                facility_name=selected_facility)
-                            except IntegrityError:
-                                # handle the scenario where a duplicate instance is trying to be created
-                                # for example, return an error message to the user
-                                pass
+                                try:
+                                    DataVerification.objects.create(indicator='Total Infant prophylaxis',
+                                                                    field_1=field_1,
+                                                                    field_2=field_2,
+                                                                    field_3=field_3,
+                                                                    total_source=total_source,
+                                                                    field_5=field_5,
+                                                                    field_6=field_6,
+                                                                    field_7=field_7,
+                                                                    total_731moh=total_731moh,
+                                                                    # field_9=field_9,
+                                                                    # field_10=field_10,
+                                                                    # field_11=field_11,
+                                                                    # total_khis=total_khis,
+                                                                    created_by=request.user,
+                                                                    quarter_year=period,
+                                                                    facility_name=selected_facility)
+                                except IntegrityError:
+                                    # handle the scenario where a duplicate instance is trying to be created
+                                    # for example, return an error message to the user
+                                    pass
 
                         # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
                         # years' are saved in the database
@@ -411,57 +626,57 @@ def add_data_verification(request):
 
                         # # If both values are saved in the database, calculate the sum
                         if kp_anc and new_art_anc and new_art_ld and new_art_pnc:
+                            with transaction.atomic():
+                                field_1 = 0
+                                field_2 = 0
+                                field_3 = 0
+                                total_source = 0
+                                field_5 = 0
+                                field_6 = 0
+                                field_7 = 0
+                                total_731moh = 0
+                                field_9 = 0
+                                field_10 = 0
+                                field_11 = 0
+                                total_khis = 0
 
-                            field_1 = 0
-                            field_2 = 0
-                            field_3 = 0
-                            total_source = 0
-                            field_5 = 0
-                            field_6 = 0
-                            field_7 = 0
-                            total_731moh = 0
-                            field_9 = 0
-                            field_10 = 0
-                            field_11 = 0
-                            total_khis = 0
+                                #  returns a new queryset containing all the elements from both querysets.
+                                combined_queryset = kp_anc | new_art_anc | new_art_ld | new_art_pnc
 
-                            #  returns a new queryset containing all the elements from both querysets.
-                            combined_queryset = kp_anc | new_art_anc | new_art_ld | new_art_pnc
-
-                            for data in combined_queryset:
-                                field_1 += int(data.field_1)
-                                field_2 += int(data.field_2)
-                                field_3 += int(data.field_3)
-                                total_source += int(data.total_source)
-                                field_5 += int(data.field_5)
-                                field_6 += int(data.field_6)
-                                field_7 += int(data.field_7)
-                                total_731moh += int(data.total_731moh)
-                                field_9 += int(data.field_9)
-                                field_10 += int(data.field_10)
-                                field_11 += int(data.field_11)
-                                total_khis += int(data.total_khis)
-                            try:
-                                DataVerification.objects.create(indicator='Maternal HAART Total ',
-                                                                field_1=field_1,
-                                                                field_2=field_2,
-                                                                field_3=field_3,
-                                                                total_source=total_source,
-                                                                field_5=field_5,
-                                                                field_6=field_6,
-                                                                field_7=field_7,
-                                                                total_731moh=total_731moh,
-                                                                field_9=field_9,
-                                                                field_10=field_10,
-                                                                field_11=field_11,
-                                                                total_khis=total_khis,
-                                                                created_by=request.user,
-                                                                quarter_year=period,
-                                                                facility_name=selected_facility)
-                            except IntegrityError:
-                                # handle the scenario where a duplicate instance is trying to be created
-                                # for example, return an error message to the user
-                                pass
+                                for data in combined_queryset:
+                                    field_1 += int(data.field_1)
+                                    field_2 += int(data.field_2)
+                                    field_3 += int(data.field_3)
+                                    total_source += int(data.total_source)
+                                    field_5 += int(data.field_5)
+                                    field_6 += int(data.field_6)
+                                    field_7 += int(data.field_7)
+                                    total_731moh += int(data.total_731moh)
+                                    # field_9 += int(data.field_9)
+                                    # field_10 += int(data.field_10)
+                                    # field_11 += int(data.field_11)
+                                    # total_khis += int(data.total_khis)
+                                try:
+                                    DataVerification.objects.create(indicator='Maternal HAART Total ',
+                                                                    field_1=field_1,
+                                                                    field_2=field_2,
+                                                                    field_3=field_3,
+                                                                    total_source=total_source,
+                                                                    field_5=field_5,
+                                                                    field_6=field_6,
+                                                                    field_7=field_7,
+                                                                    total_731moh=total_731moh,
+                                                                    # field_9=field_9,
+                                                                    # field_10=field_10,
+                                                                    # field_11=field_11,
+                                                                    # total_khis=total_khis,
+                                                                    created_by=request.user,
+                                                                    quarter_year=period,
+                                                                    facility_name=selected_facility)
+                                except IntegrityError:
+                                    # handle the scenario where a duplicate instance is trying to be created
+                                    # for example, return an error message to the user
+                                    pass
 
                         # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
                         # years' are saved in the database
@@ -472,58 +687,59 @@ def add_data_verification(request):
 
                         # If both values are saved in the database, calculate the sum
                         if tx_new_above_15 and tx_new_less_15:
+                            with transaction.atomic():
+                                field_1 = 0
+                                field_2 = 0
+                                field_3 = 0
+                                total_source = 0
+                                field_5 = 0
+                                field_6 = 0
+                                field_7 = 0
+                                total_731moh = 0
+                                field_9 = 0
+                                field_10 = 0
+                                field_11 = 0
+                                total_khis = 0
 
-                            field_1 = 0
-                            field_2 = 0
-                            field_3 = 0
-                            total_source = 0
-                            field_5 = 0
-                            field_6 = 0
-                            field_7 = 0
-                            total_731moh = 0
-                            field_9 = 0
-                            field_10 = 0
-                            field_11 = 0
-                            total_khis = 0
+                                #  returns a new queryset containing all the elements from both querysets.
+                                combined_queryset = tx_new_less_15 | tx_new_above_15
 
-                            #  returns a new queryset containing all the elements from both querysets.
-                            combined_queryset = tx_new_less_15 | tx_new_above_15
+                                for data in combined_queryset:
+                                    field_1 += int(data.field_1)
+                                    field_2 += int(data.field_2)
+                                    field_3 += int(data.field_3)
+                                    total_source += int(data.total_source)
+                                    field_5 += int(data.field_5)
+                                    field_6 += int(data.field_6)
+                                    field_7 += int(data.field_7)
+                                    total_731moh += int(data.total_731moh)
+                                    # field_9 += int(data.field_9)
+                                    # field_10 += int(data.field_10)
+                                    # field_11 += int(data.field_11)
+                                    # total_khis += int(data.total_khis)
 
-                            for data in combined_queryset:
-                                field_1 += int(data.field_1)
-                                field_2 += int(data.field_2)
-                                field_3 += int(data.field_3)
-                                total_source += int(data.total_source)
-                                field_5 += int(data.field_5)
-                                field_6 += int(data.field_6)
-                                field_7 += int(data.field_7)
-                                total_731moh += int(data.total_731moh)
-                                field_9 += int(data.field_9)
-                                field_10 += int(data.field_10)
-                                field_11 += int(data.field_11)
-                                total_khis += int(data.total_khis)
-
-                            try:
-                                DataVerification.objects.create(indicator='Number of adults and children starting ART',
-                                                                field_1=field_1,
-                                                                field_2=field_2,
-                                                                field_3=field_3,
-                                                                total_source=total_source,
-                                                                field_5=field_5,
-                                                                field_6=field_6,
-                                                                field_7=field_7,
-                                                                total_731moh=total_731moh,
-                                                                field_9=field_9,
-                                                                field_10=field_10,
-                                                                field_11=field_11,
-                                                                total_khis=total_khis,
-                                                                created_by=request.user,
-                                                                quarter_year=period,
-                                                                facility_name=selected_facility)
-                            except IntegrityError:
-                                # handle the scenario where a duplicate instance is trying to be created
-                                # for example, return an error message to the user
-                                pass
+                                try:
+                                    DataVerification.objects.create(
+                                        indicator='Number of adults and children starting ART',
+                                        field_1=field_1,
+                                        field_2=field_2,
+                                        field_3=field_3,
+                                        total_source=total_source,
+                                        field_5=field_5,
+                                        field_6=field_6,
+                                        field_7=field_7,
+                                        total_731moh=total_731moh,
+                                        # field_9=field_9,
+                                        # field_10=field_10,
+                                        # field_11=field_11,
+                                        # total_khis=total_khis,
+                                        created_by=request.user,
+                                        quarter_year=period,
+                                        facility_name=selected_facility)
+                                except IntegrityError:
+                                    # handle the scenario where a duplicate instance is trying to be created
+                                    # for example, return an error message to the user
+                                    pass
 
                         # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
                         # years' are saved in the database
@@ -534,59 +750,59 @@ def add_data_verification(request):
 
                         # If both values are saved in the database, calculate the sum
                         if tx_curr_above_15 and tx_curr_less_15:
+                            with transaction.atomic():
+                                field_1 = 0
+                                field_2 = 0
+                                field_3 = 0
+                                total_source = 0
+                                field_5 = 0
+                                field_6 = 0
+                                field_7 = 0
+                                total_731moh = 0
+                                field_9 = 0
+                                field_10 = 0
+                                field_11 = 0
+                                total_khis = 0
 
-                            field_1 = 0
-                            field_2 = 0
-                            field_3 = 0
-                            total_source = 0
-                            field_5 = 0
-                            field_6 = 0
-                            field_7 = 0
-                            total_731moh = 0
-                            field_9 = 0
-                            field_10 = 0
-                            field_11 = 0
-                            total_khis = 0
+                                #  returns a new queryset containing all the elements from both querysets.
+                                combined_queryset = tx_curr_less_15 | tx_curr_above_15
 
-                            #  returns a new queryset containing all the elements from both querysets.
-                            combined_queryset = tx_curr_less_15 | tx_curr_above_15
+                                for data in combined_queryset:
+                                    field_1 += int(data.field_1)
+                                    field_2 += int(data.field_2)
+                                    field_3 += int(data.field_3)
+                                    total_source += int(data.total_source)
+                                    field_5 += int(data.field_5)
+                                    field_6 += int(data.field_6)
+                                    field_7 += int(data.field_7)
+                                    total_731moh += int(data.total_731moh)
+                                    # field_9 += int(data.field_9)
+                                    # field_10 += int(data.field_10)
+                                    # field_11 += int(data.field_11)
+                                    # total_khis += int(data.total_khis)
 
-                            for data in combined_queryset:
-                                field_1 += int(data.field_1)
-                                field_2 += int(data.field_2)
-                                field_3 += int(data.field_3)
-                                total_source += int(data.total_source)
-                                field_5 += int(data.field_5)
-                                field_6 += int(data.field_6)
-                                field_7 += int(data.field_7)
-                                total_731moh += int(data.total_731moh)
-                                field_9 += int(data.field_9)
-                                field_10 += int(data.field_10)
-                                field_11 += int(data.field_11)
-                                total_khis += int(data.total_khis)
-
-                            try:
-                                DataVerification.objects.create(
-                                    indicator='Number of adults and children Currently on ART',
-                                    field_1=field_1,
-                                    field_2=field_2,
-                                    field_3=field_3,
-                                    total_source=total_source,
-                                    field_5=field_5,
-                                    field_6=field_6,
-                                    field_7=field_7,
-                                    total_731moh=total_731moh,
-                                    field_9=field_9,
-                                    field_10=field_10,
-                                    field_11=field_11,
-                                    total_khis=total_khis,
-                                    created_by=request.user,
-                                    quarter_year=period,
-                                    facility_name=selected_facility)
-                            except IntegrityError:
-                                # handle the scenario where a duplicate instance is trying to be created
-                                # for example, return an error message to the user
-                                pass
+                                try:
+                                    DataVerification.objects.create(
+                                        indicator='Number of adults and children Currently on ART',
+                                        field_1=field_1,
+                                        field_2=field_2,
+                                        field_3=field_3,
+                                        total_source=total_source,
+                                        field_5=field_5,
+                                        field_6=field_6,
+                                        field_7=field_7,
+                                        total_731moh=total_731moh,
+                                        field_9=field_9,
+                                        field_10=field_10,
+                                        field_11=field_11,
+                                        total_khis=total_khis,
+                                        created_by=request.user,
+                                        quarter_year=period,
+                                        facility_name=selected_facility)
+                                except IntegrityError:
+                                    # handle the scenario where a duplicate instance is trying to be created
+                                    # for example, return an error message to the user
+                                    pass
 
                         # Check if the 'Number tested Positive aged 15+ years' and 'Number tested Positive aged <15
                         # years' are saved in the database
@@ -597,61 +813,78 @@ def add_data_verification(request):
 
                         # # If both values are saved in the database, calculate the sum
                         if kp_anc_pos and pos_anc and pos_ld and pos_pnc:
+                            with transaction.atomic():
+                                field_1 = 0
+                                field_2 = 0
+                                field_3 = 0
+                                total_source = 0
+                                field_5 = 0
+                                field_6 = 0
+                                field_7 = 0
+                                total_731moh = 0
+                                field_9 = 0
+                                field_10 = 0
+                                field_11 = 0
+                                total_khis = 0
 
-                            field_1 = 0
-                            field_2 = 0
-                            field_3 = 0
-                            total_source = 0
-                            field_5 = 0
-                            field_6 = 0
-                            field_7 = 0
-                            total_731moh = 0
-                            field_9 = 0
-                            field_10 = 0
-                            field_11 = 0
-                            total_khis = 0
+                                #  returns a new queryset containing all the elements from both querysets.
+                                combined_queryset = kp_anc_pos | pos_anc | pos_ld | pos_pnc
 
-                            #  returns a new queryset containing all the elements from both querysets.
-                            combined_queryset = kp_anc_pos | pos_anc | pos_ld | pos_pnc
+                                for data in combined_queryset:
+                                    field_1 += int(data.field_1)
+                                    field_2 += int(data.field_2)
+                                    field_3 += int(data.field_3)
+                                    total_source += int(data.total_source)
+                                    field_5 += int(data.field_5)
+                                    field_6 += int(data.field_6)
+                                    field_7 += int(data.field_7)
+                                    total_731moh += int(data.total_731moh)
+                                    # field_9 += int(data.field_9)
+                                    # field_10 += int(data.field_10)
+                                    # field_11 += int(data.field_11)
+                                    # total_khis += int(data.total_khis)
+                                try:
+                                    DataVerification.objects.create(indicator='Total Positive (PMTCT)',
+                                                                    field_1=field_1,
+                                                                    field_2=field_2,
+                                                                    field_3=field_3,
+                                                                    total_source=total_source,
+                                                                    field_5=field_5,
+                                                                    field_6=field_6,
+                                                                    field_7=field_7,
+                                                                    total_731moh=total_731moh,
+                                                                    # field_9=field_9,
+                                                                    # field_10=field_10,
+                                                                    # field_11=field_11,
+                                                                    # total_khis=total_khis,
+                                                                    created_by=request.user,
+                                                                    quarter_year=period,
+                                                                    facility_name=selected_facility)
+                                except IntegrityError:
+                                    # handle the scenario where a duplicate instance is trying to be created
+                                    # for example, return an error message to the user
+                                    pass
 
-                            for data in combined_queryset:
-                                field_1 += int(data.field_1)
-                                field_2 += int(data.field_2)
-                                field_3 += int(data.field_3)
-                                total_source += int(data.total_source)
-                                field_5 += int(data.field_5)
-                                field_6 += int(data.field_6)
-                                field_7 += int(data.field_7)
-                                total_731moh += int(data.total_731moh)
-                                field_9 += int(data.field_9)
-                                field_10 += int(data.field_10)
-                                field_11 += int(data.field_11)
-                                total_khis += int(data.total_khis)
-                            try:
-                                DataVerification.objects.create(indicator='Total Positive (PMTCT)',
-                                                                field_1=field_1,
-                                                                field_2=field_2,
-                                                                field_3=field_3,
-                                                                total_source=total_source,
-                                                                field_5=field_5,
-                                                                field_6=field_6,
-                                                                field_7=field_7,
-                                                                total_731moh=total_731moh,
-                                                                field_9=field_9,
-                                                                field_10=field_10,
-                                                                field_11=field_11,
-                                                                total_khis=total_khis,
-                                                                created_by=request.user,
-                                                                quarter_year=period,
-                                                                facility_name=selected_facility)
-                            except IntegrityError:
-                                # handle the scenario where a duplicate instance is trying to be created
-                                # for example, return an error message to the user
-                                pass
+                        # Redirect the user to the show_data_verification view
+                        # return redirect("show_data_verification")
+                        data_verification = DataVerification.objects.select_related('quarter_year').filter(
+                            quarter_year__quarter=request.session['selected_quarter'],
+                            quarter_year__year=request.session['selected_year'],
+                            facility_name=selected_facility,
+                        )
 
-                    # Redirect the user to the show_data_verification view
-                    # return redirect("show_data_verification")
-                    return HttpResponseRedirect(request.path_info)
+                        indicator_choices = [choice[0] for choice in Indicators.INDICATOR_CHOICES]
+                        sorted_data_verification = sorted(data_verification,
+                                                          key=lambda x: indicator_choices.index(x.indicator))
+
+                        if data_verification:
+                            remaining_indicators = set(indicator_choices) - {obj.indicator for obj in
+                                                                             sorted_data_verification}
+                            if remaining_indicators:
+                                message = f"{len(remaining_indicators)} remaining indicators: {', '.join(remaining_indicators)}"
+                                messages.error(request, message)
+
+                        return HttpResponseRedirect(request.path_info)
 
             # Handle the IntegrityError exception
             except IntegrityError as e:
@@ -689,12 +922,28 @@ def add_data_verification(request):
 def show_data_verification(request):
     if not request.user.first_name:
         return redirect("profile")
-    form = QuarterSelectionForm(request.POST or None)
-    year_form = YearSelectionForm(request.POST or None)
-    facility_form = FacilitySelectionForm(request.POST or None)
+
+    # Get the query parameters from the URL
+    quarter_form_initial = request.GET.get('quarter_form')
+    year_form_initial = request.GET.get('year_form')
+    facility_form_initial = request.GET.get('facility_form')
+
+    # Parse the string values into dictionary objects
+    quarter_form_initial = ast.literal_eval(quarter_form_initial) if quarter_form_initial else {}
+    year_form_initial = ast.literal_eval(year_form_initial) if year_form_initial else {}
+    facility_form_initial = ast.literal_eval(facility_form_initial) if facility_form_initial else {}
+
+    form = QuarterSelectionForm(request.POST or None, initial=quarter_form_initial)
+    year_form = YearSelectionForm(request.POST or None, initial=year_form_initial)
+    facility_form = FacilitySelectionForm(request.POST or None, initial=facility_form_initial)
+
+    # form = QuarterSelectionForm(request.POST or None)
+    # year_form = YearSelectionForm(request.POST or None)
+    # facility_form = FacilitySelectionForm(request.POST or None)
 
     selected_quarter = "Qtr1"
     selected_facility = None
+    quarters = {}
     request.session['selected_year_'] = ""
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
@@ -720,15 +969,51 @@ def show_data_verification(request):
                 f'Jul-{year_suffix}', f'Aug-{year_suffix}', f'Sep-{year_suffix}', 'Total'
             ]
         }
-    else:
-        quarters = {}
-    selected_year = request.session['selected_year_']
-    year_suffix = selected_year[-2:]
-    quarter_year = f"{selected_quarter}-{year_suffix}"
-    data_verification = DataVerification.objects.filter(quarter_year__quarter=selected_quarter,
-                                                        quarter_year__year=selected_year,
-                                                        facility_name=selected_facility,
-                                                        )
+    # else:
+    #     quarters = {}
+    elif quarter_form_initial:
+        selected_quarter = quarter_form_initial['quarter']
+        selected_facility = facility_form_initial['name']
+
+    try:
+        selected_year = request.session['selected_year_']
+        year_suffix = selected_year[-2:]
+        quarter_year = f"{selected_quarter}-{year_suffix}"
+        data_verification = DataVerification.objects.filter(quarter_year__quarter=selected_quarter,
+                                                            quarter_year__year=selected_year,
+                                                            facility_name=selected_facility,
+                                                            )
+    except ValidationError:
+        selected_year = year_form_initial['year']
+        # year_suffix = selected_year[-2:]
+        selected_facility = Facilities.objects.get(name=selected_facility)
+        quarter_year = selected_quarter
+        data_verification = DataVerification.objects.filter(quarter_year__quarter_year=selected_quarter,
+                                                            facility_name=selected_facility,
+                                                            )
+        selected_year = int(selected_year)
+        if "Qtr1" in selected_quarter:
+            selected_year -= 1
+            year_suffix = str(selected_year)[-2:]
+        else:
+            year_suffix = str(selected_year)[-2:]
+        # quarter_year = f"{selected_quarter.split('-')[0]}-{year_suffix}"
+        quarters = {
+            selected_quarter.split("-")[0]: [
+                f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}', 'Total'
+            ] if 'Qtr1' in selected_quarter else [
+                f'Jan-{year_suffix}', f'Feb-{year_suffix}', f'Mar-{year_suffix}', 'Total'
+            ] if 'Qtr2' in selected_quarter else [
+                f'Apr-{year_suffix}', f'May-{year_suffix}', f'Jun-{year_suffix}', 'Total'
+            ] if 'Qtr3' in selected_quarter else [
+                f'Jul-{year_suffix}', f'Aug-{year_suffix}', f'Sep-{year_suffix}', 'Total'
+            ]
+        }
+        if "Qtr1" in selected_quarter:
+            selected_year += 1
+            year_suffix = str(selected_year)[-2:]
+        else:
+            year_suffix = str(selected_year)[-2:]
     # Get the Indicator choices in the order specified in the list
     indicator_choices = [choice[0] for choice in Indicators.INDICATOR_CHOICES]
     available_indicators = [i.indicator for i in data_verification]
@@ -762,16 +1047,23 @@ def show_data_verification(request):
     # Sort the data_verification objects based on the order of the indicator choices
     sorted_data_verification = sorted(data_verification, key=lambda x: indicator_choices.index(x.indicator))
     if data_verification:
-        if data_verification.count() < 30:
-            # TODO: THIS MESSAGE SHOULD BE ONLY WHEN DATA NEEDED FOR VISUALIZATION IS NOT ENTERED.
+        disable_update_buttons(data_verification)
+        remaining_indicators = [choice for choice in indicator_choices if
+                                choice not in [obj.indicator for obj in sorted_data_verification]]
+        if data_verification.count() < 33:
             messages.error(request, f"Only {data_verification.count()} DQA indicators for {selected_facility} "
                                     f"({quarter_year}) have been recorded so far. To ensure proper data visualization,"
-                                    f" it is important to capture at least 30 indicators.")
+                                    f" it is important to capture all indicators.")
+            if remaining_indicators:
+                messages.error(request,
+                               f"{len(remaining_indicators)} remaining indicators: {', '.join(remaining_indicators)}")
+            else:
+                messages.info(request, "All indicators have been recorded.")
 
     if not data_verification:
         if selected_facility:
             messages.error(request,
-                           f"No DQA data was found in the database for {selected_facility} {selected_quarter}-FY{year_suffix}.")
+                           f"No data verification found for {selected_facility} {selected_quarter}-FY{year_suffix}.")
 
     try:
         fyj_performance = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
@@ -779,6 +1071,87 @@ def show_data_verification(request):
                                                         )
     except:
         fyj_performance = None
+    try:
+        # ensure queryset is ordered chronologically by month
+        khis_performance = KhisPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
+                                                          quarter_year=quarter_year
+                                                          ).annotate(
+            month_as_date=Cast(
+                ExpressionWrapper(
+                    Concat(Value('1'), Value(' '), 'month'),
+                    output_field=CharField()
+                ),
+                output_field=DateField()
+            )
+        ).order_by('month_as_date')
+        if khis_performance.exists():
+            total = khis_performance.aggregate(
+                prep_new_total=Sum('prep_new'),
+                ipt_total=Sum('ipt'),
+                tst_t_total=Sum('tst_t'),
+                gbv_sexual_total=Sum('gbv_sexual'),
+                cx_ca_total=Sum('cx_ca'),
+                tst_pos_p_total=Sum('tst_pos_p'),
+                tst_pos_a_total=Sum('tst_pos_a'),
+                kp_anc_total=Sum('kp_anc'),
+                new_pos_anc_total=Sum('new_pos_anc'),
+                on_haart_anc_total=Sum('on_haart_anc'),
+                new_on_haart_anc_total=Sum('new_on_haart_anc'),
+                tx_new_p_total=Sum('tx_new_p'),
+                tx_new_a_total=Sum('tx_new_a'),
+                tb_stat_d_total=Sum('tb_stat_d'),
+                tx_curr_p_total=Sum('tx_curr_p'),
+                tx_curr_a_total=Sum('tx_curr_a'),
+            )
+        else:
+            total = {
+                'prep_new_total': 0,
+                'ipt_total': 0,
+                'tst_t_total': 0,
+                'gbv_sexual_total': 0,
+                'cx_ca_total': 0,
+                'tst_pos_p_total': 0,
+                'tst_pos_a_total': 0,
+                'kp_anc_total': 0,
+                'new_pos_anc_total': 0,
+                'on_haart_anc_total': 0,
+                'new_on_haart_anc_total': 0,
+                'tx_new_p_total': 0,
+                'tx_new_a_total': 0,
+                'tb_stat_d_total': 0,
+                'tx_curr_p_total': 0,
+                'tx_curr_a_total': 0,
+            }
+    except:
+        khis_performance = None
+        total = {
+            'prep_new_total': 0,
+            'ipt_total': 0,
+            'tst_t_total': 0,
+            'gbv_sexual_total': 0,
+            'cx_ca_total': 0,
+            'tst_pos_p_total': 0,
+            'tst_pos_a_total': 0,
+            'kp_anc_total': 0,
+            'new_pos_anc_total': 0,
+            'on_haart_anc_total': 0,
+            'new_on_haart_anc_total': 0,
+            'tx_new_p_total': 0,
+            'tx_new_a_total': 0,
+            'tb_stat_d_total': 0,
+            'tx_curr_p_total': 0,
+            'tx_curr_a_total': 0,
+        }
+
+    # now = timezone.now()  # Get the current time as an offset-aware datetime object using Django's timezone
+    # for data in data_verification:  # Loop through each item in data_verification
+    #     last_updated = data.date_created  # Get the date_created value of the current data object
+    #     time_diff = now - last_updated  # Calculate the time difference between now and date_created
+    #     if time_diff > timedelta(hours=3):  # If the time difference is greater than 3 hours
+    #         data.hide_update_button = True  # Set the hide_update_button attribute to True
+    #     else:
+    #         data.hide_update_button = False  # Set the hide_update_button attribute to False
+
     context = {
         'form': form,
         "year_form": year_form,
@@ -788,6 +1161,8 @@ def show_data_verification(request):
         'data_verification': sorted_data_verification,
         "program_accessed": program_accessed,
         "fyj_performance": fyj_performance,
+        "khis_performance": khis_performance,
+        "total": total,
     }
     return render(request, 'dqa/show data verification.html', context)
 
@@ -834,10 +1209,10 @@ def update_data_verification(request, pk):
                     field_6 = 0
                     field_7 = 0
                     total_731moh = 0
-                    field_9 = 0
-                    field_10 = 0
-                    field_11 = 0
-                    total_khis = 0
+                    # field_9 = 0
+                    # field_10 = 0
+                    # field_11 = 0
+                    # total_khis = 0
 
                     #  returns a new queryset containing all the elements from both querysets.
                     combined_queryset = positive_less_15 | positive_15_plus
@@ -851,10 +1226,10 @@ def update_data_verification(request, pk):
                         field_6 += int(data.field_6)
                         field_7 += int(data.field_7)
                         total_731moh += int(data.total_731moh)
-                        field_9 += int(data.field_9)
-                        field_10 += int(data.field_10)
-                        field_11 += int(data.field_11)
-                        total_khis += int(data.total_khis)
+                        # field_9 += int(data.field_9)
+                        # field_10 += int(data.field_10)
+                        # field_11 += int(data.field_11)
+                        # total_khis += int(data.total_khis)
 
                     # try:
                     DataVerification.objects.update_or_create(
@@ -871,10 +1246,10 @@ def update_data_verification(request, pk):
                             'field_6': field_6,
                             'field_7': field_7,
                             'total_731moh': total_731moh,
-                            'field_9': field_9,
-                            'field_10': field_10,
-                            'field_11': field_11,
-                            'total_khis': total_khis,
+                            # 'field_9': field_9,
+                            # 'field_10': field_10,
+                            # 'field_11': field_11,
+                            # 'total_khis': total_khis,
                             'created_by': request.user,
                         }
                     )
@@ -896,10 +1271,10 @@ def update_data_verification(request, pk):
                     field_6 = 0
                     field_7 = 0
                     total_731moh = 0
-                    field_9 = 0
-                    field_10 = 0
-                    field_11 = 0
-                    total_khis = 0
+                    # field_9 = 0
+                    # field_10 = 0
+                    # field_11 = 0
+                    # total_khis = 0
                     #  returns a new queryset containing all the elements from both querysets.
                     combined_queryset = infant_anc | infant_ld | infant_pnc
 
@@ -912,10 +1287,10 @@ def update_data_verification(request, pk):
                         field_6 += int(data.field_6)
                         field_7 += int(data.field_7)
                         total_731moh += int(data.total_731moh)
-                        field_9 += int(data.field_9)
-                        field_10 += int(data.field_10)
-                        field_11 += int(data.field_11)
-                        total_khis += int(data.total_khis)
+                        # field_9 += int(data.field_9)
+                        # field_10 += int(data.field_10)
+                        # field_11 += int(data.field_11)
+                        # total_khis += int(data.total_khis)
 
                     DataVerification.objects.update_or_create(
                         indicator='Total Infant prophylaxis',
@@ -931,10 +1306,10 @@ def update_data_verification(request, pk):
                             'field_6': field_6,
                             'field_7': field_7,
                             'total_731moh': total_731moh,
-                            'field_9': field_9,
-                            'field_10': field_10,
-                            'field_11': field_11,
-                            'total_khis': total_khis,
+                            # 'field_9': field_9,
+                            # 'field_10': field_10,
+                            # 'field_11': field_11,
+                            # 'total_khis': total_khis,
                             'created_by': request.user,
                         }
                     )
@@ -957,10 +1332,10 @@ def update_data_verification(request, pk):
                     field_6 = 0
                     field_7 = 0
                     total_731moh = 0
-                    field_9 = 0
-                    field_10 = 0
-                    field_11 = 0
-                    total_khis = 0
+                    # field_9 = 0
+                    # field_10 = 0
+                    # field_11 = 0
+                    # total_khis = 0
 
                     #  returns a new queryset containing all the elements from both querysets.
                     combined_queryset = kp_anc | new_art_anc | new_art_ld | new_art_pnc
@@ -974,10 +1349,10 @@ def update_data_verification(request, pk):
                         field_6 += int(data.field_6)
                         field_7 += int(data.field_7)
                         total_731moh += int(data.total_731moh)
-                        field_9 += int(data.field_9)
-                        field_10 += int(data.field_10)
-                        field_11 += int(data.field_11)
-                        total_khis += int(data.total_khis)
+                        # field_9 += int(data.field_9)
+                        # field_10 += int(data.field_10)
+                        # field_11 += int(data.field_11)
+                        # total_khis += int(data.total_khis)
                     DataVerification.objects.update_or_create(
                         indicator='Maternal HAART Total ',
                         quarter_year_id=selected_quarter_year,
@@ -992,10 +1367,10 @@ def update_data_verification(request, pk):
                             'field_6': field_6,
                             'field_7': field_7,
                             'total_731moh': total_731moh,
-                            'field_9': field_9,
-                            'field_10': field_10,
-                            'field_11': field_11,
-                            'total_khis': total_khis,
+                            # 'field_9': field_9,
+                            # 'field_10': field_10,
+                            # 'field_11': field_11,
+                            # 'total_khis': total_khis,
                             'created_by': request.user,
                         }
                     )
@@ -1018,10 +1393,10 @@ def update_data_verification(request, pk):
                     field_6 = 0
                     field_7 = 0
                     total_731moh = 0
-                    field_9 = 0
-                    field_10 = 0
-                    field_11 = 0
-                    total_khis = 0
+                    # field_9 = 0
+                    # field_10 = 0
+                    # field_11 = 0
+                    # total_khis = 0
 
                     #  returns a new queryset containing all the elements from both querysets.
                     combined_queryset = tx_new_less_15 | tx_new_above_15
@@ -1035,10 +1410,10 @@ def update_data_verification(request, pk):
                         field_6 += int(data.field_6)
                         field_7 += int(data.field_7)
                         total_731moh += int(data.total_731moh)
-                        field_9 += int(data.field_9)
-                        field_10 += int(data.field_10)
-                        field_11 += int(data.field_11)
-                        total_khis += int(data.total_khis)
+                        # field_9 += int(data.field_9)
+                        # field_10 += int(data.field_10)
+                        # field_11 += int(data.field_11)
+                        # total_khis += int(data.total_khis)
 
                     DataVerification.objects.update_or_create(
                         indicator='Number of adults and children starting ART',
@@ -1054,10 +1429,10 @@ def update_data_verification(request, pk):
                             'field_6': field_6,
                             'field_7': field_7,
                             'total_731moh': total_731moh,
-                            'field_9': field_9,
-                            'field_10': field_10,
-                            'field_11': field_11,
-                            'total_khis': total_khis,
+                            # 'field_9': field_9,
+                            # 'field_10': field_10,
+                            # 'field_11': field_11,
+                            # 'total_khis': total_khis,
                             'created_by': request.user,
                         }
                     )
@@ -1080,10 +1455,10 @@ def update_data_verification(request, pk):
                     field_6 = 0
                     field_7 = 0
                     total_731moh = 0
-                    field_9 = 0
-                    field_10 = 0
-                    field_11 = 0
-                    total_khis = 0
+                    # field_9 = 0
+                    # field_10 = 0
+                    # field_11 = 0
+                    # total_khis = 0
 
                     #  returns a new queryset containing all the elements from both querysets.
                     combined_queryset = tx_curr_less_15 | tx_curr_above_15
@@ -1097,10 +1472,10 @@ def update_data_verification(request, pk):
                         field_6 += int(data.field_6)
                         field_7 += int(data.field_7)
                         total_731moh += int(data.total_731moh)
-                        field_9 += int(data.field_9)
-                        field_10 += int(data.field_10)
-                        field_11 += int(data.field_11)
-                        total_khis += int(data.total_khis)
+                        # field_9 += int(data.field_9)
+                        # field_10 += int(data.field_10)
+                        # field_11 += int(data.field_11)
+                        # total_khis += int(data.total_khis)
 
                     DataVerification.objects.update_or_create(
                         indicator='Number of adults and children Currently on ART',
@@ -1116,10 +1491,10 @@ def update_data_verification(request, pk):
                             'field_6': field_6,
                             'field_7': field_7,
                             'total_731moh': total_731moh,
-                            'field_9': field_9,
-                            'field_10': field_10,
-                            'field_11': field_11,
-                            'total_khis': total_khis,
+                            # 'field_9': field_9,
+                            # 'field_10': field_10,
+                            # 'field_11': field_11,
+                            # 'total_khis': total_khis,
                             'created_by': request.user,
                         }
                     )
@@ -1142,10 +1517,10 @@ def update_data_verification(request, pk):
                     field_6 = 0
                     field_7 = 0
                     total_731moh = 0
-                    field_9 = 0
-                    field_10 = 0
-                    field_11 = 0
-                    total_khis = 0
+                    # field_9 = 0
+                    # field_10 = 0
+                    # field_11 = 0
+                    # total_khis = 0
 
                     #  returns a new queryset containing all the elements from both querysets.
                     combined_queryset = kp_anc_pos | pos_anc | pos_ld | pos_pnc
@@ -1159,10 +1534,10 @@ def update_data_verification(request, pk):
                         field_6 += int(data.field_6)
                         field_7 += int(data.field_7)
                         total_731moh += int(data.total_731moh)
-                        field_9 += int(data.field_9)
-                        field_10 += int(data.field_10)
-                        field_11 += int(data.field_11)
-                        total_khis += int(data.total_khis)
+                        # field_9 += int(data.field_9)
+                        # field_10 += int(data.field_10)
+                        # field_11 += int(data.field_11)
+                        # total_khis += int(data.total_khis)
                     DataVerification.objects.update_or_create(
                         indicator='Total Positive (PMTCT)',
                         quarter_year_id=selected_quarter_year,
@@ -1177,15 +1552,26 @@ def update_data_verification(request, pk):
                             'field_6': field_6,
                             'field_7': field_7,
                             'total_731moh': total_731moh,
-                            'field_9': field_9,
-                            'field_10': field_10,
-                            'field_11': field_11,
-                            'total_khis': total_khis,
+                            # 'field_9': field_9,
+                            # 'field_10': field_10,
+                            # 'field_11': field_11,
+                            # 'total_khis': total_khis,
                             'created_by': request.user,
                         }
                     )
             # TODO: AFTER UPDATE, USER SHOULD BE TAKEN BACK TO THE PAGE THEY WERE FROM WITH DATA ALREADY LOADED
-            return HttpResponseRedirect(request.session['page_from'])
+            # return HttpResponseRedirect(request.session['page_from'])
+
+            # Set the initial values for the forms
+            quarter_form_initial = {'quarter': item.quarter_year.quarter_year}
+            year_form_initial = {'year': item.quarter_year.year}
+            facility_form_initial = {"name": item.facility_name.name}
+
+            messages.success(request, "Record successfully updated!")
+            # Redirect to the system assessment table view with the initial values for the forms
+            url = reverse('show_data_verification')
+            url = f'{url}?quarter_form={quarter_form_initial}&year_form={year_form_initial}&facility_form={facility_form_initial}'
+            return redirect(url)
     else:
         quarter_year = item.quarter_year.quarter_year
         year_suffix = quarter_year[-2:]
@@ -1528,6 +1914,8 @@ class GeneratePDF(View):
                                               quarter_year__quarter_year=quarter_year)
         fyj_perf = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
                                                  quarter_year=quarter_year).values()
+        khis_perf = KhisPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
+                                                   quarter_year=quarter_year).values()
         if dqa:
             # loop through both models QI_Projects and Program_qi_projects using two separate lists
             dqa_df = [
@@ -1536,7 +1924,7 @@ class GeneratePDF(View):
                  'mfl_code': x.facility_name.mfl_code,
                  'Source': x.total_source,
                  "MOH 731": x.total_731moh,
-                 "KHIS": x.total_khis,
+                 # "KHIS": x.total_khis,
                  "quarter_year": x.quarter_year.quarter_year,
                  } for x in dqa
             ]
@@ -1570,36 +1958,7 @@ class GeneratePDF(View):
                 messages.info(request, f"A few DQA indicators for {selected_facility} have been capture but not "
                                        f"enough for data visualization")
             if fyj_perf:
-                fyj_perf_df = pd.DataFrame(list(fyj_perf))
-                for col in fyj_perf_df.columns[4:-1]:
-                    fyj_perf_df[col] = fyj_perf_df[col].astype(int)
-                fyj_perf_df['Maternal HAART Total'] = fyj_perf_df['on_haart_anc'] + fyj_perf_df['new_on_haart_anc']
-                fyj_perf_df['Total Positive (PMTCT)'] = fyj_perf_df['kp_anc'] + fyj_perf_df['new_pos_anc']
-                fyj_perf_df['Number Tested Positive Total'] = fyj_perf_df['tst_pos_p'] + fyj_perf_df['tst_pos_a']
-                fyj_perf_df['Number Starting ART Total'] = fyj_perf_df['tx_new_p'] + fyj_perf_df['tx_new_a']
-                fyj_perf_df['Number Current on ART Total'] = fyj_perf_df['tx_curr_p'] + fyj_perf_df['tx_curr_a']
-                fyj_perf_df['Total Infant prophylaxis'] = 0
-
-                fyj_perf_df = fyj_perf_df.rename(
-                    columns={"prep_new": "Number initiated on PrEP", "gbv_sexual": "Gend_GBV Sexual Violence",
-                             "gbv_emotional_physical": "Gend_GBV_Physical and Emotional",
-                             "cx_ca": "Number Screened for Cervical Cancer",
-                             "tb_stat_d": "New & Relapse TB cases", "ipt": "Number Starting IPT Total"})
-
-                indicators_to_use_perf = ['mfl_code', 'quarter_year', "Number initiated on PrEP",
-                                          'Maternal HAART Total', 'Number Tested Positive Total',
-                                          'Total Positive (PMTCT)', 'Number Starting ART Total',
-                                          'New & Relapse TB cases', 'Number Starting IPT Total',
-                                          'Number Current on ART Total', "Gend_GBV Sexual Violence",
-                                          'Gend_GBV_Physical and Emotional', 'Number Screened for Cervical Cancer',
-                                          'Total Infant prophylaxis'
-
-                                          ]
-                fyj_perf_df = fyj_perf_df[indicators_to_use_perf]
-
-                fyj_perf_df = pd.melt(fyj_perf_df, id_vars=['mfl_code', 'quarter_year'],
-                                      value_vars=list(fyj_perf_df.columns[2:]),
-                                      var_name='indicator', value_name='DATIM')
+                fyj_perf_df = make_performance_df(fyj_perf, 'DATIM')
                 if dqa_df.empty:
                     messages.info(request, f"A few DATIM indicators for {selected_facility} have been capture but not "
                                            f"enough for data visualization")
@@ -1610,6 +1969,27 @@ class GeneratePDF(View):
                 messages.info(request, f"No DATIM data for {selected_facility}!")
 
             merged_df = dqa_df.merge(fyj_perf_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
+            if khis_perf:
+                khis_perf_df = make_performance_df(khis_perf, 'KHIS')
+
+                tx_curr_khis = khis_perf_df[khis_perf_df['indicator'] == "Number Current on ART Total"]
+
+                # apply the function to the 'date' column and store the result in a new column
+                tx_curr_khis['month_number'] = tx_curr_khis['month'].apply(get_month_number)
+                tx_curr_khis = tx_curr_khis.sort_values('month_number', ascending=False).head(1)
+                del tx_curr_khis['month_number']
+                del tx_curr_khis['month']
+                khis_others = khis_perf_df[khis_perf_df['indicator'] != "Number Current on ART Total"]
+
+                khis_others = khis_others.groupby(['indicator', 'quarter_year', 'mfl_code']).sum().reset_index()
+
+                khis_perf_df = pd.concat([khis_others, tx_curr_khis])
+            else:
+                khis_perf_df = pd.DataFrame(columns=['indicator', 'facility', 'mfl_code', 'KHIS',
+                                                     'quarter_year'])
+            if "KHIS" in merged_df.columns:
+                del merged_df['KHIS']
+            merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
 
             merged_df = merged_df[
                 ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
@@ -1927,6 +2307,60 @@ class GeneratePDF(View):
         return response
 
 
+def get_month_number(date_string):
+    # define a function to extract the month number from a date string
+    date_obj = datetime.strptime(date_string, '%b %Y')
+    return date_obj.month
+
+
+def make_performance_df(fyj_perf, value):
+    fyj_perf_df = pd.DataFrame(list(fyj_perf))
+    for col in fyj_perf_df.columns[4:-1]:
+        fyj_perf_df[col] = fyj_perf_df[col].astype(int)
+    fyj_perf_df['Maternal HAART Total'] = fyj_perf_df['on_haart_anc'] + fyj_perf_df['new_on_haart_anc']
+    fyj_perf_df['Total Positive (PMTCT)'] = fyj_perf_df['kp_anc'] + fyj_perf_df['new_pos_anc']
+    fyj_perf_df['Number Tested Positive Total'] = fyj_perf_df['tst_pos_p'] + fyj_perf_df['tst_pos_a']
+    fyj_perf_df['Number Starting ART Total'] = fyj_perf_df['tx_new_p'] + fyj_perf_df['tx_new_a']
+    fyj_perf_df['Number Current on ART Total'] = fyj_perf_df['tx_curr_p'] + fyj_perf_df['tx_curr_a']
+    fyj_perf_df['Total Infant prophylaxis'] = 0
+
+    fyj_perf_df = fyj_perf_df.rename(
+        columns={"prep_new": "Number initiated on PrEP", "gbv_sexual": "Gend_GBV Sexual Violence",
+                 "gbv_emotional_physical": "Gend_GBV_Physical and Emotional",
+                 "cx_ca": "Number Screened for Cervical Cancer",
+                 "tb_stat_d": "New & Relapse TB cases", "ipt": "Number Starting IPT Total"})
+
+    try:
+        indicators_to_use_perf = ['mfl_code', 'quarter_year', "Number initiated on PrEP",
+                                  'Maternal HAART Total', 'Number Tested Positive Total',
+                                  'Total Positive (PMTCT)', 'Number Starting ART Total',
+                                  'New & Relapse TB cases', 'Number Starting IPT Total',
+                                  'Number Current on ART Total', "Gend_GBV Sexual Violence",
+                                  'Gend_GBV_Physical and Emotional', 'Number Screened for Cervical Cancer',
+                                  'Total Infant prophylaxis'
+                                  ]
+        fyj_perf_df = fyj_perf_df[indicators_to_use_perf]
+        fyj_perf_df = pd.melt(fyj_perf_df, id_vars=['mfl_code', 'quarter_year'],
+                              value_vars=list(fyj_perf_df.columns[2:]),
+                              var_name='indicator', value_name=value)
+    except KeyError:
+        fyj_perf_df['Gend_GBV_Physical and Emotional'] = 0
+        indicators_to_use_perf = ['mfl_code', 'quarter_year', "Number initiated on PrEP",
+                                  'Maternal HAART Total', 'Number Tested Positive Total',
+                                  'Total Positive (PMTCT)', 'Number Starting ART Total',
+                                  'New & Relapse TB cases', 'Number Starting IPT Total',
+                                  'Number Current on ART Total', "Gend_GBV Sexual Violence",
+                                  'Gend_GBV_Physical and Emotional', 'Number Screened for Cervical Cancer',
+                                  'Total Infant prophylaxis', 'month'
+                                  ]
+        fyj_perf_df = fyj_perf_df[indicators_to_use_perf]
+
+        fyj_perf_df = pd.melt(fyj_perf_df, id_vars=['mfl_code', 'quarter_year', 'month'],
+                              value_vars=list(fyj_perf_df.columns[2:]),
+                              var_name='indicator', value_name=value)
+    return fyj_perf_df
+
+
 @login_required(login_url='login')
 def dqa_summary(request):
     if not request.user.first_name:
@@ -2009,6 +2443,9 @@ def dqa_summary(request):
                                               quarter_year__quarter_year=quarter_year)
         fyj_perf = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
                                                  quarter_year=quarter_year).values()
+        khis_perf = KhisPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
+                                                   quarter_year=quarter_year).values()
+
         if dqa:
             # loop through both models QI_Projects and Program_qi_projects using two separate lists
             dqa_df = [
@@ -2017,7 +2454,7 @@ def dqa_summary(request):
                  'mfl_code': x.facility_name.mfl_code,
                  'Source': x.total_source,
                  "MOH 731": x.total_731moh,
-                 "KHIS": x.total_khis,
+                 # "KHIS": x.total_khis,
                  "quarter_year": x.quarter_year.quarter_year,
                  } for x in dqa
             ]
@@ -2028,7 +2465,6 @@ def dqa_summary(request):
                                  'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
                                  'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
                                  'Cervical Cancer Screening (Women on ART)'
-
                                  ]
             dqa_df = dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
 
@@ -2055,36 +2491,7 @@ def dqa_summary(request):
                                            'quarter_year'])
             messages.info(request, f"No DQA data for {selected_facility}")
         if fyj_perf:
-            fyj_perf_df = pd.DataFrame(list(fyj_perf))
-            for col in fyj_perf_df.columns[4:-1]:
-                fyj_perf_df[col] = fyj_perf_df[col].astype(int)
-            fyj_perf_df['Maternal HAART Total'] = fyj_perf_df['on_haart_anc'] + fyj_perf_df['new_on_haart_anc']
-            fyj_perf_df['Total Positive (PMTCT)'] = fyj_perf_df['kp_anc'] + fyj_perf_df['new_pos_anc']
-            fyj_perf_df['Number Tested Positive Total'] = fyj_perf_df['tst_pos_p'] + fyj_perf_df['tst_pos_a']
-            fyj_perf_df['Number Starting ART Total'] = fyj_perf_df['tx_new_p'] + fyj_perf_df['tx_new_a']
-            fyj_perf_df['Number Current on ART Total'] = fyj_perf_df['tx_curr_p'] + fyj_perf_df['tx_curr_a']
-            fyj_perf_df['Total Infant prophylaxis'] = 0
-
-            fyj_perf_df = fyj_perf_df.rename(
-                columns={"prep_new": "Number initiated on PrEP", "gbv_sexual": "Gend_GBV Sexual Violence",
-                         "gbv_emotional_physical": "Gend_GBV_Physical and Emotional",
-                         "cx_ca": "Number Screened for Cervical Cancer",
-                         "tb_stat_d": "New & Relapse TB cases", "ipt": "Number Starting IPT Total"})
-
-            indicators_to_use_perf = ['mfl_code', 'quarter_year', "Number initiated on PrEP",
-                                      'Maternal HAART Total', 'Number Tested Positive Total',
-                                      'Total Positive (PMTCT)', 'Number Starting ART Total',
-                                      'New & Relapse TB cases', 'Number Starting IPT Total',
-                                      'Number Current on ART Total', "Gend_GBV Sexual Violence",
-                                      'Gend_GBV_Physical and Emotional', 'Number Screened for Cervical Cancer',
-                                      'Total Infant prophylaxis'
-
-                                      ]
-            fyj_perf_df = fyj_perf_df[indicators_to_use_perf]
-
-            fyj_perf_df = pd.melt(fyj_perf_df, id_vars=['mfl_code', 'quarter_year'],
-                                  value_vars=list(fyj_perf_df.columns[2:]),
-                                  var_name='indicator', value_name='DATIM')
+            fyj_perf_df = make_performance_df(fyj_perf, 'DATIM')
             if dqa_df.empty:
                 messages.info(request, f"A few DATIM indicators for {selected_facility} have been capture but not "
                                        f"enough for data visualization")
@@ -2095,6 +2502,28 @@ def dqa_summary(request):
             messages.info(request, f"No DATIM data for {selected_facility}!")
 
         merged_df = dqa_df.merge(fyj_perf_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
+        if khis_perf:
+            khis_perf_df = make_performance_df(khis_perf, 'KHIS')
+
+            tx_curr_khis = khis_perf_df[khis_perf_df['indicator'] == "Number Current on ART Total"]
+
+            # apply the function to the 'date' column and store the result in a new column
+            tx_curr_khis['month_number'] = tx_curr_khis['month'].apply(get_month_number)
+            tx_curr_khis = tx_curr_khis.sort_values('month_number', ascending=False).head(1)
+            del tx_curr_khis['month_number']
+            del tx_curr_khis['month']
+            khis_others = khis_perf_df[khis_perf_df['indicator'] != "Number Current on ART Total"]
+
+            khis_others = khis_others.groupby(['indicator', 'quarter_year', 'mfl_code']).sum().reset_index()
+
+            khis_perf_df = pd.concat([khis_others, tx_curr_khis])
+        else:
+            khis_perf_df = pd.DataFrame(columns=['indicator', 'facility', 'mfl_code', 'KHIS',
+                                                 'quarter_year'])
+
+        if "KHIS" in merged_df.columns:
+            del merged_df['KHIS']
+        merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
 
         merged_df = merged_df[
             ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
@@ -2178,6 +2607,8 @@ def dqa_summary(request):
             messages.info(request, f"No System assessment data for {selected_facility}")
         audit_team = AuditTeam.objects.filter(facility_name__id=selected_facility.id,
                                               quarter_year__quarter_year=quarter_year)
+        # if audit_team:
+        #     disable_update_buttons(audit_team)
         if not audit_team:
             messages.info(request,
                           f"No audit team assigned for {selected_facility}  {quarter_year}. Please ensure that data"
@@ -2324,7 +2755,7 @@ def add_system_verification(request):
         extra=25
 
     )
-    formset = SystemAssessmentFormSet(queryset=SystemAssessment.objects.none(), initial=initial_data)
+    formset = SystemAssessmentFormSet(request.POST or None,queryset=SystemAssessment.objects.none(), initial=initial_data)
     if request.method == "POST":
         formset = SystemAssessmentFormSet(request.POST, initial=initial_data)
         if formset.is_valid() and quarter_form.is_valid() and year_form.is_valid() and date_form.is_valid() and facility_form.is_valid():
@@ -2335,8 +2766,40 @@ def add_system_verification(request):
             instances = formset.save(commit=False)
             # Check if all forms in formset are filled
             if not all([form.has_changed() for form in formset.forms]):
-                messages.error(request, "Please fill all rows before saving.")
+                messages.error(request, "Please fill all rows in the 'Answer dropdown option columns' before saving.")
+                for form in formset.forms:
+                    if not form.cleaned_data.get('dropdown_option'):
+                        form.add_error('dropdown_option', "Please choose an option before saving.")
+                    if form.cleaned_data.get('dropdown_option', '') in ('No', 'Partly') and not form.cleaned_data.get(
+                            'auditor_note', ''):
+                        messages.warning(request,
+                                         "Please provide a note in the 'Auditor Note' field before saving. This is "
+                                         "required because you selected 'Partly' or 'No' in the 'Dropdown Option' "
+                                         "field.")
+                        form.add_error('auditor_note',
+                                       "Please provide a note before saving.")
             else:
+                for form in formset.forms:
+                    if form.cleaned_data.get('dropdown_option', '') in ('No', 'Partly') and not form.cleaned_data.get(
+                            'auditor_note', ''):
+                        messages.warning(request,
+                                         "Please provide a note in the 'Auditor Note' field before saving. This is "
+                                         "required because you selected 'Partly' or 'No' in the 'Dropdown Option' "
+                                         "field.")
+                        form.add_error('auditor_note',
+                                       "Please provide a note before saving.")
+
+                context = {
+                    "formset": formset,
+                    "quarter_form": quarter_form,
+                    "year_form": year_form,
+                    "facility_form": facility_form,
+                    "date_form": date_form,
+                    "descriptions": descriptions,
+                    "page_from": request.session.get('page_from', '/'),
+                }
+                return render(request, 'dqa/add_system_assessment.html', context)
+            if formset.is_valid():
                 try:
                     with transaction.atomic():
                         for form, instance in zip(formset.forms, instances):
@@ -2456,6 +2919,7 @@ def system_assessment_table(request):
         )
         if system_assessments:
             average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments, description_list)
+            disable_update_buttons(system_assessments)
 
         if not system_assessments:
             messages.error(request, f"System assessment data was not found for {selected_facility} ({quarter_year})")
@@ -2473,6 +2937,8 @@ def system_assessment_table(request):
         )
         if system_assessments:
             average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments, description_list)
+
+        disable_update_buttons(system_assessments)
 
     context = {
         "quarter_form": quarter_form,
@@ -2674,11 +3140,18 @@ def show_audit_team(request):
         quarter_year = f"{selected_quarter}-{year_suffix}"
         audit_team = AuditTeam.objects.filter(facility_name__id=selected_facility.id,
                                               quarter_year__quarter_year=quarter_year)
+        if audit_team:
+            disable_update_buttons(audit_team)
+        else:
+            messages.error(request, f"No audit team data was found in the database for {selected_facility} "
+                                    f"{selected_quarter}-FY{year_suffix}.")
     elif facility_form_initial:
         selected_quarter = quarter_form_initial['quarter']
         selected_facility = facility_form_initial['name']
         audit_team = AuditTeam.objects.filter(facility_name=Facilities.objects.get(name=selected_facility),
                                               quarter_year__quarter_year=selected_quarter)
+        if audit_team:
+            disable_update_buttons(audit_team)
 
     context = {
         "audit_team": audit_team,
@@ -2689,3 +3162,18 @@ def show_audit_team(request):
         "quarter_year": quarter_year,
     }
     return render(request, 'dqa/add_period.html', context)
+
+
+def update_button_settings(request):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    update_settings = UpdateButtonSettings.objects.first()
+    if request.method == 'POST':
+        form = UpdateButtonSettingsForm(request.POST, instance=update_settings)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = UpdateButtonSettingsForm(instance=update_settings)
+    return render(request, 'dqa/upload.html', {'form': form, "title": "update time"})

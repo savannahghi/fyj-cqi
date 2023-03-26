@@ -1,4 +1,5 @@
 {% extends 'dqa/index_dqa.html' %}
+{% load crispy_forms_filters %}
 {#{% extends 'cqi/index.html' %}#}
 {% load static %}
 {% load crispy_forms_tags %}
@@ -24,7 +25,7 @@
 
                         <div class="alert alert-info col-12 animated fadeIn" role="alert">
                             {% for message in messages|slice:":1" %}
-                            <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
+                            <h5 class="small">{{ message }}</h5>
                             {% endfor %}
                         </div>
 
@@ -32,7 +33,7 @@
            {% endif %}
            {% if data_verification %}
                {% for data in data_verification|slice:":1" %}
-                    <h4 class="h5">FACILITY: {{ data.facility_name.facilities }} </h4>
+                    <h4 class="h5">FACILITY: {{ data.facility_name.name }} </h4>
                     <h6 class="h6">MFL CODE: {{ data.facility_name.mfl_code }} </h6>
                     <h6 class="h6">DATE OF AUDIT: {{ data.date_modified }} </h6>
                {% endfor %}
@@ -43,10 +44,6 @@
         <p style="font-size: small; margin-left: 5px;">{{ program }}, </p>
     {% endfor %}
 </div>
-
-
-
-               </ul>
             {% endif %}
            </div>
       </div>
@@ -127,9 +124,14 @@
                 {% for month in months %}
                         <th style="font-size: x-small">{{ month }}</th>
                 {% endfor %}
-              <th class="align-middle text-center" style="font-size: x-small ">{{ key }}-{{ selected_year}}</th>
-                <th></th>
-                <th></th>
+              <th class="align-middle text-center" style="font-size: x-small ">FY {{ selected_year}} {{ key }}</th>
+                {% for data in data_verification %}
+                    {% if forloop.last %}
+                        {% if not data.hide_update_button %}
+                            <th></th>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
             {% endfor %}
          </tr>
         {% endif %}
@@ -140,59 +142,547 @@
     <tbody>
       {% for data in data_verification %}
         <tr>
+        <!-- INDICATORS -->
         {% if "_total" in data.indicator|lower or "positive (pmtct)" in data.indicator|lower or "haart total" in data.indicator|lower or "children currently on art" in data.indicator|lower or "children starting art" in data.indicator|lower or "infant prophylaxis" in data.indicator|lower %}
             <td class="fw-bold" style="background-color: #8fd19e; font-style: italic">{{ data.indicator }}</td>
         {% else %}
-            <td>{{ data.indicator }}</td>
+            <td class="align-middle text-center">{{ data.indicator }}</td>
         {% endif %}
+        <!-- REGISTERS RAW DATA-->
+            <td class="align-middle text-center">{{ data.field_1 }}</td>
+            <td class="align-middle text-center">{{ data.field_2 }}</td>
+            <td class="align-middle text-center">{{ data.field_3 }}</td>
+        <!-- REGISTERS TOTAL-->
+            {% if "prep" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.prep_new_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "tpt" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.ipt_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "sex" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.gbv_sexual_total %}green{% else %}red{% endif %}">
+                   {{data.total_source}}
+                </td>
+            {% elif "emot" in data.indicator|lower %}
+{#                <td class="align-middle text-center fw-bold">#}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "cancer" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.cx_ca_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "l test" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_t_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "aged <15 years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_pos_p_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "aged 15+ years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_pos_a_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "_total" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_pos_a_total|add:total.tst_pos_p_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "n positive at 1st anc" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.kp_anc_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "results_anc" in data.indicator|lower %}
 
-            <td>{{ data.field_1 }}</td>
-            <td>{{ data.field_2 }}</td>
-            <td>{{ data.field_3 }}</td>
-            <td class="text-center text-white" style="background-color: {% if data.total_source == data.total_731moh and data.total_731moh == data.total_khis %}green{% else %}red{% endif %}">
-                <strong> {{data.total_source}} </strong>
-            </td>
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.new_pos_anc_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "on haart" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.on_haart_anc_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "haart anc" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.new_on_haart_anc_total %}green{% else %}red{% endif %}">
+                   {{data.total_source}}
+                </td>
+            {% elif "prophyl_anc" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                   {{data.total_source}}
+                </td>
+            {% elif "results_l&d" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{data.total_source}}
+                </td>
+            {% elif "haart_l&d" in data.indicator|lower %}
+               <td class="align-middle text-center fw-bold">
+                    {{data.total_source}}
+                </td>
+            {% elif "prophyl_l&d" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                   {{data.total_source}}
+                </td>
+            {% elif "tx_ml" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                   {{data.total_source}}
+                </td>
+            {% elif "rtt" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{data.total_source}}
+                </td>
+            {% elif "tb_prev" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{data.total_source}}
+                </td>
+            {% elif "results_pnc<=6 weeks" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{data.total_source}}
+                </td>
+            {% elif "haart_pnc<= 6 weeks" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{data.total_source}}
+                </td>
+            {% elif "prophyl_pnc<= 6 weeks" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{data.total_source}}
+                </td>
+            {% elif "positive (pmtct)" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.kp_anc_total|add:total.new_pos_anc_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "haart total" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.new_on_haart_anc_total|add:total.on_haart_anc_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "infant prophylaxis" in data.indicator|lower %}
+               <td class="align-middle text-center fw-bold">
+                    {{data.total_source}}
+                </td>
+            {% elif "under 15yrs starting" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_new_p_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "above 15yrs starting" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_new_a_total %}green{% else %}red{% endif %}">
+                   {{data.total_source}}
+                </td>
+            {% elif "children starting art" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_new_a_total|add:total.tx_new_p_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "relapse tb_cases" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tb_stat_d_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "art <15years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_p_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "art 15+ years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total %}green{% else %}red{% endif %}">
+                    {{data.total_source}}
+                </td>
+            {% elif "children currently on art" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total|add:total.tx_curr_p_total %}green{% else %}red{% endif %}">
+                   {{data.total_source}}
+                </td>
+            {% endif %}
+        <!-- MOH 731 RAW DATA-->
+            <td class="align-middle text-center">{{ data.field_5 }}</td>
+            <td class="align-middle text-center">{{ data.field_6 }}</td>
+            <td class="align-middle text-center">{{ data.field_7 }}</td>
+        <!-- MOH 731 TOTALS-->
+        {% if "prep" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.prep_new_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "tpt" in data.indicator|lower %}
 
-            <td>{{ data.field_5 }}</td>
-            <td>{{ data.field_6 }}</td>
-            <td>{{ data.field_7 }}</td>
-             <td class="text-center text-white" style="background-color: {% if data.total_source == data.total_731moh and data.total_731moh == data.total_khis %}green{% else %}red{% endif %}">
-                <strong>{{ data.total_731moh }}</strong>
-             </td>
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.ipt_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "sex" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.gbv_sexual_total %}green{% else %}red{% endif %}">
+                   {{ data.total_731moh }}
+                </td>
+                {% elif "emot" in data.indicator|lower %}
+{#                <td class="align-middle text-center fw-bold">#}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "cancer" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.cx_ca_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "l test" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_t_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "aged <15 years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_pos_p_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "aged 15+ years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_pos_a_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "_total" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_pos_a_total|add:total.tst_pos_p_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "n positive at 1st anc" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.kp_anc_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "results_anc" in data.indicator|lower %}
 
-            <td>{{ data.field_9 }}</td>
-            <td>{{ data.field_10 }}</td>
-            <td>{{ data.field_11}}</td>
-             <td class="text-center text-white" style="background-color: {% if data.total_source == data.total_731moh and data.total_731moh == data.total_khis %}green{% else %}red{% endif %}">
-                <strong>{{ data.total_khis }}</strong>
-            </td>
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.new_pos_anc_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "on haart" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.on_haart_anc_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "haart anc" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.new_on_haart_anc_total %}green{% else %}red{% endif %}">
+                   {{ data.total_731moh }}
+                </td>
+                {% elif "prophyl_anc" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                   {{ data.total_731moh }}
+                </td>
+                {% elif "results_l&d" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "haart_l&d" in data.indicator|lower %}
+               <td class="align-middle text-center fw-bold">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "prophyl_l&d" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                   {{ data.total_731moh }}
+                </td>
+            {% elif "tx_ml" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                   {{ data.total_731moh }}
+                </td>
+                {% elif "rtt" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{ data.total_731moh }}
+                </td>
+            {% elif "tb_prev" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "results_pnc<=6 weeks" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "haart_pnc<= 6 weeks" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "prophyl_pnc<= 6 weeks" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "positive (pmtct)" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.kp_anc_total|add:total.new_pos_anc_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "haart total" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.new_on_haart_anc_total|add:total.on_haart_anc_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "infant prophylaxis" in data.indicator|lower %}
+               <td class="align-middle text-center fw-bold">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "under 15yrs starting" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_new_p_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "above 15yrs starting" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_new_a_total %}green{% else %}red{% endif %}">
+                   {{ data.total_731moh }}
+                </td>
+                {% elif "children starting art" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_new_a_total|add:total.tx_new_p_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "relapse tb_cases" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tb_stat_d_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "art <15years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_p_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "art 15+ years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total %}green{% else %}red{% endif %}">
+                    {{ data.total_731moh }}
+                </td>
+                {% elif "children currently on art" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total|add:total.tx_curr_p_total %}green{% else %}red{% endif %}">
+                   {{ data.total_731moh }}
+                </td>
+                {% endif %}
+        <!-- KHIS RAW DATA-->
+        {% for performance in khis_performance %}
+                {% if "prep" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.prep_new }}</td>
+                {% elif "tpt" in data.indicator|lower %}
+
+                    <td class="align-middle text-center">{{ performance.ipt }}</td>
+                {% elif "sex" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.gbv_sexual }}</td>
+                {% elif "emot" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.gbv_emotional_physical }}</td>
+                {% elif "cancer" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.cx_ca }}</td>
+                {% elif "l test" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tst_t }}</td>
+                {% elif "aged <15 years" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tst_pos_p }}</td>
+                {% elif "aged 15+ years" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tst_pos_a }}</td>
+                {% elif "_total" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tst_pos_a|add:performance.tst_pos_p }}</td>
+                {% elif "n positive at 1st anc" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.kp_anc }}</td>
+                {% elif "results_anc" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.new_pos_anc }}</td>
+                {% elif "on haart" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.on_haart_anc }}</td>
+                {% elif "haart anc" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.new_on_haart_anc }}</td>
+                {% elif "prophyl_anc" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.infant_arv_prophyl_anc }}</td>
+                {% elif "results_l&d" in data.indicator|lower %}
+                    <td class="align-middle text-center">
+                    {{ performance.pos_l_d }}
+                    </td>
+                {% elif "haart_l&d" in data.indicator|lower %}
+                    <td class="align-middle text-center">
+                        {{ performance.haart_l_d }}
+                    </td>
+                {% elif "prophyl_l&d" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.infant_arv_prophyl_l_d }}</td>
+                {% elif "tx_ml" in data.indicator|lower %}
+                    <td class="align-middle text-center">-</td>
+                {% elif "rtt" in data.indicator|lower %}
+                    <td class="align-middle text-center">-</td>
+                {% elif "tb_prev" in data.indicator|lower %}
+                    <td class="align-middle text-center">-</td>
+                {% elif "results_pnc<=6 weeks" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.pos_results_pnc_lt6wks }}</td>
+                {% elif "haart_pnc<= 6 weeks" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.start_haart_pnc_lt6wks }}</td>
+                {% elif "prophyl_pnc<= 6 weeks" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.infant_arv_prophyl_lt8wks_pnc }}</td>
+                {% elif "positive (pmtct)" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.kp_anc|add:performance.new_pos_anc }}</td>
+                {% elif "haart total" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.new_on_haart_anc|add:performance.on_haart_anc }}</td>
+                {% elif "infant prophylaxis" in data.indicator|lower %}
+                    <td class="align-middle text-center">
+                    {{ performance.infant_arv_prophyl_lt8wks_pnc|add:performance.infant_arv_prophyl_l_d|add:performance.infant_arv_prophyl_anc }}
+                    </td>
+                {% elif "under 15yrs starting" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tx_new_p }}</td>
+                {% elif "above 15yrs starting" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tx_new_a }}</td>
+                {% elif "children starting art" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tx_new_a|add:performance.tx_new_p }}</td>
+                {% elif "relapse tb_cases" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tb_stat_d }}</td>
+                {% elif "art <15years" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tx_curr_p }}</td>
+                {% elif "art 15+ years" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tx_curr_a }}</td>
+                {% elif "children currently on art" in data.indicator|lower %}
+                    <td class="align-middle text-center">{{ performance.tx_curr_a|add:performance.tx_curr_p }}</td>
+                 {% endif %}
+            {% endfor %}
+         <!-- KHIS TOTALS-->
+                 {% if "prep" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.prep_new_total %}green{% else %}red{% endif %}">
+                    {{ total.prep_new_total }}
+                </td>
+                {% elif "tpt" in data.indicator|lower %}
+
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.ipt_total %}green{% else %}red{% endif %}">
+                    {{ total.ipt_total }}
+                </td>
+                {% elif "sex" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.gbv_sexual_total %}green{% else %}red{% endif %}">
+                    {{ total.gbv_sexual_total }}
+                </td>
+                {% elif "emot" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    -
+                </td>
+                {% elif "cancer" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.cx_ca_total %}green{% else %}red{% endif %}">
+                    {{ total.cx_ca_total }}
+                </td>
+                {% elif "l test" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_t_total %}green{% else %}red{% endif %}">
+                    {{ total.tst_t_total }}
+                </td>
+                {% elif "aged <15 years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_pos_p_total %}green{% else %}red{% endif %}">
+                    {{ total.tst_pos_p_total }}
+                </td>
+                {% elif "aged 15+ years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_pos_a_total %}green{% else %}red{% endif %}">
+                    {{ total.tst_pos_a_total }}
+                </td>
+                {% elif "_total" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tst_pos_a_total|add:total.tst_pos_p_total %}green{% else %}red{% endif %}">
+                    {{ total.tst_pos_a_total|add:total.tst_pos_p_total }}
+                </td>
+                {% elif "n positive at 1st anc" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.kp_anc_total %}green{% else %}red{% endif %}">
+                    {{ total.kp_anc_total }}
+                </td>
+                {% elif "results_anc" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.new_pos_anc_total %}green{% else %}red{% endif %}">
+                    {{ total.new_pos_anc_total }}
+                </td>
+                {% elif "on haart" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.on_haart_anc_total %}green{% else %}red{% endif %}">
+                    {{ total.on_haart_anc_total }}
+                </td>
+                {% elif "haart anc" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.new_on_haart_anc_total %}green{% else %}red{% endif %}">
+                    {{ total.new_on_haart_anc_total }}
+                </td>
+                {% elif "prophyl_anc" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    -
+                </td>
+                {% elif "results_l&d" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    -
+                </td>
+                {% elif "haart_l&d" in data.indicator|lower %}
+               <td class="align-middle text-center fw-bold">
+                    -
+                </td>
+                {% elif "prophyl_l&d" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">
+                        -
+                    </td>
+                 {% elif "tx_ml" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">
+                        -
+                    </td>
+                {% elif "rtt" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">
+                        -
+                    </td>
+                 {% elif "tb_prev" in data.indicator|lower %}
+                    <td class="align-middle text-center fw-bold">
+                        -
+                    </td>
+                {% elif "results_pnc<=6 weeks" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    -
+                </td>
+                {% elif "haart_pnc<= 6 weeks" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    -
+                </td>
+                {% elif "prophyl_pnc<= 6 weeks" in data.indicator|lower %}
+                <td class="align-middle text-center fw-bold">
+                    -
+                </td>
+                {% elif "positive (pmtct)" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.kp_anc_total|add:total.new_pos_anc_total %}green{% else %}red{% endif %}">
+                    {{ total.kp_anc_total|add:total.new_pos_anc_total }}
+                </td>
+                {% elif "haart total" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.new_on_haart_anc_total|add:total.on_haart_anc_total %}green{% else %}red{% endif %}">
+                    {{ total.new_on_haart_anc_total|add:total.on_haart_anc_total }}
+                </td>
+                {% elif "infant prophylaxis" in data.indicator|lower %}
+               <td class="align-middle text-center fw-bold">
+                    -
+                </td>
+                {% elif "under 15yrs starting" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_new_p_total %}green{% else %}red{% endif %}">
+                    {{ total.tx_new_p_total }}
+                </td>
+                {% elif "above 15yrs starting" in data.indicator|lower %}
+               <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_new_a_total %}green{% else %}red{% endif %}">
+                    {{ total.tx_new_a_total }}
+                </td>
+                {% elif "children starting art" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_new_a_total|add:total.tx_new_p_total %}green{% else %}red{% endif %}">
+                    {{ total.tx_new_a_total|add:total.tx_new_p_total }}
+                </td>
+                {% elif "relapse tb_cases" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tb_stat_d_total %}green{% else %}red{% endif %}">
+                    {{ total.tb_stat_d_total }}
+                </td>
+                {% elif "art <15years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_p_total %}green{% else %}red{% endif %}">
+                    {{ total.tx_curr_p_total }}
+                </td>
+                {% elif "art 15+ years" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total %}green{% else %}red{% endif %}">
+                    {{ total.tx_curr_a_total }}
+                </td>
+                {% elif "children currently on art" in data.indicator|lower %}
+                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total|add:total.tx_curr_p_total %}green{% else %}red{% endif %}">
+                    {{ total.tx_curr_a_total|add:total.tx_curr_p_total }}
+                </td>
+                {% endif %}
+        <!-- DATIM TOTALS-->
             {% for performance in fyj_performance %}
                 {% if "prep" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.prep_new }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.prep_new_total == performance.prep_new %}green{% else %}red{% endif %}">
+                        {{ performance.prep_new }}</td>
                 {% elif "tpt" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.ipt }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.ipt_total == performance.ipt %}green{% else %}red{% endif %}">
+                        {{ performance.ipt }}</td>
                 {% elif "sex" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.gbv_sexual }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.gbv_sexual_total == performance.gbv_sexual %}green{% else %}red{% endif %}">
+                        {{ performance.gbv_sexual }}</td>
                 {% elif "emot" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.gbv_emotional_physical }}</td>
+                    <td class="align-middle text-center fw-bold">
+                        {{ performance.gbv_emotional_physical }}</td>
                 {% elif "cancer" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.cx_ca }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.cx_ca_total == performance.cx_ca %}green{% else %}red{% endif %}">
+                        {{ performance.cx_ca }}</td>
                 {% elif "l test" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tst_t }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.tst_t_total == performance.tst_t %}green{% else %}red{% endif %}">
+                        {{ performance.tst_t }}</td>
                 {% elif "aged <15 years" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tst_pos_p }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.tst_pos_p_total == performance.tst_pos_p %}green{% else %}red{% endif %}">
+                        {{ performance.tst_pos_p }}</td>
                 {% elif "aged 15+ years" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tst_pos_a }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.tst_pos_a_total == performance.tst_pos_a %}green{% else %}red{% endif %}">
+                        {{ performance.tst_pos_a }}</td>
                 {% elif "_total" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tst_pos_a|add:performance.tst_pos_p }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.tst_pos_a|add:total.tst_pos_p == performance.tst_pos_a|add:performance.tst_pos_p %}green{% else %}red{% endif %}">
+                        {{ performance.tst_pos_a|add:performance.tst_pos_p }}</td>
                 {% elif "n positive at 1st anc" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.kp_anc }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.kp_anc_total == performance.kp_anc %}green{% else %}red{% endif %}">
+                        {{ performance.kp_anc }}</td>
                 {% elif "results_anc" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.new_pos_anc }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.new_pos_anc_total == performance.new_pos_anc %}green{% else %}red{% endif %}">
+                        {{ performance.new_pos_anc }}</td>
                 {% elif "on haart" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.on_haart_anc }}</td>
+{#                    <td class="align-middle text-center fw-bold">#}
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.on_haart_anc_total == performance.on_haart_anc %}green{% else %}red{% endif %}">
+                        {{ performance.on_haart_anc }}</td>
                 {% elif "haart anc" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.new_on_haart_anc }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.new_on_haart_anc_total == performance.new_on_haart_anc %}green{% else %}red{% endif %}">
+                        {{ performance.new_on_haart_anc }}</td>
                 {% elif "prophyl_anc" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">-</td>
                 {% elif "results_l&d" in data.indicator|lower %}
@@ -201,6 +691,33 @@
                     <td class="align-middle text-center fw-bold">-</td>
                 {% elif "prophyl_l&d" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">-</td>
+                {% elif "tx_ml" in data.indicator|lower %}
+                    <!--COMPARE SOURCE/REGISTER TX_ML WITH DATIM TX_ML-->
+                    {% for data in data_verification %}
+                        {% if "tx_ml" in data.indicator|lower %}
+                            {% with source_tx_ml=data.total_source %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if source_tx_ml == source_tx_ml %}green{% else %}red{% endif %}">
+                        ADD DATIM TX_ML </td>
+                {% elif "rtt" in data.indicator|lower %}
+                    <!--COMPARE SOURCE/REGISTER RTT WITH DATIM RTT-->
+                    {% for data in data_verification %}
+                        {% if "rtt" in data.indicator|lower %}
+                            {% with source_rtt=data.total_source %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if source_rtt == source_rtt %}green{% else %}red{% endif %}">
+                        ADD DATIM RTT </td>
+                {% elif "tb_prev" in data.indicator|lower %}
+                    <!--COMPARE SOURCE/REGISTER TB_PREV WITH DATIM TB_PREV-->
+                    {% for data in data_verification %}
+                        {% if "tb_prev" in data.indicator|lower %}
+                            {% with source_tb_prev=data.total_source %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if source_tb_prev == source_tb_prev %}green{% else %}red{% endif %}">
+                        ADD DATIM TB_PREV </td>
                 {% elif "results_pnc<=6 weeks" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">-</td>
                 {% elif "haart_pnc<= 6 weeks" in data.indicator|lower %}
@@ -208,32 +725,74 @@
                 {% elif "prophyl_pnc<= 6 weeks" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">-</td>
                 {% elif "positive (pmtct)" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.kp_anc|add:performance.new_pos_anc }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.kp_anc_total|add:total.new_pos_anc_total == performance.kp_anc|add:performance.new_pos_anc %}green{% else %}red{% endif %}">
+                        {{ performance.kp_anc|add:performance.new_pos_anc }}</td>
                 {% elif "haart total" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.new_on_haart_anc|add:performance.on_haart_anc }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.new_on_haart_anc|add:total.on_haart_anc == performance.new_on_haart_anc|add:performance.on_haart_anc %}green{% else %}red{% endif %}">
+                        {{ performance.new_on_haart_anc|add:performance.on_haart_anc }}</td>
                 {% elif "infant prophylaxis" in data.indicator|lower %}
                     <td class="align-middle text-center fw-bold">-</td>
                 {% elif "under 15yrs starting" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tx_new_p }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.tx_new_p_total == performance.tx_new_p %}green{% else %}red{% endif %}">
+                        {{ performance.tx_new_p }}</td>
                 {% elif "above 15yrs starting" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tx_new_a }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.tx_new_a_total == performance.tx_new_a %}green{% else %}red{% endif %}">
+                        {{ performance.tx_new_a }}</td>
                 {% elif "children starting art" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tx_new_a|add:performance.tx_new_p }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.tx_new_a|add:total.tx_new_p == performance.tx_new_a|add:performance.tx_new_p %}green{% else %}red{% endif %}">
+                        {{ performance.tx_new_a|add:performance.tx_new_p }}</td>
                 {% elif "relapse tb_cases" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tb_stat_d }}</td>
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if total.tb_stat_d_total == performance.tb_stat_d %}green{% else %}red{% endif %}">
+                        {{ performance.tb_stat_d }}</td>
                 {% elif "art <15years" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tx_curr_p }}</td>
+                    <!--COMPARE LAST MONTH <15 TX_CURR WITH DATIM < 15 TX_CURR-->
+                    {% for p in khis_performance %}
+                        {% if forloop.last %}
+                            {% with tx_curr_p=p.tx_curr_p|default:"0" %}{% endwith %}
+{#                           <td> {{ p.tx_curr_p }}</td>#}
+                        {% endif %}
+                    {% endfor %}
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if tx_curr_p == performance.tx_curr_p %}green{% else %}red{% endif %}">
+                        {{ performance.tx_curr_p }}</td>
                 {% elif "art 15+ years" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tx_curr_a }}</td>
+                     <!--COMPARE LAST MONTH >15 TX_CURR WITH DATIM > 15 TX_CURR-->
+                    {% for p in khis_performance %}
+                        {% if forloop.last %}
+                            {% with tx_curr_a=p.tx_curr_a %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if tx_curr_a == performance.tx_curr_a %}green{% else %}red{% endif %}">
+                        {{ performance.tx_curr_a }}</td>
                 {% elif "children currently on art" in data.indicator|lower %}
-                    <td class="align-middle text-center fw-bold">{{ performance.tx_curr_a|add:performance.tx_curr_p }}</td>
+                    <!--COMPARE LAST MONTH TX_CURR WITH DATIM TX_CURR-->
+                    {% for p in khis_performance %}
+                        {% if forloop.last %}
+                            {% with tx_curr_a=p.tx_curr_a %}{% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                    <td class="align-middle text-center fw-bold" style="background-color: {% if tx_curr_a == performance.tx_curr_a|add:performance.tx_curr_p %}green{% else %}red{% endif %}">
+                        {{ performance.tx_curr_a|add:performance.tx_curr_p }}</td>
                  {% endif %}
             {% endfor %}
 
          {% if "_total" in data.indicator|lower or "positive (pmtct)" in data.indicator|lower or "haart total" in data.indicator|lower or "children currently on art" in data.indicator|lower or "children starting art" in data.indicator|lower or "infant prophylaxis" in data.indicator|lower %}
 
         {% else %}
-             <td><a href="{% url 'update_data_verification' data.id %}" class="btn btn-info" role="button">Update</a></td>
+{#          <td class="text-center">#}
+{#  <a href="{% url 'update_data_verification' data.id %}" class="btn btn-info" role="button" id="update-btn-{{ data.id }}">Update</a>#}
+{#</td>#}
+{% if not data.hide_update_button %}
+    <td class="text-center">
+    <a href="{% url 'update_data_verification' data.id %}" class="btn btn-info" role="button" id="update-btn-{{ data.id }}">Update</a>
+{#        <a href="{% url 'update_data_verification' data.id %}" class="btn btn-info">Update</a>#}
+    </td>
+{% endif %}
+
+
+
+
+
+
 {#        <td><a href="{% url 'delete_data_verification' data.id %}" class="btn btn-danger" role="button">Delete</a></td>#}
         {% endif %}
         </tr>

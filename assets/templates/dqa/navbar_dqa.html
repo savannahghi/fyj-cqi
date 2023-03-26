@@ -3,6 +3,7 @@
 {% url "add_data_verification" as add_data_verification %}
 {% url "add_system_verification" as add_system_verification %}
 {% url "dqa_summary" as dqa_summary %}
+{% url "load_khis_data" as load_khis_data %}
 {% url "show_dqa_work_plan" as show_dqa_work_plan %}
 {% url "show_audit_team" as show_audit_team %}
 {% url "system_assessment_table" as system_assessment_table %}
@@ -13,6 +14,7 @@
 {% url "sub_counties_list" as sub_counties_list %}
 {% url "lesson_learnt" as lesson_learnt %}
 {% url "load_datim_data" as load_datim_data %}
+{% url "update_button_settings" as update_button_settings %}
 {% url 'completed_closed' pk='Completed-or-Closed' as completed_closed %}
 
 
@@ -105,6 +107,18 @@
              <a class="nav-link {% if request.path == load_data %} active{% endif %}" href="{% url 'load_data' %}">
               <span data-feather="file-text" class="align-text-bottom"></span>
               Load FYJ facilities
+            </a>
+          </li>
+            <li class="nav-item">
+             <a class="nav-link {% if request.path == load_khis_data %} active{% endif %}" href="{% url 'load_khis_data' %}">
+              <span data-feather="file-text" class="align-text-bottom"></span>
+              Load KHIS DATA
+            </a>
+          </li>
+            <li class="nav-item">
+             <a class="nav-link {% if request.path == update_button_settings %} active{% endif %}" href="{% url 'update_button_settings' %}">
+              <span data-feather="file-text" class="align-text-bottom"></span>
+              Change DQA Update time
             </a>
           </li>
         {% endif %}

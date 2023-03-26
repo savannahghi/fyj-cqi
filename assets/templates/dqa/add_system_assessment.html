@@ -9,12 +9,19 @@
 <hr>
     <div class="p-5 mb-4 bg-light rounded-3">
     {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-info col-12 animated fadeIn" role="alert">
-                <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
-            </div>
-        {% endfor %}
-    {% endif %}
+        <!--group the messages by their text and display only one message for each unique text-->
+    {% regroup messages by message as message_list %}
+    {% for message in message_list %}
+        <div class="alert alert-info col-12 animated fadeIn" role="alert">
+            <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
+        </div>
+    {% endfor %}
+{% endif %}
+
+
+
+
+
 
       <div class="container-fluid">
       {% if "facility" in title %}

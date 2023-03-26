@@ -3,7 +3,7 @@ from django.urls import path
 from apps.dqa.views import add_data_verification, add_period, show_data_verification, update_data_verification, \
     delete_data_verification, load_data, dqa_summary, dqa_work_plan_create, show_dqa_work_plan, load_system_data, \
     add_system_verification, system_assessment_table, instructions, update_system_assessment, update_dqa_workplan, \
-    GeneratePDF, add_audit_team, update_audit_team, show_audit_team
+    GeneratePDF, add_audit_team, update_audit_team, show_audit_team, load_khis_data, update_button_settings
 
 urlpatterns = [
     path('add-data-verification/', add_data_verification,name="add_data_verification"),
@@ -12,7 +12,9 @@ urlpatterns = [
     path('choose-period/', add_period,name="add_period"),
     path('show-data-verification/', show_data_verification,name="show_data_verification"),
     path('dqa/datim-load-data/', load_data, name='load_datim_data'),
+    path('dqa/khis-load-data/', load_khis_data, name='load_khis_data'),
     path('dqa/load_system_data/', load_system_data, name='load_system_data'),
+    path('dqa/update-button-settings/', update_button_settings, name='update_button_settings'),
     path('dqa_summary', dqa_summary, name='dqa_summary'),
     path('instructions', instructions, name='instructions'),
     path('system-assessment-table', system_assessment_table, name='system_assessment_table'),

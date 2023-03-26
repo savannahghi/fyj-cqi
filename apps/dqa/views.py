@@ -1,7 +1,6 @@
 import ast
 
 import matplotlib
-import pytz
 from django.core.exceptions import ValidationError
 from django.db.models.functions import Cast, Concat
 from reportlab.lib.styles import ParagraphStyle
@@ -13,14 +12,13 @@ matplotlib.rcParams['agg.path.chunksize'] = 10000
 
 from io import BytesIO
 import json
-from datetime import timezone, datetime, timedelta, time
+from datetime import timezone
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 from django.db.models import Case, When, IntegerField, DateField, ExpressionWrapper, Value, CharField, Sum
 from django.forms import modelformset_factory
 from django.urls import reverse
-from django.utils import timezone
 
 import pandas as pd
 from django.views import View
@@ -52,7 +50,6 @@ from apps.cqi.models import Facilities
 from datetime import datetime
 import pytz
 from django.utils import timezone
-from .models import UpdateButtonSettings
 
 
 def disable_update_buttons(audit_team):

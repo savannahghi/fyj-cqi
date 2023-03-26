@@ -12,7 +12,7 @@
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-info col-12" role="alert">
-        <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
+        <h5 class="small">{{ message }}</h5>
     </div>
 {#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
         {% endfor %}
@@ -110,7 +110,12 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
-      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
+{#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+      {% if not form.hide_update_button %}
+    <td class="text-center">
+        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a>
+    </td>
+      {% endif %}
       </tr>
     {% endfor %}
    <tr>
@@ -207,8 +212,12 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
-      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
-
+{#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+ {% if not form.hide_update_button %}
+    <td class="text-center">
+        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a>
+    </td>
+      {% endif %}
       </tr>
     {% endfor %}
     <tr>
@@ -304,7 +313,12 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
-      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
+{#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+       {% if not form.hide_update_button %}
+    <td class="text-center">
+        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a>
+    </td>
+      {% endif %}
       </tr>
     {% endfor %}
   <tr>
@@ -399,7 +413,12 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
-      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
+{#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+       {% if not form.hide_update_button %}
+    <td class="text-center">
+        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a>
+    </td>
+      {% endif %}
       </tr>
     {% endfor %}
 <tr>
@@ -492,7 +511,12 @@
 
             <td>{{ form.auditor_note }}</td>
             <td>{{ form.supporting_documentation_required }}</td>
-      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>
+{#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+          {% if not form.hide_update_button %}
+    <td class="text-center">
+        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a>
+    </td>
+{% endif %}
       </tr>
     {% endfor %}
 <tr>

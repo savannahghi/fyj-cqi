@@ -8,6 +8,7 @@ from pathlib import Path
 
 import environs
 
+
 ###############################################################################
 # READ ENVIRONMENT
 ###############################################################################
@@ -23,11 +24,13 @@ DEBUG = env.bool("DJANGO_DEBUG", False)
 DJANGO_LOG_LEVEL = env.str("DJANGO_LOG_LEVEL", default="DEBUG")
 SECRET_KEY = env.str("DJANGO_SECRET_KEY", "django-insecure-xlb*ys8xwb04c&=y_z")
 
+
 ###############################################################################
 # FILE SYSTEM AND MISC
 ###############################################################################
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
 
 ###############################################################################
 # DJANGO DEV PANEL RECOMMENDATIONS AND OTHER SECURITY
@@ -37,6 +40,7 @@ CSRF_USE_SESSIONS = False
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+
 
 ###############################################################################
 # INSTALLED APPS
@@ -75,6 +79,7 @@ LOCAL_APPS = [
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
+
 ###############################################################################
 # MIDDLEWARE
 ###############################################################################
@@ -91,6 +96,7 @@ MIDDLEWARE = [
     "crum.CurrentRequestUserMiddleware",
 ]
 
+
 ###############################################################################
 # CORE DJANGO CONFIG
 ###############################################################################
@@ -102,6 +108,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 INTERNAL_IPS = ["127.0.0.1"]
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
+
 
 ###############################################################################
 # TEMPLATES
@@ -128,6 +135,8 @@ TEMPLATES = [
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+
 ###############################################################################
 # TRANSLATIONS AND LOCALES
 ###############################################################################
@@ -137,6 +146,7 @@ TIME_ZONE = "Africa/Nairobi"
 USE_I18N = True
 # USE_L10N = True
 USE_TZ = True
+
 
 ###############################################################################
 # AUTH AND PASSWORDS
@@ -166,6 +176,7 @@ PASSWORD_HASHERS = [
 LOGIN_REDIRECT_URL = 'login'
 LOGIN_URL = '/accounts/login/'
 
+
 ###############################################################################
 # LOGGING
 ###############################################################################
@@ -191,11 +202,13 @@ LOGGING = {
     "root": {"level": "INFO", "handlers": ["console"]},
 }
 
+
 ###############################################################################
 # OTHER
 ###############################################################################
 
 ADMIN_URL = "admin/"
+
 
 ###############################################################################
 # STATIC ASSETS AND MEDIA FILES

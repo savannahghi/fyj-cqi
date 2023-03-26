@@ -2,10 +2,12 @@ from storages.backends.gcloud import GoogleCloudStorage
 
 
 class StaticRootGoogleCloudStorage(GoogleCloudStorage):
+    default_acl = "publicRead"
+    file_overwrite = True
     location = "static"
-    default_acl = "project-private"
 
 
 class MediaRootGoogleCloudStorage(GoogleCloudStorage):
-    location = "media"
+    default_acl = "projectPrivate"
     file_overwrite = False
+    location = "media"

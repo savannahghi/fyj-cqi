@@ -52,24 +52,31 @@ import pytz
 from django.utils import timezone
 
 
-def disable_update_buttons(audit_team):
+def disable_update_buttons(request, audit_team):
     ############################################################
     # DISABLE UPDATE BUTTONS AFTER 6PM KENYAN TIME             #
     ############################################################
     local_tz = pytz.timezone("Africa/Nairobi")
     settings = UpdateButtonSettings.objects.first()
-    hide_button_time = settings.hide_button_time
-    for data in audit_team:
-        try:
-            data_entry_date = data.date_created.astimezone(local_tz).date()
-        except AttributeError:
-            data_entry_date = data.created_at.astimezone(local_tz).date()
-        hide_button_datetime = timezone.make_aware(datetime.combine(data_entry_date, hide_button_time))
-        now = timezone.now().astimezone(local_tz)
-        if now > hide_button_datetime:
-            data.hide_update_button = True
-        else:
-            data.hide_update_button = False
+    try:
+        hide_button_time = settings.hide_button_time
+        for data in audit_team:
+            try:
+                data_entry_date = data.date_created.astimezone(local_tz).date()
+            except AttributeError:
+                data_entry_date = data.created_at.astimezone(local_tz).date()
+            hide_button_datetime = timezone.make_aware(datetime.combine(data_entry_date, hide_button_time))
+            now = timezone.now().astimezone(local_tz)
+            if now > hide_button_datetime:
+                data.hide_update_button = True
+            else:
+                data.hide_update_button = False
+    except AttributeError:
+        messages.info(request,
+                      "You have not yet set the time to disable the DQA update button. Please click on the 'Change "
+                      "DQA Update Time' button on the left navigation bar to set the time or contact an administrator "
+                      "to set it for you.")
+        return redirect(request.path_info)
 
 
 def khis_data_prep(df):
@@ -1044,7 +1051,7 @@ def show_data_verification(request):
     # Sort the data_verification objects based on the order of the indicator choices
     sorted_data_verification = sorted(data_verification, key=lambda x: indicator_choices.index(x.indicator))
     if data_verification:
-        disable_update_buttons(data_verification)
+        disable_update_buttons(request, data_verification)
         remaining_indicators = [choice for choice in indicator_choices if
                                 choice not in [obj.indicator for obj in sorted_data_verification]]
         if data_verification.count() < 33:
@@ -1066,6 +1073,8 @@ def show_data_verification(request):
         fyj_performance = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
                                                         quarter_year=quarter_year
                                                         )
+        if not fyj_performance:
+            messages.info(request, f"No DATIM data for {selected_facility} {quarter_year}!")
     except:
         fyj_performance = None
     try:
@@ -1119,6 +1128,7 @@ def show_data_verification(request):
                 'tx_curr_p_total': 0,
                 'tx_curr_a_total': 0,
             }
+            messages.info(request, f"No KHIS data for {selected_facility} {quarter_year}!")
     except:
         khis_performance = None
         total = {
@@ -1148,7 +1158,6 @@ def show_data_verification(request):
     #         data.hide_update_button = True  # Set the hide_update_button attribute to True
     #     else:
     #         data.hide_update_button = False  # Set the hide_update_button attribute to False
-
     context = {
         'form': form,
         "year_form": year_form,
@@ -1963,7 +1972,7 @@ class GeneratePDF(View):
 
             else:
                 fyj_perf_df = pd.DataFrame(columns=['mfl_code', 'quarter_year', 'indicator', 'DATIM'])
-                messages.info(request, f"No DATIM data for {selected_facility}!")
+                messages.info(request, f"No DATIM data for {selected_facility} {quarter_year}!")
 
             merged_df = dqa_df.merge(fyj_perf_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
             if khis_perf:
@@ -1988,8 +1997,12 @@ class GeneratePDF(View):
                 del merged_df['KHIS']
             merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
 
-            merged_df = merged_df[
-                ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
+            try:
+                merged_df = merged_df[
+                    ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
+            except KeyError:
+                messages.info(request, f"No KHIS data for {selected_facility} {quarter_year}!")
+                return redirect(request.path_info)
             merged_df = pd.melt(merged_df, id_vars=['mfl_code', 'facility', 'indicator', 'quarter_year'],
                                 value_vars=list(merged_df.columns[4:]),
                                 var_name='data sources', value_name='performance')
@@ -2486,7 +2499,7 @@ def dqa_summary(request):
         else:
             dqa_df = pd.DataFrame(columns=['indicator', 'facility', 'mfl_code', 'Source', 'MOH 731', 'KHIS',
                                            'quarter_year'])
-            messages.info(request, f"No DQA data for {selected_facility}")
+            messages.info(request, f"No DQA data for {selected_facility} {quarter_year}")
         if fyj_perf:
             fyj_perf_df = make_performance_df(fyj_perf, 'DATIM')
             if dqa_df.empty:
@@ -2496,7 +2509,7 @@ def dqa_summary(request):
 
         else:
             fyj_perf_df = pd.DataFrame(columns=['mfl_code', 'quarter_year', 'indicator', 'DATIM'])
-            messages.info(request, f"No DATIM data for {selected_facility}!")
+            messages.info(request, f"No DATIM data for {selected_facility} {quarter_year}!")
 
         merged_df = dqa_df.merge(fyj_perf_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
         if khis_perf:
@@ -2522,8 +2535,12 @@ def dqa_summary(request):
             del merged_df['KHIS']
         merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
 
-        merged_df = merged_df[
+        try:
+            merged_df = merged_df[
             ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
+        except KeyError:
+            messages.info(request, f"No KHIS data for {selected_facility} {quarter_year}!")
+            return redirect(request.path_info)
         merged_df = pd.melt(merged_df, id_vars=['mfl_code', 'facility', 'indicator', 'quarter_year'],
                             value_vars=list(merged_df.columns[4:]),
                             var_name='data sources', value_name='performance')
@@ -2605,7 +2622,7 @@ def dqa_summary(request):
         audit_team = AuditTeam.objects.filter(facility_name__id=selected_facility.id,
                                               quarter_year__quarter_year=quarter_year)
         # if audit_team:
-        #     disable_update_buttons(audit_team)
+        #     disable_update_buttons(request, audit_team)
         if not audit_team:
             messages.info(request,
                           f"No audit team assigned for {selected_facility}  {quarter_year}. Please ensure that data"
@@ -2916,7 +2933,7 @@ def system_assessment_table(request):
         )
         if system_assessments:
             average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments, description_list)
-            disable_update_buttons(system_assessments)
+            disable_update_buttons(request, system_assessments)
 
         if not system_assessments:
             messages.error(request, f"System assessment data was not found for {selected_facility} ({quarter_year})")
@@ -2935,7 +2952,7 @@ def system_assessment_table(request):
         if system_assessments:
             average_dictionary, expected_counts_dictionary = calculate_averages(system_assessments, description_list)
 
-        disable_update_buttons(system_assessments)
+        # disable_update_buttons(request, system_assessments)
 
     context = {
         "quarter_form": quarter_form,
@@ -3138,7 +3155,7 @@ def show_audit_team(request):
         audit_team = AuditTeam.objects.filter(facility_name__id=selected_facility.id,
                                               quarter_year__quarter_year=quarter_year)
         if audit_team:
-            disable_update_buttons(audit_team)
+            disable_update_buttons(request, audit_team)
         else:
             messages.error(request, f"No audit team data was found in the database for {selected_facility} "
                                     f"{selected_quarter}-FY{year_suffix}.")
@@ -3148,7 +3165,7 @@ def show_audit_team(request):
         audit_team = AuditTeam.objects.filter(facility_name=Facilities.objects.get(name=selected_facility),
                                               quarter_year__quarter_year=selected_quarter)
         if audit_team:
-            disable_update_buttons(audit_team)
+            disable_update_buttons(request, audit_team)
 
     context = {
         "audit_team": audit_team,

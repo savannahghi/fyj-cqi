@@ -2813,16 +2813,16 @@ def add_system_verification(request):
                                          "field.")
                         form.add_error('auditor_note',
                                        "Please provide a note before saving.")
-            else:
-                for form in formset.forms:
-                    if form.cleaned_data.get('dropdown_option', '') in ('No', 'Partly') and not form.cleaned_data.get(
-                            'auditor_note', ''):
-                        messages.warning(request,
-                                         "Please provide a note in the 'Auditor Note' field before saving. This is "
-                                         "required because you selected 'Partly' or 'No' in the 'Dropdown Option' "
-                                         "field.")
-                        form.add_error('auditor_note',
-                                       "Please provide a note before saving.")
+            # else:
+            #     for form in formset.forms:
+            #         if form.cleaned_data.get('dropdown_option', '') in ('No', 'Partly') and not form.cleaned_data.get(
+            #                 'auditor_note', ''):
+            #             messages.warning(request,
+            #                              "Please provide a note in the 'Auditor Note' field before saving. This is "
+            #                              "required because you selected 'Partly' or 'No' in the 'Dropdown Option' "
+            #                              "field.")
+            #             form.add_error('auditor_note',
+            #                            "Please provide a note before saving.")
 
                 context = {
                     "formset": formset,

@@ -293,10 +293,17 @@ def load_data(request):
         if sheet_names:
             dfs = pd.read_excel(file, sheet_name=sheet_names)
             df = pd.concat([df.assign(sheet_name=name) for name, df in dfs.items()])
-            df = df[list(df.columns[:35])]
+            columns_to_use = ['MFL', 'Facility', 'Month', 'TST_p', 'TST_a', 'TST_t', 'TST_pos_p',
+                              'TST_pos_a', 'TST_pos_t', 'TX_New_p', 'TX_New_a', 'TX_New_t',
+                              'TX_Curr_p', 'TX_Curr_a', 'TX_Curr_t', 'PMTCT_STAT_D', 'PMTCT_STAT_N',
+                              'PMTCT_Pos', 'PMTCT_ARV', 'PMTCT_INF_ARV', 'PMTCT_EID', 'HEI_Pos',
+                              'HEI_Pos ART', 'PrEP_New', 'GBV_Sexual', 'GBV Emotional/Phy', 'KP_ANC',
+                              'Newpos_ANC', 'on HAART _ANC', 'New on HAART_ANC', 'Pos_L&D', 'Pos_PNC',
+                              'CXCA', 'TB_STAT_D', 'IPT', 'TB_Prev_N', 'TX_ML', 'TX_RTT']
+            df = df[columns_to_use]
             try:
                 with transaction.atomic():
-                    if len(df.columns) == 35:
+                    if len(df.columns) == 38:
                         df.fillna(0, inplace=True)
                         process_cols = [col for col in df.columns if col not in [df.columns[1], df.columns[2]]]
                         for col in process_cols:
@@ -342,6 +349,9 @@ def load_data(request):
                             performance.cx_ca = row[df.columns[32]]
                             performance.tb_stat_d = row[df.columns[33]]
                             performance.ipt = row[df.columns[34]]
+                            performance.tb_prev_n = row[df.columns[35]]
+                            performance.tx_ml = row[df.columns[36]]
+                            performance.tx_rtt = row[df.columns[37]]
                             performance.save()
                         messages.error(request, f'Data successfully saved in the database!')
                         return redirect('show_data_verification')
@@ -1032,7 +1042,8 @@ def show_data_verification(request):
              'Total Positive (PMTCT)', 'Maternal HAART Total ', 'Total Infant prophylaxis']
     care_rx = ['Under 15yrs Starting on ART', 'Above 15yrs Starting on ART ',
                'Number of adults and children starting ART', 'New & Relapse TB_Cases', 'Currently on ART <15Years',
-               'Currently on ART 15+ years', 'Number of adults and children Currently on ART']
+               'Currently on ART 15+ years', 'Number of adults and children Currently on ART', 'TB_Prev', 'TX_ML',
+               'RTT']
 
     program_accessed = []
     for indy in available_indicators:
@@ -1940,8 +1951,7 @@ class GeneratePDF(View):
                                  'Total Positive (PMTCT)', 'Number of adults and children starting ART', 'Starting_TPT',
                                  'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
                                  'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
-                                 'Cervical Cancer Screening (Women on ART)'
-
+                                 'Cervical Cancer Screening (Women on ART)', 'TB_PREV', 'TX_ML', 'RTT'
                                  ]
             dqa_df = dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
 
@@ -1960,6 +1970,8 @@ class GeneratePDF(View):
                                                               "Number Screened for Cervical Cancer")
             dqa_df['indicator'] = dqa_df['indicator'].replace("New & Relapse TB_Cases", "New & Relapse TB cases")
             dqa_df['indicator'] = dqa_df['indicator'].replace('Maternal HAART Total ', "Maternal HAART Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace('RTT', "TX_RTT")
+            dqa_df['indicator'] = dqa_df['indicator'].replace('TB_PREV', "TB_PREV_N")
             if dqa_df.empty:
                 messages.info(request, f"A few DQA indicators for {selected_facility} have been capture but not "
                                        f"enough for data visualization")
@@ -1995,7 +2007,7 @@ class GeneratePDF(View):
                                                      'quarter_year'])
             if "KHIS" in merged_df.columns:
                 del merged_df['KHIS']
-            merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
+            merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right').fillna(0)
 
             try:
                 merged_df = merged_df[
@@ -2191,9 +2203,10 @@ class GeneratePDF(View):
         pdf.drawString(20, 0.75 * inch, "The DQA summary charts below are ordered from the indicators with the "
                                         "greatest discrepancies to the least.")
         pdf.saveState()
-        print("USER::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-        print(request.user)
-        add_footer(pdf, request.user)
+        # add_footer(pdf, ,request.user)
+        pdf.setFont("Helvetica", 4)
+        pdf.setFillColor(colors.grey)
+        pdf.drawString((letter[0] / 3)+30, 0.5 * inch, f"Report generated by : {request.user}    Time: {datetime.now()}")
         pdf.restoreState()
         pdf.setFont("Helvetica-Bold", 12)
         coordinates = [
@@ -2203,6 +2216,8 @@ class GeneratePDF(View):
             (70, 110), (325, 110),
             (70, 590), (325, 590),
             (70, 430), (325, 430),
+            (70, 270), (325, 270),
+            (70, 110), (325, 110),
         ]
 
         for i, image_path in enumerate(charts):
@@ -2218,9 +2233,13 @@ class GeneratePDF(View):
                 pdf.drawImage(image=image_path, x=x, y=y, width=260, height=150)
             except IndexError:
                 pass
+        pdf.showPage()
+        pdf.saveState()
+        add_footer(pdf, request.user)
+        pdf.restoreState()
         pdf.setFont("Helvetica", 12)
         pdf.setFillColor(colors.black)
-        pdf.drawString(280, 400, f"AUDIT TEAM ")
+        pdf.drawString(280, 750, f"AUDIT TEAM ")
 
         audit_team = AuditTeam.objects.filter(facility_name__id=selected_facility.id,
                                               quarter_year__quarter_year=quarter_year)
@@ -2249,7 +2268,7 @@ class GeneratePDF(View):
         table.setStyle(table_style)
 
         # Define the initial position for the table
-        x, y = 80, 390
+        x, y = 80, 740
         # Add the table to the PDF object
         table.wrapOn(pdf, 0, 0)
         table_height = table._height
@@ -2301,7 +2320,7 @@ class GeneratePDF(View):
 
         # Create the table object and apply the table style
         # Define the column widths
-        widths = [71, 71, 71, 81, 81, 51, 71]
+        widths = [71, 71, 71, 81, 80, 51, 71]
 
         # Create the table object with the column widths
         table = Table(data, colWidths=widths)
@@ -2338,7 +2357,8 @@ def make_performance_df(fyj_perf, value):
         columns={"prep_new": "Number initiated on PrEP", "gbv_sexual": "Gend_GBV Sexual Violence",
                  "gbv_emotional_physical": "Gend_GBV_Physical and Emotional",
                  "cx_ca": "Number Screened for Cervical Cancer",
-                 "tb_stat_d": "New & Relapse TB cases", "ipt": "Number Starting IPT Total"})
+                 "tb_stat_d": "New & Relapse TB cases", "ipt": "Number Starting IPT Total", "tb_prev_n": "TB_PREV_N",
+                 "tx_ml": "TX_ML", "tx_rtt": "TX_RTT"})
 
     try:
         indicators_to_use_perf = ['mfl_code', 'quarter_year', "Number initiated on PrEP",
@@ -2347,7 +2367,7 @@ def make_performance_df(fyj_perf, value):
                                   'New & Relapse TB cases', 'Number Starting IPT Total',
                                   'Number Current on ART Total', "Gend_GBV Sexual Violence",
                                   'Gend_GBV_Physical and Emotional', 'Number Screened for Cervical Cancer',
-                                  'Total Infant prophylaxis'
+                                  'Total Infant prophylaxis', 'TB_PREV_N', 'TX_ML', 'TX_RTT'
                                   ]
         fyj_perf_df = fyj_perf_df[indicators_to_use_perf]
         fyj_perf_df = pd.melt(fyj_perf_df, id_vars=['mfl_code', 'quarter_year'],
@@ -2474,7 +2494,7 @@ def dqa_summary(request):
                                  'Total Positive (PMTCT)', 'Number of adults and children starting ART', 'Starting_TPT',
                                  'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
                                  'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
-                                 'Cervical Cancer Screening (Women on ART)'
+                                 'Cervical Cancer Screening (Women on ART)', 'TB_PREV', 'TX_ML', 'RTT'
                                  ]
             dqa_df = dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
 
@@ -2493,6 +2513,8 @@ def dqa_summary(request):
                                                               "Number Screened for Cervical Cancer")
             dqa_df['indicator'] = dqa_df['indicator'].replace("New & Relapse TB_Cases", "New & Relapse TB cases")
             dqa_df['indicator'] = dqa_df['indicator'].replace('Maternal HAART Total ', "Maternal HAART Total")
+            dqa_df['indicator'] = dqa_df['indicator'].replace('RTT', "TX_RTT")
+            dqa_df['indicator'] = dqa_df['indicator'].replace('TB_PREV', "TB_PREV_N")
             if dqa_df.empty:
                 messages.info(request, f"A few DQA indicators for {selected_facility} have been capture but not "
                                        f"enough for data visualization")
@@ -2510,7 +2532,6 @@ def dqa_summary(request):
         else:
             fyj_perf_df = pd.DataFrame(columns=['mfl_code', 'quarter_year', 'indicator', 'DATIM'])
             messages.info(request, f"No DATIM data for {selected_facility} {quarter_year}!")
-
         merged_df = dqa_df.merge(fyj_perf_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
         if khis_perf:
             khis_perf_df = make_performance_df(khis_perf, 'KHIS')
@@ -2533,11 +2554,10 @@ def dqa_summary(request):
 
         if "KHIS" in merged_df.columns:
             del merged_df['KHIS']
-        merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
-
+        merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right').fillna(0)
         try:
             merged_df = merged_df[
-            ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
+                ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
         except KeyError:
             messages.info(request, f"No KHIS data for {selected_facility} {quarter_year}!")
             return redirect(request.path_info)
@@ -2769,7 +2789,8 @@ def add_system_verification(request):
         extra=25
 
     )
-    formset = SystemAssessmentFormSet(request.POST or None,queryset=SystemAssessment.objects.none(), initial=initial_data)
+    formset = SystemAssessmentFormSet(request.POST or None, queryset=SystemAssessment.objects.none(),
+                                      initial=initial_data)
     if request.method == "POST":
         formset = SystemAssessmentFormSet(request.POST, initial=initial_data)
         if formset.is_valid() and quarter_form.is_valid() and year_form.is_valid() and date_form.is_valid() and facility_form.is_valid():
@@ -3078,7 +3099,7 @@ def add_audit_team(request, pk, quarter_year):
     else:
         form = AuditTeamForm()
     audit_team = AuditTeam.objects.filter(facility_name__id=pk, quarter_year__quarter_year=quarter_year)
-
+    disable_update_buttons(request, audit_team)
     context = {
         "form": form,
         "title": "audit team",

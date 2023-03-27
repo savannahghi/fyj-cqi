@@ -64,11 +64,11 @@
 {#                       <a href="{% url 'dqa_summary_pdf' %}" class="btn btn-warning mb-2" role="button">DOWNLOAD PDF</a>#}
                            {% if audit_team %}
                                 <a href="{% url 'generate-pdf' %}" class="btn btn-warning mb-2" role="button">DOWNLOAD PDF</a>
-                               {% if audit_team.count < 15 %}
+                               {% if audit_team.count < 30 %}
                                     <a href="{% url 'add_audit_team' selected_facility.id quarter_year %}" class="btn btn-success flicker-button mb-2" role="button">Add audit team</a>
                                {% endif %}
                            {% else %}
-                               {% if audit_team.count < 15 %}
+                               {% if audit_team.count < 30 %}
                                     <a href="{% url 'add_audit_team' selected_facility.id quarter_year %}" class="btn btn-success flicker-button mb-2" role="button">Add audit team</a>
                                {% endif %}
                        {% endif %}

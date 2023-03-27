@@ -81,7 +81,7 @@ class Indicators(models.Model):
         ('Number of adults and children Currently on ART', 'Number of adults and children Currently on ART'),
         ('TX_ML', 'TX_ML'),
         ('RTT', 'RTT'),
-        ('TB_PREV', 'TB_PREV'),
+        ('TB_PREV_N', 'TB_PREV_N'),
     ]
     indicator = models.CharField(choices=INDICATOR_CHOICES, max_length=250)
 
@@ -126,7 +126,7 @@ class DataVerification(models.Model):
         ('Currently on ART 15+ years', 'Currently on ART 15+ years'),
         ('TX_ML', 'TX_ML'),
         ('RTT', 'RTT'),
-        ('TB_PREV', 'TB_PREV'),
+        ('TB_PREV_N', 'TB_PREV_N'),
         # ('Number of adults and children Currently on ART', 'Number of adults and children Currently on ART'),
     ]
     indicator = models.CharField(choices=INDICATOR_CHOICES, max_length=250)

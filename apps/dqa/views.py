@@ -1042,7 +1042,7 @@ def show_data_verification(request):
              'Total Positive (PMTCT)', 'Maternal HAART Total ', 'Total Infant prophylaxis']
     care_rx = ['Under 15yrs Starting on ART', 'Above 15yrs Starting on ART ',
                'Number of adults and children starting ART', 'New & Relapse TB_Cases', 'Currently on ART <15Years',
-               'Currently on ART 15+ years', 'Number of adults and children Currently on ART', 'TB_Prev', 'TX_ML',
+               'Currently on ART 15+ years', 'Number of adults and children Currently on ART', 'TB_PREV_N', 'TX_ML',
                'RTT']
 
     program_accessed = []
@@ -1951,7 +1951,7 @@ class GeneratePDF(View):
                                  'Total Positive (PMTCT)', 'Number of adults and children starting ART', 'Starting_TPT',
                                  'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
                                  'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
-                                 'Cervical Cancer Screening (Women on ART)', 'TB_PREV', 'TX_ML', 'RTT'
+                                 'Cervical Cancer Screening (Women on ART)', 'TB_PREV_N', 'TX_ML', 'RTT'
                                  ]
             dqa_df = dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
 
@@ -1971,7 +1971,7 @@ class GeneratePDF(View):
             dqa_df['indicator'] = dqa_df['indicator'].replace("New & Relapse TB_Cases", "New & Relapse TB cases")
             dqa_df['indicator'] = dqa_df['indicator'].replace('Maternal HAART Total ', "Maternal HAART Total")
             dqa_df['indicator'] = dqa_df['indicator'].replace('RTT', "TX_RTT")
-            dqa_df['indicator'] = dqa_df['indicator'].replace('TB_PREV', "TB_PREV_N")
+            dqa_df['indicator'] = dqa_df['indicator'].replace('TB_PREV_N', "TB_PREV_N")
             if dqa_df.empty:
                 messages.info(request, f"A few DQA indicators for {selected_facility} have been capture but not "
                                        f"enough for data visualization")
@@ -2494,7 +2494,7 @@ def dqa_summary(request):
                                  'Total Positive (PMTCT)', 'Number of adults and children starting ART', 'Starting_TPT',
                                  'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
                                  'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
-                                 'Cervical Cancer Screening (Women on ART)', 'TB_PREV', 'TX_ML', 'RTT'
+                                 'Cervical Cancer Screening (Women on ART)', 'TB_PREV_N', 'TX_ML', 'RTT'
                                  ]
             dqa_df = dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
 
@@ -2514,7 +2514,7 @@ def dqa_summary(request):
             dqa_df['indicator'] = dqa_df['indicator'].replace("New & Relapse TB_Cases", "New & Relapse TB cases")
             dqa_df['indicator'] = dqa_df['indicator'].replace('Maternal HAART Total ', "Maternal HAART Total")
             dqa_df['indicator'] = dqa_df['indicator'].replace('RTT', "TX_RTT")
-            dqa_df['indicator'] = dqa_df['indicator'].replace('TB_PREV', "TB_PREV_N")
+            dqa_df['indicator'] = dqa_df['indicator'].replace('TB_PREV_N', "TB_PREV_N")
             if dqa_df.empty:
                 messages.info(request, f"A few DQA indicators for {selected_facility} have been capture but not "
                                        f"enough for data visualization")

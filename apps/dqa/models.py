@@ -210,6 +210,9 @@ class FyjPerformance(models.Model):
     cx_ca = models.IntegerField()
     tb_stat_d = models.IntegerField()
     ipt = models.IntegerField()
+    tb_prev_n = models.IntegerField()
+    tx_ml = models.IntegerField()
+    tx_rtt = models.IntegerField()
     quarter_year = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
@@ -335,11 +338,11 @@ class AuditTeam(models.Model):
         return str(self.name) + "-" + str(self.quarter_year)
 
     def save(self, *args, **kwargs):
-        # Check if there are already 15 records with the same facility_name and quarter_year combination but allow
+        # Check if there are already 30 records with the same facility_name and quarter_year combination but allow
         # updating existing records
         if AuditTeam.objects.filter(facility_name=self.facility_name, quarter_year=self.quarter_year).exclude(
-                pk=self.pk).count() >= 15:
-            raise ValidationError('Only 15 audit team members are allowed per facility per quarter.')
+                pk=self.pk).count() >= 30:
+            raise ValidationError('Only 30 audit team members are allowed per facility per quarter.')
 
         # Call the super method to save the record
         super().save(*args, **kwargs)

@@ -214,11 +214,11 @@
                             </td>
                         {% elif "tx_ml" in data.indicator|lower %}
                             <td class="align-middle text-center fw-bold">
-                                {{ data.total_source }}
+                                {{ data.field_3 }}
                             </td>
                         {% elif "rtt" in data.indicator|lower %}
                             <td class="align-middle text-center fw-bold">
-                                {{ data.total_source }}
+                                {{ data.field_3 }}
                             </td>
                         {% elif "tb_prev" in data.indicator|lower %}
                             <td class="align-middle text-center fw-bold">
@@ -273,17 +273,17 @@
                         {% elif "art <15years" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ data.total_source }}
+                                {{ data.field_3 }}
                             </td>
                         {% elif "art 15+ years" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total %}green{% else %}red{% endif %}">
-                                {{ data.total_source }}
+                                {{ data.field_3 }}
                             </td>
                         {% elif "children currently on art" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total|add:total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ data.total_source }}
+                                {{ data.field_3 }}
                             </td>
                         {% endif %}
                         <!-- MOH 731 RAW DATA-->
@@ -466,17 +466,17 @@
                         {% elif "art <15years" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ data.total_731moh }}
+                                {{ data.field_7 }}
                             </td>
                         {% elif "art 15+ years" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total %}green{% else %}red{% endif %}">
-                                {{ data.total_731moh }}
+                                {{ data.field_7 }}
                             </td>
                         {% elif "children currently on art" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total|add:total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ data.total_731moh }}
+                                {{ data.field_7 }}
                             </td>
                         {% endif %}
                         <!-- KHIS RAW DATA-->
@@ -557,6 +557,8 @@
                             {% endif %}
                         {% endfor %}
                         <!-- KHIS TOTALS-->
+                    {% for performance in khis_performance %}
+                        {% if forloop.last %}
                         {% if "prep" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.prep_new_total %}green{% else %}red{% endif %}">
@@ -699,19 +701,21 @@
                         {% elif "art <15years" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ total.tx_curr_p_total }}
+                                {{ performance.tx_curr_p }}
                             </td>
                         {% elif "art 15+ years" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total %}green{% else %}red{% endif %}">
-                                {{ total.tx_curr_a_total }}
+                                {{ performance.tx_curr_a }}
                             </td>
                         {% elif "children currently on art" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
                                 style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total|add:total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ total.tx_curr_a_total|add:total.tx_curr_p_total }}
+                            {{ performance.tx_curr_a|add:performance.tx_curr_p }}
                             </td>
                         {% endif %}
+                        {% endif %}
+                        {% endfor %}
                         <!-- DATIM TOTALS-->
                         {% for performance in fyj_performance %}
                             {% if "prep" in data.indicator|lower %}
@@ -747,7 +751,7 @@
                                     {{ performance.tst_pos_a }}</td>
                             {% elif "_total" in data.indicator|lower %}
                                 <td class="align-middle text-center fw-bold"
-                                    style="background-color: {% if total.tst_pos_a|add:total.tst_pos_p == performance.tst_pos_a|add:performance.tst_pos_p %}green{% else %}red{% endif %}">
+                                    style="background-color: {% if total.tst_pos_p_total|add:total.tst_pos_a_total == performance.tst_pos_a|add:performance.tst_pos_p %}green{% else %}red{% endif %}">
                                     {{ performance.tst_pos_a|add:performance.tst_pos_p }}</td>
                             {% elif "n positive at 1st anc" in data.indicator|lower %}
                                 <td class="align-middle text-center fw-bold"
@@ -827,7 +831,7 @@
                                     {{ performance.kp_anc|add:performance.new_pos_anc }}</td>
                             {% elif "haart total" in data.indicator|lower %}
                                 <td class="align-middle text-center fw-bold"
-                                    style="background-color: {% if total.new_on_haart_anc|add:total.on_haart_anc == performance.new_on_haart_anc|add:performance.on_haart_anc %}green{% else %}red{% endif %}">
+                                    style="background-color: {% if total.new_on_haart_anc_total|add:total.on_haart_anc_total == performance.new_on_haart_anc|add:performance.on_haart_anc %}green{% else %}red{% endif %}">
                                     {{ performance.new_on_haart_anc|add:performance.on_haart_anc }}</td>
                             {% elif "infant prophylaxis" in data.indicator|lower %}
                                 <td class="align-middle text-center fw-bold">-</td>
@@ -841,8 +845,9 @@
                                     {{ performance.tx_new_a }}</td>
                             {% elif "children starting art" in data.indicator|lower %}
                                 <td class="align-middle text-center fw-bold"
-                                    style="background-color: {% if total.tx_new_a|add:total.tx_new_p == performance.tx_new_a|add:performance.tx_new_p %}green{% else %}red{% endif %}">
-                                    {{ performance.tx_new_a|add:performance.tx_new_p }}</td>
+                                    style="background-color: {% if total.tx_new_p_total|add:total.tx_new_a_total == performance.tx_new_a|add:performance.tx_new_p %}green{% else %}red{% endif %}">
+                                    {{ performance.tx_new_a|add:performance.tx_new_p }}
+                                </td>
                             {% elif "relapse tb_cases" in data.indicator|lower %}
                                 <td class="align-middle text-center fw-bold"
                                     style="background-color: {% if total.tb_stat_d_total == performance.tb_stat_d %}green{% else %}red{% endif %}">
@@ -851,32 +856,41 @@
                                 <!--COMPARE LAST MONTH <15 TX_CURR WITH DATIM < 15 TX_CURR-->
                                 {% for p in khis_performance %}
                                     {% if forloop.last %}
-                                        {% with tx_curr_p=p.tx_curr_p|default:"0" %}{% endwith %}
+                                        {% with tx_curr_p=p.tx_curr_p|floatformat %}
+                                            {% with datim_tx_curr_p=performance.tx_curr_p|floatformat %}
+                                                <td class="align-middle text-center fw-bold" style="background-color: {% if tx_curr_p == datim_tx_curr_p %}green{% else %}red{% endif %}">
+                                                    {{ performance.tx_curr_p}}
+                                                </td>
+                                            {% endwith %}
+                                        {% endwith %}
                                     {% endif %}
                                 {% endfor %}
-                                <td class="align-middle text-center fw-bold"
-                                    style="background-color: {% if tx_curr_p == performance.tx_curr_p %}green{% else %}red{% endif %}">
-                                    {{ performance.tx_curr_p }}</td>
                             {% elif "art 15+ years" in data.indicator|lower %}
                                 <!--COMPARE LAST MONTH >15 TX_CURR WITH DATIM > 15 TX_CURR-->
                                 {% for p in khis_performance %}
                                     {% if forloop.last %}
-                                        {% with tx_curr_a=p.tx_curr_a %}{% endwith %}
+                                        {% with tx_curr_a=p.tx_curr_a|floatformat %}
+                                            {% with datim_tx_curr_a=performance.tx_curr_a|floatformat %}
+                                                <td class="align-middle text-center fw-bold" style="background-color: {% if tx_curr_a == datim_tx_curr_a %}green{% else %}red{% endif %}">
+                                                    {{ performance.tx_curr_a}}
+                                                </td>
+                                            {% endwith %}
+                                        {% endwith %}
                                     {% endif %}
                                 {% endfor %}
-                                <td class="align-middle text-center fw-bold"
-                                    style="background-color: {% if tx_curr_a == performance.tx_curr_a %}green{% else %}red{% endif %}">
-                                    {{ performance.tx_curr_a }}</td>
                             {% elif "children currently on art" in data.indicator|lower %}
                                 <!--COMPARE LAST MONTH TX_CURR WITH DATIM TX_CURR-->
                                 {% for p in khis_performance %}
                                     {% if forloop.last %}
-                                        {% with tx_curr_a=p.tx_curr_a %}{% endwith %}
+                                        {% with tx_curr_a=p.tx_curr_a|add:p.tx_curr_p|floatformat %}
+                                            {% with tx_curr_total=performance.tx_curr_a|add:performance.tx_curr_p|floatformat %}
+                                                <td class="align-middle text-center fw-bold" style="background-color: {% if tx_curr_a == tx_curr_total %}green{% else %}red{% endif %}">
+                                                    {{ tx_curr_total }}
+                                                </td>
+                                            {% endwith %}
+                                        {% endwith %}
                                     {% endif %}
                                 {% endfor %}
-                                <td class="align-middle text-center fw-bold"
-                                    style="background-color: {% if tx_curr_a == performance.tx_curr_a|add:performance.tx_curr_p %}green{% else %}red{% endif %}">
-                                    {{ performance.tx_curr_a|add:performance.tx_curr_p }}</td>
                             {% endif %}
                         {% endfor %}
                         {% if "_total" in data.indicator|lower or "positive (pmtct)" in data.indicator|lower or "haart total" in data.indicator|lower or "children currently on art" in data.indicator|lower or "children starting art" in data.indicator|lower or "infant prophylaxis" in data.indicator|lower %}

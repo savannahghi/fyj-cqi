@@ -146,7 +146,9 @@
                     <h6 class="mb-4 mt-4">FACILITY: {{ facility }}</h6>
                     <h6 class="mb-4 mt-4">MFL CODE: {{ mfl_code }}</h6>
                     <h6 class="mb-4 mt-4">DQA date: {{ date_modified }}</h6>
+                    {% if system_assessment_no or system_assessment_partly %}
                     <div class="row">
+                    {% if system_assessment_partly %}
                         <div class="col-md-6">
                             <div>
                                 <a class="btn btn-warning" data-bs-toggle="collapse" href="#collapseyellows"
@@ -155,6 +157,8 @@
                                 </a>
                             </div>
                         </div>
+                        {% endif %}
+                    {% if system_assessment_no %}
                         <div class="col-md-6">
                             <div>
                                 <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapsereds"
@@ -163,6 +167,7 @@
                                 </a>
                             </div>
                         </div>
+                        {% endif %}
 
                         <div class="collapse bg-light mt-2" id="collapseyellows">
                             {% if system_assessment_partly %}
@@ -187,12 +192,11 @@
                             {% endif %}
                         </div>
                     </div>
-                    {% if system_assessment_no or system_assessment_partly %}
                         <p class="text-primary mt-2">All system assessment areas that score Yellow or Red should have
                             an action plan, and we should create a continuous quality improvement project. CQI project
                             will help the facility stay focused on its goals, maintain accountability, and continuously
                             improve the quality of care it provides to its patients.
-                        </p>{% endif %}
+                        </p>
                     <div class="row">
                         <div class="collapse bg-light mt-2" id="collapsereds">
                             {% if system_assessment_no %}
@@ -218,6 +222,7 @@
                         </div>
                     </div>
                     </div>
+                        {% endif %}
 
 
                     <form class="row mt-5" method="POST" enctype='multipart/form-data' autocomplete="off">

@@ -40,4 +40,5 @@ admin.site.register(Program)
 admin.site.register(RootCauseImages)
 admin.site.register(Milestone)
 admin.site.register(Lesson_learned)
+admin.site.register(Category)
 

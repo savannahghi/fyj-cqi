@@ -271,20 +271,50 @@
                                 {{ data.total_source }}
                             </td>
                         {% elif "art <15years" in data.indicator|lower %}
-                            <td class="align-middle text-center text-white fw-bold"
-                                style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ data.field_3 }}
-                            </td>
+                            <!--COMPARE SOURCE, MOH 731 AND KHIS-->
+                            {% for p in khis_performance %}
+                                    {% if forloop.last %}
+                                        {% with khis_tx_curr_p=p.tx_curr_p|floatformat %}
+                                        {% with source_tx_curr_p=data.field_3|floatformat %}
+                                        {% with moh_731_tx_curr_p=data.field_7|floatformat %}
+                                                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if source_tx_curr_p == moh_731_tx_curr_p and moh_731_tx_curr_p ==  khis_tx_curr_p %}green{% else %}red{% endif %}">
+                                                    {{ source_tx_curr_p }}
+                                                </td>
+                                        {% endwith %}
+                                        {% endwith %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
                         {% elif "art 15+ years" in data.indicator|lower %}
-                            <td class="align-middle text-center text-white fw-bold"
-                                style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total %}green{% else %}red{% endif %}">
-                                {{ data.field_3 }}
-                            </td>
+                            <!--COMPARE SOURCE, MOH 731 AND KHIS-->
+                            {% for p in khis_performance %}
+                                    {% if forloop.last %}
+                                        {% with khis_tx_curr_a=p.tx_curr_a|floatformat %}
+                                        {% with source_tx_curr_a=data.field_3|floatformat %}
+                                        {% with moh_731_tx_curr_a=data.field_7|floatformat %}
+                                                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if source_tx_curr_a == moh_731_tx_curr_a and moh_731_tx_curr_a ==  khis_tx_curr_a %}green{% else %}red{% endif %}">
+                                                    {{ source_tx_curr_a }}
+                                                </td>
+                                        {% endwith %}
+                                        {% endwith %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
                         {% elif "children currently on art" in data.indicator|lower %}
-                            <td class="align-middle text-center text-white fw-bold"
-                                style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total|add:total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ data.field_3 }}
-                            </td>
+                            <!--COMPARE SOURCE, MOH 731 AND KHIS-->
+                            {% for p in khis_performance %}
+                                    {% if forloop.last %}
+                                        {% with khis_tx_curr=p.tx_curr_a|add:p.tx_curr_p|floatformat %}
+                                        {% with source_tx_curr_a=data.field_3|floatformat %}
+                                        {% with moh_731_tx_curr_a=data.field_7|floatformat %}
+                                                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if source_tx_curr_a == moh_731_tx_curr_a and moh_731_tx_curr_a ==  khis_tx_curr %}green{% else %}red{% endif %}">
+                                                    {{ source_tx_curr_a }}
+                                                </td>
+                                        {% endwith %}
+                                        {% endwith %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
                         {% endif %}
                         <!-- MOH 731 RAW DATA-->
                         {% if "tx_ml" in data.indicator|lower %}
@@ -464,20 +494,47 @@
                                 {{ data.total_731moh }}
                             </td>
                         {% elif "art <15years" in data.indicator|lower %}
-                            <td class="align-middle text-center text-white fw-bold"
-                                style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ data.field_7 }}
-                            </td>
+                            <!--COMPARE SOURCE, MOH 731 AND KHIS -->
+                            {% for p in khis_performance %}
+                                    {% if forloop.last %}
+                                        {% with khis_tx_curr_p=p.tx_curr_p|floatformat %}
+                                        {% with source_tx_curr_p=data.field_3|floatformat %}
+                                        {% with moh_731_tx_curr_p=data.field_7|floatformat %}
+                                                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if source_tx_curr_p == moh_731_tx_curr_p and moh_731_tx_curr_p ==  khis_tx_curr_p %}green{% else %}red{% endif %}">
+                                                    {{ moh_731_tx_curr_p }}
+                                                </td>
+                                        {% endwith %}
+                                        {% endwith %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
                         {% elif "art 15+ years" in data.indicator|lower %}
-                            <td class="align-middle text-center text-white fw-bold"
-                                style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total %}green{% else %}red{% endif %}">
-                                {{ data.field_7 }}
-                            </td>
+                            <!--COMPARE SOURCE, MOH 731 AND KHIS-->
+                            {% for p in khis_performance %}
+                                    {% if forloop.last %}
+                                        {% with khis_tx_curr_a=p.tx_curr_a|floatformat %}
+                                        {% with source_tx_curr_a=data.field_3|floatformat %}
+                                        {% with moh_731_tx_curr_a=data.field_7|floatformat %}
+                                                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if source_tx_curr_a == moh_731_tx_curr_a and moh_731_tx_curr_a ==  khis_tx_curr_a %}green{% else %}red{% endif %}">
+                                                    {{ moh_731_tx_curr_a }}
+                                                </td>
+                                        {% endwith %}
+                                        {% endwith %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
+
                         {% elif "children currently on art" in data.indicator|lower %}
-                            <td class="align-middle text-center text-white fw-bold"
-                                style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total|add:total.tx_curr_p_total %}green{% else %}red{% endif %}">
-                                {{ data.field_7 }}
-                            </td>
+                            <!--COMPARE SOURCE, MOH 731 AND KHIS-->
+                            {% for p in khis_performance %}
+                                    {% if forloop.last %}
+                                        {% with khis_tx_curr_p=p.tx_curr_a|add:p.tx_curr_p|floatformat %}
+                                                <td class="align-middle text-center text-white fw-bold" style="background-color: {% if data.field_3|floatformat == data.field_7|floatformat and data.field_7|floatformat ==  khis_tx_curr_p %}green{% else %}red{% endif %}">
+                                                    {{ data.field_7 }}
+                                                </td>
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
                         {% endif %}
                         <!-- KHIS RAW DATA-->
                         {% for performance in khis_performance %}
@@ -700,17 +757,17 @@
                             </td>
                         {% elif "art <15years" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
-                                style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_p_total %}green{% else %}red{% endif %}">
+                                style="background-color: {% if data.field_3|floatformat == data.field_7|floatformat and data.field_7|floatformat ==  performance.tx_curr_p|floatformat %}green{% else %}red{% endif %}">
                                 {{ performance.tx_curr_p }}
                             </td>
                         {% elif "art 15+ years" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
-                                style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total %}green{% else %}red{% endif %}">
+                                style="background-color: {% if data.field_3|floatformat == data.field_7|floatformat and data.field_7|floatformat ==  performance.tx_curr_a|floatformat %}green{% else %}red{% endif %}">
                                 {{ performance.tx_curr_a }}
                             </td>
                         {% elif "children currently on art" in data.indicator|lower %}
                             <td class="align-middle text-center text-white fw-bold"
-                                style="background-color: {% if data.total_source|add:"0" == data.total_731moh|add:"0" and data.total_731moh|add:"0" == total.tx_curr_a_total|add:total.tx_curr_p_total %}green{% else %}red{% endif %}">
+                                style="background-color: {% if data.field_3|floatformat == data.field_7|floatformat and data.field_7|floatformat == performance.tx_curr_a|add:performance.tx_curr_p|floatformat %}green{% else %}red{% endif %}">
                             {{ performance.tx_curr_a|add:performance.tx_curr_p }}
                             </td>
                         {% endif %}

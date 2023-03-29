@@ -4,77 +4,77 @@
 
 
 {% block content %}
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-    <div class="p-5 mb-4 bg-light rounded-3">
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
 
-    {% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-            <div class="alert alert-info col-12" role="alert">
-        <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
-    </div>
-{#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
-        {% endfor %}
-    </ul>
-{% endif %}
-
-      <div class="container-fluid py-5">
-        <h1 class="display-6 fw-bold text-primary">{{ title }} </h1>
-
-{#          {% endfor %}#}
-      {% if qi_project %}
-          <h4 class="display-6">FACILITY: {{ qi_project.facility_name}}</h4>
-          <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
-          <div class="row mb-4">
-{#              <div class="col d-flex justify-content-between">#}
-                <div class="col-md-6">
-                       <strong>OBJECTIVE: </strong>{{ qi_project.objective }}
-                  </div>
-                  <div class="col-md-6">
-                       <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}
-                  </div>
-                  <div class="col-md-6">
-                       <strong>NUMERATOR: </strong> {{ qi_project.numerator }}
-                  </div>
-                  <div class="col-md-6">
-                       <strong>DENOMINATOR: </strong>{{ qi_project.denominator }}
-                  </div>
-{#              </div>#}
-          </div>
-      {% endif %}
-      {% if lesson_learnt %}
-          <div class="row mb-4">
-{#              <div class="col d-flex justify-content-between">#}
-
-                <div class="col-md-12 text-primary">
-                    {% for lesson in lesson_learnt %}
-                        <strong>FUTURE PLANS: </strong>{{ lesson.future_plans }}
-
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info col-12" role="alert">
+                            <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
+                        </div>
+                        {#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
                     {% endfor %}
+                </ul>
+            {% endif %}
+
+            <div class="container-fluid py-5">
+                <h1 class="display-6 fw-bold text-primary">{{ title }} </h1>
+
+                {#          {% endfor %}#}
+                {% if qi_project %}
+                    <h4 class="display-6">FACILITY: {{ qi_project.facility_name }}</h4>
+                    <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title }}</h6>
+                    <div class="row mb-4">
+                        {#              <div class="col d-flex justify-content-between">#}
+                        <div class="col-md-6">
+                            <strong>OBJECTIVE: </strong>{{ qi_project.objective }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>NUMERATOR: </strong> {{ qi_project.numerator }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>DENOMINATOR: </strong>{{ qi_project.denominator }}
+                        </div>
+                        {#              </div>#}
+                    </div>
+                {% endif %}
+                {% if lesson_learnt %}
+                    <div class="row mb-4">
+                        {#              <div class="col d-flex justify-content-between">#}
+
+                        <div class="col-md-12 text-primary">
+                            {% for lesson in lesson_learnt %}
+                                <strong>FUTURE PLANS: </strong>{{ lesson.future_plans }}
+
+                            {% endfor %}
 
 
-                  </div>
-{#                  <div class="col-md-6">#}
-{#                       <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}#}
-{#                  </div>#}
-{#                  <div class="col-md-6">#}
-{#                       <strong>NUMERATOR: </strong> {{ qi_project.numerator }}#}
-{#                  </div>#}
-{#                  <div class="col-md-6">#}
-{#                       <strong>DENOMINATOR: </strong>{{ qi_project.denominator }}#}
-{#                  </div>#}
-{#              </div>#}
-          </div>
+                        </div>
+                        {#                  <div class="col-md-6">#}
+                        {#                       <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}#}
+                        {#                  </div>#}
+                        {#                  <div class="col-md-6">#}
+                        {#                       <strong>NUMERATOR: </strong> {{ qi_project.numerator }}#}
+                        {#                  </div>#}
+                        {#                  <div class="col-md-6">#}
+                        {#                       <strong>DENOMINATOR: </strong>{{ qi_project.denominator }}#}
+                        {#                  </div>#}
+                        {#              </div>#}
+                    </div>
 
-      {% endif %}
+                {% endif %}
 
 
-            {% if "ADD RESOURCES" in title %}
+                {% if "ADD RESOURCES" in title %}
 
-                  <form class="row " method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    <form class="row " method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
                         {% for field in form %}
-                            {% if "description" in field.html_name or "name" in field.html_name|lower%}
+                            {% if "description" in field.html_name or "name" in field.html_name|lower %}
                                 <div class="col-md-12 mt-4">
                                     {{ field|as_crispy_field }}
                                 </div>
@@ -87,18 +87,18 @@
                         <div class="col-md-4 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
-                  {% if form.errors %}
-                    <div class="alert alert-danger mt-4">
-                        {{ form.errors }}
-                    </div>
-                {% endif %}
-                  </form>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
 
                 {% elif "test of change" in title %}
-                  <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
                         {% for field in form %}
-                            {% if "comment" in field.html_name or "tested" in field.html_name|lower%}
+                            {% if "comment" in field.html_name or "tested" in field.html_name|lower %}
                                 <div class="col-md-12 mt-4">
                                     {{ field|as_crispy_field }}
                                 </div>
@@ -111,18 +111,18 @@
                         <div class="col-md-4 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
-                  {% if form.errors %}
-                    <div class="alert alert-danger mt-4">
-                        {{ form.errors }}
-                    </div>
-                {% endif %}
-                  </form>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
 
                 {% elif "Action Plan" in title %}
-                  <form class="row mt-5" method="POST"  enctype='multipart/form-data' autocomplete="off">
+                    <form class="row mt-5" method="POST" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
                         {% for field in form %}
-                            {% if "comment" in field.html_name or "tested" in field.html_name|lower%}
+                            {% if "comment" in field.html_name or "tested" in field.html_name|lower %}
                                 <div class="col-md-12 mt-4">
                                     {{ field|as_crispy_field }}
                                 </div>
@@ -135,116 +135,194 @@
                         <div class="col-md-12 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
-                  {% if form.errors %}
-                    <div class="alert alert-danger mt-4">
-                        {{ form.errors }}
-                    </div>
-                {% endif %}
-                  </form>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
 
                 {% elif "DQA Work Plan" in title %}
                     <h6 class="mb-4 mt-4">FACILITY: {{ facility }}</h6>
-                    <h6 class="mb-4 mt-4">MFL CODE: {{ mfl_code}}</h6>
-                    <h6 class="mb-4 mt-4">DQA date: {{ date_modified}}</h6>
+                    <h6 class="mb-4 mt-4">MFL CODE: {{ mfl_code }}</h6>
+                    <h6 class="mb-4 mt-4">DQA date: {{ date_modified }}</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div>
+                                <a class="btn btn-warning" data-bs-toggle="collapse" href="#collapseyellows"
+                                   role="button" aria-expanded="false" aria-controls="collapseyellows">
+                                    System assessment YELLOW scores
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div>
+                                <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapsereds"
+                                   role="button" aria-expanded="false" aria-controls="collapsereds">
+                                    System assessment RED scores
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="collapse bg-light mt-2" id="collapseyellows">
+                            {% if system_assessment_partly %}
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Description</th>
+                                        <th>Auditors Note</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for system_assessment in system_assessment_partly %}
+                                        <tr>
+                                            <td class="text-warning fw-bold">{{ forloop.counter }}.</td>
+                                            <td>{{ system_assessment.description }}</td>
+                                            <td class="text-warning">{{ system_assessment.auditor_note }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if system_assessment_no or system_assessment_partly %}
+                        <p class="text-primary mt-2">All system assessment areas that score Yellow or Red should have
+                            an action plan, and we should create a continuous quality improvement project. CQI project
+                            will help the facility stay focused on its goals, maintain accountability, and continuously
+                            improve the quality of care it provides to its patients.
+                        </p>{% endif %}
+                    <div class="row">
+                        <div class="collapse bg-light mt-2" id="collapsereds">
+                            {% if system_assessment_no %}
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Description</th>
+                                        <th>Auditors Note</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for system_assessment in system_assessment_no %}
+                                        <tr>
+                                            <td class="text-danger fw-bold">{{ forloop.counter }}.</td>
+                                            <td>{{ system_assessment.description }}</td>
+                                            <td class="text-danger">{{ system_assessment.auditor_note }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% endif %}
+                        </div>
+                    </div>
+                    </div>
 
 
-                  <form class="row mt-5" method="POST"  enctype='multipart/form-data' autocomplete="off">
+                    <form class="row mt-5" method="POST" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
 
-                                <div class="col-md-6 mt-4">
-                                    {{ form.dqa_date|as_crispy_field }}
-                                </div>
-                  <div class="col-md-6 mt-4">
-                                    {{ form.program_areas_reviewed|as_crispy_field }}
-                                </div>
-                      <div class="col-md-4 mt-4">
-                                    {{ form.strengths_identified|as_crispy_field }}
-                                </div>
-                  <div class="col-md-4 mt-4">
-                                    {{ form.gaps_identified|as_crispy_field }}
-                                </div>
-                  <div class="col-md-4 mt-4">
-                                    {{ form.individuals_conducting_dqa|as_crispy_field }}
-                                </div>
-                  <div class="col-md-4 mt-4">
-                                    {{ form.recommendation|as_crispy_field }}
-                                </div>
-                  <div class="col-md-4 mt-4">
-                                    {{ form.individuals_responsible|as_crispy_field }}
-                                </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.dqa_date|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.program_areas_reviewed|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.strengths_identified|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.gaps_identified|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.individuals_conducting_dqa|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.recommendation|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.individuals_responsible|as_crispy_field }}
+                        </div>
 
-                  <div class="col-md-4 mt-4">
-                                    {{ form.comments|as_crispy_field }}
-                                </div>
-                  <div class="col-md-6 mt-4">
-                                    {{ form.percent_completed|as_crispy_field }}
-                                </div>
-                  <div class="col-md-6 mt-4">
-                                    {{ form.due_complete_by|as_crispy_field }}
-                                </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.comments|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.percent_completed|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.due_complete_by|as_crispy_field }}
+                        </div>
 
                         <div class="col-md-12 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
-                  {% if form.errors %}
-                    <div class="alert alert-danger mt-4">
-                        {{ form.errors }}
-                    </div>
-                {% endif %}
-                  </form>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
 
 
                 {% elif "SUSTAINMENT PLAN" in title %}
-                 <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between">
                         <div>
-                            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapserootcause" role="button" aria-expanded="false" aria-controls="collapserootcause">
-                        SUSTAINMENT PLAN IN BRIEF
-                        </a>
+                            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapserootcause" role="button"
+                               aria-expanded="false" aria-controls="collapserootcause">
+                                SUSTAINMENT PLAN IN BRIEF
+                            </a>
                         </div>
 
-{#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+                        {#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
                     </div>
 
-                <div class="collapse bg-light mt-2" id="collapserootcause">
-                    <p>Ensuring the longevity of the improvements made during a quality improvement project is a part
-                        of the sustainment plan. The plan captures all the vital information needed to maintain progress
-                        , including objectives, metrics for measuring success, communication plan, budget, risks,
-                        training and support, feedback mechanisms, and reaction plan.
-                    </p>
-                    <p>
-                        The RACI matrix outlines the roles and responsibilities of each person involved in the
-                        sustainment plan, helping to ensure that everyone is aware of their part in maintaining the
-                        improvements. This information will help track the progress of the sustainment plan and keep all
-                        stakeholders informed of their responsibilities.
-                    </p>
+                    <div class="collapse bg-light mt-2" id="collapserootcause">
+                        <p>Ensuring the longevity of the improvements made during a quality improvement project is a
+                            part
+                            of the sustainment plan. The plan captures all the vital information needed to maintain
+                            progress
+                            , including objectives, metrics for measuring success, communication plan, budget, risks,
+                            training and support, feedback mechanisms, and reaction plan.
+                        </p>
+                        <p>
+                            The RACI matrix outlines the roles and responsibilities of each person involved in the
+                            sustainment plan, helping to ensure that everyone is aware of their part in maintaining the
+                            improvements. This information will help track the progress of the sustainment plan and keep
+                            all
+                            stakeholders informed of their responsibilities.
+                        </p>
 
 
+                        <p>
+                            This section will provide you with a comprehensive understanding of the key elements of a
+                            successful Sustainment Plan and its critical role in ensuring the sustainability of
+                            improvements made during a quality improvement project.
+                        </p>
+                        <p>
+                            The information captured in the Sustainment Plan serves as a guide to ensure that we take
+                            all
+                            necessary steps to maintain progress and overcome any challenges that may arise during the
+                            sustainment phase. By planning and documenting all aspects of the sustainment plan
+                            carefully,
+                            you increase the likelihood of success and ensure the long-term sustainability of your
+                            quality
+                            improvement project.
+                        </p>
 
-                      <p>
-                          This section will provide you with a comprehensive understanding of the key elements of a
-                          successful Sustainment Plan and its critical role in ensuring the sustainability of
-                          improvements made during a quality improvement project.
-                      </p>
-                <p>
-                    The information captured in the Sustainment Plan serves as a guide to ensure that we take all
-                    necessary steps to maintain progress and overcome any challenges that may arise during the
-                    sustainment phase. By planning and documenting all aspects of the sustainment plan carefully,
-                    you increase the likelihood of success and ensure the long-term sustainability of your quality
-                    improvement project.
-                </p>
-
-                </div>
-                  <form class="row mt-5" method="POST"  enctype='multipart/form-data' autocomplete="off">
+                    </div>
+                    <form class="row mt-5" method="POST" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
-{#                        <div class="col-md-12 mt-4">#}
-{#                            {{ form.qi_project|as_crispy_field }}#}
-{#                        </div>#}
+                        {#                        <div class="col-md-12 mt-4">#}
+                        {#                            {{ form.qi_project|as_crispy_field }}#}
+                        {#                        </div>#}
                         <div class="col-md-6 mt-4 mb-5">
                             <div class="col-md-12 mt-4">
                                 {{ form.start_date|as_crispy_field }}
                             </div>
-                                <div class="col-md-12 mt-5">
-                                 {{ form.end_date|as_crispy_field }}
+                            <div class="col-md-12 mt-5">
+                                {{ form.end_date|as_crispy_field }}
                             </div>
                         </div>
 
@@ -260,7 +338,7 @@
                         <div class="col-md-6 mt-4">
                             {{ form.risks|as_crispy_field }}
                         </div>
-                      <div class="col-md-6 mt-4">
+                        <div class="col-md-6 mt-4">
                             {{ form.budget|as_crispy_field }}
                         </div>
                         <div class="col-md-6 mt-4">
@@ -275,50 +353,49 @@
                         <div class="col-md-6 mt-4">
                             {{ form.reaction_plan|as_crispy_field }}
                         </div>
-                       <div class="col-md-6 mt-4">
-{#                           <p>Tick the name of the person responsible for this specific task.</p>#}
+                        <div class="col-md-6 mt-4">
+                            {#                           <p>Tick the name of the person responsible for this specific task.</p>#}
                             {{ form.responsible|as_crispy_field }}
                         </div>
-                       <div class="col-md-6 mt-4">
-{#                           <p>Tick the name of the name person who is accountable for ensuring the task is completed#}
-{#                               successfully.#}
-{#                           </p>#}
+                        <div class="col-md-6 mt-4">
+                            {#                           <p>Tick the name of the name person who is accountable for ensuring the task is completed#}
+                            {#                               successfully.#}
+                            {#                           </p>#}
                             {{ form.accountable|as_crispy_field }}
                         </div>
-                       <div class="col-md-6 mt-4">
-{#                           <p>Tick the name of any individuals or groups who should be consulted#}
-{#                               in the decision-making process.#}
-{#                           </p>#}
+                        <div class="col-md-6 mt-4">
+                            {#                           <p>Tick the name of any individuals or groups who should be consulted#}
+                            {#                               in the decision-making process.#}
+                            {#                           </p>#}
                             {{ form.consulted|as_crispy_field }}
                         </div>
 
-                       <div class="col-md-6 mt-4">
-{#                           <p>Tick the names of any individuals or groups who should be kept informed of#}
-{#                               the task progress and outcome.</p>#}
+                        <div class="col-md-6 mt-4">
+                            {#                           <p>Tick the names of any individuals or groups who should be kept informed of#}
+                            {#                               the task progress and outcome.</p>#}
                             {{ form.informed|as_crispy_field }}
                         </div>
                         <div class="col-md-12 mt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
-                  {% if form.errors %}
-                    <div class="alert alert-danger mt-4">
-                        {{ form.errors }}
-                    </div>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
+
+                {% else %}
+                    <form method="POST" class="mt-5" enctype='multipart/form-data'>
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <input class="btn btn-success mt-1" type="submit" value="Submit">
+                    </form>
+
                 {% endif %}
-                  </form>
-
-            {% else %}
-                <form method="POST" class="mt-5" enctype='multipart/form-data'>
-                    {% csrf_token %}
-                     {{ form|crispy}}
-                     <input class="btn btn-success mt-1" type="submit" value="Submit">
-                </form>
-            
-            {% endif %}
 
 
-
-      </div>
-    </div>
-</main>
+        </div>
+        </div>
+    </main>
 {% endblock %}

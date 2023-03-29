@@ -2,7 +2,7 @@
 {% url "add_patient_details" as add_patient_details %}
 {#{% url "add_client_characteristics" as add_client_characteristics %}#}
 {% url "show_patient_details" as show_patient_details %}
-{% url "dqa_summary" as dqa_summary %}
+{% url "facility_dqa_summary" as facility_dqa_summary %}
 {% url "show_dqa_work_plan" as show_dqa_work_plan %}
 {% url "system_assessment_table" as system_assessment_table %}
 {% url "instructions" as instructions %}
@@ -71,7 +71,7 @@
 {#          </li>#}
 {#            <hr>#}
 {#          <li class="nav-item">#}
-{#             <a class="nav-link {% if request.path == dqa_summary %} active{% endif %}" href="{% url 'dqa_summary' %}">#}
+{#             <a class="nav-link {% if request.path == facility_dqa_summary %} active{% endif %}" href="{% url 'facility_dqa_summary' %}">#}
 {#              <span data-feather="activity" class="align-text-bottom"></span>#}
 {#              DQA summary#}
 {#            </a>#}

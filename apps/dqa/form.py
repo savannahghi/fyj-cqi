@@ -157,3 +157,18 @@ class UpdateButtonSettingsForm(forms.ModelForm):
         if hide_button_time.hour < 17:
             raise forms.ValidationError("The hide button time must be after 5pm.")
         return hide_button_time
+
+
+class SubcountySelectionForm(forms.Form):
+    name = forms.ModelChoiceField(
+        queryset=Facilities.objects.all(),
+        empty_label="Select facility",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+        initial=None  # Add this line to set the initial value to None
+    )
+
+    def __init__(self, *args, **kwargs):
+        initial = kwargs.get('initial', {})
+        print('Initial value:', initial.get('name'))
+        super().__init__(*args, **kwargs)
+        self.fields['name'].initial = initial.get('name')

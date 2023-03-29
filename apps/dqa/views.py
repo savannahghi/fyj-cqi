@@ -2486,6 +2486,7 @@ def dqa_summary(request):
 
     dicts = {}
     dqa = None
+    system_assessments = None
 
     if "submit_data" in request.POST:
         dqa = DataVerification.objects.filter(facility_name__mfl_code=selected_facility.mfl_code,
@@ -2697,6 +2698,7 @@ def dqa_summary(request):
         "average_dictionary": average_dictionary,
         "site_avg": site_avg,
         "audit_team": audit_team,
+        "system_assessments":system_assessments,
     }
     return render(request, 'dqa/dqa_summary.html', context)
 
@@ -2708,10 +2710,15 @@ def dqa_work_plan_create(request, pk, quarter_year):
     facility = DataVerification.objects.filter(facility_name_id=pk,
                                                quarter_year__quarter_year=quarter_year
                                                ).order_by('-date_modified').first()
+    system_assessment_qs = SystemAssessment.objects.filter(facility_name_id=pk,
+                                                           quarter_year__quarter_year=quarter_year)
+    system_assessment_partly = system_assessment_qs.filter(calculations=2)
+    system_assessment_no = system_assessment_qs.filter(calculations=1)
     today = timezone.now().date()
 
     if request.method == 'POST':
         form = DQAWorkPlanForm(request.POST)
+
         if form.is_valid():
             dqa_work_plan = form.save(commit=False)
             dqa_work_plan.facility_name = facility.facility_name
@@ -2730,6 +2737,8 @@ def dqa_work_plan_create(request, pk, quarter_year):
         'facility': facility.facility_name.name,
         'mfl_code': facility.facility_name.mfl_code,
         'date_modified': facility.date_modified,
+        'system_assessment_partly': system_assessment_partly,
+        'system_assessment_no':system_assessment_no,
     }
 
     return render(request, 'dqa/add_qi_manager.html', context)

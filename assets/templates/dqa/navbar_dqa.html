@@ -2,7 +2,7 @@
 {% url "show_data_verification" as show_data_verification %}
 {% url "add_data_verification" as add_data_verification %}
 {% url "add_system_verification" as add_system_verification %}
-{% url "dqa_summary" as dqa_summary %}
+{% url "facility_dqa_summary" as facility_dqa_summary %}
 {% url "load_khis_data" as load_khis_data %}
 {% url "show_dqa_work_plan" as show_dqa_work_plan %}
 {% url "show_audit_team" as show_audit_team %}
@@ -79,7 +79,7 @@
           </li>
             <hr>
           <li class="nav-item">
-             <a class="nav-link {% if request.path == dqa_summary %} active{% endif %}" href="{% url 'dqa_summary' %}">
+             <a class="nav-link {% if request.path == facility_dqa_summary %} active{% endif %}" href="{% url 'facility_dqa_summary' %}">
               <span data-feather="activity" class="align-text-bottom"></span>
               DQA summary
             </a>

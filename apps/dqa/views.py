@@ -2486,6 +2486,7 @@ def dqa_summary(request):
 
     dicts = {}
     dqa = None
+    system_assessments = None
 
     if "submit_data" in request.POST:
         dqa = DataVerification.objects.filter(facility_name__mfl_code=selected_facility.mfl_code,
@@ -2697,6 +2698,7 @@ def dqa_summary(request):
         "average_dictionary": average_dictionary,
         "site_avg": site_avg,
         "audit_team": audit_team,
+        "system_assessments":system_assessments,
     }
     return render(request, 'dqa/dqa_summary.html', context)
 

@@ -765,7 +765,6 @@ class Qi_managers(models.Model):
         """Ensure manager name is in title case"""
         self.first_name = self.first_name.title()
         self.last_name = self.last_name.title()
-        self.designation = self.designation.title()
         super().save(*args, **kwargs)
 
 

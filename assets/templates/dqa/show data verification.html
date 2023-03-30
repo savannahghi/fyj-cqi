@@ -104,7 +104,7 @@
                             FY {{ selected_year }} {{ key }}</th>
                         {% for data in data_verification %}
                             {% if forloop.last %}
-                                {% if not data.hide_update_button %}
+                                {% if not data.hide_update_button or request.user.is_superuser %}
                                     <th></th>
                                 {% endif %}
                             {% endif %}
@@ -953,7 +953,7 @@
                         {% if "_total" in data.indicator|lower or "positive (pmtct)" in data.indicator|lower or "haart total" in data.indicator|lower or "children currently on art" in data.indicator|lower or "children starting art" in data.indicator|lower or "infant prophylaxis" in data.indicator|lower %}
 
                         {% else %}
-                            {% if not data.hide_update_button %}
+                            {% if not data.hide_update_button or request.user.is_superuser %}
                                 <td class="text-center">
                                     <a href="{% url 'update_data_verification' data.id %}" class="btn btn-info"
                                        role="button" id="update-btn-{{ data.id }}">Update</a>

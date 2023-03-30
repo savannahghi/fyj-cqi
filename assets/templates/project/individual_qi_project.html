@@ -257,6 +257,7 @@
 {#HI THERE:::::::::::::::::::::::::::::::::::::::::::::::::::::#}
 {#user logged in :{{ user.id }}#}
 {#project creator:{{ facility_project.created_by.id }}#}
+{% if facility_project.measurement_status != "Completed-or-Closed" %}
 {% if user.id == facility_project.created_by.id %}
     {% if baseline.baseline_status.url %}
 {#         <a href="{% url 'update_baseline' facility_project.id %}" class="btn btn-warning mb-3">Update Baseline status</a>#}
@@ -288,6 +289,7 @@
         {% endif %}
     {% endif %}
     {% endif %}
+{% endif %}
 {% endif %}
 </div>
  <div class="container-fluid mt-2">

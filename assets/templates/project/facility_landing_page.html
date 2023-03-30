@@ -247,9 +247,9 @@
                           <li>Problem background : {{ qi.problem_background }} </li>
                           <li>Objective : {{ qi.objective }} </li>
                           <li>Setting : {{ qi.settings }} </li>
-                          <li>Department : <a href="{% url 'department_project' qi.departments.department %} ">{{ qi.departments.department }}</a></li>
+                          <li>Department : <a href="{% url 'department_project' qi.departments.id %} ">{{ qi.departments.department }}</a></li>
                           <li>Measurement Frequency : <a href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a></li>
-                          <li>Created by :{{ qi.created_by.id }}
+                          <li>Created by :
                           <a href="{% url 'qi_creators' qi.created_by.id %}">
                               {{ qi.created_by.first_name|title }} {{ qi.created_by.last_name|title }}
                           </a>

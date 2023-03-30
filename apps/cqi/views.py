@@ -46,7 +46,7 @@ def load_data(request):
         return redirect("profile")
     if request.method == 'POST':
         file = request.FILES['file']
-        # Read the data from the excel file into a pandas DataFrame
+        # Read the data from the an excel file into a pandas DataFrame
         keyword = "faci"
         xls_file = pd.ExcelFile(file)
         sheet_names = [sheet for sheet in xls_file.sheet_names if keyword.upper() in sheet.upper()]
@@ -1664,9 +1664,9 @@ def facility_project(request, pk, project_type):
 def department_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
-    projects = QI_Projects.objects.filter(departments__department=pk)
+    projects = QI_Projects.objects.filter(departments__id=pk)
 
-    facility_name = pk
+    facility_name = projects.first().departments
 
     # qi_list = QI_Projects.objects.all().order_by('-date_updated')
     # num_post = QI_Projects.objects.filter(created_by=request.user).count()

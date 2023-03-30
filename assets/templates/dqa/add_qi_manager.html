@@ -147,82 +147,100 @@
                     <h6 class="mb-4 mt-4">MFL CODE: {{ mfl_code }}</h6>
                     <h6 class="mb-4 mt-4">DQA date: {{ date_modified }}</h6>
                     {% if system_assessment_no or system_assessment_partly %}
-                    <div class="row">
-                    {% if system_assessment_partly %}
-                        <div class="col-md-6">
-                            <div>
-                                <a class="btn btn-warning" data-bs-toggle="collapse" href="#collapseyellows"
-                                   role="button" aria-expanded="false" aria-controls="collapseyellows">
-                                    System assessment YELLOW scores
-                                </a>
-                            </div>
-                        </div>
-                        {% endif %}
-                    {% if system_assessment_no %}
-                        <div class="col-md-6">
-                            <div>
-                                <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapsereds"
-                                   role="button" aria-expanded="false" aria-controls="collapsereds">
-                                    System assessment RED scores
-                                </a>
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        <div class="collapse bg-light mt-2" id="collapseyellows">
-                            {% if system_assessment_partly %}
-                                <table class="table table-striped table-hover">
-                                    <thead>
-                                    <tr>
-                                        <th></th>
-                                        <th>Description</th>
-                                        <th>Auditors Note</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for system_assessment in system_assessment_partly %}
-                                        <tr>
-                                            <td class="text-warning fw-bold">{{ forloop.counter }}.</td>
-                                            <td>{{ system_assessment.description }}</td>
-                                            <td class="text-warning">{{ system_assessment.auditor_note }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            {% endif %}
-                        </div>
-                    </div>
-                        <p class="text-primary mt-2">All system assessment areas that score Yellow or Red should have
-                            an action plan, and we should create a continuous quality improvement project. CQI project
-                            will help the facility stay focused on its goals, maintain accountability, and continuously
-                            improve the quality of care it provides to its patients.
+                        <p class="text-primary small">Ensuring the accuracy, reliability, completeness, timeliness, and
+                            consistency of the data that Fahari ya Jamii (FYJ) collected is crucial. To achieve this, we
+                            recommend adopting a proactive approach that involves ongoing data quality assessment (DQA)
+                            and implementing continuous quality improvement (CQI) processes.
                         </p>
-                    <div class="row">
-                        <div class="collapse bg-light mt-2" id="collapsereds">
-                            {% if system_assessment_no %}
-                                <table class="table table-striped table-hover">
-                                    <thead>
-                                    <tr>
-                                        <th></th>
-                                        <th>Description</th>
-                                        <th>Auditors Note</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for system_assessment in system_assessment_no %}
-                                        <tr>
-                                            <td class="text-danger fw-bold">{{ forloop.counter }}.</td>
-                                            <td>{{ system_assessment.description }}</td>
-                                            <td class="text-danger">{{ system_assessment.auditor_note }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
+                        <p class="text-primary small">
+                            CQI helps address the root causes of data quality issues identified through DQA, which
+                            prompts us to create action plans for all system assessment areas that score <strong
+                                class="text-warning">Yellow</strong> or <strong class="text-danger">Red</strong>.
+                            Through CQI, we remain focused on our goals, maintain accountability, and continuously
+                            improve the quality of care we provide to our patients.
+                        </p>
+                        <p class="text-primary small">
+                            By adopting ongoing DQA and CQI, we ensure that our data is accurate and reliable,
+                            supporting better decision-making, program planning, and overall performance. It also
+                            ensures we meet reporting and accountability requirements for external funding sources.
+
+                        </p>
+                        <div class="row">
+                            {% if system_assessment_partly %}
+                                <div class="col-md-6">
+                                    <div>
+                                        <a class="btn btn-warning" data-bs-toggle="collapse" href="#collapseyellows"
+                                           role="button" aria-expanded="false" aria-controls="collapseyellows">
+                                            System assessment YELLOW scores
+                                            <span class="badge bg-secondary" data-bs-toggle="tooltip"
+                                                  title="Number of YELLOW scores. Click to view">{{ system_assessment_partly.count }}</span>
+                                        </a>
+                                    </div>
+                                </div>
                             {% endif %}
+                            {% if system_assessment_no %}
+                                <div class="col-md-6">
+                                    <div>
+                                        <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapsereds"
+                                           role="button" aria-expanded="false" aria-controls="collapsereds">
+                                            System assessment RED scores
+                                            <span class="badge bg-secondary" data-bs-toggle="tooltip"
+                                                  title="Number of RED scores. Click to view">{{ system_assessment_no.count }}</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+
+                            <div class="collapse bg-light mt-2" id="collapseyellows">
+                                {% if system_assessment_partly %}
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Description</th>
+                                            <th>Auditors Note</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for system_assessment in system_assessment_partly %}
+                                            <tr>
+                                                <td class="text-warning fw-bold">{{ forloop.counter }}.</td>
+                                                <td>{{ system_assessment.description }}</td>
+                                                <td class="text-warning">{{ system_assessment.auditor_note }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
-                    </div>
-                        {% endif %}
+                        <div class="row">
+                            <div class="collapse bg-light mt-2" id="collapsereds">
+                                {% if system_assessment_no %}
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th> </th>
+                                            <th> Description </th>
+                                            <th> Auditors Note </th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for system_assessment in system_assessment_no %}
+                                            <tr>
+                                                <td class="text-danger fw-bold">{{ forloop.counter }}.</td>
+                                                <td> {{ system_assessment.description }} </td>
+                                                <td class="text-danger">{{ system_assessment.auditor_note }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endif %}
+                            </div>
+                        </div>
+                        </div>
+                    {% endif %}
 
 
                     <form class="row mt-5" method="POST" enctype='multipart/form-data' autocomplete="off">

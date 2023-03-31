@@ -164,7 +164,7 @@ class DataVerification(models.Model):
         unique_together = (("quarter_year", "indicator", "facility_name"),)
 
     def __str__(self):
-        return f"{self.indicator} ({self.quarter_year})"
+        return f"{self.facility_name} {self.indicator} ({self.quarter_year})"
 
     def save(self, *args, **kwargs):
         self.total_source = int(self.field_1) + int(self.field_2) + int(self.field_3)
@@ -437,6 +437,8 @@ class KhisPerformance(models.Model):
 class UpdateButtonSettings(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     hide_button_time = models.TimeField()
+    disable_all_dqa_update_buttons = models.BooleanField(default=False)  # add this line
+    days_to_keep_update_button_enabled = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return str(self.hide_button_time)

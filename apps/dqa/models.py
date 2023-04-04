@@ -318,6 +318,7 @@ class SystemAssessment(models.Model):
 
     class Meta:
         unique_together = (("quarter_year", "description", "facility_name"),)
+        ordering = ['facility_name']
 
 
 class AuditTeam(models.Model):

@@ -4,7 +4,7 @@ from django.forms import ModelForm, Textarea
 from django import forms
 
 from apps.dqa.models import DataVerification, Period, DQAWorkPlan, SystemAssessment, AuditTeam, UpdateButtonSettings
-from apps.cqi.models import Facilities
+from apps.cqi.models import Facilities, Hub, Sub_counties, Counties, Program
 
 
 class DataVerificationForm(ModelForm):
@@ -137,7 +137,7 @@ class SystemAssessmentForm(ModelForm):
 class AuditTeamForm(ModelForm):
     class Meta:
         model = AuditTeam
-        exclude = ['facility_name', 'modified_by', 'created_by','quarter_year']
+        exclude = ['facility_name', 'modified_by', 'created_by', 'quarter_year']
         labels = {
             'name': 'Name (First and Last name)',
         }
@@ -160,15 +160,42 @@ class UpdateButtonSettingsForm(forms.ModelForm):
 
 
 class SubcountySelectionForm(forms.Form):
-    name = forms.ModelChoiceField(
-        queryset=Facilities.objects.all(),
-        empty_label="Select facility",
+    subcounty = forms.ModelChoiceField(
+        queryset=Sub_counties.objects.all(),
+        empty_label="Select sub-county",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
         initial=None  # Add this line to set the initial value to None
     )
 
-    def __init__(self, *args, **kwargs):
-        initial = kwargs.get('initial', {})
-        print('Initial value:', initial.get('name'))
-        super().__init__(*args, **kwargs)
-        self.fields['name'].initial = initial.get('name')
+    # def __init__(self, *args, **kwargs):
+    #     initial = kwargs.get('initial', {})
+    #     print('Initial value:', initial.get('name'))
+    #     super().__init__(*args, **kwargs)
+    #     self.fields['name'].initial = initial.get('name')
+
+
+class HubSelectionForm(forms.Form):
+    hub = forms.ModelChoiceField(
+        queryset=Hub.objects.all(),
+        empty_label="Select Hub",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+        initial=None  # Add this line to set the initial value to None
+    )
+
+
+class CountySelectionForm(forms.Form):
+    county = forms.ModelChoiceField(
+        queryset=Counties.objects.all(),
+        empty_label="Select county",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+        initial=None  # Add this line to set the initial value to None
+    )
+
+
+class ProgramSelectionForm(forms.Form):
+    program = forms.ModelChoiceField(
+        queryset=Program.objects.all(),
+        empty_label="Select program",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+        initial=None  # Add this line to set the initial value to None
+    )

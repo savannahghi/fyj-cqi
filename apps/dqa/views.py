@@ -3319,9 +3319,9 @@ def update_button_settings(request):
     return render(request, 'dqa/upload.html', {'form': form, "title": "update time"})
 
 
-def bar_chart_dqa(df, x_axis, y_axis, title=None):
+def bar_chart_dqa(df, x_axis, y_axis, title=None, color=None):
     if "count" not in y_axis:
-        fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300, text=y_axis)
+        fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300, text=y_axis, color=color)
     else:
         fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300)
     fig.update_xaxes(showgrid=False)
@@ -3444,6 +3444,7 @@ def dqa_dashboard(request, dqa_type=None):
     audit_team_df = None
     county_hub_sub_county_df = None
     data_verification = None
+    audit_viz = None
     if dqa_type == "program":
         if quarter_form.is_valid() and year_form.is_valid() and program_form.is_valid():
             selected_quarter = quarter_form.cleaned_data['quarter']
@@ -3710,7 +3711,8 @@ def dqa_dashboard(request, dqa_type=None):
             del tx_curr_khis['month']
             khis_others = khis_perf_df[khis_perf_df['indicator'] != "Number Current on ART Total"]
 
-            khis_others = khis_others.groupby(['indicator', 'quarter_year', 'mfl_code']).sum(numeric_only=True).reset_index()
+            khis_others = khis_others.groupby(['indicator', 'quarter_year', 'mfl_code']).sum(
+                numeric_only=True).reset_index()
 
             khis_perf_df = pd.concat([khis_others, tx_curr_khis])
         else:
@@ -3749,9 +3751,17 @@ def dqa_dashboard(request, dqa_type=None):
                 {'Facilities': lambda x: ', '.join(set(x))})
 
             audit_team_df = audit_team_df.reset_index()
-            audit_team_df_copy = audit_team_df_copy.rename(columns={"Facilities": "facilities"})
-            merged_df = county_hub_sub_county_df.merge(audit_team_df_copy, on=['facilities', 'mfl_code'],
-                                                       how="right")
+            audit_team_df.to_csv("audit_team_df.csv", index=False)
+
+            audit_team_df['Number of audit team'] = 1
+            audit_team_df['Carder'] = audit_team_df['Carder'].str.replace("Monitoring and Evaluation", "M&E")
+            audit_team_df['Carder'] = audit_team_df['Carder'].str.replace("SIA", "SI Associate")
+            audit_team_df['Carder'] = audit_team_df['Carder'].str.upper()
+            audit_team_df = audit_team_df.groupby(['Carder', 'Organization']).sum(
+                numeric_only=True).reset_index().sort_values("Number of audit team", ascending=False)
+
+            audit_viz = bar_chart_dqa(audit_team_df, "Carder", 'Number of audit team', color="Organization",
+                                      title="DQA Audit Team Participation by Organization and Carder")
 
     context = {
         "quarter_form": quarter_form,
@@ -3771,6 +3781,7 @@ def dqa_dashboard(request, dqa_type=None):
         "county_form": county_form,
         "program_form": program_form,
         "dqa_type": dqa_type,
+        "audit_viz": audit_viz,
 
     }
     return render(request, 'dqa/dqa_dashboard.html', context)

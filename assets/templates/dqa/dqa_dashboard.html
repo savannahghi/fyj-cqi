@@ -238,29 +238,36 @@
 {#        {% endfor %}#}
 {#      </tbody>#}
 {#    </table>#}
-                    <table class="table table-striped table-hover">
-  <thead class="thead-dark">
-  <th scope="col"></th>
-  {% for col in audit_team_df.columns %}
-      <th scope="col">{{ col }}</th>
-  {% endfor %}
-  </thead>
-  <tbody>
-   </tr>
-    {% for index, row in audit_team_df.iterrows %}
-      <tr>
-          <th scope="row">{{ index}}</th>
-        {% for cell in row %}
-          <td>
-            {{cell}}
-          </td>
-        {% endfor %}
-      </tr>
-    {% endfor %}
+        <div>
+        {{ audit_viz|safe }}
+        </div>
 
 
-  </tbody>
-</table>
+{#                    <table class="table table-striped table-hover">#}
+{#  <thead class="thead-dark">#}
+{#  <th scope="col"></th>#}
+{#  {% for col in audit_team_df.columns %}#}
+{#      <th scope="col">{{ col }}</th>#}
+{#  {% endfor %}#}
+{#  </thead>#}
+{#  <tbody>#}
+{#   </tr>#}
+{#    {% for index, row in audit_team_df.iterrows %}#}
+{#      <tr>#}
+{#          <th scope="row">{{ index}}</th>#}
+{#        {% for cell in row %}#}
+{#          <td>#}
+{#            {{cell}}#}
+{#          </td>#}
+{#        {% endfor %}#}
+{#      </tr>#}
+{#    {% endfor %}#}
+{##}
+{##}
+{#  </tbody>#}
+{#</table>#}
+
+
       {% endif %}
 
 {#{% if system_assessments %}#}

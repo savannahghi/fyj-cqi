@@ -1,6 +1,8 @@
 import ast
+from itertools import groupby
 
 import matplotlib
+import numpy as np
 from django.core.exceptions import ValidationError
 from django.db.models.functions import Cast, Concat
 from reportlab.lib.styles import ParagraphStyle
@@ -41,11 +43,11 @@ from reportlab.pdfgen import canvas
 
 from apps.dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm, YearSelectionForm, \
     FacilitySelectionForm, DQAWorkPlanForm, SystemAssessmentForm, DateSelectionForm, AuditTeamForm, \
-    UpdateButtonSettingsForm
+    UpdateButtonSettingsForm, HubSelectionForm, SubcountySelectionForm, CountySelectionForm, ProgramSelectionForm
 from apps.dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan, SystemAssessment, \
     AuditTeam, KhisPerformance, UpdateButtonSettings
 from apps.cqi.views import bar_chart
-from apps.cqi.models import Facilities
+from apps.cqi.models import Facilities, Sub_counties, Counties, Hub
 
 from datetime import datetime
 import pytz
@@ -75,9 +77,11 @@ def disable_update_buttons(request, audit_team):
                 except AttributeError:
                     data_entry_date = data.created_at.astimezone(local_tz).date()
                 hide_button_datetime = timezone.make_aware(datetime.combine(data_entry_date, hide_button_time))
-                if data_entry_date >= enabled_datetime.date():
+                if data_entry_date == now.date() and now >= hide_button_datetime:
+                    data.hide_update_button = True
+                elif data_entry_date >= enabled_datetime.date():
                     data.hide_update_button = False
-                elif now > hide_button_datetime:
+                elif now >= hide_button_datetime:
                     data.hide_update_button = True
                 else:
                     data.hide_update_button = False
@@ -736,7 +740,6 @@ def add_data_verification(request):
                                     field_7 += int(data.field_7)
                                     total_731moh += int(data.total_731moh)
 
-
                                 try:
                                     DataVerification.objects.create(
                                         indicator='Number of adults and children starting ART',
@@ -1227,7 +1230,6 @@ def update_data_verification(request, pk):
                         field_7 += int(data.field_7)
                         total_731moh += int(data.total_731moh)
 
-
                     # try:
                     DataVerification.objects.update_or_create(
                         indicator='Number tested Positive _Total',
@@ -1277,7 +1279,6 @@ def update_data_verification(request, pk):
                         field_6 += int(data.field_6)
                         field_7 += int(data.field_7)
                         total_731moh += int(data.total_731moh)
-
 
                     DataVerification.objects.update_or_create(
                         indicator='Total Infant prophylaxis',
@@ -1379,7 +1380,6 @@ def update_data_verification(request, pk):
                         field_7 += int(data.field_7)
                         total_731moh += int(data.total_731moh)
 
-
                     DataVerification.objects.update_or_create(
                         indicator='Number of adults and children starting ART',
                         quarter_year_id=selected_quarter_year,
@@ -1416,7 +1416,6 @@ def update_data_verification(request, pk):
                     field_6 = 0
                     field_7 = 0
                     total_731moh = 0
-
 
                     #  returns a new queryset containing all the elements from both querysets.
                     combined_queryset = tx_curr_less_15 | tx_curr_above_15
@@ -1467,7 +1466,6 @@ def update_data_verification(request, pk):
                     field_6 = 0
                     field_7 = 0
                     total_731moh = 0
-
 
                     #  returns a new queryset containing all the elements from both querysets.
                     combined_queryset = kp_anc_pos | pos_anc | pos_ld | pos_pnc
@@ -2246,6 +2244,302 @@ def make_performance_df(fyj_perf, value):
     return fyj_perf_df
 
 
+def create_dqa_df(dqa):
+    # loop through both models QI_Projects and Program_qi_projects using two separate lists
+    dqa_df = [
+        {'indicator': x.indicator,
+         'facility': x.facility_name.name,
+         'mfl_code': x.facility_name.mfl_code,
+         'Source': x.total_source,
+         "MOH 731": x.total_731moh,
+         "last month source": x.field_3,
+         "last month 731": x.field_7,
+         "quarter_year": x.quarter_year.quarter_year,
+         } for x in dqa
+    ]
+    # Finally, you can create a dataframe from this list of dictionaries.
+    dqa_df = pd.DataFrame(dqa_df)
+    indicators_to_use = ['Total Infant prophylaxis', 'Maternal HAART Total ', 'Number tested Positive _Total',
+                         'Total Positive (PMTCT)', 'Number of adults and children starting ART', 'Starting_TPT',
+                         'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
+                         'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
+                         'Cervical Cancer Screening (Women on ART)', 'TB_PREV_N', 'TX_ML', 'RTT'
+                         ]
+    dqa_df = dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
+
+    dqa_df['indicator'] = dqa_df['indicator'].replace("Number of adults and children Currently on ART",
+                                                      "Number Current on ART Total")
+    dqa_df['indicator'] = dqa_df['indicator'].replace("Number of adults and children starting ART",
+                                                      "Number Starting ART Total")
+    dqa_df['indicator'] = dqa_df['indicator'].replace("Number tested Positive _Total",
+                                                      "Number Tested Positive Total")
+    dqa_df['indicator'] = dqa_df['indicator'].replace("Starting_TPT", "Number Starting IPT Total")
+    dqa_df['indicator'] = dqa_df['indicator'].replace("PrEP_New", "Number initiated on PrEP")
+    dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Sexual violence", "Gend_GBV Sexual Violence")
+    dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Emotional and /Physical Violence",
+                                                      "Gend_GBV_Physical and Emotional")
+    dqa_df['indicator'] = dqa_df['indicator'].replace("Cervical Cancer Screening (Women on ART)",
+                                                      "Number Screened for Cervical Cancer")
+    dqa_df['indicator'] = dqa_df['indicator'].replace("New & Relapse TB_Cases", "New & Relapse TB cases")
+    dqa_df['indicator'] = dqa_df['indicator'].replace('Maternal HAART Total ', "Maternal HAART Total")
+    dqa_df['indicator'] = dqa_df['indicator'].replace('RTT', "TX_RTT")
+    dqa_df['indicator'] = dqa_df['indicator'].replace('TB_PREV_N', "TB_PREV_N")
+
+    quarterly_indicators = dqa_df[['indicator', 'facility', 'mfl_code',
+                                   'quarter_year', 'last month source', 'last month 731']]
+
+    indicators_to_use = ['TX_RTT', 'TX_ML', 'Number Current on ART Total']
+    quarterly_indicators = quarterly_indicators[quarterly_indicators['indicator'].isin(indicators_to_use)]
+    quarterly_indicators = quarterly_indicators.rename(columns={"last month source": "Source",
+                                                                "last month 731": "MOH 731"})
+    # Replace TX_RTT and TX_ML with 0 in the MOH 731 column
+    quarterly_indicators.loc[quarterly_indicators['indicator'] == 'TX_RTT', 'MOH 731'] = 0
+    quarterly_indicators.loc[quarterly_indicators['indicator'] == 'TX_ML', 'MOH 731'] = 0
+
+    dqa_df = dqa_df[~dqa_df['indicator'].isin(indicators_to_use)]
+    del dqa_df['last month 731']
+    del dqa_df['last month source']
+    dqa_df = pd.concat([dqa_df, quarterly_indicators])
+    return dqa_df
+
+
+def compare_data_verification(merged_df):
+    merged_df = pd.melt(merged_df, id_vars=['mfl_code', 'indicator', 'quarter_year'],
+                        value_vars=list(merged_df.columns[3:]),
+                        var_name='data sources', value_name='performance')
+
+    merged_df['performance'] = merged_df['performance'].fillna(0)
+    merged_df['performance'] = merged_df['performance'].astype(int)
+    # Define a new DataFrame object by grouping the 'merged_df' DataFrame by 'indicator' column and calculating
+    # the standard deviation of 'performance' column. The idea is to have the indicator with the greatest
+    # disparities in the performance column come first.
+    grouped = merged_df.groupby("indicator")["performance"].std().reset_index()
+    # Sort the 'grouped' DataFrame in descending order based on 'performance' column
+    grouped = grouped.sort_values("performance", ascending=False)
+    # Extract the 'indicator' column from the sorted 'grouped' DataFrame and assign it to a new variable called
+    # 'grouped'
+    grouped = grouped["indicator"]
+    # Create an empty dictionary object to store the bar charts for each 'indicator' in 'grouped'
+    dicts = {}
+    # Loop through each 'indicator' in 'grouped'
+    for indy in grouped:
+        # Create a new DataFrame object called 'merged_df_viz' containing only the rows where 'indicator' column
+        # matches the current 'indy' value
+        merged_df_viz = merged_df[merged_df['indicator'] == indy]
+        # Extract the unique value from the 'quarter_year' column in 'merged_df_viz' and assign it to a variable
+        # called 'quarter'
+        quarter = merged_df_viz['quarter_year'].unique()[0]
+        # Create a new key-value pair in the 'dicts' dictionary, where the key is a string containing the 'indy'
+        # value and the 'quarter' value, and the value is a bar chart object created using the 'merged_df_viz'
+        # DataFrame
+        dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
+    return dicts
+
+
+def calc_percentage(row):
+    """
+    Calculates the percentage of 'greens', 'yellows', and 'reds' values in the given row
+    and returns a new row with the percentage values added as new columns.
+
+    Args:
+        row: A pandas Series representing a single row in a DataFrame.
+
+    Returns:
+        A new pandas Series representing the same row as the input, but with three additional
+        columns: 'greens %', 'yellows %', and 'reds %'. These columns contain the percentage
+        of 'greens', 'yellows', and 'reds' values in the row, respectively.
+    """
+    total = row['greens'] + row['yellows'] + row['reds'] + row['not applicable']
+
+    # Check for division by zero
+    if total == 0:
+        return row
+
+    # Calculate the percentage values and format them as strings with one decimal place and a percent sign
+    row['greens %'] = f"{round(row['greens'] / total * 100, 1)}%"
+    if row['greens %'] == '0.0%':
+        row['greens %'] = ''
+    row['yellows %'] = f"{round(row['yellows'] / total * 100, 1)}%"
+    if row['yellows %'] == '0.0%':
+        row['yellows %'] = ''
+    row['reds %'] = f"{round(row['reds'] / total * 100, 1)}%"
+    if row['reds %'] == '0.0%':
+        row['reds %'] = ''
+    row['not applicable %'] = f"{round(row['not applicable'] / total * 100, 1)}%"
+    if row['not applicable %'] == '0.0%':
+        row['not applicable %'] = ''
+
+    return row
+
+
+def prepare_data_system_assessment(system_assessments_df, description_list):
+    green = system_assessments_df[system_assessments_df['calculations'] == 3.0]
+    green = green.rename(columns={"count": "greens"})
+    yellow = system_assessments_df[system_assessments_df['calculations'] == 2.0]
+    yellow = yellow.rename(columns={"count": "yellows"})
+    red = system_assessments_df[system_assessments_df['calculations'] == 1.0]
+    red = red.rename(columns={"count": "reds"})
+
+    na_dfs = system_assessments_df[system_assessments_df['calculations'].isnull()].fillna(0)
+    na_dfs = na_dfs.rename(columns={"count": "not applicable"})
+
+    greens = green.groupby('description').sum(numeric_only=True)['greens'].reset_index().sort_values('greens',
+                                                                                                     ascending=False)
+    yellows = yellow.groupby('description').sum(numeric_only=True)['yellows'].reset_index().sort_values('yellows',
+                                                                                                        ascending=False)
+    reds = red.groupby('description').sum(numeric_only=True)['reds'].reset_index().sort_values('reds', ascending=False)
+    na_dfs = na_dfs.groupby('description').sum(numeric_only=True)['not applicable'].reset_index()
+
+    scores_df = greens.merge(yellows, on='description', how='outer').merge(reds, on='description', how='outer').merge(
+        na_dfs, on='description', how='outer')
+
+    # scores_df.reindex(description_list)
+    scores_df = scores_df.set_index('description')
+
+    scores_df = scores_df.loc[description_list].fillna(0)
+    for i in scores_df.columns[1:]:
+        scores_df[i] = scores_df[i].astype(int)
+    scores_df = scores_df.reset_index()
+    # Slice the dataframe by description
+    df_list = [scores_df[scores_df['description'].isin(description_list[:5])],
+               scores_df[scores_df['description'].isin(description_list[5:12])],
+               scores_df[scores_df['description'].isin(description_list[12:17])],
+               scores_df[scores_df['description'].isin(description_list[17:21])],
+               scores_df[scores_df['description'].isin(description_list[21:])]]
+
+    m_e_structures = df_list[0]
+    value_map = {
+        "There is a documented structure/chart that clearly identifies positions that have data management responsibilities at the Facility.": "Documented structure/chart",
+        "Positions dedicated to M&E and data management systems in the facility are filled.": "Dedicated position",
+        "There is a training plan which includes staff involved in data-collection and reporting at all levels in the reporting process.": "Training plan",
+        "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and timeliness) before submission to the Sub County.": "Designated DQA staff",
+        "All relevant staff have received training on the data management processes and tools.": "Training on data mnx"
+    }
+
+    # loop through the value_map and replace the old values with the new values using .loc
+    for old_value, new_value in value_map.items():
+        m_e_structures.loc[m_e_structures['description'] == old_value, 'description'] = new_value
+
+    m_e_data_mnx = df_list[1]
+
+    # create a dictionary to map old values to new values
+    value_map = {
+        "The facility has data quality SOPs for monthly reporting processes and quality checks": "Data quality SOPs",
+        "The facility conducts internal data quality checks and validation before submission of reports": "Internal data quality checks",
+        "The facility has conducted a data quality audit in the last 6 months": "Conducted DQA 6/12 ago",
+        "There is a documented data improvement action plan? Verify by seeing": "Data improvement action plan",
+        "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, completeness and timeliness).": "Systematic feedback",
+        "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, MDT feedback data template": "Regular reviews",
+        "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts": "Yearly targets awareness"
+    }
+
+    # loop through the value_map and replace the old values with the new values using .loc
+    for old_value, new_value in value_map.items():
+        m_e_data_mnx.loc[m_e_data_mnx['description'] == old_value, 'description'] = new_value
+
+    m_e_indicator_definition = df_list[2]
+
+    # create a dictionary to map old values to new values
+    value_map = {
+        'The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 '
+        'indicators.': 'Indicator reference guides',
+        'The facility staff are very clear on what they are supposed to report on.': 'Clarity on reporting content',
+        'The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.': 'Clarity on reporting format',
+        'The facility staff are very clear on to whom the reports should be submitted.': 'Clarity on reporting '
+                                                                                         'recipients',
+        'The facility staff are very clear on when the reports are due.': 'Clarity on reporting deadlines'
+    }
+
+    # loop through the value_map and replace the old values with the new values using .loc
+    for old_value, new_value in value_map.items():
+        m_e_indicator_definition.loc[m_e_indicator_definition['description'] == old_value, 'description'] = new_value
+
+    m_e_data_collect_report = df_list[3]
+
+    # create a dictionary to map old values to new values
+    value_map = {
+        'The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)': 'Latest source documents and MOH 731',
+        'Clear instructions have been provided to the facility on how to complete the data collection and reporting forms/tools.': 'Clear instructions',
+        'The facility has the revised HTS register in all service delivery points and a clear inventory is available detailing the number of HTS registers in use by service delivery point': 'Revised HTS register',
+        'HIV client files are well organised and stored in a secure location': 'Organized HIV files'}
+
+    # loop through the value_map and replace the old values with the new values using .loc
+    for old_value, new_value in value_map.items():
+        m_e_data_collect_report.loc[m_e_data_collect_report['description'] == old_value, 'description'] = new_value
+
+    m_e_emr_systems = df_list[4]
+
+    # create a dictionary to map old values to new values
+    value_map = {
+        'Do you use your EMR to generate reports?': 'EMR report generation',
+        'There is a clearly documented and actively implemented database administration procedure in place. This includes backup/recovery procedures, security admininstration, and user administration.': 'Database administration procedure',
+        'The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)': 'Daily EMR data backup',
+        'The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,What is your main challenge regarding data management and reporting?': 'Recent RDQA with action points'
+    }
+
+    # loop through the value_map and replace the old values with the new values using .loc
+    for old_value, new_value in value_map.items():
+        m_e_emr_systems.loc[m_e_emr_systems['description'] == old_value, 'description'] = new_value
+
+    m_e_structures = m_e_structures.apply(calc_percentage, axis=1)
+    m_e_data_mnx = m_e_data_mnx.apply(calc_percentage, axis=1)
+    m_e_indicator_definition = m_e_indicator_definition.apply(calc_percentage, axis=1)
+    m_e_data_collect_report = m_e_data_collect_report.apply(calc_percentage, axis=1)
+    m_e_emr_systems = m_e_emr_systems.apply(calc_percentage, axis=1)
+
+    return m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report, m_e_emr_systems
+
+
+def create_system_assessment_bar_charts(dataframe, chart_title, quarter_year):
+    # create a stacked bar chart with custom colors
+    colors = {'greens': 'green', 'yellows': 'yellow', 'reds': 'red', 'not applicable': 'blue'}
+    fig = px.bar(dataframe, x='description', y=['greens', 'yellows', 'reds', 'not applicable'], barmode='stack',
+                 color_discrete_map=colors, height=450
+                 )
+    texts = [dataframe['greens %'], dataframe['yellows %'], dataframe['reds %'], dataframe['not applicable %']]
+    for i, t in enumerate(texts):
+        fig.data[i].text = t
+        # fig.data[i].textposition = 'outside'
+    # add labels and title
+    fig.update_layout(xaxis_title='Description', yaxis_title='Frequency', title=f"{chart_title} ({quarter_year})")
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    })
+    # Set the font size of the x-axis and y-axis labels
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=8
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=8
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            font=dict(
+                size=14
+            )
+        )
+    )
+    fig.update_traces(textfont_size=10)
+
+    # show the chart
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
 @login_required(login_url='login')
 def dqa_summary(request):
     if not request.user.first_name:
@@ -2333,61 +2627,7 @@ def dqa_summary(request):
                                                    quarter_year=quarter_year).values()
 
         if dqa:
-            # loop through both models QI_Projects and Program_qi_projects using two separate lists
-            dqa_df = [
-                {'indicator': x.indicator,
-                 'facility': x.facility_name.name,
-                 'mfl_code': x.facility_name.mfl_code,
-                 'Source': x.total_source,
-                 "MOH 731": x.total_731moh,
-                 "last month source": x.field_3,
-                 "last month 731": x.field_7,
-                 "quarter_year": x.quarter_year.quarter_year,
-                 } for x in dqa
-            ]
-            # Finally, you can create a dataframe from this list of dictionaries.
-            dqa_df = pd.DataFrame(dqa_df)
-            indicators_to_use = ['Total Infant prophylaxis', 'Maternal HAART Total ', 'Number tested Positive _Total',
-                                 'Total Positive (PMTCT)', 'Number of adults and children starting ART', 'Starting_TPT',
-                                 'New & Relapse TB_Cases', 'Number of adults and children Currently on ART', 'PrEP_New',
-                                 'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
-                                 'Cervical Cancer Screening (Women on ART)', 'TB_PREV_N', 'TX_ML', 'RTT'
-                                 ]
-            dqa_df = dqa_df[dqa_df['indicator'].isin(indicators_to_use)]
-
-            dqa_df['indicator'] = dqa_df['indicator'].replace("Number of adults and children Currently on ART",
-                                                              "Number Current on ART Total")
-            dqa_df['indicator'] = dqa_df['indicator'].replace("Number of adults and children starting ART",
-                                                              "Number Starting ART Total")
-            dqa_df['indicator'] = dqa_df['indicator'].replace("Number tested Positive _Total",
-                                                              "Number Tested Positive Total")
-            dqa_df['indicator'] = dqa_df['indicator'].replace("Starting_TPT", "Number Starting IPT Total")
-            dqa_df['indicator'] = dqa_df['indicator'].replace("PrEP_New", "Number initiated on PrEP")
-            dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Sexual violence", "Gend_GBV Sexual Violence")
-            dqa_df['indicator'] = dqa_df['indicator'].replace("GBV_Emotional and /Physical Violence",
-                                                              "Gend_GBV_Physical and Emotional")
-            dqa_df['indicator'] = dqa_df['indicator'].replace("Cervical Cancer Screening (Women on ART)",
-                                                              "Number Screened for Cervical Cancer")
-            dqa_df['indicator'] = dqa_df['indicator'].replace("New & Relapse TB_Cases", "New & Relapse TB cases")
-            dqa_df['indicator'] = dqa_df['indicator'].replace('Maternal HAART Total ', "Maternal HAART Total")
-            dqa_df['indicator'] = dqa_df['indicator'].replace('RTT', "TX_RTT")
-            dqa_df['indicator'] = dqa_df['indicator'].replace('TB_PREV_N', "TB_PREV_N")
-
-            quarterly_indicators = dqa_df[['indicator', 'facility', 'mfl_code',
-                                           'quarter_year', 'last month source', 'last month 731']]
-
-            indicators_to_use = ['TX_RTT', 'TX_ML', 'Number Current on ART Total']
-            quarterly_indicators = quarterly_indicators[quarterly_indicators['indicator'].isin(indicators_to_use)]
-            quarterly_indicators = quarterly_indicators.rename(columns={"last month source": "Source",
-                                                                        "last month 731": "MOH 731"})
-            # Replace TX_RTT and TX_ML with 0 in the MOH 731 column
-            quarterly_indicators.loc[quarterly_indicators['indicator'] == 'TX_RTT', 'MOH 731'] = 0
-            quarterly_indicators.loc[quarterly_indicators['indicator'] == 'TX_ML', 'MOH 731'] = 0
-
-            dqa_df = dqa_df[~dqa_df['indicator'].isin(indicators_to_use)]
-            del dqa_df['last month 731']
-            del dqa_df['last month source']
-            dqa_df = pd.concat([dqa_df, quarterly_indicators])
+            dqa_df = create_dqa_df(dqa)
             if dqa_df.empty:
                 messages.info(request, f"A few DQA indicators for {selected_facility} have been capture but not "
                                        f"enough for data visualization")
@@ -2434,35 +2674,7 @@ def dqa_summary(request):
         except KeyError:
             messages.info(request, f"No KHIS data for {selected_facility} {quarter_year}!")
             return redirect(request.path_info)
-        merged_df = pd.melt(merged_df, id_vars=['mfl_code', 'facility', 'indicator', 'quarter_year'],
-                            value_vars=list(merged_df.columns[4:]),
-                            var_name='data sources', value_name='performance')
-
-        merged_df['performance'] = merged_df['performance'].fillna(0)
-        merged_df['performance'] = merged_df['performance'].astype(int)
-        # Define a new DataFrame object by grouping the 'merged_df' DataFrame by 'indicator' column and calculating
-        # the standard deviation of 'performance' column. The idea is to have the indicator with the greatest
-        # disparities in the performance column come first.
-        grouped = merged_df.groupby("indicator")["performance"].std().reset_index()
-        # Sort the 'grouped' DataFrame in descending order based on 'performance' column
-        grouped = grouped.sort_values("performance", ascending=False)
-        # Extract the 'indicator' column from the sorted 'grouped' DataFrame and assign it to a new variable called
-        # 'grouped'
-        grouped = grouped["indicator"]
-        # Create an empty dictionary object to store the bar charts for each 'indicator' in 'grouped'
-        dicts = {}
-        # Loop through each 'indicator' in 'grouped'
-        for indy in grouped:
-            # Create a new DataFrame object called 'merged_df_viz' containing only the rows where 'indicator' column
-            # matches the current 'indy' value
-            merged_df_viz = merged_df[merged_df['indicator'] == indy]
-            # Extract the unique value from the 'quarter_year' column in 'merged_df_viz' and assign it to a variable
-            # called 'quarter'
-            quarter = merged_df_viz['quarter_year'].unique()[0]
-            # Create a new key-value pair in the 'dicts' dictionary, where the key is a string containing the 'indy'
-            # value and the 'quarter' value, and the value is a bar chart object created using the 'merged_df_viz'
-            # DataFrame
-            dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
+        dicts = compare_data_verification(merged_df)
 
         # retrieves a queryset of SystemAssessment objects that have the specified quarter_year and facility_name.
         system_assessments = SystemAssessment.objects.filter(
@@ -3105,3 +3317,471 @@ def update_button_settings(request):
     else:
         form = UpdateButtonSettingsForm(instance=update_settings)
     return render(request, 'dqa/upload.html', {'form': form, "title": "update time"})
+
+
+def bar_chart_dqa(df, x_axis, y_axis, title=None, color=None):
+    if "count" not in y_axis:
+        fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300, text=y_axis, color=color)
+    else:
+        fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300)
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    })
+    # Set the font size of the x-axis and y-axis labels
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=8
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=8
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            font=dict(
+                size=14
+            )
+        )
+    )
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def create_system_assessment_chart(df, fyj_mean, quarter_year):
+    # Creating the plot using plotly express
+    fig = px.bar(df, x='Component of the M&E System', y='Mean', height=450,
+                 title=f'FYJ {quarter_year} DQA system assessment', text='Mean',
+                 labels={'Component of the M&E System': 'Component of the M&E System', 'Mean': 'Mean'}
+                 , color='color', color_discrete_sequence=df['color'].unique(),
+                 # template='simple_white'
+                 )
+
+    # Adding the mean line to the plot
+    fig.add_shape(type='line', x0=-0.5, y0=fyj_mean, x1=4.5, y1=fyj_mean,
+                  line=dict(color='red', width=2, dash='dot'))
+    if fyj_mean >= 2.5:
+        mean_color = "green"
+    elif fyj_mean < 2.5 and fyj_mean >= 1.5:
+        mean_color = "#ebba34"
+    else:
+        mean_color = "red"
+
+    # Adding the mean label to the plot
+    fig.add_annotation(x=4.5, y=fyj_mean, text=f'Mean: {fyj_mean}', showarrow=True,
+                       font=dict(size=14, color=mean_color), arrowhead=1)
+
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    })
+    # Set the font size of the x-axis and y-axis labels
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=8
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=8
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            font=dict(
+                size=14
+            )
+        )
+    )
+    fig.update_layout(showlegend=False)
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def dqa_dashboard(request, dqa_type=None):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    quarter_form = QuarterSelectionForm(request.POST or None)
+    year_form = YearSelectionForm(request.POST or None)
+    hub_form = HubSelectionForm(request.POST or None)
+    subcounty_form = SubcountySelectionForm(request.POST or None)
+    county_form = CountySelectionForm(request.POST or None)
+    program_form = ProgramSelectionForm(request.POST or None)
+    viz = None
+    sub_county_viz = None
+    county_viz = None
+    hub_viz = None
+    quarter_year = None
+    system_assessment_viz = None
+    dicts = None
+    data = None
+    system_assessment = None
+    khis_performance = None
+    fyj_performance = None
+    charts = None
+    audit_team = None
+    audit_team_df = None
+    county_hub_sub_county_df = None
+    data_verification = None
+    audit_viz = None
+    if dqa_type == "program":
+        if quarter_form.is_valid() and year_form.is_valid() and program_form.is_valid():
+            selected_quarter = quarter_form.cleaned_data['quarter']
+            selected_year = year_form.cleaned_data['year']
+            year_suffix = selected_year[-2:]
+            quarter_year = f"{selected_quarter}-{year_suffix}"
+
+            data_verification = DataVerification.objects.filter(quarter_year__quarter_year=quarter_year)
+            system_assessment = SystemAssessment.objects.filter(quarter_year__quarter_year=quarter_year)
+            fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
+            khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
+            audit_team = AuditTeam.objects.filter(quarter_year__quarter_year=quarter_year)
+            dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year)
+            # fetch data from the Sub_counties model
+            data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
+                                               'counties__county_name', 'sub_counties')
+
+    elif dqa_type == "subcounty":
+        if quarter_form.is_valid() and year_form.is_valid() and subcounty_form.is_valid():
+            selected_quarter = quarter_form.cleaned_data['quarter']
+            selected_year = year_form.cleaned_data['year']
+            selected_subcounty = subcounty_form.cleaned_data['subcounty']
+            year_suffix = selected_year[-2:]
+            quarter_year = f"{selected_quarter}-{year_suffix}"
+            sub_county = Sub_counties.objects.get(sub_counties=selected_subcounty)
+            facilities = sub_county.facilities.all()
+            data_verification = DataVerification.objects.filter(quarter_year__quarter_year=quarter_year,
+                                                                facility_name__in=facilities)
+
+            system_assessment = SystemAssessment.objects.filter(quarter_year__quarter_year=quarter_year,
+                                                                facility_name__in=facilities)
+            fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
+            khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
+            audit_team = AuditTeam.objects.filter(quarter_year__quarter_year=quarter_year,
+                                                  facility_name__in=facilities)
+            dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year,
+                                                      facility_name__in=facilities)
+            # fetch data from the Sub_counties model
+            data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
+                                               'counties__county_name', 'sub_counties')
+
+    elif dqa_type == "county":
+        if quarter_form.is_valid() and year_form.is_valid() and county_form.is_valid():
+            selected_quarter = quarter_form.cleaned_data['quarter']
+            selected_year = year_form.cleaned_data['year']
+            selected_county = county_form.cleaned_data['county']
+            year_suffix = selected_year[-2:]
+            quarter_year = f"{selected_quarter}-{year_suffix}"
+            county = Counties.objects.get(county_name=selected_county)
+
+            data_verification = DataVerification.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name__sub_counties__counties__county_name=selected_county)
+
+            system_assessment = SystemAssessment.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name__sub_counties__counties__county_name=selected_county)
+            fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
+            khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
+            audit_team = AuditTeam.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name__sub_counties__counties__county_name=selected_county)
+            dqa_workplan = DQAWorkPlan.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name__sub_counties__counties__county_name=selected_county)
+            # fetch data from the Sub_counties model
+            data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
+                                               'counties__county_name', 'sub_counties')
+
+    elif dqa_type == "hub":
+        if quarter_form.is_valid() and year_form.is_valid() and hub_form.is_valid():
+            selected_quarter = quarter_form.cleaned_data['quarter']
+            selected_year = year_form.cleaned_data['year']
+            selected_hub = hub_form.cleaned_data['hub']
+            year_suffix = selected_year[-2:]
+            quarter_year = f"{selected_quarter}-{year_suffix}"
+            hub = Hub.objects.get(hub=selected_hub)
+
+            data_verification = DataVerification.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name__sub_counties__hub__hub=selected_hub)
+
+            system_assessment = SystemAssessment.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name__sub_counties__hub__hub=selected_hub)
+            fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
+            khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
+            audit_team = AuditTeam.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name__sub_counties__hub__hub=selected_hub)
+            dqa_workplan = DQAWorkPlan.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name__sub_counties__hub__hub=selected_hub)
+            # fetch data from the Sub_counties model
+            data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
+                                               'counties__county_name', 'sub_counties')
+
+    if dqa_type is not None and quarter_form.is_valid():
+        if data_verification:
+            facilities = [
+                {'facilities': x.facility_name.name,
+                 'mfl_code': x.facility_name.mfl_code,
+                 } for x in data_verification
+            ]
+            # convert data from database to a dataframe
+            facilities_df = pd.DataFrame(facilities).drop_duplicates()
+            facilities_df.sort_values('facilities', inplace=True)
+            facilities_df['count'] = 1
+            viz = bar_chart_dqa(facilities_df, "facilities", "count",
+                                f"{len(facilities_df)} Facilities DQA Summary for {quarter_year}")
+        else:
+            facilities_df = pd.DataFrame(columns=['facilities', 'mfl_code', 'count'])
+
+        if data:
+            # create a list of dictionaries containing the data
+            county_hub_sub_county = []
+            for d in data:
+                county_hub_sub_county.append({
+                    'facilities': d['facilities__name'],
+                    'mfl_code': d['facilities__mfl_code'],
+                    'hubs': d['hub__hub'],
+                    'counties': d['counties__county_name'],
+                    'sub_counties': d['sub_counties']
+                })
+
+            # convert the list of dictionaries to a pandas dataframe
+            county_hub_sub_county_df = pd.DataFrame(county_hub_sub_county)
+            county_hub_sub_county_df.sort_values('facilities', inplace=True)
+
+            merged_df = county_hub_sub_county_df.merge(facilities_df, on=['facilities', 'mfl_code'], how="right")
+            if merged_df.shape[0] > 0:
+                sub_county_df = merged_df.groupby('sub_counties').sum(numeric_only=True)[
+                    'count'].reset_index().sort_values('count')
+                sub_county_df = sub_county_df.rename(columns={"count": "Number of facilities"})
+                sub_county_df['sub_counties'] = sub_county_df['sub_counties'].str.replace(" Sub County", "")
+                sub_county_viz = bar_chart_dqa(sub_county_df, "sub_counties", "Number of facilities",
+                                               f"{len(sub_county_df)} Sub-counties DQA Summary for {quarter_year}")
+                county_df = merged_df.groupby('counties').sum(numeric_only=True)['count'].reset_index().sort_values(
+                    'count')
+                county_df = county_df.rename(columns={"count": "Number of facilities"})
+                county_viz = bar_chart_dqa(county_df, "counties", "Number of facilities",
+                                           f"Counties DQA Summary for {quarter_year}")
+                hub_df = merged_df.groupby('hubs').sum(numeric_only=True)['count'].reset_index().sort_values(
+                    'count')
+                hub_df = hub_df.rename(columns={"count": "Number of facilities"})
+                hub_viz = bar_chart_dqa(hub_df, "hubs", "Number of facilities",
+                                        f"{len(hub_df)} Hubs DQA Summary for {quarter_year}")
+        if system_assessment:
+            system_assessments_qs = [
+                {'facilities': x.facility_name.name,
+                 'mfl_code': x.facility_name.mfl_code,
+                 'description': x.description,
+                 'calculations': x.calculations
+                 } for x in system_assessment
+            ]
+            # convert data from database to a dataframe
+            system_assessments_df = pd.DataFrame(system_assessments_qs)
+            # system_assessments_df = system_assessments_df[system_assessments_df['calculations'].notna()]
+            system_assessments_df.sort_values('facilities', inplace=True)
+            system_assessments_df['count'] = 1
+            fyj_mean = round(system_assessments_df['calculations'].mean(), 2)
+            description_list = [
+                "There is a documented structure/chart that clearly identifies positions that have data management "
+                "responsibilities at the Facility.",
+                "Positions dedicated to M&E and data management systems in the facility are filled.",
+                "There is a training plan which includes staff involved in data-collection and reporting at all levels in the "
+                "reporting process.",
+                "All relevant staff have received training on the data management processes and tools.",
+                "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and "
+                "timeliness) before submission to the Sub County.",
+                "The facility has data quality SOPs for monthly reporting processes and quality checks",
+                "The facility conducts internal data quality checks and validation before submission of reports",
+                "The facility has conducted a data quality audit in the last 6 months",
+                "There is a documented data improvement action plan? Verify by seeing",
+                "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, "
+                "completeness and timeliness).",
+                "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, "
+                "MDT feedback data template",
+                "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts",
+                "The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 "
+                "indicators.",
+                "The facility staff are very clear on what they are supposed to report on.",
+                "The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.",
+                "The facility staff are very clear on to whom the reports should be submitted.",
+                "The facility staff are very clear on when the reports are due.",
+                "The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)",
+                "Clear instructions have been provided to the facility on how to complete the data collection and reporting "
+                "forms/tools.",
+                "The facility has the revised HTS register in all service delivery points and a clear inventory is available "
+                "detailing the number of HTS registers in use by service delivery point",
+                "HIV client files are well organised and stored in a secure location",
+                "Do you use your EMR to generate reports?",
+                "There is a clearly documented and actively implemented database administration procedure in place. This "
+                "includes backup/recovery procedures, security admininstration, and user administration.",
+                "The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)",
+                "The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,"
+                "What is your main challenge regarding data management and reporting?"]
+            average_dictionary, expected_counts_dictionary = calculate_averages(system_assessment,
+                                                                                description_list)
+            df = pd.DataFrame(average_dictionary.items(), columns=['Component of the M&E System', 'Mean'])
+            df['Component of the M&E System'] = df['Component of the M&E System'].str.replace(
+                "average_calculations_5_12", "Data Management Processes")
+            df['Component of the M&E System'] = df['Component of the M&E System'].str.replace(
+                "average_calculations_5",
+                "M&E Structure, Functions and Capabilities")
+
+            df['Component of the M&E System'] = df['Component of the M&E System'].str.replace(
+                "average_calculations_12_17", "Indicator Definitions and Reporting Guidelines")
+            df['Component of the M&E System'] = df['Component of the M&E System'].str.replace(
+                "average_calculations_17_21", "Data-collection and Reporting Forms / Tools")
+            df['Component of the M&E System'] = df['Component of the M&E System'].str.replace(
+                "average_calculations_21_25", "EMR Systems")
+
+            cond_list = [df['Mean'] >= 2.5, (df['Mean'] >= 1.5) & (df['Mean'] < 2.5), df['Mean'] < 1.5]
+            choice_list = ["green", "yellow", "red"]
+            df['color'] = np.select(cond_list, choice_list, default="n/a")
+
+            system_assessment_viz = create_system_assessment_chart(df, fyj_mean, quarter_year)
+            # Show system assessment performance
+            m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report, m_e_emr_systems = \
+                prepare_data_system_assessment(system_assessments_df, description_list)
+            names = ["I - M&E Structure, Functions and Capabilities", "II - Data Management Processes",
+                     "III - Indicator Definitions and Reporting Guidelines",
+                     "IV - Data-collection and Reporting Forms / Tools",
+                     "V - EMR Systems"]
+            lists = [m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report,
+                     m_e_emr_systems]
+
+            charts_dict = dict(zip(names, lists))
+            charts = []
+            for title, df in charts_dict.items():
+                charts.append(create_system_assessment_bar_charts(df, title, quarter_year))
+        else:
+            messages.info(request, f"No system assessment data for {quarter_year}!")
+        if data_verification:
+            dqa_df = create_dqa_df(data_verification)
+            if dqa_df.empty:
+                messages.info(request, f"A few DQA indicators have been capture but not "
+                                       f"enough for data visualization")
+        else:
+            dqa_df = pd.DataFrame(columns=['indicator', 'facility', 'mfl_code', 'Source', 'MOH 731', 'KHIS',
+                                           'quarter_year', 'last month'])
+            messages.info(request, f"No DQA data for {quarter_year}")
+        if fyj_performance:
+            fyj_perf_df = make_performance_df(fyj_performance, 'DATIM')
+        else:
+            fyj_perf_df = pd.DataFrame(columns=['mfl_code', 'quarter_year', 'indicator', 'DATIM'])
+            messages.info(request, f"No DATIM data for {quarter_year}!")
+        merged_df = dqa_df.merge(fyj_perf_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right')
+        merged_df = merged_df[merged_df['facility'].notnull()]
+        if khis_performance:
+            khis_perf_df = make_performance_df(khis_performance, 'KHIS')
+
+            tx_curr_khis = khis_perf_df[khis_perf_df['indicator'] == "Number Current on ART Total"]
+
+            # apply the function to the 'date' column and store the result in a new column
+            # tx_curr_khis['month_number'] = tx_curr_khis['month'].apply(get_month_number)
+
+            tx_curr_khis['month'] = pd.to_datetime(tx_curr_khis['month'], format='%b %Y')
+            tx_curr_khis['month_number'] = tx_curr_khis['month'].dt.month
+
+            tx_curr_khis = tx_curr_khis[tx_curr_khis['month_number'] == max(tx_curr_khis['month_number'])]
+            del tx_curr_khis['month_number']
+            del tx_curr_khis['month']
+            khis_others = khis_perf_df[khis_perf_df['indicator'] != "Number Current on ART Total"]
+
+            khis_others = khis_others.groupby(['indicator', 'quarter_year', 'mfl_code']).sum(
+                numeric_only=True).reset_index()
+
+            khis_perf_df = pd.concat([khis_others, tx_curr_khis])
+        else:
+            khis_perf_df = pd.DataFrame(columns=['indicator', 'facility', 'mfl_code', 'KHIS',
+                                                 'quarter_year'])
+
+        if "KHIS" in merged_df.columns:
+            del merged_df['KHIS']
+        merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right').fillna(
+            0)
+        try:
+            merged_df = merged_df[
+                ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
+        except KeyError:
+            messages.info(request, f"No KHIS data for {quarter_year}!")
+        for i in merged_df.columns[4:]:
+            merged_df[i] = merged_df[i].astype(int)
+        merged_df = merged_df.groupby(['indicator', 'quarter_year']).sum(numeric_only=True).reset_index()
+        dicts = compare_data_verification(merged_df)
+        if viz is None:
+            messages.error(request, f"No DQA data found for {quarter_year}")
+        if audit_team:
+            audit_team_qs = [
+                {'Facilities': x.facility_name.name,
+                 'mfl_code': x.facility_name.mfl_code,
+                 'Name': x.name,
+                 'Carder': x.carder,
+                 'Organization': x.organization,
+                 } for x in audit_team
+            ]
+            # convert data from database to a dataframe
+            audit_team_df = pd.DataFrame(audit_team_qs)
+            audit_team_df_copy = audit_team_df.copy()
+            # groupby 'name' ,'carder','organization' and aggregate the facility names as a string
+            audit_team_df = audit_team_df.groupby(['Name', 'Carder', 'Organization']).agg(
+                {'Facilities': lambda x: ', '.join(set(x))})
+
+            audit_team_df = audit_team_df.reset_index()
+            audit_team_df.to_csv("audit_team_df.csv", index=False)
+
+            audit_team_df['Number of audit team'] = 1
+            audit_team_df['Carder'] = audit_team_df['Carder'].str.replace("Monitoring and Evaluation", "M&E")
+            audit_team_df['Carder'] = audit_team_df['Carder'].str.replace("SIA", "SI Associate")
+            audit_team_df['Carder'] = audit_team_df['Carder'].str.upper()
+            audit_team_df = audit_team_df.groupby(['Carder', 'Organization']).sum(
+                numeric_only=True).reset_index().sort_values("Number of audit team", ascending=False)
+
+            audit_viz = bar_chart_dqa(audit_team_df, "Carder", 'Number of audit team', color="Organization",
+                                      title="DQA Audit Team Participation by Organization and Carder")
+
+    context = {
+        "quarter_form": quarter_form,
+        "year_form": year_form,
+        "viz": viz,
+        "sub_county_viz": sub_county_viz,
+        "county_viz": county_viz,
+        "hub_viz": hub_viz,
+        "quarter_year": quarter_year,
+        "system_assessment_viz": system_assessment_viz,
+        "dicts": dicts,
+        "charts": charts,
+        "audit_team": audit_team,
+        "audit_team_df": audit_team_df,
+        "hub_form": hub_form,
+        "subcounty_form": subcounty_form,
+        "county_form": county_form,
+        "program_form": program_form,
+        "dqa_type": dqa_type,
+        "audit_viz": audit_viz,
+
+    }
+    return render(request, 'dqa/dqa_dashboard.html', context)

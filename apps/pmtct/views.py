@@ -75,7 +75,10 @@ def show_stability(stability_df, num_patients_not_in_data_info=None):
     fig = px.bar(grouped, x="Risk categorization", y="Number of patients", text='Number of patients',
                  color="Risk categorization", color_discrete_map=color_dict,
                  title=F"High risk vs Stable N= {len(stability_df)}  (Stable = {stable_percent}% High risk = "
-                       F"{high_risk_percent}%)", height=350)
+                       F"{high_risk_percent}%)", height=350,
+                 category_orders={
+                     "Risk categorization": ['Total pts','Total Categorized','STABLE','HIGH RISK','Not categorized']},
+                 )
     fig.update_layout(legend=dict(
         orientation="h",
         yanchor="bottom",

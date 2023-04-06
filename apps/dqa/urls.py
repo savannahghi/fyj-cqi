@@ -4,7 +4,7 @@ from apps.dqa.views import add_data_verification, add_period, show_data_verifica
     delete_data_verification, load_data, dqa_summary, dqa_work_plan_create, show_dqa_work_plan, load_system_data, \
     add_system_verification, system_assessment_table, instructions, update_system_assessment, update_dqa_workplan, \
     GeneratePDF, add_audit_team, update_audit_team, show_audit_team, load_khis_data, update_button_settings, \
-    dqa_dashboard
+    dqa_dashboard, export_dqa_work_plan_csv
 
 urlpatterns = [
     path('add-data-verification/', add_data_verification,name="add_data_verification"),
@@ -33,5 +33,6 @@ urlpatterns = [
     path('delete-data-verification/<uuid:pk>', delete_data_verification,name="delete_data_verification"),
     # path('dqa_summary_pdf/', generate_pdf, name='dqa_summary_pdf'),
     path('generate-pdf/', GeneratePDF.as_view(), name='generate-pdf'),
+    path('download-dqa-workplan/<str:quarter_year>/<str:selected_level>/', export_dqa_work_plan_csv, name='download_dqa_workplan'),
 
 ]

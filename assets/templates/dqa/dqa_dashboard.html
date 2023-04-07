@@ -117,7 +117,7 @@
                         <tr>
                             <td class="text-center text-black"
                                 style="background-color: green; border: 1px solid black;">
-                                <strong>Green <span class="text-info">(Yes)</span></strong>
+                                <strong>Green <span class="text-info"> (Meets standard)</span></strong>
                             </td>
                             <td class="text-primary text-center">
                                 <strong> >= 2.5</strong>
@@ -126,7 +126,7 @@
                         <tr>
                             <td class="text-center text-black"
                                 style="background-color: yellow; border: 1px solid black;">
-                                <strong>Yellow <span class="text-info">(Partly)</span></strong>
+                                <strong>Yellow <span class="text-info"> (Needs improvement)</span></strong>
                             </td>
                             <td class="text-primary text-center">
                                 <strong> >= 1.5 and < 2.5</strong>
@@ -134,7 +134,7 @@
 
                         <tr>
                             <td class="text-center text-black" style="background-color: red; border: 1px solid black;">
-                                <strong>Red <span class="text-info">(No - not at all)</span></strong>
+                                <strong>Red <span class="text-info"> (Needs urgent remediation)</span></strong>
                             </td>
                             <td class="text-primary text-center">
                                 <strong> < 1.5</strong>
@@ -342,6 +342,57 @@
                 <hr>
                 <h6 class="text-primary text-center">Data Verification</h6>
                 <hr>
+                {% if data_verification_viz %}
+
+
+                    <div class="col mt-3">
+                        <table class="table table-striped table-hover" style="font-size: x-small;">
+                            <thead class="thead-dark text-center">
+                            <tr>
+                                <th colspan="2">COLOUR CODE KEY</th>
+                            </tr>
+                            <tr>
+                                <th>Color code</th>
+                                <th>Absolute difference proportion <span style="font-size: xx-small">(source: SIMS 4.1)</span></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+
+                            <tr>
+                                <td class="text-center text-black"
+                                    style="background-color: green; border: 1px solid black;">
+                                    <strong>Green <span class="text-info"> (Meets standard)</span></strong>
+                                </td>
+                                <td class="text-primary text-center">
+                                    <strong> <= 5% </strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-center text-black"
+                                    style="background-color: yellow; border: 1px solid black;">
+                                    <strong>Yellow <span class="text-info"> (Needs improvement)</span></strong>
+                                </td>
+                                <td class="text-primary text-center">
+                                    <strong> > 5 % and <= 10 % </strong>
+                                </td>
+
+                            <tr>
+                                <td class="text-center text-black"
+                                    style="background-color: red; border: 1px solid black;">
+                                    <strong>Red <span class="text-info"> (Needs urgent remediation)</span></strong>
+                                </td>
+                                <td class="text-primary text-center">
+                                    <strong> > 10 % </strong>
+                                </td>
+                            </tr>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        {{ data_verification_viz|safe }}
+                    </div>
+                {% endif %}
                 <div class="row">
                     {% if dicts %}
                         <p class="text-center text-primary">
@@ -410,6 +461,18 @@
                 <hr>
                 <h6 class="text-primary text-center">DQA work-plan</h6>
                 <hr>
+                <div>
+                {% if work_plan_facilities_viz %}
+
+
+                    {{ work_plan_facilities_viz|safe }}
+                    {{ work_plan_areas_reviewed_viz|safe }}
+                    {{ work_plan_actionpoint_status_viz|safe }}
+                    {{ work_plan_timeframe_viz|safe }}
+                    {{ work_plan_trend_viz|safe }}
+                    {% endif %}
+
+                </div>
                 <div class="mt-2 " style="display:inline-block;">
                     <a href="{% url 'download_dqa_workplan' quarter_year selected_level %}" class="btn btn-info mb-4"
                        role="button">Download CSV</a>

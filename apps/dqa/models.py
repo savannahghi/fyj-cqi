@@ -288,6 +288,12 @@ class DQAWorkPlan(models.Model):
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                     on_delete=models.CASCADE, related_name='+')
 
+    def __str__(self):
+        return f"{self.facility_name} - {self.quarter_year}"
+
+    class Meta:
+        ordering = ['facility_name']
+
 
 class SystemAssessment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)

@@ -2333,6 +2333,8 @@ def create_dqa_df(dqa):
 def compare_data_verification(merged_df):
     try:
         merged_viz_df = merged_df.copy()
+        merged_viz_df['DATIM'] = merged_viz_df['DATIM'].astype(int)
+        merged_viz_df['Source'] = merged_viz_df['Source'].astype(int)
         merged_viz_df['Difference (DATIM-Source)'] = (merged_viz_df['DATIM'] - merged_viz_df['Source'])
         merged_viz_df['Absolute difference proportion'] = round(
             (merged_viz_df['DATIM'] - merged_viz_df['Source']) / merged_viz_df['Source'] * 100, 1).abs()
@@ -4088,6 +4090,10 @@ def dqa_dashboard(request, dqa_type=None):
             merged_df[i] = merged_df[i].astype(int)
         merged_df = merged_df.groupby(['indicator', 'quarter_year']).sum(numeric_only=True).reset_index()
         dicts, merged_viz_df = compare_data_verification(merged_df)
+        data_verification_viz = bar_chart_dqa(merged_viz_df, "indicator",
+                                              "Absolute difference proportion (Difference/Source*100)",
+                                              color='Score',
+                                              title="Data verification final scores")
         if viz is None:
             messages.error(request, f"No DQA data found for {quarter_year}")
         if audit_team:
@@ -4152,10 +4158,6 @@ def dqa_dashboard(request, dqa_type=None):
                                                           f"{timeframe_df['Number of action points'].sum()}"
                                                           f" ({quarter_year})",
                                                     color=None)
-            data_verification_viz = bar_chart_dqa(merged_viz_df, "indicator",
-                                                  "Absolute difference proportion (Difference/Source*100)",
-                                                  color='Score',
-                                                  title="Data verification final scores")
 
     context = {
         "quarter_form": quarter_form,

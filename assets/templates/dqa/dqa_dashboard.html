@@ -680,7 +680,7 @@
                                         </thead>
                                         <tbody>
                                         {% for action_plan in dqa_workplan %}
-                                            {% if action_plan.program_areas_reviewed == "HTS PREVENTION PMTCT" %}
+                                            {% if action_plan.program_areas_reviewed == "HTS/PREVENTION/PMTCT" %}
                                                 <tr>
                                                     <th scope="row">{{ forloop.counter }}</th>
                                                     <th scope="row">{{ action_plan.facility_name.name }}</th>

@@ -3435,6 +3435,8 @@ def update_button_settings(request):
 
 
 def bar_chart_dqa(df, x_axis, y_axis, title=None, color=None):
+    if df.empty:
+        return None
     if "Number of scores" == y_axis:
         fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300, text=y_axis,
                      hover_data=["Number of scores", "%"])
@@ -3514,6 +3516,14 @@ def prepare_dqa_workplan_viz(dqa_workplan_df):
         'Number of action points'].reset_index()
     area_reviewed_df.sort_values('Number of action points', inplace=True)
 
+    area_reviewed_facility_df = \
+        dqa_workplan_df.groupby(['Facilities', 'Program Areas Reviewed']).sum(numeric_only=True)[
+            'Number of action points'].reset_index()
+    # replace spaces and slashes with underscores in the column
+    area_reviewed_facility_df['Program Areas Reviewed'] = area_reviewed_facility_df[
+        'Program Areas Reviewed'].str.replace(' ', '_').str.replace('/', '_').str.replace('&', '_')
+    area_reviewed_facility_df.sort_values('Number of action points', inplace=True)
+
     action_point_status_df = dqa_workplan_df.groupby('completion').sum(numeric_only=True)[
         'Number of action points'].reset_index()
     action_point_status_df.sort_values('completion', inplace=True)
@@ -3554,7 +3564,7 @@ def prepare_dqa_workplan_viz(dqa_workplan_df):
     timeframe_df['# (%)'] = timeframe_df['Number of action points'].astype(str) + " (" + timeframe_df['%'].astype(
         str) + "%)"
 
-    return facilities_df, area_reviewed_df, action_point_status_df, weekly_counts, timeframe_df
+    return facilities_df, area_reviewed_df, action_point_status_df, weekly_counts, timeframe_df, area_reviewed_facility_df
 
 
 def create_system_assessment_chart(df, fyj_mean, quarter_year):
@@ -3736,6 +3746,7 @@ def dqa_dashboard(request, dqa_type=None):
     work_plan_trend_viz = None
     work_plan_timeframe_viz = None
     data_verification_viz = None
+    facility_charts = None
     if dqa_type == "program":
         if quarter_form.is_valid() and year_form.is_valid() and program_form.is_valid():
             selected_quarter = quarter_form.cleaned_data['quarter']
@@ -4130,8 +4141,8 @@ def dqa_dashboard(request, dqa_type=None):
             ]
             # convert data from database to a dataframe
             dqa_workplan_df = pd.DataFrame(dqa_workplan_qs)
-            facilities_df, area_reviewed_df, action_point_status_df, weekly_counts, timeframe_df = \
-                prepare_dqa_workplan_viz(dqa_workplan_df)
+            facilities_df, area_reviewed_df, action_point_status_df, weekly_counts, timeframe_df, \
+            area_reviewed_facility_df = prepare_dqa_workplan_viz(dqa_workplan_df)
             work_plan_facilities_viz = bar_chart_dqa(facilities_df, "Facilities", "Number of action points",
                                                      title=f"Distribution of DQA action points per facility N = "
                                                            f"{facilities_df['Number of action points'].sum()}"
@@ -4144,6 +4155,16 @@ def dqa_dashboard(request, dqa_type=None):
                                                                f"{area_reviewed_df['Number of action points'].sum()}"
                                                                f" ({quarter_year})",
                                                          color=None)
+            program_areas = ["CHART_ABSTRACTION", "M_E_SYSTEMS", "Data_Management_Systems", "HTS_PREVENTION_PMTCT"]
+            facility_charts = {}
+            for program_area in program_areas:
+                area_reviewed_facility_df_area = area_reviewed_facility_df[
+                    area_reviewed_facility_df['Program Areas Reviewed'] == program_area]
+                title = f"Distribution of {program_area} DQA action points by facility ({quarter_year})"
+                chart = bar_chart_dqa(area_reviewed_facility_df_area, "Facilities", "Number of action points",
+                                      title=title, color=None)
+                facility_charts[program_area] = chart
+
             work_plan_actionpoint_status_viz = bar_chart_dqa(action_point_status_df, "% completetion",
                                                              "Number of action points",
                                                              title=f"Distribution of DQA Action Points by Completion "
@@ -4197,6 +4218,7 @@ def dqa_dashboard(request, dqa_type=None):
         "work_plan_trend_viz": work_plan_trend_viz,
         "work_plan_timeframe_viz": work_plan_timeframe_viz,
         "data_verification_viz": data_verification_viz,
+        "facility_charts": facility_charts
 
     }
     return render(request, 'dqa/dqa_dashboard.html', context)

@@ -1,0 +1,211 @@
+{% extends 'data_analysis/index_dqa.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div class="container-fluid py-5">
+                {% if messages %}
+                    <ul class="messages">
+                        {% for message in messages|slice:":1" %}
+                            <div class="alert alert-info col-12" role="alert">
+                                <h6 class="d-flex justify-content-evenly" style="font-size: small">{{ message|safe }}</h6>
+                            </div>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row d-flex">
+                        <div class="col-md-4">
+                            <img class="img-fluid" src="{% static 'images/pharmacy.png' %}" alt="" width="400">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row">
+                                {% if filename %}
+                                    <div>
+                                        <h4 class="text-primary text-center">{{ filename|upper }} </h4>
+                                    </div>
+
+                                {% endif %}
+                            {% if "arv" in filename %}
+                                    <p><strong>Description: </strong>The number of adult and pediatric ARV bottles
+                                        (units) dispensed by
+                                        ARV drug category at
+                                        the end of the reporting period.</p>
+                                    <p><strong>Numerator: </strong>Number of ARV bottles (units) dispensed
+                                        within the reporting period by ARV drug
+                                        category.</p>
+                                {% elif "curr" in filename %}
+                                    <p><strong>Description: </strong>The current number of ARV drug units (bottles) at
+                                        the end of the reporting period by ARV drug category
+                                    </p>
+                                    <p><strong>Numerator: </strong>The number of ARV drug units (bottles) at
+                                        the end of the reporting period by ARV drug
+                                        category.</p>
+                                {% else %}
+                                    <p>To utilize the tool, you will need to upload either the Total Quantity issued
+                                        this
+                                        month or End of Month Physical Stock Count CSV file from
+                                        <a
+                                                href="https://hiskenya.org/dhis-web-data-visualizer/index.html#/">KHIS's
+                                            website
+                                        </a>.
+                                    </p>
+                                {% endif %}
+                                <div class="row">
+                                    <div class="form-group col-md-8">
+                                        {{ form.as_p }}
+                                        {% if form.is_bound %}
+                                            <p>Uploaded file: {{ form.cleaned_data.file.name }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <button type="submit" class="btn btn-primary mt-4">Submit</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    {#                    <div class="form-group">#}
+                    {#                        <label for="fileInput">Choose a file to upload:</label>#}
+                    {#                        <div class="custom-file">#}
+                    {#                            <input type="file" class="custom-file-input" id="fileInput" name="file">#}
+                    {#                        </div>#}
+                    {#                    </div>#}
+                    {#                    <div class="row">#}
+                    {#                        <div>#}
+                    {#                            <button type="submit" class="btn btn-primary mt-4">Upload</button>#}
+                    {#                        </div>#}
+                    {#                        {% if filename %}#}
+                    {#                            <div>#}
+                    {#                                <h6 class="display-6 text-primary text-center">{{ filename|upper }} </h6>#}
+                    {#                            </div>#}
+                    {#                        {% endif %}#}
+                    {#                    </div>#}
+                    <hr>
+                </form>
+                {% if not final_df.empty %}
+                    <div class="table-responsive table-fixed-header">
+                        <table class="table table-striped table-hover">
+                            <thead class="thead-dark">
+                            <th scope="col"></th>
+                            {% for col in final_df.columns %}
+                                <th scope="col">{{ col }}</th>
+                            {% endfor %}
+                            </thead>
+                            <tbody>
+                            </tr>
+                            {% for index, row in final_df.iterrows %}
+                                <tr>
+                                    {% if index == "Total" %}
+                                        <th scope="row" class="fw-bold">{{ index }}</th>
+                                        {% for cell in row %}
+                                            <td class="fw-bold">
+                                                {{ cell }}
+                                            </td>
+                                        {% endfor %}
+                                    {% else %}
+                                        <th scope="row">{{ index }}</th>
+                                        {% for cell in row %}
+                                            <td>
+                                                {{ cell }}
+                                            </td>
+                                        {% endfor %}
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!--DOWNLOAD BUTTON-->
+                    <div class="mt-3">
+                        <a href="{% url 'download_csv' dictionary.report filename %}">
+                            <button type="button" class="btn btn-success btn-floating mr-2"
+                                    data-mdb-ripple-color="dark">
+                                Download <i class="fas fa-download"></i>
+                            </button>
+                        </a>
+                    </div>
+                {% endif %}
+                {% if not other_adult_df_file.empty %}
+                    <hr>
+                    <h6 class="text-primary text-center"> Adult other regimens </h6>
+                    <hr>
+                    <div class="table-responsive table-fixed-header mt-3">
+                        <table class="table table-striped table-hover">
+                            <thead class="thead-dark">
+                            <th scope="col"></th>
+                            {% for col in other_adult_df_file.columns %}
+                                <th scope="col">{{ col }}</th>
+                            {% endfor %}
+                            </thead>
+                            <tbody>
+                            </tr>
+                            {% for index, row in other_adult_df_file.iterrows %}
+                                <tr>
+                                    <th scope="row">{{ index }}</th>
+                                    {% for cell in row %}
+                                        <td>
+                                            {{ cell }}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!--DOWNLOAD BUTTON-->
+                    <div class="mt-3">
+                        <a href="{% url 'download_csv' dictionary.adult_report adult_others_filename %}">
+                            <button type="button" class="btn btn-success btn-floating mr-2"
+                                    data-mdb-ripple-color="dark">
+                                Download <i class="fas fa-download"></i>
+                            </button>
+                        </a>
+                    </div>
+                {% endif %}
+                {% if not other_paeds_bottles_df_file.empty %}
+                    <hr>
+                    <h6 class="text-primary text-center"> Pediatrics other regimens </h6>
+                    <hr>
+                    <div class="table-responsive table-fixed-header mt-3">
+                        <table class="table table-striped table-hover">
+                            <thead class="thead-dark">
+                            <th scope="col"></th>
+                            {% for col in other_paeds_bottles_df_file.columns %}
+                                <th scope="col">{{ col }}</th>
+                            {% endfor %}
+                            </thead>
+                            <tbody>
+                            </tr>
+                            {% for index, row in other_paeds_bottles_df_file.iterrows %}
+                                <tr>
+                                    <th scope="row">{{ index }}</th>
+                                    {% for cell in row %}
+                                        <td>
+                                            {{ cell }}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!--DOWNLOAD BUTTON-->
+                    <div class="mt-3">
+                        <a href="{% url 'download_csv' dictionary.paediatric_report paeds_others_filename %}">
+                            <button type="button" class="btn btn-success btn-floating mr-2"
+                                    data-mdb-ripple-color="dark">
+                                Download <i class="fas fa-download"></i>
+                            </button>
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

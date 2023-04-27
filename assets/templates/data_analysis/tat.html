@@ -1,0 +1,189 @@
+{% extends 'data_analysis/index_dqa.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div class="container-fluid py-5">
+                {% if messages %}
+                    <ul class="messages">
+                        {% for message in messages|slice:":1" %}
+                            <div class="alert alert-info col-12" role="alert">
+                                <h6 class="d-flex justify-content-evenly" style="font-size: small">{{ message|safe }}</h6>
+                            </div>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row d-flex">
+                        <div class="col-md-3">
+                            <img class="img-fluid" src="{% static 'images/lab.png' %}" alt="" width="200">
+                        </div>
+                        <div class="col-md-9">
+                            <div class="row">
+                                {% if "_tat_" in facility_c_r_filename|lower %}
+                                    <div class="mb-1">
+                                        <h3 class="text-primary text-center">{{ target_text }} Turn Around Time
+                                            (TAT)</h3>
+                                    </div>
+                                {% endif %}
+                                <p>To begin, you will need to upload either the overall Detailed (Viral Load) or All
+                                    Outcomes (+/-) (Early Infant Diagnosis (EID)) CSV file from
+                                    <a
+                                            href="https://eiddash.nascop.org/reports">NASCOP's website
+                                    </a>.
+                                    Once you have uploaded the desired file, you can filter the dataset by selecting a
+                                    specific date
+                                    range (Date collected) for which you would like to view data. This will allow you to
+                                    narrow down
+                                    the dataset and focus on the relevant information that you need.</p>
+                                <div class="form-group col-md-12">
+                                    {{ form.as_p }}
+                                    {% if form.is_bound %}
+                                        <p>Uploaded file: {{ form.cleaned_data.file.name }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ date_picker_form.from_date|as_crispy_field }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ date_picker_form.to_date|as_crispy_field }}
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button type="submit" class="btn btn-primary mt-4">Submit</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if facility_c_r_filename %}
+                        <hr>
+                        <div>
+                            <h6 class="text-primary text-center">Download csv below </h6>
+                        </div>
+                        <hr>
+                    {% endif %}
+                </form>
+            </div>
+            <div>
+                {% if not facilities_collect_dispatch_tat.empty %}
+                    <div class="row">
+                        <div class="col d-flex justify-content-between">
+                            <!--DOWNLOAD BUTTON-->
+                            <div>
+                                <a href="{% url 'download_csv' dictionary.facilities_collect_receipt_tat facility_c_r_filename %}">
+                                    <button type="button" class="btn btn-success btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ facility_c_r_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                            <!--DOWNLOAD BUTTON-->
+                            <div>
+                                <a href="{% url 'download_csv' dictionary.sub_counties_collect_receipt_tat subcounty_c_r_filename %}">
+                                    <button type="button" class="btn btn-success btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ subcounty_c_r_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                            <!--DOWNLOAD BUTTON-->
+                            <div>
+                                <a href="{% url 'download_csv' dictionary.hubs_collect_receipt_tat hub_c_r_filename %}">
+                                    <button type="button" class="btn btn-success btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ hub_c_r_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                            <!--DOWNLOAD BUTTON-->
+                            <div>
+                                <a href="{% url 'download_csv' dictionary.counties_collect_receipt_tat county_c_r_filename %}">
+                                    <button type="button" class="btn btn-success btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ county_c_r_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col d-flex justify-content-between">
+                            <!--DOWNLOAD BUTTON-->
+                            <div class="mt-3">
+                                <a href="{% url 'download_csv' dictionary.facilities_collect_dispatch_tat facility_c_d_filename %}">
+                                    <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ facility_c_d_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                            <!--DOWNLOAD BUTTON-->
+                            <div class="mt-3">
+                                <a href="{% url 'download_csv' dictionary.sub_counties_collect_dispatch_tat subcounty_c_d_filename %}">
+                                    <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ subcounty_c_d_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                            <!--DOWNLOAD BUTTON-->
+                            <div class="mt-3">
+                                <a href="{% url 'download_csv' dictionary.hubs_collect_dispatch_tat hub_c_d_filename %}">
+                                    <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ hub_c_d_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                            <!--DOWNLOAD BUTTON-->
+                            <div class="mt-3">
+                                <a href="{% url 'download_csv' dictionary.counties_collect_dispatch_tat county_c_d_filename %}">
+                                    <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ county_c_d_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            <div>
+                {% if county_viz %}
+                    <hr>
+                    <h6 class="text-primary text-center">COUNTIES TAT TREND </h6>
+                    <hr>
+                    {% for name, viz in county_viz.items %}
+                        <div>
+                            {{ viz|safe }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if sub_county_viz %}
+                    <hr>
+                    <h6 class="text-primary text-center">SUB-COUNTIES TAT TREND</h6>
+                    <hr>
+                    {% for name, viz in sub_county_viz.items %}
+                        <div>
+                            {{ viz|safe }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if hub_viz %}
+                    <hr>
+                    <h6 class="text-primary text-center">HUB TREND</h6>
+                    <hr>
+                    {% for name, viz in hub_viz.items %}
+                        <div>
+                            {{ viz|safe }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        </div>
+    </main>
+{% endblock %}

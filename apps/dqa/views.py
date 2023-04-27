@@ -2331,6 +2331,38 @@ def create_dqa_df(dqa):
 
 
 def compare_data_verification(merged_df):
+    try:
+        merged_viz_df = merged_df.copy()
+        merged_viz_df['DATIM'] = merged_viz_df['DATIM'].astype(int)
+        merged_viz_df['Source'] = merged_viz_df['Source'].astype(int)
+        merged_viz_df['Difference (DATIM-Source)'] = (merged_viz_df['DATIM'] - merged_viz_df['Source'])
+        merged_viz_df['Absolute difference proportion'] = round(
+            (merged_viz_df['DATIM'] - merged_viz_df['Source']) / merged_viz_df['Source'] * 100, 1).abs()
+
+        merged_viz_df['Percentage'] = merged_viz_df['Absolute difference proportion'].astype(str) + " %"
+        cond_list = [merged_viz_df['Absolute difference proportion'] > 10,
+                     (merged_viz_df['Absolute difference proportion'] > 5) & (
+                             merged_viz_df['Absolute difference proportion'] <= 10),
+                     merged_viz_df['Absolute difference proportion'] <= 5]
+        choice_list = ["Needs urgent remediation", "Needs improvement", "Meets standard"]
+        merged_viz_df['Score'] = np.select(cond_list, choice_list, default="n/a")
+        merged_viz_df.sort_values('Absolute difference proportion', inplace=True)
+        merged_viz_df["Score"] = merged_viz_df["Score"].astype("category")
+        merged_viz_df['indicator'] = merged_viz_df['indicator'].replace('Number Starting ART Total', 'TX_NEW')
+        merged_viz_df['indicator'] = merged_viz_df['indicator'].replace('Number Tested Positive Total', 'HTS_TST_POS')
+        merged_viz_df['indicator'] = merged_viz_df['indicator'].replace('Number Starting IPT Total', 'TB_PREV')
+        merged_viz_df['indicator'] = merged_viz_df['indicator'].replace('Number Current on ART Total', 'TX_CURR')
+        merged_viz_df['indicator'] = merged_viz_df['indicator'].replace('Number initiated on PrEP', 'PrEP_NEW')
+        merged_viz_df['indicator'] = merged_viz_df['indicator'].replace('Number Screened for Cervical Cancer',
+                                                                        'CXCA_SCRN')
+        merged_viz_df = merged_viz_df.rename(
+            columns={"Absolute difference proportion": "Absolute difference proportion (Difference/Source*100)"})
+    except KeyError:
+        merged_viz_df = pd.DataFrame(columns=['indicator', 'quarter_year', 'mfl_code', 'Source', 'MOH 731', 'KHIS',
+                                              'DATIM', 'Difference (DATIM-Source)',
+                                              'Absolute difference proportion (Difference/Source*100)', 'Percentage',
+                                              'Score'])
+
     merged_df = pd.melt(merged_df, id_vars=['mfl_code', 'indicator', 'quarter_year'],
                         value_vars=list(merged_df.columns[3:]),
                         var_name='data sources', value_name='performance')
@@ -2360,7 +2392,7 @@ def compare_data_verification(merged_df):
         # value and the 'quarter' value, and the value is a bar chart object created using the 'merged_df_viz'
         # DataFrame
         dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
-    return dicts
+    return dicts, merged_viz_df
 
 
 def calc_percentage(row):
@@ -2533,6 +2565,9 @@ def prepare_data_system_assessment(system_assessments_df, description_list):
     all_dfs['% of scores'] = all_dfs['% of scores'].astype(str) + '%'
     all_dfs['scores (%)'] = all_dfs['# of scores'].astype(str) + " (" + all_dfs['% of scores'] + ")"
     del all_dfs['% of scores']
+    all_dfs['Scores'] = all_dfs['Scores'].replace("greens", "Meets standard")
+    all_dfs['Scores'] = all_dfs['Scores'].replace("yellows", "Needs improvement")
+    all_dfs['Scores'] = all_dfs['Scores'].replace("reds", "Needs urgent remediation")
 
     m_e_structures = m_e_structures.apply(calc_percentage, axis=1)
     m_e_data_mnx = m_e_data_mnx.apply(calc_percentage, axis=1)
@@ -2754,7 +2789,7 @@ def dqa_summary(request):
         except KeyError:
             messages.info(request, f"No KHIS data for {selected_facility} {quarter_year}!")
             return redirect(request.path_info)
-        dicts = compare_data_verification(merged_df)
+        dicts, merged_viz_df = compare_data_verification(merged_df)
 
         # retrieves a queryset of SystemAssessment objects that have the specified quarter_year and facility_name.
         system_assessments = SystemAssessment.objects.filter(
@@ -3400,14 +3435,37 @@ def update_button_settings(request):
 
 
 def bar_chart_dqa(df, x_axis, y_axis, title=None, color=None):
+    if df.empty:
+        return None
     if "Number of scores" == y_axis:
         fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300, text=y_axis,
                      hover_data=["Number of scores", "%"])
     elif "# of scores" == y_axis:
         fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300, text="scores (%)",
                      hover_data=["# of scores", "scores (%)"])
+    elif "timeframe (wks)" == x_axis:
+        fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300, text="# (%)",
+                     hover_data=["Number of action points", "# (%)"])
+    elif 'trend' in title.lower():
+        fig = px.line(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=500)
+        fig.update_traces(textposition='top center')
+    elif 'indicator' == x_axis:
+        colors = {'Meets standard': 'green', 'Needs improvement': 'yellow', 'Needs urgent remediation': 'red'}
+        fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=400, color='Score', text="Percentage",
+                     color_discrete_map=colors,
+                     hover_data=['Difference (DATIM-Source)', "Absolute difference proportion (Difference/Source*100)",
+                                 "Percentage",
+                                 "Source", "DATIM"])
+        fig.update_layout(legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
     elif "count" not in y_axis:
         fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300, text=y_axis, color=color)
+
     else:
         fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=300)
     if y_axis == "Number of scores" and color is not None:
@@ -3446,6 +3504,67 @@ def bar_chart_dqa(df, x_axis, y_axis, title=None, color=None):
     )
     fig.update_traces(hoverlabel=dict(font=dict(size=8)))
     return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def prepare_dqa_workplan_viz(dqa_workplan_df):
+    dqa_workplan_df['Number of action points'] = 1
+    facilities_df = dqa_workplan_df.groupby('Facilities').sum(numeric_only=True)[
+        'Number of action points'].reset_index()
+    facilities_df.sort_values('Number of action points', inplace=True)
+
+    area_reviewed_df = dqa_workplan_df.groupby('Program Areas Reviewed').sum(numeric_only=True)[
+        'Number of action points'].reset_index()
+    area_reviewed_df.sort_values('Number of action points', inplace=True)
+
+    area_reviewed_facility_df = \
+        dqa_workplan_df.groupby(['Facilities', 'Program Areas Reviewed']).sum(numeric_only=True)[
+            'Number of action points'].reset_index()
+    # replace spaces and slashes with underscores in the column
+    area_reviewed_facility_df['Program Areas Reviewed'] = area_reviewed_facility_df[
+        'Program Areas Reviewed'].str.replace(' ', '_').str.replace('/', '_').str.replace('&', '_')
+    area_reviewed_facility_df.sort_values('Number of action points', inplace=True)
+
+    action_point_status_df = dqa_workplan_df.groupby('completion').sum(numeric_only=True)[
+        'Number of action points'].reset_index()
+    action_point_status_df.sort_values('completion', inplace=True)
+    action_point_status_df['% completetion'] = action_point_status_df['completion'].astype(str) + "%"
+
+    dqa_date_df = dqa_workplan_df.groupby(['dqa_date', 'Facilities']).sum(numeric_only=True)[
+        'Number of action points'].reset_index()
+    # dqa_date_df=dqa_date_df.rename(columns={'Number of action points':"Number of DQAs done"})
+    dqa_date_df['Number of DQAs done'] = 1
+    dqa_date_df.sort_values('dqa_date', inplace=True)
+
+    # Convert the dqa_date column to a datetime format
+    dqa_date_df["dqa_date"] = pd.to_datetime(dqa_date_df["dqa_date"])
+
+    # Group the dates by week and count the number of DQAs done each week
+    weekly_counts = dqa_date_df.set_index("dqa_date")["Number of DQAs done"].resample("W").sum().reset_index()
+    weekly_counts['dqa_date'] = weekly_counts['dqa_date'].astype(str) + "."
+    weekly_counts = weekly_counts.rename(columns={"dqa_date": "dqa_dates (weekly)"})
+
+    timeframe_df = dqa_workplan_df.groupby('Timeframe').sum(numeric_only=True)['Number of action points'].reset_index()
+    timeframe_df.sort_values('Timeframe', inplace=True)
+
+    cond_list = [timeframe_df['Timeframe'] < 2, (timeframe_df['Timeframe'] >= 2) & (timeframe_df['Timeframe'] <= 4),
+                 (timeframe_df['Timeframe'] > 4) & (timeframe_df['Timeframe'] <= 8),
+                 (timeframe_df['Timeframe'] > 8) & (timeframe_df['Timeframe'] <= 12),
+                 timeframe_df['Timeframe'] > 12]
+    choice_list = ["<2 wks", "2-4 wks", "4-8 wks", "8-12 wks", ">12 wks"]
+    timeframe_df['timeframe (wks)'] = np.select(cond_list, choice_list, default="n/a")
+
+    timeframe_df = timeframe_df.groupby('timeframe (wks)').sum(numeric_only=True)[
+        'Number of action points'].reset_index()
+    timeframe_df['timeframe (wks)'] = pd.Categorical(timeframe_df['timeframe (wks)'],
+                                                     categories=['<2 wks', '2-4 wks', '4-8 wks', '8-12 wks', '>12 wks'],
+                                                     ordered=True)
+    timeframe_df.sort_values('timeframe (wks)', inplace=True)
+    timeframe_df['%'] = round(
+        timeframe_df['Number of action points'] / sum(timeframe_df['Number of action points']) * 100, 1)
+    timeframe_df['# (%)'] = timeframe_df['Number of action points'].astype(str) + " (" + timeframe_df['%'].astype(
+        str) + "%)"
+
+    return facilities_df, area_reviewed_df, action_point_status_df, weekly_counts, timeframe_df, area_reviewed_facility_df
 
 
 def create_system_assessment_chart(df, fyj_mean, quarter_year):
@@ -3621,6 +3740,13 @@ def dqa_dashboard(request, dqa_type=None):
     all_dfs_viz = None
     dqa_workplan = None
     selected_level = None
+    work_plan_facilities_viz = None
+    work_plan_actionpoint_status_viz = None
+    work_plan_areas_reviewed_viz = None
+    work_plan_trend_viz = None
+    work_plan_timeframe_viz = None
+    data_verification_viz = None
+    facility_charts = None
     if dqa_type == "program":
         if quarter_form.is_valid() and year_form.is_valid() and program_form.is_valid():
             selected_quarter = quarter_form.cleaned_data['quarter']
@@ -3635,7 +3761,14 @@ def dqa_dashboard(request, dqa_type=None):
             fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
             khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
             audit_team = AuditTeam.objects.filter(quarter_year__quarter_year=quarter_year)
-            dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year)
+            dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year).order_by('facility_name')
+            #####################################
+            # DECREMENT REMAINING TIME DAILY    #
+            #####################################
+            if dqa_workplan:
+                today = timezone.now().date()
+                for workplan in dqa_workplan:
+                    workplan.progress = (workplan.due_complete_by - today).days
             # fetch data from the Sub_counties model
             data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
                                                'counties__county_name', 'sub_counties')
@@ -3660,7 +3793,14 @@ def dqa_dashboard(request, dqa_type=None):
             audit_team = AuditTeam.objects.filter(quarter_year__quarter_year=quarter_year,
                                                   facility_name__in=facilities)
             dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year,
-                                                      facility_name__in=facilities)
+                                                      facility_name__in=facilities).order_by('facility_name')
+            #####################################
+            # DECREMENT REMAINING TIME DAILY    #
+            #####################################
+            if dqa_workplan:
+                today = timezone.now().date()
+                for workplan in dqa_workplan:
+                    workplan.progress = (workplan.due_complete_by - today).days
             # fetch data from the Sub_counties model
             data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
                                                'counties__county_name', 'sub_counties')
@@ -3689,7 +3829,14 @@ def dqa_dashboard(request, dqa_type=None):
                 facility_name__sub_counties__counties__county_name=selected_county)
             dqa_workplan = DQAWorkPlan.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__counties__county_name=selected_county)
+                facility_name__sub_counties__counties__county_name=selected_county).order_by('facility_name')
+            #####################################
+            # DECREMENT REMAINING TIME DAILY    #
+            #####################################
+            if dqa_workplan:
+                today = timezone.now().date()
+                for workplan in dqa_workplan:
+                    workplan.progress = (workplan.due_complete_by - today).days
             # fetch data from the Sub_counties model
             data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
                                                'counties__county_name', 'sub_counties')
@@ -3702,7 +3849,6 @@ def dqa_dashboard(request, dqa_type=None):
             selected_level = selected_hub
             year_suffix = selected_year[-2:]
             quarter_year = f"{selected_quarter}-{year_suffix}"
-            hub = Hub.objects.get(hub=selected_hub)
 
             data_verification = DataVerification.objects.filter(
                 quarter_year__quarter_year=quarter_year,
@@ -3894,10 +4040,12 @@ def dqa_dashboard(request, dqa_type=None):
             charts = []
             for title, df in charts_dict.items():
                 charts.append(create_system_assessment_bar_charts(df, title, quarter_year))
-
-            del yellow['Number of scores']
-            del red['Number of scores']
-            del blue['Number of scores']
+            if 'Number of scores' in yellow.columns:
+                del yellow['Number of scores']
+            if 'Number of scores' in red.columns:
+                del red['Number of scores']
+            if 'Number of scores' in blue.columns:
+                del blue['Number of scores']
         else:
             messages.info(request, f"No system assessment data for {quarter_year}!")
         if data_verification:
@@ -3952,7 +4100,11 @@ def dqa_dashboard(request, dqa_type=None):
         for i in merged_df.columns[4:]:
             merged_df[i] = merged_df[i].astype(int)
         merged_df = merged_df.groupby(['indicator', 'quarter_year']).sum(numeric_only=True).reset_index()
-        dicts = compare_data_verification(merged_df)
+        dicts, merged_viz_df = compare_data_verification(merged_df)
+        data_verification_viz = bar_chart_dqa(merged_viz_df, "indicator",
+                                              "Absolute difference proportion (Difference/Source*100)",
+                                              color='Score',
+                                              title="Data verification final scores")
         if viz is None:
             messages.error(request, f"No DQA data found for {quarter_year}")
         if audit_team:
@@ -3976,6 +4128,57 @@ def dqa_dashboard(request, dqa_type=None):
             audit_viz = bar_chart_dqa(audit_team_df, "Carder", 'Number of audit team', color="Organization",
                                       title=f"DQA Audit Team Participation by Organization and Carder "
                                             f"N = {audit_team_df['Number of audit team'].sum()}")
+
+        if dqa_workplan:
+            dqa_workplan_qs = [
+                {'Facilities': x.facility_name.name,
+                 'mfl_code': x.facility_name.mfl_code,
+                 'dqa_date': x.dqa_date,
+                 'Program Areas Reviewed': x.program_areas_reviewed,
+                 'completion': x.percent_completed,
+                 'Timeframe': x.timeframe,
+                 } for x in dqa_workplan
+            ]
+            # convert data from database to a dataframe
+            dqa_workplan_df = pd.DataFrame(dqa_workplan_qs)
+            facilities_df, area_reviewed_df, action_point_status_df, weekly_counts, timeframe_df, \
+            area_reviewed_facility_df = prepare_dqa_workplan_viz(dqa_workplan_df)
+            work_plan_facilities_viz = bar_chart_dqa(facilities_df, "Facilities", "Number of action points",
+                                                     title=f"Distribution of DQA action points per facility N = "
+                                                           f"{facilities_df['Number of action points'].sum()}"
+                                                           f" ({quarter_year})",
+                                                     color=None)
+            work_plan_areas_reviewed_viz = bar_chart_dqa(area_reviewed_df, "Program Areas Reviewed",
+                                                         "Number of action points",
+                                                         title=f"Distribution of DQA action points by program area "
+                                                               f"reviewed N = "
+                                                               f"{area_reviewed_df['Number of action points'].sum()}"
+                                                               f" ({quarter_year})",
+                                                         color=None)
+            program_areas = ["CHART_ABSTRACTION", "M_E_SYSTEMS", "Data_Management_Systems", "HTS_PREVENTION_PMTCT"]
+            facility_charts = {}
+            for program_area in program_areas:
+                area_reviewed_facility_df_area = area_reviewed_facility_df[
+                    area_reviewed_facility_df['Program Areas Reviewed'] == program_area]
+                title = f"Distribution of {program_area} DQA action points by facility ({quarter_year})"
+                chart = bar_chart_dqa(area_reviewed_facility_df_area, "Facilities", "Number of action points",
+                                      title=title, color=None)
+                facility_charts[program_area] = chart
+
+            work_plan_actionpoint_status_viz = bar_chart_dqa(action_point_status_df, "% completetion",
+                                                             "Number of action points",
+                                                             title=f"Distribution of DQA Action Points by Completion "
+                                                                   f"Percentage N = "
+                                                                   f"{action_point_status_df['Number of action points'].sum()}"
+                                                                   f" ({quarter_year})",
+                                                             color=None)
+            work_plan_trend_viz = bar_chart_dqa(weekly_counts, 'dqa_dates (weekly)', 'Number of DQAs done',
+                                                title='Trend of DQA activities')
+            work_plan_timeframe_viz = bar_chart_dqa(timeframe_df, "timeframe (wks)", "Number of action points",
+                                                    title=f"Distribution of DQA Action Points' timeframe by weeks N = "
+                                                          f"{timeframe_df['Number of action points'].sum()}"
+                                                          f" ({quarter_year})",
+                                                    color=None)
 
     context = {
         "quarter_form": quarter_form,
@@ -4008,7 +4211,14 @@ def dqa_dashboard(request, dqa_type=None):
         "blue_viz_quest": blue_viz_quest,
         "all_dfs_viz": all_dfs_viz,
         "dqa_workplan": dqa_workplan,
-        "selected_level":selected_level,
+        "selected_level": selected_level,
+        "work_plan_facilities_viz": work_plan_facilities_viz,
+        "work_plan_areas_reviewed_viz": work_plan_areas_reviewed_viz,
+        "work_plan_actionpoint_status_viz": work_plan_actionpoint_status_viz,
+        "work_plan_trend_viz": work_plan_trend_viz,
+        "work_plan_timeframe_viz": work_plan_timeframe_viz,
+        "data_verification_viz": data_verification_viz,
+        "facility_charts": facility_charts
 
     }
     return render(request, 'dqa/dqa_dashboard.html', context)

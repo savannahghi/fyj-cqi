@@ -15,22 +15,6 @@ from phonenumber_field.modelfields import PhoneNumberField
 from apps.account.models import CustomUser
 
 from apps.cqi.utils import image_resize
-
-
-# This handles django [Errno 2] No such file or directory ERROR
-# file_ = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media/files/facilities.txt')
-# sub_county_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media/files/subcounties.txt')
-# county_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media/files/counties.txt')
-
-
-# class CustomUser(models.Model):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE)
-#     phone_number = PhoneNumberField()
-#
-#     def __str__(self):
-#         return self.user.username
-
-
 def read_txt(file_):
     # read a local file with facility names
     data = open(file_, 'r').read()
@@ -44,9 +28,6 @@ def read_txt(file_):
 class Program(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     program = models.CharField(max_length=250, unique=True)
-
-    # cooperative_agreement_number = models.IntegerField()
-
     class Meta:
         verbose_name_plural = 'Programs'
         ordering = ['program']
@@ -98,8 +79,6 @@ class Facilities(models.Model):
 class Counties(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     county_name = models.CharField(max_length=250, unique=True)
-
-    # sub_counties = models.ManyToManyField(Sub_counties)
 
     class Meta:
         verbose_name_plural = 'counties'
@@ -270,9 +249,6 @@ class QI_Projects(models.Model):
 
 class Subcounty_qi_projects(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    # FACILITY_CHOICES = read_txt(file_)
-    # SUB_COUNTY_CHOICES = read_txt(sub_county_file)
-    # COUNTY_CHOICES = read_txt(county_file)
     DEPARTMENT_CHOICES = [('Care and TX clinic', 'Care and TX clinic'), ('TB clinic', 'TB clinic'),
                           ('Laboratory', 'Laboratory'), ('PMTCT', 'PMTCT'), ('Pharmacy', 'Pharmacy'),
                           ('Community', 'Community'), ('VMMC', 'VMMC'), ('Nutrition clinic', 'Nutrition clinic'),
@@ -283,28 +259,17 @@ class Subcounty_qi_projects(models.Model):
         ('Others', 'Others'),)
 
     departments = models.ForeignKey(Department, on_delete=models.CASCADE)
-    # department = models.CharField(max_length=200, choices=DEPARTMENT_CHOICES, blank=True, null=True, default=0)
     project_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     project_title = models.CharField(max_length=250)
-    # facility = models.CharField(max_length=250, choices=FACILITY_CHOICES)
-    # facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
     county = models.ForeignKey(Counties, on_delete=models.CASCADE)
     sub_county = models.ForeignKey(Sub_counties, on_delete=models.CASCADE)
-    # sub_counties = MultiSelectField(choices=SUB_COUNTY_CHOICES)
-    # county = models.CharField(max_length=250, choices=COUNTY_CHOICES)
     settings = models.CharField(max_length=250)
     problem_background = models.TextField()
     process_analysis = models.ImageField(upload_to='images', null=True, blank=True)
     objective = models.TextField()
-    # participants = models.TextField()
-    # responsible_people = models.TextField()
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
-    # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    # created_by = models.ForeignKey('auth.User', blank=True, null=True,
-    #                                   default=None, on_delete=models.CASCADE)
-
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
     STATUS_CHOICES = (
@@ -329,24 +294,15 @@ class Subcounty_qi_projects(models.Model):
 
     start_date = models.DateTimeField(auto_now_add=True, auto_now=False)
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
-    # modified_by = models.ForeignKey('auth.User', blank=True, null=True,
-    #                                 default=None, on_delete=models.CASCADE, related_name='+')
 
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                     on_delete=models.CASCADE, related_name='+')
     remote_addr = models.CharField(blank=True, default='', max_length=250)
     triggers = models.ManyToManyField(Trigger, blank=True)
 
-    # first_cycle_date = models.DateField(auto_now=False, auto_now_add=False)
-
     # Django fix Admin plural
     class Meta:
         verbose_name_plural = "QI_Projects_sub_counties"
-
-    # def save(self, *args, **kwargs):
-    #     if not self.sales:
-    #         self.sales = self.sales_name.sales
-    #     return super().save(*args, **kwargs)
 
     def save(self, commit=True, *args, **kwargs):
         user = get_current_user()
@@ -667,7 +623,6 @@ class LikeDislike(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
-    # is_like = models.BooleanField(default=True)
     like = models.BooleanField(default=False)
     dislike = models.BooleanField(default=False)
 
@@ -730,7 +685,6 @@ class Resources(models.Model):
 
     def save(self, commit=True, *args, **kwargs):
         user = get_current_user()
-        # request = get_current_request()
         if user and not user.pk:
             user = None
         if not self.pk:
@@ -803,7 +757,6 @@ class Qi_team_members(models.Model):
     date_updated = models.DateTimeField(auto_now=True, auto_now_add=False)
 
     class Meta:
-        # ordering = ['first_name']
         verbose_name_plural = "qi team members"
         ordering = ['created_by__first_name']
 
@@ -812,12 +765,9 @@ class Qi_team_members(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure manager name is in title case"""
-        # self.first_name = self.first_name.title()
-        # self.last_name = self.last_name.title()
         self.designation = self.designation.upper()
         self.department = self.department.upper()
         self.role = self.role.title()
-        # self.email = self.email.lower()
         super().save(*args, **kwargs)
 
 
@@ -834,12 +784,6 @@ class ArchiveProject(models.Model):
 
     class Meta:
         verbose_name_plural = "archived projects"
-
-    # def __str__(self):
-    #     return self.qi_project.project_title
-
-    # def save(self, *args, **kwargs):
-    #     super(ArchiveProject, self).save(*args, **kwargs)
 
 
 class Stakeholder(models.Model):
@@ -878,9 +822,16 @@ class Milestone(models.Model):
         elif self.end_date == self.start_date:
             raise ValidationError('Due date cannot be the same as start date')
 
-    # def clean(self):
-    #     if self.due_date < timezone.now().date():
-    #         raise ValidationError('Due date cannot be a past date')
+    def __str__(self):
+        qi_project_str = str(self.qi_project) + " - " if self.qi_project else ""
+        program_qi_project_str = str(self.program_qi_project) + " - " if self.program_qi_project else ""
+        subcounty_qi_project_str = str(self.subcounty_qi_project) + " - " if self.subcounty_qi_project else ""
+        hub_qi_project_str = str(self.hub_qi_project) + " - " if self.hub_qi_project else ""
+        county_qi_project_str = str(self.county_qi_project) if self.county_qi_project else ""
+
+        date_str = self.start_date.strftime('%Y-%m-%d %H:%M:%S')
+
+        return f"{qi_project_str}{program_qi_project_str}{subcounty_qi_project_str}{hub_qi_project_str}{county_qi_project_str} ({date_str})"
 
 
 class ActionPlan(models.Model):
@@ -930,14 +881,11 @@ class Lesson_learned(models.Model):
     county = models.ForeignKey(County_qi_projects, on_delete=models.CASCADE, blank=True, null=True, )
     hub = models.ForeignKey(Hub_qi_projects, on_delete=models.CASCADE, blank=True, null=True, )
     problem_or_opportunity = models.TextField()
-    # goals_and_objectives = models.TextField()
-    # results = models.TextField()
     key_successes = models.TextField()
     challenges = models.TextField()
     best_practices = models.TextField()
     recommendations = models.TextField()
     resources = models.TextField()
-    # contact_info = models.TextField()
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
@@ -948,11 +896,23 @@ class Lesson_learned(models.Model):
 
     class Meta:
         verbose_name_plural = "Lesson learnt"
+        ordering = ['-date_created']
+
+    def __str__(self):
+        qi_project_str = str(self.project_name) + " - " if self.project_name else ""
+        program_qi_project_str = str(self.program) + " - " if self.program else ""
+        subcounty_qi_project_str = str(self.subcounty) + " - " if self.subcounty else ""
+        hub_qi_project_str = str(self.hub) + " - " if self.hub else ""
+        county_qi_project_str = str(self.county) if self.county else ""
+
+        date_str = self.date_created.strftime('%Y-%m-%d %H:%M:%S')
+
+        return f"{qi_project_str}{program_qi_project_str}{subcounty_qi_project_str}{hub_qi_project_str}{county_qi_project_str} ({date_str})"
 
 
 class Baseline(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    baseline_status = models.ImageField(upload_to='images', null=True, blank=True)
+    baseline_status = models.ImageField(upload_to='images')
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE, null=True, blank=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True, blank=True)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, null=True, blank=True)
@@ -968,33 +928,23 @@ class Baseline(models.Model):
 
     class Meta:
         verbose_name_plural = "Baseline status"
+        ordering = ['-date_created']
+
+    def __str__(self):
+        qi_project_str = str(self.qi_project) + " - " if self.qi_project else ""
+        program_qi_project_str = str(self.program_qi_project) + " - " if self.program_qi_project else ""
+        subcounty_qi_project_str = str(self.subcounty_qi_project) + " - " if self.subcounty_qi_project else ""
+        hub_qi_project_str = str(self.hub_qi_project) + " - " if self.hub_qi_project else ""
+        county_qi_project_str = str(self.county_qi_project) if self.county_qi_project else ""
+
+        date_str = self.date_created.strftime('%Y-%m-%d %H:%M:%S')
+
+        return f"{qi_project_str}{program_qi_project_str}{subcounty_qi_project_str}{hub_qi_project_str}{county_qi_project_str} ({date_str})"
 
     def save(self, commit=True, *args, **kwargs):
         if commit:
             image_resize(self.baseline_status, 800, 500)
         super().save(*args, **kwargs)
-
-
-# class RACI(models.Model):
-#     # objective = models.CharField(max_length=100)
-#     # Field to specify the user responsible for the objective
-#     responsible = models.ManyToManyField(CustomUser, related_name='raci_responsible')
-#     # Field to specify the user accountable for the objective
-#     accountable = models.ManyToManyField(CustomUser, related_name='raci_accountable')
-#     # Field to specify the user consulted for the objective
-#     consulted = models.ManyToManyField(CustomUser, related_name='raci_consulted')
-#     # Field to specify the user informed about the objective
-#     informed = models.ManyToManyField(CustomUser, related_name='raci_informed')
-# class RACI(models.Model):
-#     RESPONSIBILITY_CHOICES = (
-#         ('R', 'Responsible'),
-#         ('A', 'Accountable'),
-#         ('C', 'Consulted'),
-#         ('I', 'Informed'),
-#     )
-#     element = models.CharField(max_length=200)
-#     responsibility = models.CharField(max_length=1, choices=RESPONSIBILITY_CHOICES)
-#     CustomUser = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
 
 class SustainmentPlan(models.Model):
@@ -1021,7 +971,6 @@ class SustainmentPlan(models.Model):
     communication_plan = models.TextField()
     # # Field to capture the names and roles of the individuals responsible for implementing and managing the
     # # sustainment plan
-    # responsible = models.TextField()
     # Field to capture the budget allocated for the sustainment plan
     budget = models.TextField()
     # Field to capture any potential risks associated with the sustainment plan and the steps that will be taken to
@@ -1053,18 +1002,21 @@ class SustainmentPlan(models.Model):
     class Meta:
         ordering = ['-date_created']
 
+    def __str__(self):
+        qi_project_str = str(self.qi_project) + " - " if self.qi_project else ""
+        program_qi_project_str = str(self.program) + " - " if self.program else ""
+        subcounty_qi_project_str = str(self.subcounty) + " - " if self.subcounty else ""
+        hub_qi_project_str = str(self.hub) + " - " if self.hub else ""
+        county_qi_project_str = str(self.county) if self.county else ""
 
-# class RootCauseImages(models.Model):
-#     image = models.ImageField(upload_to='images', null=True, blank=True)
-#     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE)
-#     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-#     date_created = models.DateTimeField(auto_now_add=True)
-#     date_modified = models.DateTimeField(auto_now=True)
-#     modified_by = models.ForeignKey(CustomUser, blank=True, null=True,
-#                                     default=None, on_delete=models.CASCADE, related_name='+')
+        date_str = self.date_created.strftime('%Y-%m-%d %H:%M:%S')
+
+        return f"{qi_project_str}{program_qi_project_str}{subcounty_qi_project_str}{hub_qi_project_str}{county_qi_project_str} ({date_str})"
+
+
 class RootCauseImages(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    root_cause_image = models.ImageField(upload_to='images', null=True, blank=True)
+    root_cause_image = models.ImageField(upload_to='images')
     facility = models.ForeignKey(Facilities, on_delete=models.CASCADE, null=True, blank=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True, blank=True)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, null=True, blank=True)
@@ -1077,6 +1029,18 @@ class RootCauseImages(models.Model):
 
     class Meta:
         verbose_name_plural = "cqi's images status"
+        ordering = ['-date_created']
+
+    def __str__(self):
+        qi_project_str = str(self.qi_project) + " - " if self.qi_project else ""
+        program_qi_project_str = str(self.program_qi_project) + " - " if self.program_qi_project else ""
+        subcounty_qi_project_str = str(self.subcounty_qi_project) + " - " if self.subcounty_qi_project else ""
+        hub_qi_project_str = str(self.hub_qi_project) + " - " if self.hub_qi_project else ""
+        county_qi_project_str = str(self.county_qi_project) if self.county_qi_project else ""
+
+        date_str = self.date_created.strftime('%Y-%m-%d %H:%M:%S')
+
+        return f"{qi_project_str}{program_qi_project_str}{subcounty_qi_project_str}{hub_qi_project_str}{county_qi_project_str} ({date_str})"
 
     def save(self, commit=True, *args, **kwargs):
         if commit:

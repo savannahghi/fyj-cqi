@@ -26,6 +26,7 @@ urlpatterns = [
     path('', include('apps.account.urls')),
     path('', include('apps.dqa.urls')),
     path('', include('apps.pmtct.urls')),
+    path('data-analysis-center/', include('apps.data_analysis.urls')),
     path('select2/', include(django_select2_urls)),
 ]
 

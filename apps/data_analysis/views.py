@@ -87,6 +87,13 @@ def download_csv(request, name, filename):
     return response
 
 
+def convert_mfl_code_to_int(df):
+    # drop the rows containing letters
+    df = df[pd.to_numeric(df['organisationunitcode'], errors='coerce').notnull()]
+    df['organisationunitcode'] = df['organisationunitcode'].astype(int)
+    return df
+
+
 def get_key_from_session_names(request):
     # convert dict to a lidt
     data_in_sessions = list(request.session.items())
@@ -574,6 +581,9 @@ def pharmacy(request):
     dictionary = None
     other_paeds_bottles_df_file = pd.DataFrame()
     form = FileUploadForm(request.POST or None)
+    datasets = ["Total Quantity issued this month <strong>or</strong>", "End of Month Physical Stock Count"]
+    dqa_type = "sc_curr_arvdisp"
+    report_name = "ARV Dispensing and Stock Availability Analysis for FYJ-Supported Facilities"
     if not request.user.first_name:
         return redirect("profile")
     if request.method == 'POST':
@@ -593,27 +603,35 @@ def pharmacy(request):
                 # Check if required columns exist in the DataFrame
                 if all(col_name in df1.columns for col_name in
                        ['organisationunitname', 'organisationunitcode', "periodname"]):
-                    # Read data from FYJHealthFacility model into a pandas DataFrame
-                    qs = FYJHealthFacility.objects.all()
-                    df = pd.DataFrame.from_records(qs.values())
+                    expected_cols = [col for col in df1.columns if "total quantity issued this month" in col.lower() or
+                                     "end of month physical stock count" in col.lower()]
+                    if len(expected_cols) >= 1:
+                        # Read data from FYJHealthFacility model into a pandas DataFrame
+                        qs = FYJHealthFacility.objects.all()
+                        df = pd.DataFrame.from_records(qs.values())
 
-                    df = df.rename(columns={
-                        "mfl_code": "MFL Code", "county": "County", 'health_subcounty': 'Health Subcounty',
-                        'subcounty': 'Subcounty', 'hub': 'Hub(1,2,3 o 4)', 'm_and_e_mentor': 'M&E Mentor/SI associate',
-                        'm_and_e_assistant': 'M&E Assistant', 'care_and_treatment': 'Care & Treatment(Yes/No)',
-                        'hts': 'HTS(Yes/No)', 'vmmc': 'VMMC(Yes/No)', 'key_pop': 'Key Pop(Yes/No)',
-                        'facility_type': 'Faclity Type', 'category': 'Category (HVF/MVF/LVF)', 'emr': 'EMR'
-                    })
-                    if df.shape[0] > 0 and df1.shape[0] > 0:
-                        final_df, filename, other_adult_df_file, adult_others_filename, paeds_others_filename, \
-                        other_paeds_bottles_df_file = analyse_pharmacy_data(request, df, df1)
+                        df = df.rename(columns={
+                            "mfl_code": "MFL Code", "county": "County", 'health_subcounty': 'Health Subcounty',
+                            'subcounty': 'Subcounty', 'hub': 'Hub(1,2,3 o 4)',
+                            'm_and_e_mentor': 'M&E Mentor/SI associate',
+                            'm_and_e_assistant': 'M&E Assistant', 'care_and_treatment': 'Care & Treatment(Yes/No)',
+                            'hts': 'HTS(Yes/No)', 'vmmc': 'VMMC(Yes/No)', 'key_pop': 'Key Pop(Yes/No)',
+                            'facility_type': 'Faclity Type', 'category': 'Category (HVF/MVF/LVF)', 'emr': 'EMR'
+                        })
+                        if df.shape[0] > 0 and df1.shape[0] > 0:
+                            final_df, filename, other_adult_df_file, adult_others_filename, paeds_others_filename, \
+                            other_paeds_bottles_df_file = analyse_pharmacy_data(request, df, df1)
+                    else:
+                        message = f"Please generate and upload either the Total Quantity issued this month or End of Month " \
+                                  f"Physical Stock Count CSV file from <a href='{url}'>KHIS's website</a>."
+                        messages.success(request, message)
                 else:
-                    message = f"Please generate upload either the Total Quantity issued this month or End of Month " \
+                    message = f"Please generate and upload either the Total Quantity issued this month or End of Month " \
                               f"Physical Stock Count CSV file from <a href='{url}'>KHIS's website</a>."
                     messages.success(request, message)
                     return redirect('load_data_pharmacy')
             else:
-                message = f"Please generate upload either the Total Quantity issued this month or End of Month " \
+                message = f"Please generate and upload either the Total Quantity issued this month or End of Month " \
                           f"Physical Stock Count CSV file from <a href='{url}'>KHIS's website</a>."
                 messages.success(request, message)
                 return redirect('load_data_pharmacy')
@@ -626,7 +644,7 @@ def pharmacy(request):
                 "adult_others_filename": adult_others_filename,
                 "paeds_others_filename": paeds_others_filename,
                 "other_paeds_bottles_df_file": other_paeds_bottles_df_file,
-                "form":form,
+                "form": form, "datasets": datasets, "dqa_type": dqa_type, "report_name": report_name
             }
 
             return render(request, 'data_analysis/upload.html', context)
@@ -642,7 +660,7 @@ def pharmacy(request):
         "adult_others_filename": adult_others_filename,
         "paeds_others_filename": paeds_others_filename,
         "other_paeds_bottles_df_file": other_paeds_bottles_df_file,
-        "form": form,
+        "form": form, "datasets": datasets, "dqa_type": dqa_type, "report_name": report_name
     }
 
     return render(request, 'data_analysis/upload.html', context)
@@ -997,7 +1015,7 @@ def transform_data(df, df1, date_picker_form):
            sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
            hubs_collect_dispatch_tat, hub_c_d_filename, \
            counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
-           county_viz, sub_county_viz,target_text
+           county_viz, sub_county_viz, target_text
 
 
 def tat(request):
@@ -1143,3 +1161,499 @@ def tat(request):
     }
 
     return render(request, 'data_analysis/tat.html', context)
+
+
+def fmarp_trend(reporting_rates, x_axis, y_axis, title=None, color=None):
+    fig = px.bar(reporting_rates, x=x_axis, y=y_axis, text=y_axis, height=400,
+                 barmode="group", color=color,
+                 title=title
+                 )
+    fig.update_traces(textposition='outside')
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=8
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=8
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            font=dict(
+                size=14
+            )
+        )
+    )
+    if "missing" not in title.lower():
+        fig.update_yaxes(range=[0, 110])
+    else:
+        fig.update_yaxes(range=[0, reporting_rates[y_axis].max() + 3])
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def merge_county_program_df(df, df1):
+    df = df.merge(df1, left_on="organisationunitcode", right_on="MFL Code", how="left")
+    df = df[['County',
+             'Subcounty', 'organisationunitname', 'MFL Code',
+             'periodid', 'periodname',
+             'F-MAPS Revision 2019 Reporting rate (%)']]
+    df = df.rename(columns={"organisationunitname": "facility"})
+    df = df.rename(columns={"periodname": "month/year"})
+    return df
+
+
+def make_region_specific_df(nairobi_all, name):
+    nairobi_all = nairobi_all.rename(columns={"periodname": "month/year"})
+    nairobi_all['date'] = pd.to_datetime(nairobi_all['month/year'])
+    nairobi_all_rate = nairobi_all.groupby(['month/year', 'date']).mean()[
+        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
+    nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'] = round(
+        nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'], 1)
+    nairobi_all_rate.insert(0, "region", name)
+    average_reporting_rate = round(nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'].mean(), 1)
+
+    return nairobi_all_rate, average_reporting_rate
+
+
+def make_county_specific_charts(df, nairobi_facitities_mfl_code, county):
+    nairobi_all = df[df['orgunitlevel2'] == f'{county} County']
+    nairobi_all_rate, nairobi_average_reporting_rate = make_region_specific_df(nairobi_all, county)
+    fyj_nairobi_facilities = nairobi_all[nairobi_all['organisationunitcode'].isin(nairobi_facitities_mfl_code)]
+    fyj_nairobi_facilities_rate, fyj_nrb_average_reporting_rate = make_region_specific_df(fyj_nairobi_facilities,
+                                                                                          "FYJ")
+    reporting_rates = pd.concat([fyj_nairobi_facilities_rate, nairobi_all_rate])
+    fig = fmarp_trend(reporting_rates, "month/year", "F-MAPS Revision 2019 Reporting rate (%)",
+                      title=f'F-MAPS reporting rate trends. FYJ {county} Average reporting rate {fyj_nrb_average_reporting_rate}%  '
+                            f'{county} county Average reporting rate {nairobi_average_reporting_rate}%',
+                      color="region")
+    return fig
+
+
+def fmarp_line_trend(reporting_rates, x_axis, y_axis, title=None, color=None):
+    fig = px.line(reporting_rates, x=x_axis, y=y_axis, text=y_axis, height=500,
+                  #              barmode="group",
+                  color=color,
+                  title=title
+                  )
+    #     fig.update_traces(textposition='outside')
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
+    #     fig.update_yaxes(rangemode="tozero")
+    #     fig.update_yaxes(range=[70, 100])
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=8
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=8
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            font=dict(
+                size=14
+            )
+        )
+    )
+
+    fig.update_traces(textposition='top center')
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def make_charts(nairobi_730b, title):
+    nairobi_730b.columns = nairobi_730b.columns.str.replace("'", "_")
+    rates_cols = list(nairobi_730b.columns[-3:-1])
+    overall_df = nairobi_730b.groupby(['month/year', 'date']).mean()[rates_cols].reset_index().sort_values('date')
+    overall_df[rates_cols[0]] = round(overall_df[rates_cols[0]], 1)
+    overall_df[rates_cols[1]] = round(overall_df[rates_cols[1]], 1)
+
+    overall_df.insert(0, "region", f"{nairobi_730b['orgunitlevel2'].unique()[0]}")
+    a = pd.melt(overall_df, id_vars=['region', 'month/year', 'date'],
+                value_vars=rates_cols,
+                var_name='report', value_name='%')
+    fig = fmarp_line_trend(a, "month/year", "%",
+                           title=f'{title} Reporting rate vs Reporting rate on time',
+                           color='report')
+    return fig, overall_df
+
+
+def transform_make_charts(all_facilities, cols_730b, name, fyj_facility_mfl_code):
+    default_cols = ["orgunitlevel2", 'facility', 'organisationunitcode', "month/year"]
+    all_facilities_730b = all_facilities[default_cols + cols_730b]
+    all_facilities_730b['date'] = pd.to_datetime(all_facilities_730b['month/year'])
+    all_facilities_730b.columns = all_facilities_730b.columns.str.replace("'", "_")
+    rates_cols = list(all_facilities_730b.columns[-3:-1])
+    nairobi_730b = all_facilities_730b[all_facilities_730b['orgunitlevel2'] == "Nairobi County"]
+    kajiado_730b = all_facilities_730b[all_facilities_730b['orgunitlevel2'] == "Kajiado County"]
+    nairobi_730b_fig, nairobi_730b_overall = make_charts(nairobi_730b, "Nairobi county")
+    kajiado_730b_fig, kajiado_730b_overall = make_charts(kajiado_730b, "Kajiado county")
+
+    all_facilities_730b = convert_mfl_code_to_int(all_facilities_730b)
+    program_facilities = all_facilities_730b[all_facilities_730b['organisationunitcode'].isin(fyj_facility_mfl_code)]
+    nairobi_program_facilities_730b = program_facilities[program_facilities['orgunitlevel2'] == "Nairobi County"]
+    kajiado_program_facilities_730b = program_facilities[program_facilities['orgunitlevel2'] == "Kajiado County"]
+    nairobi_program_facilities_730b_fig, fyj_nairobi_730 = make_charts(nairobi_program_facilities_730b, "FYJ Nairobi")
+    kajiado_program_facilities_730b_fig, fyj_kajiado_730 = make_charts(kajiado_program_facilities_730b, "FYJ Kajiado")
+    return nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, \
+           nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730
+
+
+def prepare_program_facilities_df(df1, fyj_facility_mfl_code):
+    # st francis
+    df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
+    # adventist
+    df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
+    # illasit
+    df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
+    # imara
+    df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
+    df1 = df1[~df1['organisationunitcode'].isnull()]
+    df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
+
+    df1["organisationunitcode"] = df1["organisationunitcode"].astype(int)
+    reporting_rates_cols = [col for col in df1.columns if "Reporting rate" in col]
+    default_cols = ["orgunitlevel2", 'facility', 'organisationunitcode', "month/year"]
+    df = df1[default_cols + reporting_rates_cols]
+    return df
+
+
+def analyse_fmaps_fcdrr(df, df1):
+    all_facilities = df.copy()
+    all_facilities = all_facilities.rename(columns={"organisationunitname": "facility"})
+    all_facilities = all_facilities.rename(columns={"periodname": "month/year"})
+
+    df1['MFL Code'] = df1['MFL Code'].astype(int)
+    nairobi_facitities_df = df1[df1['County'] == "Nairobi"]
+
+    kajiado_facitities_df = df1[df1['County'] == 'Kajiado']
+
+    fyj_facility_mfl_code = list(df1['MFL Code'].unique())
+    nairobi_facitities_mfl_code = list(nairobi_facitities_df['MFL Code'].unique())
+    kajiado_facitities_mfl_code = list(kajiado_facitities_df['MFL Code'].unique())
+
+    df = df.rename(columns={
+        "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate": "F-MAPS Revision 2019 Reporting rate (%)",
+        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time": "Facility - CDRR Revision 2019 Reporting "
+                                                                           "rate on time (%)"})
+
+    df = df[['organisationunitid', 'organisationunitname', 'organisationunitcode', 'orgunitlevel2',
+             'organisationunitdescription', 'periodid', 'periodname', 'periodcode',
+             'F-MAPS Revision 2019 Reporting rate (%)', "Facility - CDRR Revision 2019 Reporting rate on time (%)"]]
+    # drop the rows containing letters and convert to int
+    df = convert_mfl_code_to_int(df)
+
+    all_data = merge_county_program_df(df, df1)
+    all_data['date'] = pd.to_datetime(all_data['month/year'])
+    # overall
+    overall_df = all_data.groupby(['month/year', 'date']).mean()[
+        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
+    overall_df['F-MAPS Revision 2019 Reporting rate (%)'] = round(overall_df['F-MAPS Revision 2019 Reporting rate (%)'],
+                                                                  1)
+    overall_df.insert(0, "region", "Nairobi/Kajiado counties")
+    average_reporting_rate_all = round(overall_df['F-MAPS Revision 2019 Reporting rate (%)'].mean(), 1)
+    program_facilities = all_data[all_data['MFL Code'].isin(fyj_facility_mfl_code)]
+
+    fyj_df = prepare_program_facilities_df(all_facilities, fyj_facility_mfl_code)
+    cols_730b = [col for col in fyj_df.columns if "730b" in col.lower()]
+    cols_729b = [col for col in fyj_df.columns if "729b" in col.lower()]
+
+    nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, \
+    nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730 = \
+        transform_make_charts(all_facilities, cols_730b, "730b", fyj_facility_mfl_code)
+    nairobi_729b_fig, kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
+    nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b = \
+        transform_make_charts(all_facilities, cols_729b, "729b", fyj_facility_mfl_code)
+
+    program_facilities_rate = program_facilities.groupby(['month/year', 'date']).mean()[
+        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
+    program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'] = round(
+        program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'], 1)
+    program_facilities_rate.insert(0, "region", "FYJ")
+    average_reporting_rate = round(program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'].mean(), 1)
+
+    reporting_rates = pd.concat([overall_df, program_facilities_rate])
+
+    overall_fig = fmarp_trend(reporting_rates, "month/year", "F-MAPS Revision 2019 Reporting rate (%)",
+                              title=f'F-MAPS reporting rate trends. FYJ Average reporting rate {average_reporting_rate}% '
+                                    f' Overall Average reporting rate {average_reporting_rate_all}%',
+                              color='region')
+    #######################################
+    # Nairobi reporting rate
+    #######################################
+    county = "Nairobi"
+    nairobi_reporting_rate_fig = make_county_specific_charts(df, nairobi_facitities_mfl_code, county)
+
+    #######################################
+    # Kajiado reporting rate
+    #######################################
+    county = "Kajiado"
+    kajiado_reporting_rate_fig = make_county_specific_charts(df, kajiado_facitities_mfl_code, county)
+    ########################
+    # No F-MAPS REPORTING
+    ########################
+    no_fmaps = program_facilities[(program_facilities['F-MAPS Revision 2019 Reporting rate (%)'].isnull())
+                                  | (program_facilities['F-MAPS Revision 2019 Reporting rate (%)'] == 0)]
+    no_fmaps_copy = no_fmaps.copy()
+    no_fmaps = no_fmaps.groupby(['facility', 'MFL Code', 'month/year']).count()[
+        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index()
+
+    no_fmaps_df = no_fmaps_copy.groupby(['month/year']).count()['facility'].reset_index()
+    no_fmaps_df = no_fmaps_df.rename(columns={"facility": "facilities"})
+    # convert 'month/year' column to datetime format
+    no_fmaps_df['Month/Year'] = pd.to_datetime(no_fmaps_df['month/year'], format='%B %Y')
+    total = sum(no_fmaps_df['facilities'])
+    # sort the DataFrame by 'month/year' column
+    no_fmaps_df = no_fmaps_df.sort_values(by='Month/Year')
+    no_fmaps_df['report'] = "F-MAPS"
+    #######################################
+    # Reporting rate on time FYJ Nairobi and Kajiado
+    #######################################
+    all_on_time = df.copy()
+    all_on_time = all_on_time.rename(columns={"organisationunitname": "facility"})
+    all_on_time = all_on_time.rename(columns={"periodname": "month/year"})
+    all_on_time = all_on_time.rename(columns={"organisationunitcode": "MFL Code"})
+    all_on_time = all_on_time.rename(columns={
+        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time":
+            "Facility - CDRR Revision 2019 Reporting rate on time (%)"})
+    program_facilities = all_on_time[all_on_time['MFL Code'].isin(fyj_facility_mfl_code)]
+    # Nairobi vs FYJ
+    fyj_nairobi_facilities = program_facilities[program_facilities['MFL Code'].isin(nairobi_facitities_mfl_code)]
+    # Kajiado vs FYJ
+    fyj_kajiado_facilities = program_facilities[program_facilities['MFL Code'].isin(kajiado_facitities_mfl_code)]
+    fyj_kajiado_facilities['date'] = pd.to_datetime(fyj_kajiado_facilities['month/year'])
+
+    fyj_kajiado_facilities_rate = fyj_kajiado_facilities.groupby(['month/year', 'date']).mean()[
+        'Facility - CDRR Revision 2019 Reporting rate on time (%)'].reset_index().sort_values('date')
+    fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'] = round(
+        fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'], 1)
+    fyj_kajiado_facilities_rate.insert(0, "region", "Kajiado")
+    kajiado_average_reporting_rate = round(
+        fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'].mean(), 1)
+    fyj_nairobi_facilities['date'] = pd.to_datetime(fyj_nairobi_facilities['month/year'])
+
+    fyj_nairobi_facilities_rate = fyj_nairobi_facilities.groupby(['month/year', 'date']).mean()[
+        'Facility - CDRR Revision 2019 Reporting rate on time (%)'].reset_index().sort_values('date')
+    fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'] = round(
+        fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'], 1)
+    fyj_nairobi_facilities_rate.insert(0, "region", "Nairobi")
+    nairobi_average_reporting_rate = round(
+        fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'].mean(), 1)
+    reporting_rates = pd.concat([fyj_nairobi_facilities_rate, fyj_kajiado_facilities_rate])
+    fcdrr_fig = fmarp_trend(reporting_rates, "month/year", 'Facility - CDRR Revision 2019 Reporting rate on time (%)',
+                            title=f'F-CDRR reporting rate on time trends. FYJ Kajiado mean :  {kajiado_average_reporting_rate}%   '
+                                  f'FYJ Nairobi mean :  {nairobi_average_reporting_rate}%',
+                            color="region")
+    ########################
+    # No F-CDRR REPORTING
+    ########################
+    no_fcdrr = program_facilities[
+        (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'].isnull())
+        | (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'] == 0)]
+    no_fcdrr_copy = no_fcdrr.copy()
+    no_fcdrr = no_fcdrr.groupby(['facility', 'MFL Code', 'month/year']).count()[
+        'Facility - CDRR Revision 2019 Reporting rate on time (%)'].reset_index()
+
+    no_fcdrr_df = no_fcdrr_copy.groupby(['month/year']).count()['facility'].reset_index()
+    no_fcdrr_df = no_fcdrr_df.rename(columns={"facility": "facilities"})
+    # convert 'month/year' column to datetime format
+    no_fcdrr_df['Month/Year'] = pd.to_datetime(no_fcdrr_df['month/year'], format='%B %Y')
+    total = sum(no_fcdrr_df['facilities'])
+    # sort the DataFrame by 'month/year' column
+    no_fcdrr_df = no_fcdrr_df.sort_values(by='Month/Year')
+    no_fcdrr_df['report'] = "F-CDRR"
+    no_reports = pd.concat([no_fcdrr_df, no_fmaps_df])
+
+    no_fcdrr_fmaps_fig = fmarp_trend(no_reports, "month/year", 'facilities',
+                                     title=f"Monthly Distribution of Facilities with Missing Reports (N={total})",
+                                     color='report')
+    return fcdrr_fig, kajiado_reporting_rate_fig, nairobi_reporting_rate_fig, no_fmaps, no_fcdrr, overall_fig, \
+           no_fcdrr_fmaps_fig, nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, \
+           kajiado_program_facilities_730b_fig, nairobi_729b_fig, kajiado_729b_fig, nairobi_program_facilities_729b_fig, \
+           kajiado_program_facilities_729b_fig, nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
+           nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b
+
+
+def fmaps_reporting_rate(request):
+    final_df = pd.DataFrame()
+    filename = None
+    other_adult_df_file = pd.DataFrame()
+    nairobi_reporting_rate_fig = None
+    kajiado_reporting_rate_fig = None
+    overall_fig = None
+    fcdrr_fig = None
+    no_fcdrr_fmaps_fig = None
+    dictionary = None
+    no_fmaps = pd.DataFrame()
+    no_fcdrr = pd.DataFrame()
+    other_paeds_bottles_df_file = pd.DataFrame()
+    form = FileUploadForm(request.POST or None)
+    datasets = ["MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate <strong>and</strong>",
+                "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate on time data <strong>and</strong>",
+                "MoH 730B Facility - CDRR Revision 2019 - Reporting rate <strong>and</strong>",
+                "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time",
+                ]
+    dqa_type = "reporting_rate_fmaps_fcdrr"
+    report_name = "Facility Reporting Metrics for ARVs: F-MAPS and F-CDRR"
+    nairobi_730b_fig = None
+    kajiado_730b_fig = None
+    nairobi_program_facilities_730b_fig = None
+    kajiado_program_facilities_730b_fig = None
+    nairobi_729b_fig = None
+    kajiado_729b_fig = None
+    nairobi_program_facilities_729b_fig = None
+    kajiado_program_facilities_729b_fig = None
+    nairobi_730b_overall = pd.DataFrame()
+    kajiado_730b_overall = pd.DataFrame()
+    fyj_nairobi_730 = pd.DataFrame()
+    fyj_kajiado_730 = pd.DataFrame()
+    nairobi_729b_overall = pd.DataFrame()
+    kajiado_729b_overall = pd.DataFrame()
+    fyj_nairobi_729b = pd.DataFrame()
+    fyj_kajiado_729b = pd.DataFrame()
+
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == 'POST':
+        try:
+            form = FileUploadForm(request.POST, request.FILES)
+            url = 'https://hiskenya.org/dhis-web-data-visualizer/index.html#/rpkLs05fppq'
+            if form.is_valid():
+                # try:
+                file = request.FILES['file']
+                if "csv" in file.name:
+                    df = pd.read_csv(file)
+                else:
+                    message = f"Upload MOH 729B Facility - F'MAPS Revision 2019 - Reporting rate as a CSV file from " \
+                              f"<a href='{url}'>KHIS's website</a>."
+                    messages.success(request, message)
+                    return redirect('fmaps_reporting_rate')
+                # Check if required columns exist in the DataFrame
+                if all(col_name in df.columns for col_name in
+                       ['organisationunitname', 'organisationunitcode', "periodname",
+                        "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate"]):
+                    # Read data from FYJHealthFacility model into a pandas DataFrame
+                    qs = FYJHealthFacility.objects.all()
+                    df1 = pd.DataFrame.from_records(qs.values())
+
+                    df1 = df1.rename(columns={
+                        "mfl_code": "MFL Code", "county": "County", 'health_subcounty': 'Health Subcounty',
+                        'subcounty': 'Subcounty', 'hub': 'Hub(1,2,3 o 4)', 'm_and_e_mentor': 'M&E Mentor/SI associate',
+                        'm_and_e_assistant': 'M&E Assistant', 'care_and_treatment': 'Care & Treatment(Yes/No)',
+                        'hts': 'HTS(Yes/No)', 'vmmc': 'VMMC(Yes/No)', 'key_pop': 'Key Pop(Yes/No)',
+                        'facility_type': 'Faclity Type', 'category': 'Category (HVF/MVF/LVF)', 'emr': 'EMR'
+                    })
+                    if df.shape[0] > 0 and df1.shape[0] > 0:
+                        fcdrr_fig, kajiado_reporting_rate_fig, nairobi_reporting_rate_fig, no_fmaps, no_fcdrr, \
+                        overall_fig, no_fcdrr_fmaps_fig, nairobi_730b_fig, kajiado_730b_fig, \
+                        nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, nairobi_729b_fig, \
+                        kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
+                        nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
+                        nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b = \
+                            analyse_fmaps_fcdrr(df, df1)
+                else:
+                    message = f"Please generate and upload both MoH 730B Facility - CDRR Revision 2019 - Reporting " \
+                              f"rate on time and MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate data as a " \
+                              f"CSV file using instruction below."
+                    messages.success(request, message)
+                    return redirect('fmaps_reporting_rate')
+            else:
+                message = f"Please generate and upload both MoH 730B Facility - CDRR Revision 2019 - Reporting " \
+                          f"rate on time and MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate data as a " \
+                          f"CSV file using instruction below."
+                messages.success(request, message)
+                return redirect('fmaps_reporting_rate')
+        except MultiValueDictKeyError:
+            context = {
+                "final_df": final_df,
+                "dictionary": dictionary,
+                # "filename": filename,
+                "other_adult_df_file": other_adult_df_file,
+                "other_paeds_bottles_df_file": other_paeds_bottles_df_file, "report_name": report_name,
+                "form": form, "fcdrr_fig": fcdrr_fig, "kajiado_reporting_rate_fig": kajiado_reporting_rate_fig,
+                "nairobi_reporting_rate_fig": nairobi_reporting_rate_fig, "datasets": datasets, "dqa_type": dqa_type,
+                "no_fmaps": no_fmaps, "no_fcdrr": no_fcdrr, "overall_fig": overall_fig,
+                "no_fcdrr_fmaps_fig": no_fcdrr_fmaps_fig,
+                "nairobi_730b_fig": nairobi_730b_fig, "kajiado_730b_fig": kajiado_730b_fig,
+                "nairobi_program_facilities_730b_fig": nairobi_program_facilities_730b_fig,
+                "kajiado_program_facilities_730b_fig": kajiado_program_facilities_730b_fig,
+                "nairobi_729b_fig": nairobi_729b_fig, "kajiado_729b_fig": kajiado_729b_fig,
+                "nairobi_program_facilities_729b_fig": nairobi_program_facilities_729b_fig,
+                "kajiado_program_facilities_729b_fig": kajiado_program_facilities_729b_fig
+
+            }
+
+            return render(request, 'data_analysis/upload.html', context)
+    # start index at 1 for Pandas DataFrame
+    no_fmaps.index = range(1, len(no_fmaps) + 1)
+    no_fcdrr.index = range(1, len(no_fcdrr) + 1)
+    # Drop date from dfs
+    dfs = [nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, nairobi_729b_overall,
+           kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b]
+    for df in dfs:
+        if "date" in df.columns:
+            df.drop('date', axis=1, inplace=True)
+
+    request.session['no_fmaps'] = no_fmaps.to_dict()
+    request.session['no_fcdrr'] = no_fcdrr.to_dict()
+
+    request.session['nairobi_730b_overall'] = nairobi_730b_overall.to_dict()
+    request.session['kajiado_730b_overall'] = kajiado_730b_overall.to_dict()
+    request.session['fyj_nairobi_730'] = fyj_nairobi_730.to_dict()
+    request.session['fyj_kajiado_730'] = fyj_kajiado_730.to_dict()
+    request.session['nairobi_729b_overall'] = nairobi_729b_overall.to_dict()
+    request.session['kajiado_729b_overall'] = kajiado_729b_overall.to_dict()
+    request.session['fyj_nairobi_729b'] = fyj_nairobi_729b.to_dict()
+    request.session['fyj_kajiado_729b'] = fyj_kajiado_729b.to_dict()
+    # Convert dict_items into a list
+    dictionary = get_key_from_session_names(request)
+    context = {
+        "final_df": final_df,
+        "dictionary": dictionary,
+        # "filename": filename,
+        "other_adult_df_file": other_adult_df_file,
+        "other_paeds_bottles_df_file": other_paeds_bottles_df_file, "report_name": report_name,
+        "form": form, "fcdrr_fig": fcdrr_fig, "kajiado_reporting_rate_fig": kajiado_reporting_rate_fig,
+        "nairobi_reporting_rate_fig": nairobi_reporting_rate_fig, "datasets": datasets, "dqa_type": dqa_type,
+        "no_fmaps": no_fmaps, "no_fcdrr": no_fcdrr, "overall_fig": overall_fig,
+        "no_fcdrr_fmaps_fig": no_fcdrr_fmaps_fig,
+        "nairobi_730b_fig": nairobi_730b_fig, "kajiado_730b_fig": kajiado_730b_fig,
+        "nairobi_program_facilities_730b_fig": nairobi_program_facilities_730b_fig,
+        "kajiado_program_facilities_730b_fig": kajiado_program_facilities_730b_fig,
+        "nairobi_729b_fig": nairobi_729b_fig, "kajiado_729b_fig": kajiado_729b_fig,
+        "nairobi_program_facilities_729b_fig": nairobi_program_facilities_729b_fig,
+        "kajiado_program_facilities_729b_fig": kajiado_program_facilities_729b_fig
+    }
+
+    return render(request, 'data_analysis/upload.html', context)

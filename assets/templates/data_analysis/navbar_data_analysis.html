@@ -3,6 +3,7 @@
 {% url "load_data_pharmacy" as load_data_pharmacy %}
 {% url "tat" as tat %}
 {% url "load_fyj_censused" as load_fyj_censused %}
+{% url "fmaps_reporting_rate" as fmaps_reporting_rate %}
 {% url 'completed_closed' pk='Completed-or-Closed' as completed_closed %}
 
 
@@ -34,9 +35,16 @@
           <li class="nav-item">
             <a class="nav-link {% if request.path == load_data_pharmacy %} active{% endif %}" href="{% url 'load_data_pharmacy' %}">
               <span data-feather="plus" class="align-text-bottom"></span>
-              Pharmacy (sc_curr/sc_arv_disp)
+              Pharmacy
             </a>
           </li>
+        <ul class="nav flex-column">
+{#          <li class="nav-item">#}
+{#            <a class="nav-link {% if request.path == fmaps_reporting_rate %} active{% endif %}" href="{% url 'fmaps_reporting_rate' %}">#}
+{#              <span data-feather="plus" class="align-text-bottom"></span>#}
+{#              FMAPS reporting rate#}
+{#            </a>#}
+{#          </li>#}
         <li class="nav-item">
             <a class="nav-link {% if request.path == tat %} active{% endif %}" href="{% url 'tat' %}">
               <span data-feather="repeat" class="align-text-bottom"></span>

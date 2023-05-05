@@ -761,7 +761,10 @@ class Qi_team_members(models.Model):
         ordering = ['created_by__first_name']
 
     def __str__(self):
-        return self.user.first_name + " " + self.user.last_name
+        if self.user.phone_number:
+            return self.user.first_name + " " + self.user.last_name
+        else:
+            return self.user.username
 
     def save(self, *args, **kwargs):
         """Ensure manager name is in title case"""

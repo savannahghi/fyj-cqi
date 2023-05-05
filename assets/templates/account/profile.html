@@ -5,7 +5,7 @@
     <title>Title</title>
 </head>
 <body>
-<h2>You are doing pretty well {{ user.username|title }}!. Fantastic</h2>
+<h2>You are doing pretty well {{ user.first_name|title }}!. Fantastic</h2>
 {% for mess in messages %}
     {{ mess }}
 {% endfor %}

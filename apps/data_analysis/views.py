@@ -1507,7 +1507,6 @@ def analyse_fmaps_fcdrr(df, df1):
 
 def fmaps_reporting_rate(request):
     final_df = pd.DataFrame()
-    filename = None
     other_adult_df_file = pd.DataFrame()
     nairobi_reporting_rate_fig = None
     kajiado_reporting_rate_fig = None
@@ -1548,21 +1547,27 @@ def fmaps_reporting_rate(request):
     if request.method == 'POST':
         try:
             form = FileUploadForm(request.POST, request.FILES)
-            url = 'https://hiskenya.org/dhis-web-data-visualizer/index.html#/rpkLs05fppq'
+            message = "It seems that the dataset you uploaded is incorrect. To proceed with the analysis, " \
+                      "kindly upload the MoH 730B Facility - CDRR Revision 2019 - Reporting rate and reporting on " \
+                      "time data, as well as the MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate and " \
+                      "reporting rate on time data. Please generate these files and ensure they are in CSV format " \
+                      "before uploading them. You can find detailed instructions on how to upload the files below. " \
+                      "Thank you. "
             if form.is_valid():
-                # try:
                 file = request.FILES['file']
                 if "csv" in file.name:
                     df = pd.read_csv(file)
                 else:
-                    message = f"Upload MOH 729B Facility - F'MAPS Revision 2019 - Reporting rate as a CSV file from " \
-                              f"<a href='{url}'>KHIS's website</a>."
                     messages.success(request, message)
                     return redirect('fmaps_reporting_rate')
                 # Check if required columns exist in the DataFrame
                 if all(col_name in df.columns for col_name in
-                       ['organisationunitname', 'organisationunitcode', "periodname",
-                        "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate"]):
+                       ["organisationunitname", "orgunitlevel2", "organisationunitcode", "periodname",
+                        "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate",
+                        "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate on time",
+                        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate",
+                        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time",
+                        ]):
                     # Read data from FYJHealthFacility model into a pandas DataFrame
                     qs = FYJHealthFacility.objects.all()
                     df1 = pd.DataFrame.from_records(qs.values())
@@ -1583,15 +1588,9 @@ def fmaps_reporting_rate(request):
                         nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b = \
                             analyse_fmaps_fcdrr(df, df1)
                 else:
-                    message = f"Please generate and upload both MoH 730B Facility - CDRR Revision 2019 - Reporting " \
-                              f"rate on time and MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate data as a " \
-                              f"CSV file using instruction below."
                     messages.success(request, message)
                     return redirect('fmaps_reporting_rate')
             else:
-                message = f"Please generate and upload both MoH 730B Facility - CDRR Revision 2019 - Reporting " \
-                          f"rate on time and MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate data as a " \
-                          f"CSV file using instruction below."
                 messages.success(request, message)
                 return redirect('fmaps_reporting_rate')
         except MultiValueDictKeyError:
@@ -1641,7 +1640,6 @@ def fmaps_reporting_rate(request):
     context = {
         "final_df": final_df,
         "dictionary": dictionary,
-        # "filename": filename,
         "other_adult_df_file": other_adult_df_file,
         "other_paeds_bottles_df_file": other_paeds_bottles_df_file, "report_name": report_name,
         "form": form, "fcdrr_fig": fcdrr_fig, "kajiado_reporting_rate_fig": kajiado_reporting_rate_fig,

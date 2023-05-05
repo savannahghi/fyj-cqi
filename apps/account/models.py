@@ -16,7 +16,10 @@ class CustomUser(AbstractUser):
         ordering = ['first_name']
 
     def __str__(self):
-        return self.first_name.title() + " " + self.last_name.title() + " " + str(self.phone_number) + " " + self.email
+        if self.phone_number:
+            return self.first_name.title() + " " + self.last_name.title() + " " + str(self.phone_number) + " " + self.email
+        else:
+            return self.username
 
     def save(self, *args, **kwargs):
         """Ensure email are in the lower case"""

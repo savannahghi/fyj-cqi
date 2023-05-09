@@ -167,7 +167,7 @@
                                         : </strong>{{ facility_project.date_updated|date:"jS M Y" }}</p>
                                 </div>
                                 <div class="col-md-3">
-                                    <p class="card-text"><strong>Phone Number : </strong>{{ user.phone_number }}</p>
+                                    <p class="card-text"><strong>Phone Number : </strong>{{ facility_project.created_by.phone_number }}</p>
                                 </div>
                                 <div class="col-md-3">
                                     <p class="card-text"><strong>Department
@@ -543,6 +543,7 @@
                     </div>
                 </div>
             </div>
+        {% if facility_project.process_analysis %}
             {% if project_images < 4 %}
 
                 <div class="mt-2">
@@ -574,6 +575,7 @@
                     {% endif %}
 
                 </div>
+            {% endif %}
             {% endif %}
 
             <div class="row">

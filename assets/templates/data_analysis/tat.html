@@ -11,11 +11,24 @@
                     <ul class="messages">
                         {% for message in messages|slice:":1" %}
                             <div class="alert alert-info col-12" role="alert">
-                                <h6 class="d-flex justify-content-evenly" style="font-size: small">{{ message|safe }}</h6>
+                                <h6 class="d-flex justify-content-evenly"
+                                    style="font-size: small">{{ message|safe }}</h6>
                             </div>
                         {% endfor %}
                     </ul>
                 {% endif %}
+                <div class="d-flex justify-content-around mb-3">
+                    {% if dqa_type == "tat" %}
+                        <a href="{% url 'tat' %}" class="btn btn-success">Turn Around Time (TAT)</a>
+                    {% else %}
+                        <a href="{% url 'tat' %}" class="btn btn-outline-success">Turn Around Time (TAT)</a>
+                    {% endif %}
+                    {% if dqa_type == "viral_load" %}
+                        <a href="{% url 'viral_load' %}" class="btn btn-success">VL Analyzer</a>
+                    {% else %}
+                        <a href="{% url 'viral_load' %}" class="btn btn-outline-success">VL Analyzer</a>
+                    {% endif %}
+                </div>
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="row d-flex">

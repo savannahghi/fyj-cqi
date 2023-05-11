@@ -1,5 +1,7 @@
 import datetime
 from datetime import date, datetime
+
+import numpy as np
 import pandas as pd
 import plotly.express as px
 from plotly.offline import plot
@@ -146,10 +148,7 @@ def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
         ###################################################################
         # TO GET DATA FOR THE LAST 2 QUARTERS, COMMENT ABOVE TWO FILTERS  #
         ###################################################################
-
-        # display(df1.head(6))
         dispensed_df = df1[default_cols + dispensed_cols]
-        # display(dispensed_df.head(2))
         filename = "sc_arvdisp"
     else:
         # get the last month data
@@ -720,7 +719,6 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
 
         # Identify outliers as data points that are more than 1.5 times the IQR below Q1 or above Q3
         outliers = unit_df[(unit_df[col_name] > Q3 + 1.5 * IQR)]
-        #         display(outliers.shape[0])
 
         try:
             min_sample_tat = int(unit_df[col_name].min())
@@ -737,7 +735,6 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
             std_sample_tat = 0
 
         max_df = unit_df[unit_df[col_name] == max_sample_tat]
-        #         display(max_df)
         max_length = len(list(max_df[text].unique()))
         max_patient_number = sorted(list(max_df[text].unique()))
         #         max_patient_number = ', '.join(sorted(list(max_df['Patient CCC No'].unique())))
@@ -774,7 +771,6 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
 
     # convert results into a dataframe and sort TAT column Z-A
     tat = pd.DataFrame(turn_around_time).sort_values(col_name, ascending=False).reset_index()
-    #     display(tat)
 
     if groupby == "Facilty":
         facility_monthly_collect_receipt_tat = pd.pivot_table(tat, values=col_name, index=[groupby, filter_by],
@@ -863,7 +859,6 @@ def visualize_tat_type(hub_df, viz_name, target_text):
     ordered_dfs = []
     for hub in hub_df[viz_name].unique():
         hub_specific_df = a[(a[viz_name] == hub) & (~a["Month_Year"].str.contains("tat", case=False))]
-        #         display(hub_specific_df)
 
         hub_specific_df['month_year'] = pd.to_datetime(hub_specific_df['Month_Year'], format='%b-%Y')
         hub_specific_df = hub_specific_df.sort_values('month_year')
@@ -878,8 +873,6 @@ def visualize_tat_type(hub_df, viz_name, target_text):
         hub_specific_df = a[(a[viz_name] == hub) & (~a["Month_Year"].str.contains("tat", case=False))]
         hub_specific_df['month_year'] = pd.to_datetime(hub_specific_df['Month_Year'], format='%b-%Y')
         hub_specific_df = hub_specific_df.sort_values('month_year')
-        #         display(hub_specific_df)
-        #         break
 
         title = f"Mean {target_text} TAT Trend {hub.title()} {viz_name}" if "hub" not in hub.lower() else f"Mean {target_text} TAT Trend {hub.title()}"
         fig = px.line(hub_specific_df, x='month_year', y="TAT (mean)", text='TAT (mean)', color="TAT type", title=title,
@@ -909,7 +902,7 @@ def visualize_tat_type(hub_df, viz_name, target_text):
 
 
 #         break
-def transform_data(df, df1, date_picker_form):
+def transform_data(df, df1, from_date, to_date):
     df['Facility Code'] = df['Facility Code'].astype(int)
     df['V.L'] = 1
     df1['MFL Code'] = df1['MFL Code'].astype(int)
@@ -925,9 +918,6 @@ def transform_data(df, df1, date_picker_form):
     # Convert cols to datetime
     for col in date_cols:
         df[col] = pd.to_datetime(df[col], dayfirst=True, errors='coerce')
-
-    from_date = date_picker_form.cleaned_data['from_date']
-    to_date = date_picker_form.cleaned_data['to_date']
     df = df.loc[(df['Date Collected'].dt.date >= from_date) &
                 (df['Date Collected'].dt.date <= to_date)]
 
@@ -1078,15 +1068,24 @@ def tat(request):
                             if request.method == 'POST':
                                 date_picker_form = DateFilterForm(request.POST)
                                 if date_picker_form.is_valid():
-                                    facilities_collect_receipt_tat, facility_c_r_filename, \
-                                    sub_counties_collect_receipt_tat, subcounty_c_r_filename, \
-                                    hubs_collect_receipt_tat, hub_c_r_filename, \
-                                    counties_collect_receipt_tat, county_c_r_filename, \
-                                    facilities_collect_dispatch_tat, facility_c_d_filename, \
-                                    sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
-                                    hubs_collect_dispatch_tat, hub_c_d_filename, \
-                                    counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
-                                    county_viz, sub_county_viz, target_text = transform_data(df, df1, date_picker_form)
+                                    from_date = date_picker_form.cleaned_data['from_date']
+                                    to_date = date_picker_form.cleaned_data['to_date']
+                                    if to_date <= from_date:
+                                        messages.error(request,
+                                                       f"The selected end date ({to_date}) should be later than the start date "
+                                                       f"({from_date}). Please choose valid dates.")
+                                        return redirect('viral_load')
+                                    else:
+                                        facilities_collect_receipt_tat, facility_c_r_filename, \
+                                        sub_counties_collect_receipt_tat, subcounty_c_r_filename, \
+                                        hubs_collect_receipt_tat, hub_c_r_filename, \
+                                        counties_collect_receipt_tat, county_c_r_filename, \
+                                        facilities_collect_dispatch_tat, facility_c_d_filename, \
+                                        sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
+                                        hubs_collect_dispatch_tat, hub_c_d_filename, \
+                                        counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
+                                        county_viz, sub_county_viz, target_text = transform_data(df, df1, from_date,
+                                                                                                 to_date)
                     else:
                         message = f"Please generate overall 'All Outcomes (+/-) for EID' or 'Detailed for VL' and " \
                                   f"upload the CSV from <a href='{url}'>NASCOP's website</a>."
@@ -1117,7 +1116,7 @@ def tat(request):
                 "county_c_d_filename": county_c_d_filename,
                 "hub_viz": hub_viz,
                 "county_viz": county_viz,
-                "sub_county_viz": sub_county_viz,
+                "sub_county_viz": sub_county_viz, "dqa_type": "tat",
 
             }
 
@@ -1157,7 +1156,7 @@ def tat(request):
         "county_c_d_filename": county_c_d_filename,
         "hub_viz": hub_viz,
         "county_viz": county_viz,
-        "sub_county_viz": sub_county_viz,
+        "sub_county_viz": sub_county_viz, "dqa_type": "tat",
     }
 
     return render(request, 'data_analysis/tat.html', context)
@@ -1205,6 +1204,51 @@ def fmarp_trend(reporting_rates, x_axis, y_axis, title=None, color=None):
         fig.update_yaxes(range=[0, 110])
     else:
         fig.update_yaxes(range=[0, reporting_rates[y_axis].max() + 3])
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def hvl_trend(reporting_rates, x_axis, y_axis, title=None, color=None):
+    fig = px.bar(reporting_rates, x=x_axis, y=y_axis, text=y_axis, height=480,
+                 color=color,
+                 title=title
+                 )
+    fig.update_traces(textposition='outside')
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=8
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=8
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            font=dict(
+                size=14
+            )
+        )
+    )
+    # if "missing" not in title.lower():
+    #     fig.update_yaxes(range=[0, 110])
+    # else:
+    #     fig.update_yaxes(range=[0, reporting_rates[y_axis].max() + 3])
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
@@ -1523,7 +1567,7 @@ def fmaps_reporting_rate(request):
                 "MoH 730B Facility - CDRR Revision 2019 - Reporting rate <strong>and</strong>",
                 "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time",
                 ]
-    dqa_type = "reporting_rate_fmaps_fcdrr"
+    dqa_type = "viral_load"
     report_name = "Facility Reporting Metrics for ARVs: F-MAPS and F-CDRR"
     nairobi_730b_fig = None
     kajiado_730b_fig = None
@@ -1655,3 +1699,702 @@ def fmaps_reporting_rate(request):
     }
 
     return render(request, 'data_analysis/upload.html', context)
+
+
+def age_buckets3(x):
+    """convert age to age ranges"""
+    if x == 9:
+        return '0-9.'
+    elif x == 19:
+        return '10-19.'
+    elif x == 20:
+        return '20+'
+
+
+def age_buckets2(x):
+    """convert age to age ranges"""
+    if x == 1:
+        return '<1'
+    elif x == 4:
+        return '1-4.'
+    elif x == 9:
+        return '5-9.'
+    elif x == 14:
+        return '10-14.'
+    elif x == 19:
+        return '15-19'
+    elif x == 24:
+        return '20-24'
+    elif x == 25:
+        return '25+'
+
+
+def make_crosstab_facility_age(df):
+    """This function makes a crosstab"""
+    # create a list with age bands, in the required order
+    age = ['1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59',
+           '60-64', '65+', 'All']
+    # Generate crosstab
+    try:
+        df = pd.crosstab([df['Facilty'], df['Gender']], [df['Age']], margins=True)
+    except:
+        df = pd.crosstab([df['Facility Name'], df['Sex']], [df['Age']], margins=True)
+
+    available_ages_bands = []
+    for i in age:
+        # convert column names to a list
+        if i in list(df.columns):
+            # append available age band to the list
+            available_ages_bands.append(i)
+
+            # Change order of columns produced by crosstab
+    df = df[available_ages_bands]
+
+    return df
+
+
+def age_buckets(x):
+    """convert age to age ranges"""
+    if x == 1:
+        return '< 1'
+    elif x == 4:
+        return '1-4'
+    elif x == 9:
+        return '5-9'
+    elif x == 14:
+        return '10-14'
+    elif x == 19:
+        return '15-19'
+    elif x == 24:
+        return '20-24'
+    elif x == 29:
+        return '25-29'
+    elif x == 34:
+        return '30-34'
+    elif x == 39:
+        return '35-39'
+    elif x == 44:
+        return '40-44'
+    elif x == 49:
+        return '45-49'
+    elif x == 54:
+        return '50-54'
+    elif x == 59:
+        return '55-59'
+    elif x == 64:
+        return '60-64'
+    elif x == 69:
+        return '65+'
+
+
+def age_buckets1(x):
+    """convert age to age ranges"""
+    if x == 2:
+        return '<2'
+    elif x == 9:
+        return '2-9'
+    elif x == 19:
+        return '10-19'
+    elif x == 24:
+        return '20-24'
+    elif x == 25:
+        return '25+'
+
+
+def use_availble_columns(df):
+    age = ["Missing age", '1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54',
+           '55-59',
+           '60-64', '65+', 'All']
+
+    available_ages_bands = []
+    for i in age:
+        # convert column names to a list
+        if i in list(df.columns):
+            # append available age band to the list
+            available_ages_bands.append(i)
+
+    # Change order of columns produced by crosstab
+    df = df[available_ages_bands]
+    return df
+
+
+def convert_pivot_to_dataframe(subcounties):
+    """convert pivot table to dataframe"""
+    subcounties = subcounties.reset_index()  # index to columns
+    return subcounties
+
+
+def customize_age_bands(df):
+    df['Current age'] = df['Age'].astype(float)
+    # customize agebands
+    # df.loc[df['Current age'] <1, 'Current age'] = 1
+    df.loc[(df['Current age'] >= 0) & (df['Current age'] < 1), 'Current age'] = 1
+    df.loc[(df['Current age'] >= 1) & (df['Current age'] < 5), 'Current age'] = 4
+    df.loc[(df['Current age'] >= 5) & (df['Current age'] < 10), 'Current age'] = 9
+    df.loc[(df['Current age'] >= 10) & (df['Current age'] < 15), 'Current age'] = 14
+    df.loc[(df['Current age'] >= 15) & (df['Current age'] < 20), 'Current age'] = 19
+    df.loc[(df['Current age'] >= 20) & (df['Current age'] < 25), 'Current age'] = 24
+    df.loc[(df['Current age'] >= 25) & (df['Current age'] < 30), 'Current age'] = 29
+    df.loc[(df['Current age'] >= 30) & (df['Current age'] < 35), 'Current age'] = 34
+    df.loc[(df['Current age'] >= 35) & (df['Current age'] < 40), 'Current age'] = 39
+    df.loc[(df['Current age'] >= 40) & (df['Current age'] < 45), 'Current age'] = 44
+    df.loc[(df['Current age'] >= 45) & (df['Current age'] < 50), 'Current age'] = 49
+    df.loc[(df['Current age'] >= 50) & (df['Current age'] < 55), 'Current age'] = 54
+    df.loc[(df['Current age'] >= 55) & (df['Current age'] < 60), 'Current age'] = 59
+    df.loc[(df['Current age'] >= 60) & (df['Current age'] < 65), 'Current age'] = 64
+    df.loc[df['Current age'] >= 65, 'Current age'] = 69
+
+    df['Current age1'] = df['Age'].astype(float)
+
+    # customize agebands
+    df.loc[df['Current age1'] < 2, 'Current age1'] = 2
+    df.loc[(df['Current age1'] >= 2) & (df['Current age1'] < 10), 'Current age1'] = 9
+
+    df.loc[(df['Current age1'] >= 10) & (df['Current age1'] < 20), 'Current age1'] = 19
+    df.loc[(df['Current age1'] >= 20) & (df['Current age1'] < 25), 'Current age1'] = 24
+
+    df.loc[df['Current age1'] >= 25, 'Current age1'] = 25
+
+    df['Current age2'] = df['Age'].astype(float)
+
+    # customize agebands
+    df.loc[df['Current age2'] < 1, 'Current age2'] = 1
+    df.loc[(df['Current age2'] >= 1) & (df['Current age2'] < 5), 'Current age2'] = 4
+    df.loc[(df['Current age2'] >= 5) & (df['Current age2'] < 10), 'Current age2'] = 9
+
+    df.loc[(df['Current age2'] >= 10) & (df['Current age2'] < 15), 'Current age2'] = 14
+    df.loc[(df['Current age2'] >= 15) & (df['Current age2'] < 20), 'Current age2'] = 19
+    df.loc[(df['Current age2'] >= 20) & (df['Current age2'] < 25), 'Current age2'] = 24
+
+    df.loc[df['Current age2'] >= 25, 'Current age2'] = 25
+
+    df['Current age3'] = df['Age'].astype(float)
+
+    # customize agebands
+    df.loc[df['Current age3'] < 10, 'Current age3'] = 9
+    df.loc[(df['Current age3'] >= 10) & (df['Current age3'] < 20), 'Current age3'] = 19
+    df.loc[df['Current age3'] >= 20, 'Current age3'] = 20
+
+    # Change age column to fit DATIM requirement
+    df['Age'] = df['Current age'].apply(age_buckets)
+    df['Age1'] = df['Current age1'].apply(age_buckets1)
+    df['Age2'] = df['Current age2'].apply(age_buckets2)
+    df['Age3'] = df['Current age3'].apply(age_buckets3)
+    return df
+
+
+def transform_vl_dataframe(df):
+    """
+    Takes a pandas dataframe of viral load data and transforms it by adding columns for
+    the number of months since the last viral load test, the month and year of the test,
+    and a combined period column. The month column is converted to a datetime object and sorted.
+    """
+    df['months since last VL'] = pd.Timestamp.now().normalize() - pd.to_datetime(df['Date Tested'])
+    df['months since last VL'] = df['months since last VL'].astype('timedelta64[M]')
+    df = df[~df['Date Tested'].isnull()]
+    df['Month vl Tested'] = pd.to_datetime(df['Date Tested']).dt.strftime('%b')
+    df['Year vl Tested'] = pd.to_datetime(df['Date Tested']).dt.strftime('%Y')
+    df['period'] = df[['Month vl Tested', 'Year vl Tested']].agg('-'.join, axis=1)
+    df['Month'] = df['Month vl Tested'].str.capitalize()
+    df['Month'] = pd.to_datetime(df['Month'], format='%b', errors='coerce').dt.month
+    df = df.sort_values(by='Month')
+    return df
+
+
+def preprocess_viral_load_data(df):
+    """
+    This function preprocesses viral load data by sorting the input DataFrame into several DataFrames,
+    customizing the Viral Load column, and concatenating the resulting DataFrames into new ones.
+
+    Args:
+    df (DataFrame): input DataFrame containing viral load data
+
+    Returns:
+    df_ldl (DataFrame): DataFrame containing viral load data for LDL only
+    df_below_400 (DataFrame): DataFrame containing viral load data below 400
+    df_llv (DataFrame): DataFrame containing viral load data for LLV
+    df_hvl (DataFrame): DataFrame containing viral load data for HVL
+    df_no_vl (DataFrame): DataFrame containing viral load data for samples with no VL done
+    df_collect_new_sample (DataFrame): DataFrame containing viral load data for samples requiring new collection
+    df_invalid (DataFrame): DataFrame containing viral load data for samples marked as invalid
+    """
+    # copy facility df
+    df = df.copy()
+
+    df_LDL = df[df['Viral Load'] == '< LDL copies/ml']
+    df_others = df[df['Viral Load'] != '< LDL copies/ml']
+
+    #############################
+    # Sort df into several dfs #
+    #############################
+
+    # # copy df others
+    df_others = df_others.copy()
+
+    df_collect_new_sample = df_others[df_others['Viral Load'] == 'Collect New Sample']
+    df_others = df_others[df_others['Viral Load'] != 'Collect New Sample']
+    no_vl_done = df_others[pd.isnull(df_others['Viral Load'])]
+
+    # replace all blanks with no vl done
+    no_vl_done['Result'] = "NO VL DONE"
+
+    # filter nonblanks
+    df_notblanks = df_others[pd.notnull(df_others['Viral Load'])]
+
+    df_notblanks_invalid = df_notblanks[df_notblanks['Viral Load'] == "Invalid"]
+    df_notblanks = df_notblanks[df_notblanks['Viral Load'] != "Invalid"]
+
+    # convert nonblank values to numbers
+    df_notblanks['Viral Load'] = pd.to_numeric(df_notblanks['Viral Load'].str.replace('[^0-9.]', ''), errors='coerce')
+
+    # filter LLV
+    newdf_LDL = df_notblanks[df_notblanks['Viral Load'] < 1000]
+    # filter <400
+    newdf_below_4001 = df_notblanks[df_notblanks['Viral Load'] < 400]
+
+    ###############################
+    # customize Viral load column #
+    ###############################
+
+    # replace all < LDL copies/ml with LDL
+    df_LDL.loc[df_LDL['Viral Load'] == '< LDL copies/ml', 'Viral Load'] = "LDL"
+
+    # # replace all blanks with no vl done
+    df_collect_new_sample['Viral Load'] = "Collect new sample"
+    df_collect_new_sample['Viral Load'].unique()
+
+    # # replace all LLV with LDL
+    newdf_LDL.loc[newdf_LDL['Viral Load'] < 1000, 'Viral Load'] = "LDL"
+
+    # filter VL >1000
+    newdf_HVL = df_notblanks[df_notblanks['Viral Load'] >= 1000]
+    # newdf_HVL['Viral Load'].unique()
+    newdf_llv = df_notblanks[(df_notblanks['Viral Load'] >= 400) & (df_notblanks['Viral Load'] < 1000)]
+
+    newdf_llv.loc[newdf_llv['Viral Load'] < 1000, 'Viral Load'] = "LLV"
+
+    newdf_below_4001.loc[newdf_below_4001['Viral Load'] < 400, 'Viral Load'] = "LDL"
+
+    # # replace all >1000 with HVL
+    newdf_HVL.loc[newdf_HVL['Viral Load'] >= 1000, 'Viral Load'] = "STF"
+    newdf_HVL['Viral Load'].unique()
+
+    # join LDL + LLV + HVL+ NO VL DONE + collect new sample
+    new_df = pd.concat([df_LDL, newdf_LDL, newdf_HVL, no_vl_done, df_collect_new_sample])
+
+    new_df1 = pd.concat([df_LDL, newdf_below_4001, newdf_llv, newdf_HVL])
+
+    new_df2 = pd.concat([df_LDL, newdf_below_4001, newdf_llv, newdf_HVL, df_collect_new_sample, df_notblanks_invalid])
+
+    # join LDL + LLV
+    ldl = pd.concat([df_LDL, newdf_LDL])
+
+    # join no vl V.L
+    repeat_viral_load = pd.concat([df_collect_new_sample, no_vl_done, df_notblanks_invalid])
+    return ldl, repeat_viral_load, new_df, new_df2, newdf_HVL, df_collect_new_sample
+
+
+def handle_facility_and_subcounty(new_df, group_by_cols):
+    # Replace None values with "Missing"
+    new_df['Viral Load'] = np.where(new_df['Viral Load'].isna(), "Missing results", new_df['Viral Load'])
+    # Sub county Viral suppression
+    subcounty_vl = new_df.groupby(group_by_cols + ['Viral Load']).sum()['V.L'].reset_index()
+    subcounty_vl = subcounty_vl.pivot_table(values='V.L', index=subcounty_vl[group_by_cols], columns='Viral Load',
+                                            aggfunc='first')
+    subcounty_vl = subcounty_vl.fillna(0)
+
+    if 'STF' in subcounty_vl.columns and 'LDL' in subcounty_vl.columns:
+        subcounty_vl['Viral Suppression %'] = round(
+            (subcounty_vl['LDL'] / (subcounty_vl['STF'] + subcounty_vl['LDL'])) * 100)
+    elif 'STF' not in subcounty_vl.columns and 'LDL' in subcounty_vl.columns:
+        subcounty_vl['Viral Suppression %'] = 100
+    elif 'STF' in subcounty_vl.columns and 'LDL' not in subcounty_vl.columns:
+        subcounty_vl['Viral Suppression %'] = 0
+    else:
+        # Both 'STF' and 'LDL' columns are missing
+        subcounty_vl['Viral Suppression %'] = 0
+
+    # subcounty_vl['Viral Suppression %'] = round(
+    #     (subcounty_vl['LDL'] / (subcounty_vl['STF'] + subcounty_vl['LDL'])) * 100)
+    subcounty_vl = subcounty_vl.sort_values('Viral Suppression %', ascending=False).astype(int)
+    subcounty_vl['Viral Suppression %'] = subcounty_vl['Viral Suppression %'].astype(str) + "%"
+    return subcounty_vl
+
+
+def monthly_trend(monthly_vl_trend, title, y_axis_text):
+    month_list = monthly_vl_trend['period'].unique()
+    try:
+        mean_sample_tested = sum(monthly_vl_trend['V.L']) / len(monthly_vl_trend['V.L'])
+        median_sample_tested = monthly_vl_trend['V.L'].median()
+    except ZeroDivisionError:
+        mean_sample_tested = 0
+        median_sample_tested = 0
+
+    fig = px.bar(monthly_vl_trend, x='period', y='V.L', height=450,
+                 title=f"{title} {monthly_vl_trend['V.L'].sum()}",
+                 text='V.L',
+                 )
+    # Set x-axis title
+    fig.update_xaxes(title_text="Period (in months)")
+    # Set y-axes titles
+    fig.update_yaxes(title_text=f"{y_axis_text}", secondary_y=False)
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
+    y = int(mean_sample_tested)
+    x = int(median_sample_tested)
+    fig.add_shape(type='line', x0=month_list[0], y0=y,
+                  x1=month_list[-1],
+                  y1=y,
+                  line=dict(color='red', width=2, dash='dot'))
+
+    fig.add_annotation(x=month_list[-1], y=y,
+                       text=f"Mean monthly VL uptake {y}",
+                       showarrow=True, arrowhead=1,
+                       font=dict(size=8, color='red'))
+    fig.add_shape(type='line', x0=month_list[0], y0=x,
+                  x1=month_list[-1],
+                  y1=x,
+                  line=dict(color='black', width=2, dash='dot'))
+
+    fig.add_annotation(x=month_list[0], y=x,
+                       text=f"Median monthly VL uptake {x}",
+                       showarrow=True, arrowhead=1,
+                       font=dict(size=8, color='black'))
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=8
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=8
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            font=dict(
+                size=14
+            )
+        )
+    )
+    monthly_trend_fig = plot(fig, include_plotlyjs=False, output_type="div")
+    return monthly_trend_fig
+
+
+def viral_load(request):
+    all_results_df = pd.DataFrame()
+    subcounty_ = pd.DataFrame()
+    facility_less_1000_df = pd.DataFrame()
+    vl_done_df = pd.DataFrame()
+    subcounty_vl = pd.DataFrame()
+    facility_vl = pd.DataFrame()
+    hvl_linelist = pd.DataFrame()
+    hvl_linelist_facility = pd.DataFrame()
+    vs_text = None
+    facility_analyzed_text = None
+    subcounty_fig = None
+    monthly_trend_fig = None
+    weekly_trend_fig = None
+    monthly_hvl_trend_fig = None
+    hvl_sex_age_fig = None
+
+    form = FileUploadForm(request.POST or None)
+    date_picker_form = DateFilterForm(request.POST or None)
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == 'POST':
+        try:
+            form = FileUploadForm(request.POST, request.FILES)
+            message = "It seems that the dataset you uploaded is incorrect. To proceed with the analysis, " \
+                      "kindly upload detailed Viral load CSV file. Please generate this file from the website link " \
+                      "below and ensure it is in CSV format before uploading it. You can find detailed " \
+                      "instructions on how to upload the file below. Thank you."
+            if form.is_valid():
+                file = request.FILES['file']
+                if "csv" in file.name:
+                    df = pd.read_csv(file)
+                else:
+                    messages.success(request, message)
+                    return redirect('viral_load')
+                expected_columns = ['System ID', 'Batch', 'Patient CCC No', 'Lab Tested In', 'County',
+                                    'Sub County', 'Partner', 'Facility Name', 'Facility Code', 'Sex', 'DOB',
+                                    'Age', 'Sample Type', 'Date Collected', 'Justification',
+                                    'Date Received', 'Date Tested', 'Date Dispatched',
+                                    'ART Initiation Date', 'Received Status', 'Reasons for Repeat',
+                                    'Rejected Reason', 'Regimen', 'Regimen Line', 'PMTCT', 'Viral Load',
+                                    'Entry']
+                if request.method == 'POST':
+                    date_picker_form = DateFilterForm(request.POST)
+                    if date_picker_form.is_valid():
+                        df = df.rename(
+                            columns={"Collection Date": "Date Collected", "Gender": "Sex", "Facilty": "Facility Name",
+                                     "Result": "Viral Load", "Sub-County": "Sub County",
+                                     "Date of Testing": "Date Tested"})
+                        # Check if required columns exist in the DataFrame
+                        if all(col_name in df.columns for col_name in expected_columns):
+                            df['V.L'] = 1
+                            date_cols = [col for col in df.columns if "date" in col.lower()]
+                            # Convert cols to datetime
+                            for col in date_cols:
+                                df[col] = pd.to_datetime(df[col], dayfirst=True, errors='coerce')
+
+                            from_date = date_picker_form.cleaned_data['from_date']
+                            to_date = date_picker_form.cleaned_data['to_date']
+                            if to_date <= from_date:
+                                messages.error(request,
+                                               f"The selected end date ({to_date}) should be later than the start date "
+                                               f"({from_date}). Please choose valid dates.")
+                                return redirect('viral_load')
+
+                            df = df.loc[(df['Date Collected'].dt.date >= from_date) &
+                                        (df['Date Collected'].dt.date <= to_date)]
+                            df = df[(df['Justification'] != 'Recency Testing') & (df['Justification'] != 'Baseline')]
+                            # Drop dulicates and keep last
+                            df = df.sort_values('Date Collected').drop_duplicates(['Patient CCC No'], keep='last')
+
+                            df = customize_age_bands(df)
+                            try:
+                                df = transform_vl_dataframe(df)
+                            except ValueError:
+                                messages.success(request,
+                                                 f"No VL samples were collected between {from_date} and {to_date}.")
+                                return redirect('viral_load')
+                            # Replace None values with "Missing"
+                            df['Age'] = np.where(df['Age'].isna(), "Missing age", df['Age'])
+                            all_results = pd.crosstab(df['Sex'], [df['Age']], margins=True)
+                            all_results_df = use_availble_columns(all_results)
+                            dfsss = pd.crosstab(df['Sub County'], [df['Age']], margins=True)
+                            dfsss = use_availble_columns(dfsss)
+                            subcounty_ = dfsss.sort_values('All').reset_index()
+                            ldl, repeat_viral_load, new_df, new_df2, newdf_HVL, df_collect_new_sample = preprocess_viral_load_data(
+                                df)
+                            hvl_ccc_nos = list(newdf_HVL['Patient CCC No'].unique())
+                            hvl_linelist = df[df['Patient CCC No'].isin(hvl_ccc_nos)]
+                            # convert nonblank values to numbers
+                            hvl_linelist['Viral Load'] = pd.to_numeric(
+                                hvl_linelist['Viral Load'].str.replace('[^0-9.]', ''), errors='coerce')
+                            hvl_linelist = hvl_linelist[list(hvl_linelist.columns[:28])].sort_values("Viral Load",
+                                                                                                     ascending=False)
+
+                            hvl_linelist_facility = hvl_linelist.groupby(["Facility Name"]).sum(numeric_only=True)[
+                                'V.L'].reset_index().sort_values("V.L", ascending=False)
+                            hvl_linelist_facility['%'] = round(
+                                hvl_linelist_facility['V.L'] / sum(hvl_linelist_facility['V.L']) * 100, 1)
+                            hvl_linelist_facility = hvl_linelist_facility.rename(columns={"V.L": "STF"})
+
+                            newdf_HVL_age_sex = newdf_HVL.groupby(["Age", "Sex"]).sum(numeric_only=True)[
+                                'V.L'].reset_index().sort_values("V.L", ascending=False)
+                            newdf_HVL_age_sex['%'] = round(
+                                newdf_HVL_age_sex['V.L'] / sum(newdf_HVL_age_sex['V.L']) * 100,
+                                1)
+                            newdf_HVL_age_sex = newdf_HVL_age_sex.rename(columns={"V.L": "HVL"})
+                            newdf_HVL_age_sex['HVL %'] = newdf_HVL_age_sex['HVL'].astype(str) + " (" + \
+                                                         newdf_HVL_age_sex[
+                                                             '%'].astype(str) + "%)"
+                            newdf_HVL_age_sex["Age"] = pd.Categorical(newdf_HVL_age_sex["Age"],
+                                                                      categories=['1-4', '5-9', '10-14', '15-19',
+                                                                                  '20-24',
+                                                                                  '25-29', '30-34', '35-39', '40-44',
+                                                                                  '45-49', '50-54',
+                                                                                  '55-59', '60-64', '65+'],
+                                                                      ordered=True)
+                            newdf_HVL_age_sex.sort_values('Age', inplace=True)
+
+                            facility_vl_uptake = make_crosstab_facility_age(ldl)
+
+                            ################################################################################
+                            # DSD: TX _PVLS (NUMERATOR)
+                            # Number of adults and pediatrics patients on ART with suppressed viral load
+                            # V.L (<1,000 copies/ml) documentation in the medical records and/or supporting
+                            # laboratory V.L within the past 12 months #
+                            ################################################################################
+
+                            facility_less_1000_df = convert_pivot_to_dataframe(facility_vl_uptake)
+                            ################################################################################
+                            # DSD: TX _PVLS (DENOMINATOR)
+                            # Number of adults and pediatrics ART patients with a viral load V.L documented
+                            # in the patient medical records and/or laboratory records in the past 12 months.
+                            ################################################################################
+
+                            vl_done = new_df.loc[(new_df['months since last VL'] <= 12)]
+                            vl_done_df = convert_pivot_to_dataframe(make_crosstab_facility_age(vl_done))
+                            ######################
+                            # Viral suppression  #
+                            ######################
+                            vs_rate = round((len(ldl) / (len(newdf_HVL) + len(ldl) + len(repeat_viral_load))) * 100, 1)
+
+                            vs_text = f"Viral Load Suppression: {vs_rate}% overall, with {len(newdf_HVL)} cases " \
+                                      f"of suspected treatment failure (STF) and {len(df_collect_new_sample)} requiring new " \
+                                      f"samples collection."
+
+                            facility_analyzed_text = f"Analyzed a dataset containing {df.shape[0]} rows (after removing " \
+                                                     f"duplicates) from {len(list(df['Facility Name'].unique()))} facilities across " \
+                                                     f"{len(list(df['Sub County'].unique()))} sub-counties."
+
+                            # Replace None values with "Missing"
+                            new_df['Viral Load'] = np.where(new_df['Viral Load'].isna(), "Missing results",
+                                                            new_df['Viral Load'])
+                            #################################
+                            # Sub county Viral suppression  #
+                            #################################
+                            subcounty_vl = handle_facility_and_subcounty(new_df, ['County', "Sub County"])
+                            subcounty_vl = subcounty_vl.reset_index()
+
+                            ###############################
+                            # Facility Viral suppression  #
+                            ###############################
+                            facility_vl = handle_facility_and_subcounty(new_df, ["Facility Name"])
+                            facility_vl = facility_vl.reset_index()
+
+                            # summarize data by groupby
+                            monthly_vl_trend = \
+                                df.groupby(['Month', 'Month vl Tested', 'period', 'Year vl Tested']).sum()[
+                                    'V.L'].reset_index().sort_values(['Year vl Tested', 'Month'])
+                            monthly_trend_fig = monthly_trend(monthly_vl_trend,
+                                                              "Monthly VL uptake trend.      Total sample collected and "
+                                                              "processed ", "VL sample taken")
+                            subcounty_fig = subcounty_[subcounty_['Sub County'] != "All"]
+                            subcounty_fig = hvl_trend(subcounty_fig, "Sub County", "All",
+                                                      title=f"Viral load samples done per Sub County N = "
+                                                            f"{sum(subcounty_fig['All'])}",
+                                                      )
+                            hvl_sex_age_fig = hvl_trend(newdf_HVL_age_sex, "Age", "HVL",
+                                                        title=f"Distribution of HVL (>= 1000 cp/ml) by sex and age "
+                                                              f"N = {sum(newdf_HVL_age_sex['HVL'])}",
+                                                        color="Sex")
+
+                            # HVL
+                            monthly_hvl_trend = \
+                                newdf_HVL.groupby(['Month', 'Month vl Tested', 'period', 'Year vl Tested']).sum()[
+                                    'V.L'].reset_index().sort_values(['Year vl Tested', 'Month'])
+                            monthly_hvl_trend_fig = monthly_trend(monthly_hvl_trend,
+                                                                  "Monthly distribution of PLHIV with Suspected Treatment "
+                                                                  "Failure (STF)  N = ",
+                                                                  "# with Suspected Treatment Failure (STF) ")
+
+                            df['# sample collected'] = 1
+                            df['Date Tested'] = pd.to_datetime(df['Date Tested'], errors='coerce')
+                            df1 = df.groupby(pd.Grouper(freq='W', key='Date Tested'))[
+                                '# sample collected'].sum().reset_index()
+                            total_vl = df1['# sample collected'].sum()
+                            mean_sample_tested = sum(df1['# sample collected']) / len(df1['# sample collected'])
+                            median_sample_tested = df1['# sample collected'].median()
+                            weekly_trend = df1['# sample collected'].sum()
+                            fig = px.line(df1, x='Date Tested', y='# sample collected', text='# sample collected',
+                                          height=450,
+                                          title=f"Weekly Trend of Viral Load Testing Samples Collected N={weekly_trend}"
+                                                f"      Maximum VLs : {max(df1['# sample collected'])}")
+                            y = int(mean_sample_tested)
+                            x = int(median_sample_tested)
+                            fig.update_traces(textposition='top center')
+                            fig.add_shape(type='line', x0=df1['Date Tested'].min(), y0=y,
+                                          x1=df1['Date Tested'].max(),
+                                          y1=y,
+                                          line=dict(color='red', width=2, dash='dot'))
+
+                            fig.add_annotation(x=df1['Date Tested'].max(), y=y,
+                                               text=f"Mean weekly VL uptake {y}",
+                                               showarrow=True, arrowhead=1,
+                                               font=dict(size=8, color='red'))
+                            fig.add_shape(type='line', x0=df1['Date Tested'].min(), y0=x,
+                                          x1=df1['Date Tested'].max(),
+                                          y1=x,
+                                          line=dict(color='black', width=2, dash='dot'))
+
+                            fig.add_annotation(x=df1['Date Tested'].min(), y=x,
+                                               text=f"Median weekly VL uptake {x}",
+                                               showarrow=True, arrowhead=1,
+                                               font=dict(size=8, color='black'))
+                            weekly_trend_fig = plot(fig, include_plotlyjs=False, output_type="div")
+                        else:
+                            messages.success(request, message)
+                            return redirect('viral_load')
+
+            else:
+                messages.success(request, message)
+                return redirect('viral_load')
+        except MultiValueDictKeyError:
+            context = {
+                "form": form,
+                "all_results_df": all_results_df,
+                "subcounty_": subcounty_,
+                "facility_less_1000_df": facility_less_1000_df,
+                "vl_done_df": vl_done_df,
+                "vs_text": vs_text,
+                "facility_analyzed_text": facility_analyzed_text,
+                "subcounty_vl": subcounty_vl,
+                "facility_vl": facility_vl,
+                "monthly_trend_fig": monthly_trend_fig,
+                "weekly_trend_fig": weekly_trend_fig,
+                "subcounty_fig": subcounty_fig,
+                "hvl_sex_age_fig": hvl_sex_age_fig,
+                "monthly_hvl_trend_fig": monthly_hvl_trend_fig,
+                "date_picker_form": date_picker_form,
+                "dqa_type": "viral_load",
+                "hvl_linelist": hvl_linelist,
+                "hvl_linelist_facility": hvl_linelist_facility,
+            }
+
+            return render(request, 'data_analysis/tat.html', context)
+    request.session['all_results_df'] = all_results_df.to_dict()
+    request.session['subcounty_'] = subcounty_.to_dict()
+    request.session['facility_less_1000_df'] = facility_less_1000_df.to_dict()
+    request.session['vl_done_df'] = vl_done_df.to_dict()
+    request.session['facility_vl'] = facility_vl.to_dict()
+    request.session['subcounty_vl'] = subcounty_vl.to_dict()
+    hvl_linelist = hvl_linelist.applymap(
+        lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if isinstance(x, pd.Timestamp) else x)
+    if "HVL" in hvl_linelist.columns:
+        del hvl_linelist["V.L"]
+    hvl_linelist = hvl_linelist.reset_index(drop=True)
+    hvl_linelist.index = range(1, len(hvl_linelist) + 1)
+    hvl_linelist_facility.index = range(1, len(hvl_linelist_facility) + 1)
+    request.session['hvl_linelist'] = hvl_linelist.to_dict()
+    date_cols = [col for col in hvl_linelist.columns if "date" in col.lower()]
+    for col in date_cols:
+        hvl_linelist[col] = pd.to_datetime(hvl_linelist[col])
+        hvl_linelist[col] = hvl_linelist[col].dt.date
+    request.session['hvl_linelist_facility'] = hvl_linelist_facility.to_dict()
+
+    # Convert dict_items into a list
+    dictionary = get_key_from_session_names(request)
+    dfs_vl_uptake = {"All VL Results by sex and age": all_results_df, "All VL Results by sub county": subcounty_,
+                     "DSD: TX _PVLS (NUMERATOR)": facility_less_1000_df, "DSD: TX _PVLS (DENOMINATOR)": vl_done_df}
+    dfs_vl_supp = {
+        "Sub counties viral suppression": subcounty_vl, "Facilities viral suppression": facility_vl,
+        "Suspected Treatment Failure (STF) line list": hvl_linelist,
+        "Suspected Treatment Failure (STF) per facility (>=1000 cp/ml)": hvl_linelist_facility
+    }
+
+    context = {
+        "form": form,
+        "dictionary": dictionary,
+        "vs_text": vs_text,
+        "facility_analyzed_text": facility_analyzed_text,
+        "dfs_vl_uptake": dfs_vl_uptake,
+        "dfs_vl_supp": dfs_vl_supp,
+        "monthly_trend_fig": monthly_trend_fig,
+        "weekly_trend_fig": weekly_trend_fig,
+        "hvl_sex_age_fig": hvl_sex_age_fig,
+        "subcounty_fig": subcounty_fig,
+        "monthly_hvl_trend_fig": monthly_hvl_trend_fig,
+        "date_picker_form": date_picker_form,
+        "dqa_type": "viral_load",
+        "hvl_linelist": hvl_linelist,
+        "hvl_linelist_facility": hvl_linelist_facility,
+    }
+
+    return render(request, 'data_analysis/vl.html', context)

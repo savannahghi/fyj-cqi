@@ -1,9 +1,11 @@
 import datetime
+import re
 from datetime import date, datetime
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
+from django.contrib.auth.decorators import login_required
 from plotly.offline import plot
 from django.contrib import messages
 from django.db import transaction, IntegrityError
@@ -17,6 +19,7 @@ from apps.data_analysis.forms import DateFilterForm, FileUploadForm
 from apps.data_analysis.models import FYJHealthFacility
 
 
+@login_required(login_url='login')
 def load_fyj_censused(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -571,6 +574,7 @@ def analyse_pharmacy_data(request, df, df1):
     return final_df, filename, other_adult_df_file, adult_others_filename, paeds_others_filename, other_paeds_bottles_df_file
 
 
+@login_required(login_url='login')
 def pharmacy(request):
     final_df = pd.DataFrame()
     filename = None
@@ -678,17 +682,13 @@ def to_datetime(col):
         return datetime.datetime.min
 
 
+# def time_taken(start_time, title):
+#     print(f"{title}, it took (hh:mm:ss.ms) {datetime.now() - start_time}")
+
+
 def generate_tat_report(df, groupby, starting_date, last_date, col_name):
     # Check if last_date is less than starting_date and assign starting_date to last_date in such cases
-
-    # define a function to check and assign values
-    def check_and_assign_dates(row):
-        if row[last_date] < row[starting_date]:
-            row[last_date] = row[starting_date]
-        return row
-
-    # apply the function to the DataFrame
-    df = df.apply(check_and_assign_dates, axis=1)
+    df[last_date] = df[[last_date, starting_date]].max(axis=1)
 
     # add TAT column
     df[col_name] = df[last_date] - df[starting_date]
@@ -699,12 +699,10 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
         filter_by = 'Facility Code'
     else:
         filter_by = groupby
-
     if "Sample ID" in df.columns:
         text = "Sample ID"
     else:
         text = "Patient CCC No"
-
     unit_dfs = []
     for mfl_code in df[filter_by].unique():
         max_length = 0
@@ -740,8 +738,8 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
         #         max_patient_number = ', '.join(sorted(list(max_df['Patient CCC No'].unique())))
 
         min_df = unit_df[unit_df[col_name] == min_sample_tat]
-        min_patient_number = ', '.join(sorted(list(min_df[text].astype(str).unique())))
-        outliers_patient_number = ', '.join(sorted(list(outliers[text].astype(str).unique())))
+        min_patient_number = ', '.join(sorted(list(min_df[text].unique())))
+        outliers_patient_number = ', '.join(sorted(list(outliers[text].unique())))
         if groupby == "Facilty":
             col_to_use = "mfl_code"
         else:
@@ -828,29 +826,37 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
 
 def prepare_collect_dispatch_df(hubs_collect_dispatch_tat, report_type):
     if "Facility Code" in hubs_collect_dispatch_tat.columns:
-        del hubs_collect_dispatch_tat['Facility Code']
-    hubs_collect_dispatch_tat = hubs_collect_dispatch_tat[
-        hubs_collect_dispatch_tat[report_type] != ""]
-    hubs_collect_dispatch_tat = hubs_collect_dispatch_tat[
-        list(hubs_collect_dispatch_tat.columns[0:7])]
-    hubs_collect_dispatch_tat['TAT type'] = "collection to dispatch"
+        hubs_collect_dispatch_tat.drop(columns=["Facility Code"], inplace=True)
 
+    hubs_collect_dispatch_tat = hubs_collect_dispatch_tat.loc[
+        hubs_collect_dispatch_tat[report_type] != ""]
+
+    expected_columns = [col for col in hubs_collect_dispatch_tat.columns if re.match(r'[A-Za-z]{3}-\d{4}', col)]
+    hubs_collect_dispatch_tat = hubs_collect_dispatch_tat[
+        [hubs_collect_dispatch_tat.columns[0]] + expected_columns].copy()
+
+    hubs_collect_dispatch_tat['TAT type'] = "collection to dispatch"
     return hubs_collect_dispatch_tat
 
 
 def prepare_collect_receipt_df(hub_monthly_collect_receipt_tat, report_type):
     if "Facility Code" in hub_monthly_collect_receipt_tat.columns:
-        del hub_monthly_collect_receipt_tat['Facility Code']
-    hub_monthly_collect_receipt_tat = hub_monthly_collect_receipt_tat[
+        hub_monthly_collect_receipt_tat.drop(columns=["Facility Code"], inplace=True)
+
+    hub_monthly_collect_receipt_tat = hub_monthly_collect_receipt_tat.loc[
         hub_monthly_collect_receipt_tat[report_type] != ""]
+
+    expected_columns = [col for col in hub_monthly_collect_receipt_tat.columns if re.match(r'[A-Za-z]{3}-\d{4}', col)]
     hub_monthly_collect_receipt_tat = hub_monthly_collect_receipt_tat[
-        list(hub_monthly_collect_receipt_tat.columns[0:7])]
+        [hub_monthly_collect_receipt_tat.columns[0]] + expected_columns].copy()
+
     hub_monthly_collect_receipt_tat['TAT type'] = "collection to receipt"
     return hub_monthly_collect_receipt_tat
 
 
 def visualize_tat_type(hub_df, viz_name, target_text):
-    hub_df = pd.melt(hub_df, id_vars=[viz_name, 'TAT type'], value_vars=list(hub_df.columns[1:7]),
+    expected_columns = [col for col in hub_df.columns if re.match(r'[A-Za-z]{3}-\d{4}', col)]
+    hub_df = pd.melt(hub_df, id_vars=[viz_name, 'TAT type'], value_vars=expected_columns,
                      var_name='Month_Year', value_name='TAT (mean)')
     hub_df = hub_df[hub_df['Month_Year'] != "Facility Code"]
     a = hub_df.groupby([viz_name, 'Month_Year', 'TAT type']).sum(numeric_only=True).reset_index()
@@ -872,24 +878,119 @@ def visualize_tat_type(hub_df, viz_name, target_text):
     for hub in ordered_tat_dfs[viz_name]:
         hub_specific_df = a[(a[viz_name] == hub) & (~a["Month_Year"].str.contains("tat", case=False))]
         hub_specific_df['month_year'] = pd.to_datetime(hub_specific_df['Month_Year'], format='%b-%Y')
+        hub_specific_df['year'] = hub_specific_df['month_year'].dt.year
         hub_specific_df = hub_specific_df.sort_values('month_year')
+        # pivot the data to get separate columns for each TAT type
+        pivoted_df = hub_specific_df.pivot(index='month_year', columns='TAT type', values='TAT (mean)').reset_index()
+        earliest_year = min(hub_specific_df['year'])
+        fy_split = pd.to_datetime(f"{earliest_year}-10-01", format='%Y-%m-%d')
 
-        title = f"Mean {target_text} TAT Trend {hub.title()} {viz_name}" if "hub" not in hub.lower() else f"Mean {target_text} TAT Trend {hub.title()}"
-        fig = px.line(hub_specific_df, x='month_year', y="TAT (mean)", text='TAT (mean)', color="TAT type", title=title,
-                      height=450)
-        fig.update_traces(textposition='top center')
+        earliest_year = int(str(earliest_year)[-2:])
+        following_year = max(hub_specific_df['year'])
+        following_year = int(str(following_year)[-2:])
+
+        fy23_corr = pivoted_df[pivoted_df['month_year'] >= fy_split]
+        fy22_corr = pivoted_df[pivoted_df['month_year'] < fy_split]
+
+        # calculate the correlation coefficient
+        # correlation = round(pivoted_df['collection to dispatch'].corr(pivoted_df['collection to receipt']), 1)
+        fy23_correlation = round(fy23_corr["collection to dispatch"].corr(fy23_corr["collection to receipt"]), 1)
+        fy22_correlation = round(fy22_corr["collection to dispatch"].corr(fy22_corr["collection to receipt"]), 1)
+        max_value = max(pivoted_df['collection to dispatch'])
+        min_value = min(pivoted_df['collection to receipt'])
+        # corr_text = f"Correlation between C-R and C-D: {correlation}"
+
+        fy23_corr_text = f"FY{following_year} correlation between C-R and C-D : {fy23_correlation}"
+        fy22_corr_text = f"FY{earliest_year} correlation between C-R and C-D : {fy22_correlation}"
+
+        fy23 = hub_specific_df[
+            (hub_specific_df['month_year'] >= fy_split) & (hub_specific_df['TAT type'] == "collection to dispatch")]
+        fy22 = hub_specific_df[
+            (hub_specific_df['month_year'] < fy_split) & (hub_specific_df['TAT type'] == "collection to dispatch")]
+        try:
+            mean_sample_tested_fy23 = round(sum(fy23["TAT (mean)"]) / len(fy23["TAT (mean)"]), 1)
+            median_sample_tested_fy23 = round(fy23["TAT (mean)"].median(), 1)
+        except ZeroDivisionError:
+            mean_sample_tested_fy23 = 0
+            median_sample_tested_fy23 = 0
+        try:
+            mean_sample_tested_fy22 = round(sum(fy22["TAT (mean)"]) / len(fy22["TAT (mean)"]), 1)
+            median_sample_tested_fy22 = round(fy22["TAT (mean)"].median(), 1)
+        except ZeroDivisionError:
+            mean_sample_tested_fy22 = 0
+            median_sample_tested_fy22 = 0
+
+        # try:
+        #     mean_sample_tested = int(sum(hub_specific_df["TAT (mean)"]) / len(hub_specific_df["TAT (mean)"]))
+        #     median_sample_tested = int(hub_specific_df["TAT (mean)"].median())
+        # except ZeroDivisionError:
+        #     mean_sample_tested = 0
+        #     median_sample_tested = 0
         if target_text == "VL":
             y = 14
         else:
             y = 10
-        fig.add_shape(type='line', x0=hub_specific_df['month_year'].min(), y0=y, x1=hub_specific_df['month_year'].max(),
-                      y1=y,
-                      line=dict(color='red', width=2, dash='dot'))
 
-        fig.add_annotation(x=hub_specific_df['month_year'].max(), y=y,
-                           text=f"FYJ {target_text} TAT Target (<={y})",
-                           showarrow=True, arrowhead=1,
-                           font=dict(size=14, color='red'))
+        title = f"Mean {target_text} TAT Trend {hub.title()} {viz_name}" if "hub" not in hub.lower() else f"Mean {target_text} TAT Trend {hub.title()}"
+        fig = px.line(hub_specific_df, x='month_year', y="TAT (mean)", text='TAT (mean)', color="TAT type",
+                      title=title + f"  Target : <={y}",
+                      height=450)
+        fig.update_traces(textposition='top center')
+
+        # fig.add_shape(type='line', x0=hub_specific_df['month_year'].min(), y0=y, x1=hub_specific_df['month_year'].max(),
+        #               y1=y,
+        #               line=dict(color='grey', width=2, dash='solid'))
+        #
+        # fig.add_annotation(x=hub_specific_df['month_year'].max(), y=y,
+        #                    text=f"FYJ {target_text} TAT Target (<={y})",
+        #                    showarrow=True, arrowhead=1,
+        #                    font=dict(size=8, color='grey'))
+        if fy23.shape[0] > 0:
+            fig.add_shape(type='line', x0=fy23['month_year'].max(), y0=mean_sample_tested_fy23,
+                          x1=fy23['month_year'].min(),
+                          y1=mean_sample_tested_fy23,
+                          line=dict(color='red', width=2, dash='dot'))
+
+            fig.add_annotation(x=fy23['month_year'].max(), y=mean_sample_tested_fy23,
+                               text=f"FY{following_year} Mean monthly TAT (C-D) {mean_sample_tested_fy23}",
+                               showarrow=True, arrowhead=1,
+                               font=dict(size=8, color='red'))
+            fig.add_shape(type='line', x0=fy23['month_year'].min(), y0=median_sample_tested_fy23,
+                          x1=fy23['month_year'].max(),
+                          y1=median_sample_tested_fy23,
+                          line=dict(color='black', width=2, dash='dot'))
+
+            fig.add_annotation(x=fy23['month_year'].min(), y=median_sample_tested_fy23,
+                               text=f"FY{following_year} Median monthly TAT (C-D) {median_sample_tested_fy23}",
+                               showarrow=True, arrowhead=1,
+                               font=dict(size=8, color='black'))
+            fig.add_annotation(x=fy23['month_year'].max(), y=max_value,
+                               text=fy23_corr_text,
+                               showarrow=False,
+                               font=dict(size=8, color='black'))
+        if fy22.shape[0] > 0:
+            fig.add_shape(type='line', x0=fy22['month_year'].max(), y0=mean_sample_tested_fy22,
+                          x1=fy22['month_year'].min(),
+                          y1=mean_sample_tested_fy22,
+                          line=dict(color='red', width=2, dash='dot'))
+
+            fig.add_annotation(x=fy22['month_year'].max(), y=mean_sample_tested_fy22,
+                               text=f"FY{earliest_year} Mean monthly TAT (C-D) {mean_sample_tested_fy22}",
+                               showarrow=True, arrowhead=1,
+                               font=dict(size=8, color='red'))
+            fig.add_shape(type='line', x0=fy22['month_year'].min(), y0=median_sample_tested_fy22,
+                          x1=fy22['month_year'].max(),
+                          y1=median_sample_tested_fy22,
+                          line=dict(color='black', width=2, dash='dot'))
+
+            fig.add_annotation(x=fy22['month_year'].min(), y=median_sample_tested_fy22,
+                               text=f"FY{earliest_year} Median monthly TAT (C-D) {median_sample_tested_fy22}",
+                               showarrow=True, arrowhead=1,
+                               font=dict(size=8, color='black'))
+            fig.add_annotation(x=fy22['month_year'].min(), y=min_value,
+                               text=fy22_corr_text,
+                               showarrow=False,
+                               font=dict(size=8, color='black'))
         fig.update_layout(legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -915,9 +1016,11 @@ def transform_data(df, df1, from_date, to_date):
     else:
         target_text = "VL"
     date_cols = [col for col in df.columns if "date" in col.lower()]
+
     # Convert cols to datetime
     for col in date_cols:
         df[col] = pd.to_datetime(df[col], dayfirst=True, errors='coerce')
+
     df = df.loc[(df['Date Collected'].dt.date >= from_date) &
                 (df['Date Collected'].dt.date <= to_date)]
 
@@ -925,6 +1028,12 @@ def transform_data(df, df1, from_date, to_date):
     ########################################
     # Collection and Receipt
     ########################################
+    if "Sample ID" in df.columns:
+        text = "Sample ID"
+    else:
+        text = "Patient CCC No"
+    df[text] = df[text].astype(str)
+
     facilities_collect_receipt_tat, df_result = generate_tat_report(
         df, "Facilty", "Date Collected", "Date Received",
         "Collected to Received")
@@ -981,7 +1090,6 @@ def transform_data(df, df1, from_date, to_date):
 
     counties_collect_dispatch_tat_trend = prepare_collect_dispatch_df(
         counties_collect_dispatch_tat, "County")
-
     counties_df = pd.concat(
         [counties_collect_receipt_tat_trend,
          counties_collect_dispatch_tat_trend])
@@ -1008,6 +1116,7 @@ def transform_data(df, df1, from_date, to_date):
            county_viz, sub_county_viz, target_text
 
 
+@login_required(login_url='login')
 def tat(request):
     facilities_collect_receipt_tat = pd.DataFrame()
     facilities_collect_dispatch_tat = pd.DataFrame()
@@ -1076,6 +1185,7 @@ def tat(request):
                                                        f"({from_date}). Please choose valid dates.")
                                         return redirect('viral_load')
                                     else:
+
                                         facilities_collect_receipt_tat, facility_c_r_filename, \
                                         sub_counties_collect_receipt_tat, subcounty_c_r_filename, \
                                         hubs_collect_receipt_tat, hub_c_r_filename, \
@@ -1091,7 +1201,6 @@ def tat(request):
                                   f"upload the CSV from <a href='{url}'>NASCOP's website</a>."
                         messages.success(request, message)
                         return redirect('tat')
-
         except MultiValueDictKeyError:
             context = {
                 "date_picker_form": date_picker_form,
@@ -1158,7 +1267,6 @@ def tat(request):
         "county_viz": county_viz,
         "sub_county_viz": sub_county_viz, "dqa_type": "tat",
     }
-
     return render(request, 'data_analysis/tat.html', context)
 
 
@@ -1549,6 +1657,7 @@ def analyse_fmaps_fcdrr(df, df1):
            nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b
 
 
+@login_required(login_url='login')
 def fmaps_reporting_rate(request):
     final_df = pd.DataFrame()
     other_adult_df_file = pd.DataFrame()
@@ -2094,6 +2203,7 @@ def monthly_trend(monthly_vl_trend, title, y_axis_text):
     return monthly_trend_fig
 
 
+@login_required(login_url='login')
 def viral_load(request):
     all_results_df = pd.DataFrame()
     subcounty_ = pd.DataFrame()

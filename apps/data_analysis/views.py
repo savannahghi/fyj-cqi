@@ -5,6 +5,7 @@ from datetime import date, datetime
 import numpy as np
 import pandas as pd
 import plotly.express as px
+from django.contrib.auth.decorators import login_required
 from plotly.offline import plot
 from django.contrib import messages
 from django.db import transaction, IntegrityError
@@ -18,6 +19,7 @@ from apps.data_analysis.forms import DateFilterForm, FileUploadForm
 from apps.data_analysis.models import FYJHealthFacility
 
 
+@login_required(login_url='login')
 def load_fyj_censused(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -572,6 +574,7 @@ def analyse_pharmacy_data(request, df, df1):
     return final_df, filename, other_adult_df_file, adult_others_filename, paeds_others_filename, other_paeds_bottles_df_file
 
 
+@login_required(login_url='login')
 def pharmacy(request):
     final_df = pd.DataFrame()
     filename = None
@@ -679,6 +682,10 @@ def to_datetime(col):
         return datetime.datetime.min
 
 
+# def time_taken(start_time, title):
+#     print(f"{title}, it took (hh:mm:ss.ms) {datetime.now() - start_time}")
+
+
 def generate_tat_report(df, groupby, starting_date, last_date, col_name):
     # Check if last_date is less than starting_date and assign starting_date to last_date in such cases
     df[last_date] = df[[last_date, starting_date]].max(axis=1)
@@ -692,12 +699,10 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
         filter_by = 'Facility Code'
     else:
         filter_by = groupby
-
     if "Sample ID" in df.columns:
         text = "Sample ID"
     else:
         text = "Patient CCC No"
-
     unit_dfs = []
     for mfl_code in df[filter_by].unique():
         max_length = 0
@@ -728,13 +733,13 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
             std_sample_tat = 0
 
         max_df = unit_df[unit_df[col_name] == max_sample_tat]
-        max_length = len(list(max_df[text].astype(str).unique()))
-        max_patient_number = sorted(list(max_df[text].astype(str).unique()))
+        max_length = len(list(max_df[text].unique()))
+        max_patient_number = sorted(list(max_df[text].unique()))
         #         max_patient_number = ', '.join(sorted(list(max_df['Patient CCC No'].unique())))
 
         min_df = unit_df[unit_df[col_name] == min_sample_tat]
-        min_patient_number = ', '.join(sorted(list(min_df[text].astype(str).unique())))
-        outliers_patient_number = ', '.join(sorted(list(outliers[text].astype(str).unique())))
+        min_patient_number = ', '.join(sorted(list(min_df[text].unique())))
+        outliers_patient_number = ', '.join(sorted(list(outliers[text].unique())))
         if groupby == "Facilty":
             col_to_use = "mfl_code"
         else:
@@ -821,24 +826,30 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
 
 def prepare_collect_dispatch_df(hubs_collect_dispatch_tat, report_type):
     if "Facility Code" in hubs_collect_dispatch_tat.columns:
-        del hubs_collect_dispatch_tat['Facility Code']
-    hubs_collect_dispatch_tat = hubs_collect_dispatch_tat[
-        hubs_collect_dispatch_tat[report_type] != ""]
-    expected_columns = [col for col in hubs_collect_dispatch_tat.columns if re.match(r'[A-Za-z]{3}-\d{4}', col)]
-    hubs_collect_dispatch_tat = hubs_collect_dispatch_tat[[hubs_collect_dispatch_tat.columns[0]] + expected_columns]
-    hubs_collect_dispatch_tat['TAT type'] = "collection to dispatch"
+        hubs_collect_dispatch_tat.drop(columns=["Facility Code"], inplace=True)
 
+    hubs_collect_dispatch_tat = hubs_collect_dispatch_tat.loc[
+        hubs_collect_dispatch_tat[report_type] != ""]
+
+    expected_columns = [col for col in hubs_collect_dispatch_tat.columns if re.match(r'[A-Za-z]{3}-\d{4}', col)]
+    hubs_collect_dispatch_tat = hubs_collect_dispatch_tat[
+        [hubs_collect_dispatch_tat.columns[0]] + expected_columns].copy()
+
+    hubs_collect_dispatch_tat['TAT type'] = "collection to dispatch"
     return hubs_collect_dispatch_tat
 
 
 def prepare_collect_receipt_df(hub_monthly_collect_receipt_tat, report_type):
     if "Facility Code" in hub_monthly_collect_receipt_tat.columns:
-        del hub_monthly_collect_receipt_tat['Facility Code']
-    hub_monthly_collect_receipt_tat = hub_monthly_collect_receipt_tat[
+        hub_monthly_collect_receipt_tat.drop(columns=["Facility Code"], inplace=True)
+
+    hub_monthly_collect_receipt_tat = hub_monthly_collect_receipt_tat.loc[
         hub_monthly_collect_receipt_tat[report_type] != ""]
+
     expected_columns = [col for col in hub_monthly_collect_receipt_tat.columns if re.match(r'[A-Za-z]{3}-\d{4}', col)]
     hub_monthly_collect_receipt_tat = hub_monthly_collect_receipt_tat[
-        [hub_monthly_collect_receipt_tat.columns[0]] + expected_columns]
+        [hub_monthly_collect_receipt_tat.columns[0]] + expected_columns].copy()
+
     hub_monthly_collect_receipt_tat['TAT type'] = "collection to receipt"
     return hub_monthly_collect_receipt_tat
 
@@ -1017,6 +1028,12 @@ def transform_data(df, df1, from_date, to_date):
     ########################################
     # Collection and Receipt
     ########################################
+    if "Sample ID" in df.columns:
+        text = "Sample ID"
+    else:
+        text = "Patient CCC No"
+    df[text] = df[text].astype(str)
+
     facilities_collect_receipt_tat, df_result = generate_tat_report(
         df, "Facilty", "Date Collected", "Date Received",
         "Collected to Received")
@@ -1073,7 +1090,6 @@ def transform_data(df, df1, from_date, to_date):
 
     counties_collect_dispatch_tat_trend = prepare_collect_dispatch_df(
         counties_collect_dispatch_tat, "County")
-
     counties_df = pd.concat(
         [counties_collect_receipt_tat_trend,
          counties_collect_dispatch_tat_trend])
@@ -1100,6 +1116,7 @@ def transform_data(df, df1, from_date, to_date):
            county_viz, sub_county_viz, target_text
 
 
+@login_required(login_url='login')
 def tat(request):
     facilities_collect_receipt_tat = pd.DataFrame()
     facilities_collect_dispatch_tat = pd.DataFrame()
@@ -1184,7 +1201,6 @@ def tat(request):
                                   f"upload the CSV from <a href='{url}'>NASCOP's website</a>."
                         messages.success(request, message)
                         return redirect('tat')
-
         except MultiValueDictKeyError:
             context = {
                 "date_picker_form": date_picker_form,
@@ -1641,6 +1657,7 @@ def analyse_fmaps_fcdrr(df, df1):
            nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b
 
 
+@login_required(login_url='login')
 def fmaps_reporting_rate(request):
     final_df = pd.DataFrame()
     other_adult_df_file = pd.DataFrame()
@@ -2186,6 +2203,7 @@ def monthly_trend(monthly_vl_trend, title, y_axis_text):
     return monthly_trend_fig
 
 
+@login_required(login_url='login')
 def viral_load(request):
     all_results_df = pd.DataFrame()
     subcounty_ = pd.DataFrame()

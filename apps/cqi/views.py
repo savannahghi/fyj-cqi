@@ -3194,7 +3194,7 @@ def update_qi_team_member(request, pk, program_name=None, facility_name=None, su
         qi_project = QI_Projects.objects.get(id=item.qi_project_id)
         level = "facility"
     elif program_name:
-        qi_project = Program_qi_projects.objects.get(id=item.program_id)
+        qi_project = Program_qi_projects.objects.get(id=item.program_qi_project_id)
         level = "program"
     elif subcounty_name:
         qi_project = Subcounty_qi_projects.objects.get(id=item.subcounty_qi_project_id)

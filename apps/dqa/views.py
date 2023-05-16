@@ -2917,6 +2917,7 @@ def show_dqa_work_plan(request):
     selected_facility = None
     work_plan = None
     quarter_year = None
+    today = datetime.now(timezone.utc).date()
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
@@ -2929,6 +2930,12 @@ def show_dqa_work_plan(request):
         work_plan = DQAWorkPlan.objects.filter(facility_name_id=selected_facility.id,
                                                quarter_year__quarter_year=quarter_year
                                                )
+        #####################################
+        # DECREMENT REMAINING TIME DAILY    #
+        #####################################
+        for plan in work_plan:
+            plan.progress = (plan.due_complete_by - today).days
+
         if not work_plan:
             messages.error(request, f"No work plan for {selected_facility} ({quarter_year}) found.")
     context = {
@@ -3865,6 +3872,13 @@ def dqa_dashboard(request, dqa_type=None):
             dqa_workplan = DQAWorkPlan.objects.filter(
                 quarter_year__quarter_year=quarter_year,
                 facility_name__sub_counties__hub__hub=selected_hub).order_by('facility_name')
+            #####################################
+            # DECREMENT REMAINING TIME DAILY    #
+            #####################################
+            if dqa_workplan:
+                today = timezone.now().date()
+                for workplan in dqa_workplan:
+                    workplan.progress = (workplan.due_complete_by - today).days
             # fetch data from the Sub_counties model
             data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
                                                'counties__county_name', 'sub_counties')

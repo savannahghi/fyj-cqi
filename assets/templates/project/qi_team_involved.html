@@ -158,19 +158,19 @@
                                             <a href="#" class="btn btn-primary">Last updated
                                                 on {{ qi.qi_project.date_updated|date }} </a>
                                             {% if qi.qi_project.facility_name %}
-                                                <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View
+                                                <a href="{% url 'single_project' qi.qi_project.id %}" class="btn btn-secondary">View
                                                     QI project</a>
                                             {% elif qi.subcounty_qi_project.sub_county %}
-                                                <a href="{% url 'single_project_subcounty' qi.id %}"
+                                                <a href="{% url 'single_project_subcounty' qi.subcounty_qi_project.id %}"
                                                    class="btn btn-secondary">View QI project</a>
                                             {% elif qi.county_qi_project.county %}
-                                                <a href="{% url 'single_project_county' qi.id %}"
+                                                <a href="{% url 'single_project_county' qi.county_qi_project.id %}"
                                                    class="btn btn-secondary">View QI project</a>
                                             {% elif qi.hub_qi_project.hub %}
-                                                <a href="{% url 'single_project_hub' qi.id %}"
+                                                <a href="{% url 'single_project_hub' qi.hub_qi_project.id %}"
                                                    class="btn btn-secondary">View QI project</a>
                                             {% elif qi.program_qi_project.program %}
-                                                <a href="{% url 'single_project_program' qi.id %}"
+                                                <a href="{% url 'single_project_program' qi.program_qi_project.id %}"
                                                    class="btn btn-secondary">View QI project</a>
                                             {% endif %}
                                         </div>

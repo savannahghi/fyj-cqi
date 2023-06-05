@@ -1,0 +1,113 @@
+{% extends 'pharmacy/index_pharmacy.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h6 class="display-6 text-primary text-center">Supply Chain Spot Check Dashboard</h6>
+        <hr>
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div class="container-fluid">
+                {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info" role="alert">
+                            <p class="small">{{ message }}</p>
+                        </div>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+                <hr>
+                <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    {% csrf_token %}
+                    {% if not register_form_initial %}
+                        <p> Please choose period of interest and then submit </p>
+                    {% endif %}
+                    <div class="col-md-2">
+                        {{ quarter_form.quarter|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ year_form.year|as_crispy_field }}
+                    </div>
+                    {% if not register_form_initial %}
+                        <div class="col-md-6">
+                            {{ register_form.register_name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3 mt-4 pt-2">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                    {% endif %}
+                </form>
+                {% if register_name %}
+                    {% for key,months in commodity_questions.items %}
+                        <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data'
+                              autocomplete="off">
+                            {% csrf_token %}
+                            {% if not register_form_initial %}
+                                <p> Enter data below and then submit </p>
+                            {% endif %}
+                            <div class="col-md-2">
+                                {{ date_form.date|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.facility_name|as_crispy_field }}
+                            </div>
+                            <hr>
+                            <div>
+                                <a href="{% url 'choose_facilities_pharmacy' %}" class="btn btn-info" role="button">Clear
+                                    fields</a>
+                            </div>
+                            <table class="table table-striped table-hover" style="font-size: small;">
+                                <thead class="thead-dark">
+                                <tr>
+                                    {% for key,months in commodity_questions.items %}
+                                        {% for month in months %}
+                                            <th style="font-size: x-small"> {{ month }} </th>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    <th style="font-size: x-small"> Comments</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td> {{ form.register_available|as_crispy_field }} </td>
+                                    {% if form.currently_in_use.errors %}
+                                        <div class="alert alert-danger" role="alert">
+                                            {% for error in form.currently_in_use.errors %}
+                                                <strong>{{ error }}</strong>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <td> {{ form.currently_in_use|as_crispy_field }} </td>
+                                    <!-- Render the form field errors -->
+                                    {% for error in form.currently_in_use.errors %}
+                                        <div class="error">{{ error }}</div>
+                                    {% endfor %}
+                                    <td> {{ form.last_month_copy|as_crispy_field }} </td>
+                                    <td> {{ form.date_report_submitted|as_crispy_field }} </td>
+                                    <td> {{ form.comments|as_crispy_field }} </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <div class="col-md-3 mt-4 pt-2">
+                                <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+                            </div>
+                            {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    <strong> Please correct the following errors :</strong>
+                                    <ul>
+                                        {% for error in form.errors %}
+                                            <li> {{ error }} </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </form>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

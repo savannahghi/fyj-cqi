@@ -1,0 +1,45 @@
+{% extends 'pharmacy/index_pharmacy.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h6 class="display-6 text-primary text-center">{{ title }}</h6>
+        <hr>
+        <div class="p-5 mb-4 bg-light rounded-3">
+            {% if messages %}
+                <!--group the messages by their text and display only one message for each unique text-->
+                {% regroup messages by message as message_list %}
+                {% for message in message_list %}
+                    <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                        <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <div class="container-fluid">
+                <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    {% csrf_token %}
+                    <p> Please fill the fields below and then submit </p>
+                    <div class="col-md-2 mt-2">
+                        {{ quarter_form.quarter|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-2 pr-5">
+                        {{ year_form.year|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-2">
+                        {{ date_form.date|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4 mt-2">
+                        {{ facility_form.name|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-2 pt-3">
+                        <input class="btn btn-success mt-1" type="submit" value="Submit">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+{% endblock %}

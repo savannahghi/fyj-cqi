@@ -245,6 +245,23 @@ textarea[name="description"] {
 <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'load_data_pharmacy' %}">Data Analysis Center</a>
         </div>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <div class="collapse navbar-collapse" id="navbarNavDarkDropdown">
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            DQA
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark">
+              <li><a class="dropdown-item small" href="{% url 'add_data_verification' %}">General DQA</a></li>
+            <li><a class="dropdown-item small" href="{% url 'choose_facilities_pharmacy' %}">Pharmacy DQA</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
 {#<div class="navbar-nav">#}
 {#            <a class="nav-link px-3" href="{% url 'monthly_data_review' %}">Monthly data review</a>#}
 {##}

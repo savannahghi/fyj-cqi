@@ -109,7 +109,7 @@
           {% endif %}
 
             <td>{{ form.auditor_note }}</td>
-            <td>{{ form.supporting_documentation_required }}</td>
+            <td class="text-center">{{ form.supporting_documentation_required }}</td>
 {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
       {% if not form.hide_update_button or request.user.is_superuser %}
     <td class="text-center">
@@ -211,7 +211,7 @@
           {% endif %}
 
             <td>{{ form.auditor_note }}</td>
-            <td>{{ form.supporting_documentation_required }}</td>
+            <td class="text-center">{{ form.supporting_documentation_required }}</td>
 {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
  {% if not form.hide_update_button or request.user.is_superuser %}
     <td class="text-center">
@@ -312,7 +312,7 @@
           {% endif %}
 
             <td>{{ form.auditor_note }}</td>
-            <td>{{ form.supporting_documentation_required }}</td>
+            <td class="text-center">{{ form.supporting_documentation_required }}</td>
 {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
        {% if not form.hide_update_button or request.user.is_superuser %}
     <td class="text-center">
@@ -412,7 +412,7 @@
           {% endif %}
 
             <td>{{ form.auditor_note }}</td>
-            <td>{{ form.supporting_documentation_required }}</td>
+            <td class="text-center">{{ form.supporting_documentation_required }}</td>
 {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
        {% if not form.hide_update_button or request.user.is_superuser %}
     <td class="text-center">
@@ -510,7 +510,7 @@
           {% endif %}
 
             <td>{{ form.auditor_note }}</td>
-            <td>{{ form.supporting_documentation_required }}</td>
+            <td class="text-center">{{ form.supporting_documentation_required }}</td>
 {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
           {% if not form.hide_update_button or request.user.is_superuser %}
     <td class="text-center">

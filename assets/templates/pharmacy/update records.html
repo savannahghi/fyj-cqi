@@ -1,0 +1,85 @@
+{% extends 'pharmacy/index_pharmacy.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load remove_underscores %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info col-12" role="alert">
+                            <h5 class="d-flex justify-content-evenly" style="font-size: x-small">{{ message }}</h5>
+                        </div>
+                        {#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <div class="container-fluid py-5">
+                <hr>
+                <h1 class="display-6 fw-bold text-primary text-center">{{ title }} </h1>
+                <hr>
+                {% if title == "Update commodity records/registers" %}
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+{#                        {{ formset.management_form }}#}
+{#                        <table class="table table-striped table-hover" style="font-size: x-small;">#}
+{#                            <thead class="thead-dark text-center">#}
+{#                            <tr>#}
+{#                                <th style="font-size:xx-small">REGISTER NAME</th>#}
+{#                                <th style="font-size:xx-small">REGISTER AVAILABILITY</th>#}
+{#                                <th style="font-size:xx-small">REGISTER USAGE</th>#}
+{#                                <th style="font-size:xx-small">LAST MONTH REPORT COPY</th>#}
+{#                                <th style="font-size:xx-small">COMMENTS</th>#}
+{#                            </tr>#}
+{#                            </thead>#}
+{#                            <tbody>#}
+{#                            <tr>#}
+{##}
+{#                                <td class="fw-bold">#}
+{#                                    {{ form.description }}#}
+{#                                </td>#}
+{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.register_name }}</td>#}
+{#                                <td style="width: calc((100% - 35%) / 6);"></td>#}
+{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.register_available|as_crispy_field }}</td>#}
+{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.currently_in_use|as_crispy_field }}</td>#}
+{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.last_month_copy|as_crispy_field }}</td>#}
+{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.comments|as_crispy_field }}</td>#}
+{#                            </tr>#}
+{#                            </tbody>#}
+{#                        </table>#}
+                        <table class="table table-striped table-hover" style="font-size: small;">
+                                <thead class="thead-dark">
+                                <tr>
+                                    {% for key,months in commodity_questions.items %}
+                                        {% for month in months %}
+                                            <th style="font-size: x-small"> {{ month }} </th>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    <th style="font-size: x-small"> Comments</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td> {{ form.register_available|as_crispy_field }} </td>
+                                    <td> {{ form.currently_in_use|as_crispy_field }} </td>
+                                    <td> {{ form.last_month_copy|as_crispy_field }} </td>
+                                    <td> {{ form.date_report_submitted|as_crispy_field }} </td>
+                                    <td> {{ form.comments|as_crispy_field }} </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Save">
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

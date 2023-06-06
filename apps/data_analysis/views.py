@@ -1683,7 +1683,7 @@ def fmaps_reporting_rate(request):
                 "MoH 730B Facility - CDRR Revision 2019 - Reporting rate <strong>and</strong>",
                 "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time",
                 ]
-    dqa_type = "viral_load"
+    dqa_type = "reporting_rate_fmaps_fcdrr"
     report_name = "Facility Reporting Metrics for ARVs: F-MAPS and F-CDRR"
     nairobi_730b_fig = None
     kajiado_730b_fig = None

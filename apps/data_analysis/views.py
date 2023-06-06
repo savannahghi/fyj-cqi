@@ -124,9 +124,10 @@ def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
     # imara
     df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
     df1 = df1[~df1['organisationunitcode'].isnull()]
+    df1 = convert_mfl_code_to_int(df1)
     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
 
-    df1["organisationunitcode"] = df1["organisationunitcode"].astype(int)
+    # df1["organisationunitcode"] = df1["organisationunitcode"].astype(int)
     dispensed_cols = [col for col in df1.columns if "Total Quantity issued this month" in col]
     end_of_months_cols = [col for col in df1.columns if "End of Month Physical Stock Count" in col]
 
@@ -503,7 +504,7 @@ def analyse_pharmacy_data(request, df, df1):
     final_df['MFL Code'] = final_df['MFL Code'].astype(str)
     final_df.loc['Total'] = final_df.sum(numeric_only=True)
     final_df.loc['Total'] = final_df.loc['Total'].fillna("")
-    final_df[numeric_cols] = final_df[numeric_cols].astype(int)
+    # final_df[numeric_cols] = final_df[numeric_cols].astype(int)
     if "periodname" in default_cols:
         try:
             final_df = final_df[
@@ -523,6 +524,8 @@ def analyse_pharmacy_data(request, df, df1):
                                str(e).split("[")[1].split("]")[0].split(",")]
             # print(f"Columns {', '.join(missing_columns)} not found. "
             #       f"Adding missing columns with default value 0.")
+            # Remove white spaces from column names
+            missing_columns = [col.strip() for col in missing_columns]
             for col in missing_columns:
                 final_df[col] = 0
             final_df = final_df[
@@ -555,6 +558,8 @@ def analyse_pharmacy_data(request, df, df1):
                                str(e).split("[")[1].split("]")[0].split(",")]
             # print(f"Columns {', '.join(missing_columns)} not found. "
             #       f"Adding missing columns with default value 0.")
+            # Remove white spaces from column names
+            missing_columns = [col.strip() for col in missing_columns]
             for col in missing_columns:
                 final_df[col] = 0
             final_df = final_df[
@@ -1492,9 +1497,8 @@ def prepare_program_facilities_df(df1, fyj_facility_mfl_code):
     # imara
     df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
     df1 = df1[~df1['organisationunitcode'].isnull()]
+    df1 = convert_mfl_code_to_int(df1)
     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
-
-    df1["organisationunitcode"] = df1["organisationunitcode"].astype(int)
     reporting_rates_cols = [col for col in df1.columns if "Reporting rate" in col]
     default_cols = ["orgunitlevel2", 'facility', 'organisationunitcode', "month/year"]
     df = df1[default_cols + reporting_rates_cols]
@@ -1641,14 +1645,17 @@ def analyse_fmaps_fcdrr(df, df1):
     no_fcdrr_df = no_fcdrr_df.rename(columns={"facility": "facilities"})
     # convert 'month/year' column to datetime format
     no_fcdrr_df['Month/Year'] = pd.to_datetime(no_fcdrr_df['month/year'], format='%B %Y')
-    total = sum(no_fcdrr_df['facilities'])
+    total_fcdrr = sum(no_fcdrr_df['facilities'])
+    total_fmaps = sum(no_fmaps_df['facilities'])
+    total = total_fcdrr+total_fmaps
     # sort the DataFrame by 'month/year' column
     no_fcdrr_df = no_fcdrr_df.sort_values(by='Month/Year')
     no_fcdrr_df['report'] = "F-CDRR"
     no_reports = pd.concat([no_fcdrr_df, no_fmaps_df])
 
     no_fcdrr_fmaps_fig = fmarp_trend(no_reports, "month/year", 'facilities',
-                                     title=f"Monthly Distribution of Facilities with Missing Reports (N={total})",
+                                     title=f"Monthly Distribution of Facilities with Missing Reports"
+                                           f" N= {total} (FCDRR = {total_fcdrr}, FMAPS = {total_fmaps})",
                                      color='report')
     return fcdrr_fig, kajiado_reporting_rate_fig, nairobi_reporting_rate_fig, no_fmaps, no_fcdrr, overall_fig, \
            no_fcdrr_fmaps_fig, nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, \
@@ -1676,7 +1683,7 @@ def fmaps_reporting_rate(request):
                 "MoH 730B Facility - CDRR Revision 2019 - Reporting rate <strong>and</strong>",
                 "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time",
                 ]
-    dqa_type = "viral_load"
+    dqa_type = "reporting_rate_fmaps_fcdrr"
     report_name = "Facility Reporting Metrics for ARVs: F-MAPS and F-CDRR"
     nairobi_730b_fig = None
     kajiado_730b_fig = None
@@ -2293,6 +2300,8 @@ def viral_load(request):
                                 df)
                             hvl_ccc_nos = list(newdf_HVL['Patient CCC No'].unique())
                             hvl_linelist = df[df['Patient CCC No'].isin(hvl_ccc_nos)]
+                            if "Time Result SMS SENT" in hvl_linelist.columns:
+                                del hvl_linelist['Time Result SMS SENT']
                             # convert nonblank values to numbers
                             hvl_linelist['Viral Load'] = pd.to_numeric(
                                 hvl_linelist['Viral Load'].str.replace('[^0-9.]', ''), errors='coerce')

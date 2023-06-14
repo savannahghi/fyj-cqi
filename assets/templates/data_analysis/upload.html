@@ -224,8 +224,51 @@
                             {{ nairobi_reporting_rate_fig|safe }}
                             {{ kajiado_reporting_rate_fig|safe }}
                             {{ fcdrr_fig|safe }}
+                            {{ no_fcdrr_fmaps_fig_all|safe }}
                             {{ no_fcdrr_fmaps_fig|safe }}
                         </div>
+                        <hr>
+                        <h6 class="text-primary text-center"> Download Facilities Missing Monthly Reports </h6>
+                        <div class="row">
+                            <div class="col d-flex justify-content-between">
+                                <!--DOWNLOAD BUTTON-->
+                                <div class="mt-3">
+                                    <a href="{% url 'download_csv' dictionary.no_fcdrr "no fcdrr report fyj" %}">
+                                        <button type="button" class="btn btn-success btn-floating mr-2"
+                                                data-mdb-ripple-color="dark">
+                                            no fcdrr report (FYJ) <i class="fas fa-download"></i>
+                                        </button>
+                                    </a>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{% url 'download_csv' dictionary.no_fmaps "no fmaps report" %}">
+                                        <button type="button" class="btn btn-success btn-floating mr-2"
+                                                data-mdb-ripple-color="dark">
+                                            no fmaps report (FYJ) <i class="fas fa-download"></i>
+                                        </button>
+                                    </a>
+                                </div>
+                                <!--DOWNLOAD BUTTON-->
+                                <div class="mt-3">
+                                    <a href="{% url 'download_csv' dictionary.no_fcdrr_all "no fcdrr report all" %}">
+                                        <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                                data-mdb-ripple-color="dark">
+                                            no fcdrr report (All) <i class="fas fa-download"></i>
+                                        </button>
+                                    </a>
+                                </div>
+                                <!--DOWNLOAD BUTTON-->
+                                <div class="mt-3">
+                                    <a href="{% url 'download_csv' dictionary.no_fmaps_all "no fmaps report all" %}">
+                                        <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                                data-mdb-ripple-color="dark">
+                                            no fmaps report (All) <i class="fas fa-download"></i>
+                                        </button>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
                         <hr>
                         <h6 class="text-primary text-center">Reporting rate vs Reporting rate on time: MOH 730B
                             Facility - CDRR</h6>
@@ -323,9 +366,9 @@
                                 </div>
                             {% endif %}
                             <hr>
-                        <h6 class="text-primary text-center">Reporting rate vs Reporting rate on time: MOH 729B
-                            F-MAPS</h6>
-                        <hr>
+                            <h6 class="text-primary text-center">Reporting rate vs Reporting rate on time: MOH 729B
+                                F-MAPS</h6>
+                            <hr>
                         </div>
                         <div class="mb-2">
                             {{ nairobi_729b_fig|safe }}
@@ -333,98 +376,6 @@
                             {{ nairobi_program_facilities_729b_fig|safe }}
                             {{ kajiado_program_facilities_729b_fig|safe }}
                         </div>
-                        <hr>
-                        <h6 class="text-primary text-center">Facilities without F-MAPS report</h6>
-                        <hr>
-                        {% if not no_fmaps.empty %}
-                            <div class="table-responsive table-fixed-header">
-                                <table class="table table-striped table-hover">
-                                    <thead class="thead-dark">
-                                    <th scope="col"></th>
-                                    {% for col in no_fmaps.columns %}
-                                        <th scope="col">{{ col }}</th>
-                                    {% endfor %}
-                                    </thead>
-                                    <tbody>
-                                    </tr>
-                                    {% for index, row in no_fmaps.iterrows %}
-                                        <tr>
-                                            {% if index == "Total" %}
-                                                <th scope="row" class="fw-bold">{{ index }}</th>
-                                                {% for cell in row %}
-                                                    <td class="fw-bold">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% endfor %}
-                                            {% else %}
-                                                <th scope="row">{{ index }}</th>
-                                                {% for cell in row %}
-                                                    <td>
-                                                        {{ cell }}
-                                                    </td>
-                                                {% endfor %}
-                                            {% endif %}
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!--DOWNLOAD BUTTON-->
-                            <div class="mt-3">
-                                <a href="{% url 'download_csv' dictionary.no_fmaps "no fmaps report" %}">
-                                    <button type="button" class="btn btn-success btn-floating mr-2"
-                                            data-mdb-ripple-color="dark">
-                                        no fmaps report <i class="fas fa-download"></i>
-                                    </button>
-                                </a>
-                            </div>
-                        {% endif %}
-                        <hr>
-                        <h6 class="text-primary text-center">Facilities without F-CDRR report</h6>
-                        <hr>
-                        {% if not no_fcdrr.empty %}
-                            <div class="table-responsive table-fixed-header">
-                                <table class="table table-striped table-hover">
-                                    <thead class="thead-dark">
-                                    <th scope="col"></th>
-                                    {% for col in no_fcdrr.columns %}
-                                        <th scope="col">{{ col }}</th>
-                                    {% endfor %}
-                                    </thead>
-                                    <tbody>
-                                    </tr>
-                                    {% for index, row in no_fcdrr.iterrows %}
-                                        <tr>
-                                            {% if index == "Total" %}
-                                                <th scope="row" class="fw-bold">{{ index }}</th>
-                                                {% for cell in row %}
-                                                    <td class="fw-bold">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% endfor %}
-                                            {% else %}
-                                                <th scope="row">{{ index }}</th>
-                                                {% for cell in row %}
-                                                    <td>
-                                                        {{ cell }}
-                                                    </td>
-                                                {% endfor %}
-                                            {% endif %}
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!--DOWNLOAD BUTTON-->
-                            <div class="mt-3">
-                                <a href="{% url 'download_csv' dictionary.no_fcdrr "no fcdrr report" %}">
-                                    <button type="button" class="btn btn-success btn-floating mr-2"
-                                            data-mdb-ripple-color="dark">
-                                        no fcdrr report <i class="fas fa-download"></i>
-                                    </button>
-                                </a>
-                            </div>
-                        {% endif %}
                     </div>
                 {% endif %}
             </div>

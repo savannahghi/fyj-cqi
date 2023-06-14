@@ -3938,10 +3938,10 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def bar_chart(df, x_axis, y_axis, title):
+def bar_chart(df, x_axis, y_axis, title, color=None):
     # df[x_axis]=df[x_axis].str.split(" ").str[0]
 
-    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=300
+    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=300,color=color
                  # hover_name=x_axis,  hover_data={
                  #                                        "tested of change":True,
                  #                                        "achievements":True,}

@@ -1,5 +1,5 @@
 {% load static %}
-{% include "pharmacy/navbar_pharmacy.html" %}
+{% include "lab_pulse/navbar_labpulse.html" %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -8,7 +8,7 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.104.2">
-    <title>USAID FYJ DQA Dashboard</title>
+    <title>USAID FYJ LAB PULSE</title>
 
     <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/dashboard/">
     <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/footers/">
@@ -242,8 +242,8 @@
 </head>
 <body>
 <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="{% url 'load_data_pharmacy' %}">USAID FYJ Pharmacy
-        DQA</a>
+    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="{% url 'choose_testing_lab' %}">USAID FYJ Pharmacy
+        LabPulse</a>
     <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
             aria-label="Toggle navigation">
@@ -262,10 +262,6 @@
         <a class="nav-link px-3" href="{% url 'add_patient_details' %}">PMTCT</a>
 
     </div>
-<div class="navbar-nav">
-            <a class="nav-link px-3" href="{% url 'choose_testing_lab' %}">LabPulse</a>
-
-        </div>
     <div class="navbar-nav">
         <a class="nav-link px-3" href="{% url 'load_data_pharmacy' %}">Data Analysis Center</a>
     </div>
@@ -363,14 +359,6 @@
         $('.select2').select2();
     });
 </script>
-{#  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>#}
-{#  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>#}
-
-{#  <script>#}
-{#    $(document).ready(function() {#}
-{#      $('input[type="date"]').datepicker();#}
-{#    });#}
-{#  </script>#}
 </body>
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
@@ -378,15 +366,8 @@
         <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
             <p class="col-md-4 mb-0 text-muted">&copy;2022 - {% now "Y" %} USAID FYJ</p>
 
-            {#        <a href="/assets/static" class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">#}
-            {#          <svg class="bi me-2" width="40" height="32"></svg>#}
-            {#        </a>#}
-
             <ul class="nav col-md-4 justify-content-end">
                 <li class="nav-item"><a href="{% url 'dashboard' %}" class="nav-link px-2 text-muted">Home</a></li>
-                {#      <li class="nav-item"><a href="#" class="nav-link px-2 text-muted">Features</a></li>#}
-                {#      <li class="nav-item"><a href="#" class="nav-link px-2 text-muted">Pricing</a></li>#}
-                {#      <li class="nav-item"><a href="#" class="nav-link px-2 text-muted">FAQs</a></li>#}
                 <li class="nav-item"><a href="#" class="nav-link px-2 text-muted">About</a></li>
             </ul>
         </footer>

@@ -28,6 +28,7 @@ urlpatterns = [
     path('', include('apps.pmtct.urls')),
     path('data-analysis-center/', include('apps.data_analysis.urls')),
     path('pharmacy/', include('apps.pharmacy.urls')),
+    path('lab-pulse/', include('apps.labpulse.urls')),
     path('select2/', include(django_select2_urls)),
 ]
 

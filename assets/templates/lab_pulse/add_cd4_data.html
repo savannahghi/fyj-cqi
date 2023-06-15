@@ -31,6 +31,20 @@
                         <div class="col-md-2 mt-2 pt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <a href="{% url 'add_testing_lab' %}"
+                               class="btn btn-warning" role="button">
+                                Add Testing Laboratory
+                            </a>
+                        </div>
+                    {% elif title == "Add CD4 Testing Lab" %}
+                        <p> Please add a testing laboratory below and then submit </p>
+                        <div class="col-md-4 mt-2">
+                            {{ form.testing_lab_name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
                     {% else %}
                         <p> Please fill the fields below and then submit </p>
                         <div class="row">

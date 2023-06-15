@@ -34,3 +34,8 @@ class Cd4TestingLabsForm(forms.Form):
         empty_label="Select Testing Lab ...",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
+class Cd4TestingLabForm(ModelForm):
+    class Meta:
+        model=Cd4TestingLabs
+        fields="__all__"

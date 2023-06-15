@@ -6,6 +6,7 @@ from datetime import timezone, timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -22,7 +23,7 @@ from apps.data_analysis.views import get_key_from_session_names
 from apps.dqa.models import UpdateButtonSettings
 # from apps.dqa.views import disable_update_buttons
 from apps.labpulse.filters import Cd4trakerFilter
-from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm
+from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm, Cd4TestingLabForm
 from apps.labpulse.models import Cd4TestingLabs, Cd4traker
 
 
@@ -432,3 +433,29 @@ class GeneratePDF(View):
 
         pdf.save()
         return response
+
+@login_required(login_url='login')
+def add_testing_lab(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    form = Cd4TestingLabForm(request.POST or None)
+    if form.is_valid():
+        testing_lab_name = form.cleaned_data['testing_lab_name']
+
+        # Check for duplicate testing_lab_name (case-insensitive)
+        existing_lab = Cd4TestingLabs.objects.annotate(lower_name=Lower('testing_lab_name')).filter(
+            lower_name=testing_lab_name.lower())
+        if existing_lab.exists():
+            form.add_error('testing_lab_name', 'A CD4 Testing Lab with this name already exists.')
+        else:
+            form.save()
+            messages.error(request, "Record saved successfully!")
+            return redirect("choose_testing_lab")
+    context = {
+        "form": form,
+        "title": f"Add CD4 Testing Lab",
+    }
+    return render(request, 'lab_pulse/add_cd4_data.html', context)

@@ -9,7 +9,7 @@ from apps.cqi.models import Facilities
 
 class Cd4TestingLabs(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    testing_lab_name=models.CharField(max_length=255)
+    testing_lab_name=models.CharField(max_length=255,unique=True)
 
     class Meta:
         verbose_name_plural="CD4 Testing Laboratories"

@@ -1,0 +1,84 @@
+{% extends 'lab_pulse/index_lab_pulse.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h6 class="display-6 text-primary text-center">{{ title }}</h6>
+        <hr>
+        <div class="p-5 mb-4 bg-light rounded-3">
+            {% if messages %}
+                <!--group the messages by their text and display only one message for each unique text-->
+                {% regroup messages by message as message_list %}
+                {% for message in message_list %}
+                    <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                        <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <div class="container-fluid">
+                <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    {% csrf_token %}
+
+                    {% if title == "CD4 TRACKER" %}
+                        <p> Please select testing laboratory below and then submit </p>
+                        <div class="col-md-4 mt-2">
+                            {{ cd4_testing_lab_form.testing_lab_name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <a href="{% url 'add_testing_lab' %}"
+                               class="btn btn-warning" role="button">
+                                Add Testing Laboratory
+                            </a>
+                        </div>
+                    {% elif title == "Add CD4 Testing Lab" %}
+                        <p> Please add a testing laboratory below and then submit </p>
+                        <div class="col-md-4 mt-2">
+                            {{ form.testing_lab_name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                    {% else %}
+                        <p> Please fill the fields below and then submit </p>
+                        <div class="row">
+                            <div class="col-md-3 mt-2">
+                                {{ form.facility_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.patient_unique_no|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.age|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.sex|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.date_of_collection|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.date_of_testing|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.cd4_count_results|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.serum_crag_results|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2 pt-3">
+                                <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            </div>
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </main>
+{% endblock %}

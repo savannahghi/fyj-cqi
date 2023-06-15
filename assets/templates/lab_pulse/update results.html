@@ -1,0 +1,64 @@
+{% extends 'lab_pulse/index_lab_pulse.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load remove_underscores %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info col-12" role="alert">
+                            <h5 class="d-flex justify-content-evenly" style="font-size: x-small">{{ message }}</h5>
+                        </div>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <div class="container-fluid py-5">
+                <hr>
+                <h1 class="display-6 fw-bold text-primary text-center">{{ title }} </h1>
+                <hr>
+                {% if title == "Update Results" %}
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        <p> Please fill the fields below and then submit </p>
+                        <div class="row">
+                            <div class="col-md-3 mt-2">
+                                {{ form.facility_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.patient_unique_no|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.age|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.sex|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.date_of_collection|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.date_of_testing|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.cd4_count_results|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.serum_crag_results|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2 pt-3">
+                                <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            </div>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

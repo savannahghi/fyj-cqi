@@ -1,0 +1,253 @@
+{% extends 'lab_pulse/index_lab_pulse.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load remove_underscores %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info col-12" role="alert">
+                            <h5 class="d-flex justify-content-evenly" style="font-size: x-small">{{ message }}</h5>
+                        </div>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <div class="container-fluid py-3">
+                    <div class="col-md-12 alert alert-primary text-center">
+                        <h4>Customize your search or filter below</h4>
+                    </div>
+
+                <div class="mt-3">
+                    <form id="filter-form" class="row g-3" autocomplete="off">
+                        <div class="col-md-2">
+                            {{ my_filters.form.patient_unique_no|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ my_filters.form.testing_laboratory|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ my_filters.form.facility_name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ my_filters.form.start_date|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ my_filters.form.end_date|as_crispy_field }}
+                        </div>
+                        <div class="row">
+                            {#                            <div class="col-md-1 mt-4 pt-2">#}
+                            <div class="col mb-2 mt-3">
+                                <button class="btn btn-outline-primary" type="submit">search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                {% if qi_list %}
+                    <div class="row">
+                        <div class="col mb-2">
+                            <form id="record-form" method="GET" action="{% url 'show_results' %}">
+                                <!-- Add the dropdown menu or input field to select the number of records -->
+                                <div class="form-group">
+                                    <label for="record-count">Records per page:</label>
+                                    <select id="record-count" name="record_count">
+                                        <option value="all" {% if record_count == 'all' %}selected{% endif %}>All
+                                        </option>
+                                        <option value="5" {% if record_count == '5' %}selected{% endif %}>5</option>
+                                        <option value="10" {% if record_count == '10' %}selected{% endif %}>10</option>
+                                        <option value="20" {% if record_count == '20' %}selected{% endif %}>20</option>
+                                        <option value="30" {% if record_count == '30' %}selected{% endif %}>30</option>
+                                        <option value="40" {% if record_count == '40' %}selected{% endif %}>40</option>
+                                        <option value="50" {% if record_count == '50' %}selected{% endif %}>50</option>
+                                        <option value="100" {% if record_count == '100' %}selected{% endif %}>100
+                                        </option>
+                                        <option value="250" {% if record_count == '250' %}selected{% endif %}>250
+                                        </option>
+                                        <option value="500" {% if record_count == '500' %}selected{% endif %}>500
+                                        </option>
+                                        <option value="1000" {% if record_count == '1000' %}selected{% endif %}>1000
+                                        </option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col mb-2">
+                            <a href="{% url 'download_csv' dictionary.list_of_projects_fac "cd4 results" %}"
+                               class="btn btn-secondary" role="button">
+                                All records <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                        {% if title %}
+
+                        {% endif %}
+                        {% if dictionary.crag_pos_df %}
+                            <div class="col mb-2">
+                                <a href="{% url 'download_csv' dictionary.crag_pos_df "serum CRAG positive" %}"
+                                   class="btn btn-secondary" role="button">
+                                    Positive CRAG <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                        {% endif %}
+                        <div class="col mb-2">
+                            <a href="{% url 'download_csv' dictionary.missing_df "missing serum CRAG" %}"
+                               class="btn btn-secondary" role="button">
+                                Missing CRAG <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                        <div class="col mb-2">
+                            <a href="{% url 'generate_cd4_report_pdf' %}" class="btn btn-warning mb-2" role="button">
+                                Download PDF</a>
+                        </div>
+                    </div>
+                    {% if title == "Results" %}
+                        <hr>
+                        <h4 class="fw-bold text-primary text-center"> Summary </h4>
+                        <hr>
+                        <div>
+                            {{ cd4_summary_fig|safe }}
+                            {{ age_distribution_fig|safe }}
+                            {{ cd4_testing_lab_fig|safe }}
+                            {{ crag_testing_lab_fig|safe }}
+                        </div>
+                        <hr>
+                        <h4 class="fw-bold text-primary text-center"> {{ title }}</h4>
+                        <hr>
+                        <table class="table table-striped table-hover" style="font-size: small;">
+                            <thead class="thead-dark">
+                            <tr>
+                                <th></th>
+                                <th style="font-size: x-small"> Patient Unique No.</th>
+                                <th style="font-size: x-small"> Facility Name</th>
+                                <th style="font-size: x-small"> CD4 Count Results</th>
+                                <th style="font-size: x-small"> Serum CRAG Results</th>
+                                <th style="font-size: x-small"> Collection Date</th>
+                                <th style="font-size: x-small"> Testing Date</th>
+                                <th style="font-size: x-small"> Dispatch Date</th>
+                                <th style="font-size: x-small"> Results Dispatched by</th>
+                                {% for result in qi_list %}
+                                    {% if forloop.last %}
+                                        {% if user.is_authenticated %}
+                                            {% if user.id == result.created_by.id or request.user.is_superuser %}
+                                                {% if not result.hide_update_button or request.user.is_superuser %}
+                                                    <th style="font-size: x-small"></th>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for result in qi_list %}
+                                <tr>
+                                    <td> {{ forloop.counter }} </td>
+                                    <td>
+                                        {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
+                                            <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
+                                        {% else %}
+                                            {{ result.patient_unique_no }}
+                                        {% endif %}
+                                    </td>
+                                    <td> {{ result.facility_name }} </td>
+                                    <td> {{ result.cd4_count_results }} </td>
+                                    <td>
+                                        {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
+                                            <p class="fw-bold text-danger">Missing</p>
+                                        {% else %}
+                                            {{ result.serum_crag_results }}
+                                        {% endif %}
+                                    </td>
+                                    <td> {{ result.date_of_collection|date:"Y-m-d" }} </td>
+                                    <td> {{ result.date_of_testing|date:"Y-m-d" }} </td>
+                                    <td> {{ result.date_dispatched|date:"Y-m-d" }} </td>
+                                    <td> {{ result.created_by.first_name|title }}
+                                        {{ result.created_by.last_name|title }}
+                                        {{ result.created_by.phone_number }}
+                                    </td>
+                                    {% if user.is_authenticated %}
+                                        {% if user.id == result.created_by.id or request.user.is_superuser %}
+                                            {% if not result.hide_update_button or request.user.is_superuser %}
+                                                <td>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <a href="{% url "update_cd4_results" result.id %}"
+                                                               class="btn btn-info glow-button" role="button"><i
+                                                                    class="fas fa-edit"></i></a>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        <!-- Display the pagination links -->
+                        <div class="mt-3">
+                            {% if qi_list.has_other_pages %}
+                                <ul class="pagination justify-content-end">
+                                    {% if qi_list.has_previous %}
+                                        <!-- request.GET.urlencode ensure that the filter parameters are preserved when
+                                        navigating to another page.-->
+                                        <li class="page-item"><a class="page-link"
+                                                                 href="?{{ request.GET.urlencode }}&page={{ qi_list.previous_page_number }}">Prev</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="disabled"><span class="page-link">Prev</span></li>
+                                    {% endif %}
+                                    {% for i in qi_list.paginator.page_range %}
+                                        {% if qi_list.number == i %}
+                                            <li class="page-item active"><span class="page-link">{{ i }} <span
+                                                    class="sr-only">(current)</span></span></li>
+                                        {% else %}
+                                            <li class="page-item"><a class="page-link"
+                                                                     href="?{{ request.GET.urlencode }}&page={{ i }}">{{ i }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if qi_list.has_next %}
+                                        <li class="page-item"><a class="page-link"
+                                                                 href="?{{ request.GET.urlencode }}&page={{ qi_list.next_page_number }}">Next</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="disabled page-item"><span class="page-link">Next</span></li>
+                                    {% endif %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const selectElement = document.getElementById("record-count");
+
+        // Add event listener to handle change event
+        selectElement.addEventListener("change", function () {
+            // Store the selected value in local storage
+            localStorage.setItem("selectedRecordCount", this.value);
+            // Submit the form
+            document.getElementById("record-form").submit();
+        });
+
+        // Set the selected value on page load
+        window.addEventListener("load", function () {
+            // Get the selected value from local storage
+            const selectedRecordCount = localStorage.getItem("selectedRecordCount");
+            if (selectedRecordCount) {
+                // Set the selected value of the dropdown
+                selectElement.value = selectedRecordCount;
+            }
+        });
+    </script>
+{% endblock %}

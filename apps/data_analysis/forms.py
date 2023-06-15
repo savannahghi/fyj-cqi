@@ -10,3 +10,10 @@ class DateFilterForm(forms.Form):
 
 class FileUploadForm(forms.Form):
     file = forms.FileField()
+
+class DataFilterForm(forms.Form):
+    CHOICES = [
+        ('All', 'All'),
+        ('PMTCT', 'PMTCT'),
+    ]
+    filter_option = forms.ChoiceField(choices=CHOICES)

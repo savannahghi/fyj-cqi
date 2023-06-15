@@ -15,7 +15,7 @@ from django.shortcuts import render, redirect
 # Create your views here.
 from django.utils.datastructures import MultiValueDictKeyError
 
-from apps.data_analysis.forms import DateFilterForm, FileUploadForm
+from apps.data_analysis.forms import DateFilterForm, FileUploadForm, DataFilterForm
 from apps.data_analysis.models import FYJHealthFacility
 
 
@@ -628,7 +628,7 @@ def pharmacy(request):
                         })
                         if df.shape[0] > 0 and df1.shape[0] > 0:
                             final_df, filename, other_adult_df_file, adult_others_filename, paeds_others_filename, \
-                            other_paeds_bottles_df_file = analyse_pharmacy_data(request, df, df1)
+                                other_paeds_bottles_df_file = analyse_pharmacy_data(request, df, df1)
                     else:
                         message = f"Please generate and upload either the Total Quantity issued this month or End of Month " \
                                   f"Physical Stock Count CSV file from <a href='{url}'>KHIS's website</a>."
@@ -1111,14 +1111,14 @@ def transform_data(df, df1, from_date, to_date):
     sub_county_viz = visualize_tat_type(sub_counties_df, "Sub-County",
                                         target_text)
     return facilities_collect_receipt_tat, facility_c_r_filename, \
-           sub_counties_collect_receipt_tat, subcounty_c_r_filename, \
-           hubs_collect_receipt_tat, hub_c_r_filename, \
-           counties_collect_receipt_tat, county_c_r_filename, \
-           facilities_collect_dispatch_tat, facility_c_d_filename, \
-           sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
-           hubs_collect_dispatch_tat, hub_c_d_filename, \
-           counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
-           county_viz, sub_county_viz, target_text
+        sub_counties_collect_receipt_tat, subcounty_c_r_filename, \
+        hubs_collect_receipt_tat, hub_c_r_filename, \
+        counties_collect_receipt_tat, county_c_r_filename, \
+        facilities_collect_dispatch_tat, facility_c_d_filename, \
+        sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
+        hubs_collect_dispatch_tat, hub_c_d_filename, \
+        counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
+        county_viz, sub_county_viz, target_text
 
 
 @login_required(login_url='login')
@@ -1192,15 +1192,15 @@ def tat(request):
                                     else:
 
                                         facilities_collect_receipt_tat, facility_c_r_filename, \
-                                        sub_counties_collect_receipt_tat, subcounty_c_r_filename, \
-                                        hubs_collect_receipt_tat, hub_c_r_filename, \
-                                        counties_collect_receipt_tat, county_c_r_filename, \
-                                        facilities_collect_dispatch_tat, facility_c_d_filename, \
-                                        sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
-                                        hubs_collect_dispatch_tat, hub_c_d_filename, \
-                                        counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
-                                        county_viz, sub_county_viz, target_text = transform_data(df, df1, from_date,
-                                                                                                 to_date)
+                                            sub_counties_collect_receipt_tat, subcounty_c_r_filename, \
+                                            hubs_collect_receipt_tat, hub_c_r_filename, \
+                                            counties_collect_receipt_tat, county_c_r_filename, \
+                                            facilities_collect_dispatch_tat, facility_c_d_filename, \
+                                            sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
+                                            hubs_collect_dispatch_tat, hub_c_d_filename, \
+                                            counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
+                                            county_viz, sub_county_viz, target_text = transform_data(df, df1, from_date,
+                                                                                                     to_date)
                     else:
                         message = f"Please generate overall 'All Outcomes (+/-) for EID' or 'Detailed for VL' and " \
                                   f"upload the CSV from <a href='{url}'>NASCOP's website</a>."
@@ -1276,7 +1276,7 @@ def tat(request):
 
 
 def fmarp_trend(reporting_rates, x_axis, y_axis, title=None, color=None):
-    fig = px.bar(reporting_rates, x=x_axis, y=y_axis, text=y_axis, height=400,
+    fig = px.bar(reporting_rates, x=x_axis, y=y_axis, text=y_axis, height=450,
                  barmode="group", color=color,
                  title=title
                  )
@@ -1484,7 +1484,7 @@ def transform_make_charts(all_facilities, cols_730b, name, fyj_facility_mfl_code
     nairobi_program_facilities_730b_fig, fyj_nairobi_730 = make_charts(nairobi_program_facilities_730b, "FYJ Nairobi")
     kajiado_program_facilities_730b_fig, fyj_kajiado_730 = make_charts(kajiado_program_facilities_730b, "FYJ Kajiado")
     return nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, \
-           nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730
+        nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730
 
 
 def prepare_program_facilities_df(df1, fyj_facility_mfl_code):
@@ -1503,6 +1503,47 @@ def prepare_program_facilities_df(df1, fyj_facility_mfl_code):
     default_cols = ["orgunitlevel2", 'facility', 'organisationunitcode', "month/year"]
     df = df1[default_cols + reporting_rates_cols]
     return df
+
+
+def missing_fcdrr(program_facilities, total_fmaps):
+    no_fcdrr = program_facilities[
+        (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'].isnull())
+        | (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'] == 0)]
+    no_fcdrr_copy = no_fcdrr.copy()
+    print("no_fcdrr_copy::::::::::::::::::::::::::::::::::::::::::::::::::")
+    print(no_fcdrr_copy['facility'].unique())
+    no_fcdrr = no_fcdrr.groupby(['facility', 'MFL Code', 'month/year']).count()[
+        'Facility - CDRR Revision 2019 Reporting rate on time (%)'].reset_index()
+
+    no_fcdrr_df = no_fcdrr_copy.groupby(['month/year']).count()['facility'].reset_index()
+    no_fcdrr_df = no_fcdrr_df.rename(columns={"facility": "facilities"})
+    # convert 'month/year' column to datetime format
+    no_fcdrr_df['Month/Year'] = pd.to_datetime(no_fcdrr_df['month/year'], format='%B %Y')
+    total_fcdrr = sum(no_fcdrr_df['facilities'])
+
+    total = total_fcdrr + total_fmaps
+    # sort the DataFrame by 'month/year' column
+    no_fcdrr_df = no_fcdrr_df.sort_values(by='Month/Year')
+    no_fcdrr_df['report'] = "F-CDRR"
+    return no_fcdrr_df, total_fcdrr, no_fcdrr, total
+
+
+def missing_fmaps(program_facilities):
+    no_fmaps = program_facilities[(program_facilities['F-MAPS Revision 2019 Reporting rate (%)'].isnull())
+                                  | (program_facilities['F-MAPS Revision 2019 Reporting rate (%)'] == 0)]
+    no_fmaps_copy = no_fmaps.copy()
+    no_fmaps = no_fmaps.groupby(['facility', 'MFL Code', 'month/year']).count()[
+        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index()
+
+    no_fmaps_df = no_fmaps_copy.groupby(['month/year']).count()['facility'].reset_index()
+    no_fmaps_df = no_fmaps_df.rename(columns={"facility": "facilities"})
+    # convert 'month/year' column to datetime format
+    no_fmaps_df['Month/Year'] = pd.to_datetime(no_fmaps_df['month/year'], format='%B %Y')
+    total_fmaps = sum(no_fmaps_df['facilities'])
+    # sort the DataFrame by 'month/year' column
+    no_fmaps_df = no_fmaps_df.sort_values(by='Month/Year')
+    no_fmaps_df['report'] = "F-MAPS"
+    return no_fmaps_df, no_fmaps, total_fmaps
 
 
 def analyse_fmaps_fcdrr(df, df1):
@@ -1546,10 +1587,10 @@ def analyse_fmaps_fcdrr(df, df1):
     cols_729b = [col for col in fyj_df.columns if "729b" in col.lower()]
 
     nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, \
-    nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730 = \
+        nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730 = \
         transform_make_charts(all_facilities, cols_730b, "730b", fyj_facility_mfl_code)
     nairobi_729b_fig, kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
-    nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b = \
+        nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b = \
         transform_make_charts(all_facilities, cols_729b, "729b", fyj_facility_mfl_code)
 
     program_facilities_rate = program_facilities.groupby(['month/year', 'date']).mean()[
@@ -1579,20 +1620,8 @@ def analyse_fmaps_fcdrr(df, df1):
     ########################
     # No F-MAPS REPORTING
     ########################
-    no_fmaps = program_facilities[(program_facilities['F-MAPS Revision 2019 Reporting rate (%)'].isnull())
-                                  | (program_facilities['F-MAPS Revision 2019 Reporting rate (%)'] == 0)]
-    no_fmaps_copy = no_fmaps.copy()
-    no_fmaps = no_fmaps.groupby(['facility', 'MFL Code', 'month/year']).count()[
-        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index()
-
-    no_fmaps_df = no_fmaps_copy.groupby(['month/year']).count()['facility'].reset_index()
-    no_fmaps_df = no_fmaps_df.rename(columns={"facility": "facilities"})
-    # convert 'month/year' column to datetime format
-    no_fmaps_df['Month/Year'] = pd.to_datetime(no_fmaps_df['month/year'], format='%B %Y')
-    total = sum(no_fmaps_df['facilities'])
-    # sort the DataFrame by 'month/year' column
-    no_fmaps_df = no_fmaps_df.sort_values(by='Month/Year')
-    no_fmaps_df['report'] = "F-MAPS"
+    no_fmaps_df_all, no_fmaps_all, total_fmaps_all = missing_fmaps(all_data)
+    no_fmaps_df, no_fmaps, total_fmaps = missing_fmaps(program_facilities)
     #######################################
     # Reporting rate on time FYJ Nairobi and Kajiado
     #######################################
@@ -1631,37 +1660,35 @@ def analyse_fmaps_fcdrr(df, df1):
                             title=f'F-CDRR reporting rate on time trends. FYJ Kajiado mean :  {kajiado_average_reporting_rate}%   '
                                   f'FYJ Nairobi mean :  {nairobi_average_reporting_rate}%',
                             color="region")
+
     ########################
     # No F-CDRR REPORTING
     ########################
-    no_fcdrr = program_facilities[
-        (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'].isnull())
-        | (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'] == 0)]
-    no_fcdrr_copy = no_fcdrr.copy()
-    no_fcdrr = no_fcdrr.groupby(['facility', 'MFL Code', 'month/year']).count()[
-        'Facility - CDRR Revision 2019 Reporting rate on time (%)'].reset_index()
+    no_fcdrr_df_all, total_fcdrr_all, no_fcdrr_all, total_all = missing_fcdrr(all_on_time, total_fmaps_all)
+    no_fcdrr_df, total_fcdrr, no_fcdrr, total = missing_fcdrr(program_facilities, total_fmaps)
 
-    no_fcdrr_df = no_fcdrr_copy.groupby(['month/year']).count()['facility'].reset_index()
-    no_fcdrr_df = no_fcdrr_df.rename(columns={"facility": "facilities"})
-    # convert 'month/year' column to datetime format
-    no_fcdrr_df['Month/Year'] = pd.to_datetime(no_fcdrr_df['month/year'], format='%B %Y')
-    total_fcdrr = sum(no_fcdrr_df['facilities'])
-    total_fmaps = sum(no_fmaps_df['facilities'])
-    total = total_fcdrr+total_fmaps
-    # sort the DataFrame by 'month/year' column
-    no_fcdrr_df = no_fcdrr_df.sort_values(by='Month/Year')
-    no_fcdrr_df['report'] = "F-CDRR"
     no_reports = pd.concat([no_fcdrr_df, no_fmaps_df])
+    no_reports_all = pd.concat([no_fcdrr_df_all, no_fmaps_df_all])
+
+    try:
+        fyj_contribution = round(total / total_all * 100, 1)
+    except ZeroDivisionError:
+        fyj_contribution = 0
 
     no_fcdrr_fmaps_fig = fmarp_trend(no_reports, "month/year", 'facilities',
-                                     title=f"Monthly Distribution of Facilities with Missing Reports"
-                                           f" N= {total} (FCDRR = {total_fcdrr}, FMAPS = {total_fmaps})",
+                                     title=f"Monthly Distribution of FYJ Facilities with Missing Reports"
+                                           f" N= {total} ({fyj_contribution}% of the missed reports) (FCDRR = {total_fcdrr}, FMAPS = {total_fmaps})",
                                      color='report')
+    no_fcdrr_fmaps_fig_all = fmarp_trend(no_reports_all, "month/year", 'facilities',
+                                         title=f"Monthly Distribution of All Facilities with Missing Reports"
+                                               f" N= {total_all}  (FCDRR = {total_fcdrr_all}, FMAPS = {total_fmaps_all})",
+                                         color='report')
     return fcdrr_fig, kajiado_reporting_rate_fig, nairobi_reporting_rate_fig, no_fmaps, no_fcdrr, overall_fig, \
-           no_fcdrr_fmaps_fig, nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, \
-           kajiado_program_facilities_730b_fig, nairobi_729b_fig, kajiado_729b_fig, nairobi_program_facilities_729b_fig, \
-           kajiado_program_facilities_729b_fig, nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
-           nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b
+        no_fcdrr_fmaps_fig, nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, \
+        kajiado_program_facilities_730b_fig, nairobi_729b_fig, kajiado_729b_fig, nairobi_program_facilities_729b_fig, \
+        kajiado_program_facilities_729b_fig, nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
+        nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, no_fcdrr_fmaps_fig_all, \
+        no_fcdrr_all, no_fmaps_all
 
 
 @login_required(login_url='login')
@@ -1673,9 +1700,12 @@ def fmaps_reporting_rate(request):
     overall_fig = None
     fcdrr_fig = None
     no_fcdrr_fmaps_fig = None
+    no_fcdrr_fmaps_fig_all = None
     dictionary = None
     no_fmaps = pd.DataFrame()
+    no_fmaps_all = pd.DataFrame()
     no_fcdrr = pd.DataFrame()
+    no_fcdrr_all = pd.DataFrame()
     other_paeds_bottles_df_file = pd.DataFrame()
     form = FileUploadForm(request.POST or None)
     datasets = ["MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate <strong>and</strong>",
@@ -1741,12 +1771,12 @@ def fmaps_reporting_rate(request):
                     })
                     if df.shape[0] > 0 and df1.shape[0] > 0:
                         fcdrr_fig, kajiado_reporting_rate_fig, nairobi_reporting_rate_fig, no_fmaps, no_fcdrr, \
-                        overall_fig, no_fcdrr_fmaps_fig, nairobi_730b_fig, kajiado_730b_fig, \
-                        nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, nairobi_729b_fig, \
-                        kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
-                        nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
-                        nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b = \
-                            analyse_fmaps_fcdrr(df, df1)
+                            overall_fig, no_fcdrr_fmaps_fig, nairobi_730b_fig, kajiado_730b_fig, \
+                            nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, nairobi_729b_fig, \
+                            kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
+                            nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
+                            nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, \
+                            no_fcdrr_fmaps_fig_all, no_fcdrr_all, no_fmaps_all = analyse_fmaps_fcdrr(df, df1)
                 else:
                     messages.success(request, message)
                     return redirect('fmaps_reporting_rate')
@@ -1762,8 +1792,10 @@ def fmaps_reporting_rate(request):
                 "other_paeds_bottles_df_file": other_paeds_bottles_df_file, "report_name": report_name,
                 "form": form, "fcdrr_fig": fcdrr_fig, "kajiado_reporting_rate_fig": kajiado_reporting_rate_fig,
                 "nairobi_reporting_rate_fig": nairobi_reporting_rate_fig, "datasets": datasets, "dqa_type": dqa_type,
-                "no_fmaps": no_fmaps, "no_fcdrr": no_fcdrr, "overall_fig": overall_fig,
+                # "no_fmaps": no_fmaps, "no_fcdrr": no_fcdrr,
+                "overall_fig": overall_fig,
                 "no_fcdrr_fmaps_fig": no_fcdrr_fmaps_fig,
+                "no_fcdrr_fmaps_fig_all": no_fcdrr_fmaps_fig_all,
                 "nairobi_730b_fig": nairobi_730b_fig, "kajiado_730b_fig": kajiado_730b_fig,
                 "nairobi_program_facilities_730b_fig": nairobi_program_facilities_730b_fig,
                 "kajiado_program_facilities_730b_fig": kajiado_program_facilities_730b_fig,
@@ -1777,6 +1809,8 @@ def fmaps_reporting_rate(request):
     # start index at 1 for Pandas DataFrame
     no_fmaps.index = range(1, len(no_fmaps) + 1)
     no_fcdrr.index = range(1, len(no_fcdrr) + 1)
+    no_fcdrr_all.index = range(1, len(no_fcdrr_all) + 1)
+    no_fmaps_all.index = range(1, len(no_fmaps_all) + 1)
     # Drop date from dfs
     dfs = [nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, nairobi_729b_overall,
            kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b]
@@ -1786,6 +1820,8 @@ def fmaps_reporting_rate(request):
 
     request.session['no_fmaps'] = no_fmaps.to_dict()
     request.session['no_fcdrr'] = no_fcdrr.to_dict()
+    request.session['no_fcdrr_all'] = no_fcdrr_all.to_dict()
+    request.session['no_fmaps_all'] = no_fmaps_all.to_dict()
 
     request.session['nairobi_730b_overall'] = nairobi_730b_overall.to_dict()
     request.session['kajiado_730b_overall'] = kajiado_730b_overall.to_dict()
@@ -1804,8 +1840,10 @@ def fmaps_reporting_rate(request):
         "other_paeds_bottles_df_file": other_paeds_bottles_df_file, "report_name": report_name,
         "form": form, "fcdrr_fig": fcdrr_fig, "kajiado_reporting_rate_fig": kajiado_reporting_rate_fig,
         "nairobi_reporting_rate_fig": nairobi_reporting_rate_fig, "datasets": datasets, "dqa_type": dqa_type,
-        "no_fmaps": no_fmaps, "no_fcdrr": no_fcdrr, "overall_fig": overall_fig,
+        # "no_fmaps": no_fmaps, "no_fcdrr": no_fcdrr,
+        "overall_fig": overall_fig,
         "no_fcdrr_fmaps_fig": no_fcdrr_fmaps_fig,
+        "no_fcdrr_fmaps_fig_all": no_fcdrr_fmaps_fig_all,
         "nairobi_730b_fig": nairobi_730b_fig, "kajiado_730b_fig": kajiado_730b_fig,
         "nairobi_program_facilities_730b_fig": nairobi_program_facilities_730b_fig,
         "kajiado_program_facilities_730b_fig": kajiado_program_facilities_730b_fig,
@@ -2066,7 +2104,7 @@ def preprocess_viral_load_data(df):
     # filter LLV
     newdf_LDL = df_notblanks[df_notblanks['Viral Load'] < 1000]
     # filter <400
-    newdf_below_4001 = df_notblanks[df_notblanks['Viral Load'] < 400]
+    newdf_below_4001 = df_notblanks[df_notblanks['Viral Load'] < 200]
 
     ###############################
     # customize Viral load column #
@@ -2085,11 +2123,11 @@ def preprocess_viral_load_data(df):
     # filter VL >1000
     newdf_HVL = df_notblanks[df_notblanks['Viral Load'] >= 1000]
     # newdf_HVL['Viral Load'].unique()
-    newdf_llv = df_notblanks[(df_notblanks['Viral Load'] >= 400) & (df_notblanks['Viral Load'] < 1000)]
+    newdf_llv = df_notblanks[(df_notblanks['Viral Load'] >= 200) & (df_notblanks['Viral Load'] < 1000)]
 
     newdf_llv.loc[newdf_llv['Viral Load'] < 1000, 'Viral Load'] = "LLV"
 
-    newdf_below_4001.loc[newdf_below_4001['Viral Load'] < 400, 'Viral Load'] = "LDL"
+    newdf_below_4001.loc[newdf_below_4001['Viral Load'] < 200, 'Viral Load'] = "LDL"
 
     # # replace all >1000 with HVL
     newdf_HVL.loc[newdf_HVL['Viral Load'] >= 1000, 'Viral Load'] = "STF"
@@ -2107,7 +2145,7 @@ def preprocess_viral_load_data(df):
 
     # join no vl V.L
     repeat_viral_load = pd.concat([df_collect_new_sample, no_vl_done, df_notblanks_invalid])
-    return ldl, repeat_viral_load, new_df, new_df2, newdf_HVL, df_collect_new_sample
+    return ldl, repeat_viral_load, new_df, new_df2, newdf_HVL, df_collect_new_sample, newdf_llv
 
 
 def handle_facility_and_subcounty(new_df, group_by_cols):
@@ -2210,6 +2248,147 @@ def monthly_trend(monthly_vl_trend, title, y_axis_text):
     return monthly_trend_fig
 
 
+def plot_monthly_trend(newdf_HVL, title, y_axis_text):
+    monthly_hvl_trend = \
+        newdf_HVL.groupby(['Month', 'Month vl Tested', 'period', 'Year vl Tested']).sum()[
+            'V.L'].reset_index().sort_values(['Year vl Tested', 'Month'])
+    monthly_hvl_trend_fig = monthly_trend(monthly_hvl_trend,
+                                          title,
+                                          y_axis_text)
+    return monthly_hvl_trend_fig
+
+
+def prepare_age_sex_df(df, newdf_HVL):
+    hvl_ccc_nos = list(newdf_HVL['Patient CCC No'].unique())
+    hvl_linelist = df[df['Patient CCC No'].isin(hvl_ccc_nos)]
+    if "Time Result SMS SENT" in hvl_linelist.columns:
+        del hvl_linelist['Time Result SMS SENT']
+    # convert nonblank values to numbers
+    hvl_linelist['Viral Load'] = pd.to_numeric(
+        hvl_linelist['Viral Load'].str.replace('[^0-9.]', ''), errors='coerce')
+    hvl_linelist = hvl_linelist[list(hvl_linelist.columns[:28])].sort_values("Viral Load",
+                                                                             ascending=False)
+
+    hvl_linelist_facility = hvl_linelist.groupby(["Facility Name"]).sum(numeric_only=True)[
+        'V.L'].reset_index().sort_values("V.L", ascending=False)
+    hvl_linelist_facility['%'] = round(
+        hvl_linelist_facility['V.L'] / sum(hvl_linelist_facility['V.L']) * 100, 1)
+    hvl_linelist_facility = hvl_linelist_facility.rename(columns={"V.L": "STF"})
+
+    newdf_HVL_age_sex = newdf_HVL.groupby(["Age", "Sex"]).sum(numeric_only=True)[
+        'V.L'].reset_index().sort_values("V.L", ascending=False)
+    newdf_HVL_age_sex['%'] = round(
+        newdf_HVL_age_sex['V.L'] / sum(newdf_HVL_age_sex['V.L']) * 100,
+        1)
+    newdf_HVL_age_sex = newdf_HVL_age_sex.rename(columns={"V.L": "HVL"})
+    newdf_HVL_age_sex['HVL %'] = newdf_HVL_age_sex['HVL'].astype(str) + " (" + \
+                                 newdf_HVL_age_sex[
+                                     '%'].astype(str) + "%)"
+    newdf_HVL_age_sex["Age"] = pd.Categorical(newdf_HVL_age_sex["Age"],
+                                              categories=['1-4', '5-9', '10-14', '15-19',
+                                                          '20-24',
+                                                          '25-29', '30-34', '35-39',
+                                                          '40-44',
+                                                          '45-49', '50-54',
+                                                          '55-59', '60-64', '65+'],
+                                              ordered=True)
+    newdf_HVL_age_sex.sort_values('Age', inplace=True)
+    return newdf_HVL_age_sex, hvl_linelist, hvl_linelist_facility
+
+
+def calculate_overall_resuppression_rate(confirm_rx_failure, newdf_HVL, newdf_llv, df):
+    confirm_rx_failure_list = list(confirm_rx_failure["Patient CCC No"].unique())
+    hvl_list = list(newdf_HVL["Patient CCC No"].unique())
+    llv_list = list(newdf_llv["Patient CCC No"].unique())
+    exclusion_list = llv_list + hvl_list
+    set1 = set(confirm_rx_failure_list)
+    set2 = set(exclusion_list)
+    missing = list(sorted(set1 - set2))
+
+    resuppressed_df = df[df["Patient CCC No"].isin(missing)].sort_values("Viral Load")
+    resuppressed_df['resuppression status'] = "re-suppressed"
+    newdf_llv['resuppression status'] = "LLV"
+    newdf_HVL['resuppression status'] = "STF (HVL)"
+    resuppression_status = pd.concat([resuppressed_df, newdf_HVL, newdf_llv])
+
+    resuppression_rate_df = resuppression_status.groupby(["resuppression status"]).sum()['V.L'].reset_index()
+    resuppression_rate_df = resuppression_rate_df.sort_values("V.L", ascending=False)
+    resuppression_rate_df['%'] = round(resuppression_rate_df['V.L'] / sum(resuppression_rate_df['V.L']) * 100,
+                                       1).astype(str) + "%"
+    return resuppression_rate_df, resuppression_status
+
+
+def calculate_facility_resuppression_rate(resuppression_status):
+    facility_resuppression_status = \
+        resuppression_status.groupby(['Facility Name', 'Facility Code', "resuppression status"]).sum()[
+            'V.L'].reset_index()
+    facility_resuppression_status = facility_resuppression_status.sort_values("V.L", ascending=False)
+    facility_resuppression_status['%'] = round(
+        facility_resuppression_status['V.L'] / sum(facility_resuppression_status['V.L']) * 100, 1).astype(str) + "%"
+    facility_resuppression_status = facility_resuppression_status.pivot_table(index=['Facility Name', 'Facility Code'],
+                                                                              columns='resuppression'
+                                                                                      ' status', values='V.L')
+    facility_resuppression_status = facility_resuppression_status.fillna(0)
+    # facility_resuppression_status['Total repeat VL tests'] = facility_resuppression_status['LLV'] + \
+    #                                                          facility_resuppression_status['STF (HVL)'] + \
+    #                                                          facility_resuppression_status['re-suppressed']
+    facility_resuppression_status['Total repeat VL tests'] = facility_resuppression_status.get('LLV', 0) + \
+                                                             facility_resuppression_status.get('STF (HVL)', 0) + \
+                                                             facility_resuppression_status.get('re-suppressed', 0)
+
+    try:
+        facility_resuppression_status["Resuppression rate %"] = round(
+        facility_resuppression_status['re-suppressed'] / facility_resuppression_status['Total repeat VL tests'] * 100,
+        1)
+    except KeyError:
+        facility_resuppression_status["Resuppression rate %"]=0
+    facility_resuppression_status = facility_resuppression_status.sort_values("Resuppression rate %", ascending=False)
+    facility_resuppression_status.reset_index(inplace=True)
+    facility_resuppression_status.reset_index(drop=True)
+    facility_resuppression_status = facility_resuppression_status.reset_index(drop=True)
+    return facility_resuppression_status
+
+
+def calculate_justification_resuppression_rate(resuppression_status):
+    facility_resuppression_status = resuppression_status.groupby(['Justification',
+                                                                  "resuppression status"]
+                                                                 ).sum()['V.L'].reset_index()
+
+    facility_resuppression_status = facility_resuppression_status.pivot_table(index=['Justification'],
+                                                                              columns='resuppression status',
+                                                                              values='V.L')
+    facility_resuppression_status = facility_resuppression_status.reset_index()
+    facility_resuppression_status = facility_resuppression_status.fillna(0)
+    # facility_resuppression_status['Total repeat VL tests'] = facility_resuppression_status['LLV'] + \
+    #                                                          facility_resuppression_status['STF (HVL)'] + \
+    #                                                          facility_resuppression_status['re-suppressed']
+    facility_resuppression_status['Total repeat VL tests'] = facility_resuppression_status.get('LLV', 0) + \
+                                                             facility_resuppression_status.get('STF (HVL)', 0) + \
+                                                             facility_resuppression_status.get('re-suppressed', 0)
+    print("facility_resuppression_status:::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+    print(facility_resuppression_status)
+    try:
+        facility_resuppression_status["Resuppression rate %"] = round(
+            facility_resuppression_status['re-suppressed'] / facility_resuppression_status['Total repeat VL tests'] * 100,
+            1)
+    except KeyError:
+        facility_resuppression_status["Resuppression rate %"]=0
+    facility_resuppression_status = facility_resuppression_status.sort_values("Resuppression rate %", ascending=False)
+
+    return facility_resuppression_status
+
+
+def prepare_to_send_via_sessions(llv_linelist):
+    llv_linelist = llv_linelist.applymap(
+        lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if isinstance(x, pd.Timestamp) else x)
+    if "HVL" in llv_linelist.columns:
+        del llv_linelist["V.L"]
+    llv_linelist = llv_linelist.reset_index(drop=True)
+    llv_linelist.index = range(1, len(llv_linelist) + 1)
+
+    return llv_linelist
+
+
 @login_required(login_url='login')
 def viral_load(request):
     all_results_df = pd.DataFrame()
@@ -2219,7 +2398,11 @@ def viral_load(request):
     subcounty_vl = pd.DataFrame()
     facility_vl = pd.DataFrame()
     hvl_linelist = pd.DataFrame()
+    llv_linelist = pd.DataFrame()
     hvl_linelist_facility = pd.DataFrame()
+    llv_linelist_facility = pd.DataFrame()
+    facility_resuppression_status = pd.DataFrame()
+    confirm_rx_failure = pd.DataFrame()
     vs_text = None
     facility_analyzed_text = None
     subcounty_fig = None
@@ -2227,9 +2410,14 @@ def viral_load(request):
     weekly_trend_fig = None
     monthly_hvl_trend_fig = None
     hvl_sex_age_fig = None
+    llv_sex_age_fig = None
+    monthly_llv_trend_fig = None
+    justification_fig = None
+    filter_text = "All"
 
     form = FileUploadForm(request.POST or None)
     date_picker_form = DateFilterForm(request.POST or None)
+    data_filter_form = DataFilterForm(request.POST or None)
     if not request.user.first_name:
         return redirect("profile")
     if request.method == 'POST':
@@ -2246,6 +2434,11 @@ def viral_load(request):
                 else:
                     messages.success(request, message)
                     return redirect('viral_load')
+                if data_filter_form.is_valid():
+                    selected_option = data_filter_form.cleaned_data['filter_option']
+                    if selected_option == "PMTCT":
+                        df = df[df['PMTCT'].str.contains("breast feeding|pregnant", case=False, na=False)]
+                        filter_text = "PMTCT"
                 expected_columns = ['System ID', 'Batch', 'Patient CCC No', 'Lab Tested In', 'County',
                                     'Sub County', 'Partner', 'Facility Name', 'Facility Code', 'Sex', 'DOB',
                                     'Age', 'Sample Type', 'Date Collected', 'Justification',
@@ -2296,41 +2489,14 @@ def viral_load(request):
                             dfsss = pd.crosstab(df['Sub County'], [df['Age']], margins=True)
                             dfsss = use_availble_columns(dfsss)
                             subcounty_ = dfsss.sort_values('All').reset_index()
-                            ldl, repeat_viral_load, new_df, new_df2, newdf_HVL, df_collect_new_sample = preprocess_viral_load_data(
-                                df)
-                            hvl_ccc_nos = list(newdf_HVL['Patient CCC No'].unique())
-                            hvl_linelist = df[df['Patient CCC No'].isin(hvl_ccc_nos)]
-                            if "Time Result SMS SENT" in hvl_linelist.columns:
-                                del hvl_linelist['Time Result SMS SENT']
-                            # convert nonblank values to numbers
-                            hvl_linelist['Viral Load'] = pd.to_numeric(
-                                hvl_linelist['Viral Load'].str.replace('[^0-9.]', ''), errors='coerce')
-                            hvl_linelist = hvl_linelist[list(hvl_linelist.columns[:28])].sort_values("Viral Load",
-                                                                                                     ascending=False)
+                            ldl, repeat_viral_load, new_df, new_df2, newdf_HVL, df_collect_new_sample, newdf_llv = \
+                                preprocess_viral_load_data(df)
 
-                            hvl_linelist_facility = hvl_linelist.groupby(["Facility Name"]).sum(numeric_only=True)[
-                                'V.L'].reset_index().sort_values("V.L", ascending=False)
-                            hvl_linelist_facility['%'] = round(
-                                hvl_linelist_facility['V.L'] / sum(hvl_linelist_facility['V.L']) * 100, 1)
-                            hvl_linelist_facility = hvl_linelist_facility.rename(columns={"V.L": "STF"})
-
-                            newdf_HVL_age_sex = newdf_HVL.groupby(["Age", "Sex"]).sum(numeric_only=True)[
-                                'V.L'].reset_index().sort_values("V.L", ascending=False)
-                            newdf_HVL_age_sex['%'] = round(
-                                newdf_HVL_age_sex['V.L'] / sum(newdf_HVL_age_sex['V.L']) * 100,
-                                1)
-                            newdf_HVL_age_sex = newdf_HVL_age_sex.rename(columns={"V.L": "HVL"})
-                            newdf_HVL_age_sex['HVL %'] = newdf_HVL_age_sex['HVL'].astype(str) + " (" + \
-                                                         newdf_HVL_age_sex[
-                                                             '%'].astype(str) + "%)"
-                            newdf_HVL_age_sex["Age"] = pd.Categorical(newdf_HVL_age_sex["Age"],
-                                                                      categories=['1-4', '5-9', '10-14', '15-19',
-                                                                                  '20-24',
-                                                                                  '25-29', '30-34', '35-39', '40-44',
-                                                                                  '45-49', '50-54',
-                                                                                  '55-59', '60-64', '65+'],
-                                                                      ordered=True)
-                            newdf_HVL_age_sex.sort_values('Age', inplace=True)
+                            newdf_HVL_age_sex, hvl_linelist, hvl_linelist_facility = prepare_age_sex_df(df, newdf_HVL)
+                            newdf_llv_age_sex, llv_linelist, llv_linelist_facility = prepare_age_sex_df(df, newdf_llv)
+                            newdf_llv_age_sex = newdf_llv_age_sex.rename(columns={"HVL": "LLV"})
+                            llv_linelist_facility = llv_linelist_facility.rename(
+                                columns={"STF": "# of LLV (200-999 cp/ml)"})
 
                             facility_vl_uptake = make_crosstab_facility_age(ldl)
 
@@ -2394,15 +2560,24 @@ def viral_load(request):
                                                         title=f"Distribution of HVL (>= 1000 cp/ml) by sex and age "
                                                               f"N = {sum(newdf_HVL_age_sex['HVL'])}",
                                                         color="Sex")
+                            llv_sex_age_fig = hvl_trend(newdf_llv_age_sex, "Age", "LLV",
+                                                        title=f"Distribution of LLV (200 -999 cp/ml) by sex and age "
+                                                              f"N = {sum(newdf_llv_age_sex['LLV'])}",
+                                                        color="Sex")
 
+                            #################
                             # HVL
-                            monthly_hvl_trend = \
-                                newdf_HVL.groupby(['Month', 'Month vl Tested', 'period', 'Year vl Tested']).sum()[
-                                    'V.L'].reset_index().sort_values(['Year vl Tested', 'Month'])
-                            monthly_hvl_trend_fig = monthly_trend(monthly_hvl_trend,
-                                                                  "Monthly distribution of PLHIV with Suspected Treatment "
-                                                                  "Failure (STF)  N = ",
-                                                                  "# with Suspected Treatment Failure (STF) ")
+                            #################
+                            monthly_hvl_trend_fig = plot_monthly_trend(newdf_HVL, "Monthly distribution of PLHIV with "
+                                                                                  "Suspected Treatment Failure (STF)  "
+                                                                                  "N = ", "# with Suspected Treatment "
+                                                                                          "Failure (STF)")
+                            #################
+                            # LLV
+                            #################
+                            monthly_llv_trend_fig = plot_monthly_trend(newdf_llv, "Monthly distribution of PLHIV with "
+                                                                                  "LLV N = ",
+                                                                       "# with LLV (200-999 cp/ml)")
 
                             df['# sample collected'] = 1
                             df['Date Tested'] = pd.to_datetime(df['Date Tested'], errors='coerce')
@@ -2438,6 +2613,55 @@ def viral_load(request):
                                                showarrow=True, arrowhead=1,
                                                font=dict(size=8, color='black'))
                             weekly_trend_fig = plot(fig, include_plotlyjs=False, output_type="div")
+                            ###############################
+                            # RESUPPRESSION
+                            ###############################
+                            confirm_rx_failure = df[
+                                (df['Justification'] == 'Confirmation of Treatment Failure (Repeat VL)') |
+                                (df['Justification'] == 'Confirmation of Treatment Failure (Repeat VL)') |
+                                (df['Justification'] == 'Clinical Failure')]
+
+                            ldl, repeat_viral_load, new_df, new_df2, newdf_HVL, df_collect_new_sample, newdf_llv = preprocess_viral_load_data(
+                                confirm_rx_failure)
+                            resuppression_rate_df, resuppression_status = calculate_overall_resuppression_rate(
+                                confirm_rx_failure, newdf_HVL,
+                                newdf_llv, df)
+                            re_suppressed_df = resuppression_rate_df[
+                                resuppression_rate_df['resuppression status'] == "re-suppressed"]
+
+                            if not re_suppressed_df.empty:
+                                resuppression_rate = re_suppressed_df.iloc[0, 2]
+                                re_suppressed = re_suppressed_df.iloc[0, 1]
+                            else:
+                                # Handle the case when there are no rows matching the condition
+                                resuppression_rate = "0 %"
+                                re_suppressed = 0
+
+                            # resuppression_rate = resuppression_rate_df[
+                            #     resuppression_rate_df['resuppression status'] == "re-suppressed"].iloc[0, 2]
+                            # re_suppressed = resuppression_rate_df[
+                            #     resuppression_rate_df['resuppression status'] == "re-suppressed"].iloc[0, 1]
+                            total_test_done = sum(resuppression_rate_df['V.L'])
+                            facility_resuppression_status = calculate_facility_resuppression_rate(resuppression_status)
+                            justification_r_r = calculate_justification_resuppression_rate(resuppression_status)
+                            columns_to_melt = ['Total repeat VL tests', 'STF (HVL)', 're-suppressed', 'LLV',
+                                               'Resuppression rate %']
+                            justification_r_r = justification_r_r.melt(id_vars=['Justification'],
+                                                                       value_vars=[col for col in columns_to_melt if
+                                                                                   col in justification_r_r.columns],
+                                                                       )
+                            fig = px.bar(justification_r_r, x="Justification", y='value', text="value",
+                                         barmode="group", color="resuppression status", height=450,
+                                         title=f"Resuppression status and Resuppression rate = {resuppression_rate}  ({re_suppressed}/{total_test_done})")
+                            fig.update_layout(legend=dict(
+                                orientation="h",
+                                yanchor="bottom",
+                                y=1.02,
+                                xanchor="right",
+                                x=1
+                            ))
+                            justification_fig = plot(fig, include_plotlyjs=False, output_type="div")
+
                         else:
                             messages.success(request, message)
                             return redirect('viral_load')
@@ -2460,11 +2684,18 @@ def viral_load(request):
                 "weekly_trend_fig": weekly_trend_fig,
                 "subcounty_fig": subcounty_fig,
                 "hvl_sex_age_fig": hvl_sex_age_fig,
+                "llv_sex_age_fig": llv_sex_age_fig,
                 "monthly_hvl_trend_fig": monthly_hvl_trend_fig,
+                "monthly_llv_trend_fig": monthly_llv_trend_fig,
                 "date_picker_form": date_picker_form,
+                "data_filter_form": data_filter_form,
                 "dqa_type": "viral_load",
                 "hvl_linelist": hvl_linelist,
                 "hvl_linelist_facility": hvl_linelist_facility,
+                "llv_linelist_facility": llv_linelist_facility,
+                "llv_linelist_facility_shape": llv_linelist_facility.shape[0],
+                "facility_resuppression_status": facility_resuppression_status,
+                "justification_fig": justification_fig,
             }
 
             return render(request, 'data_analysis/tat.html', context)
@@ -2482,22 +2713,50 @@ def viral_load(request):
     hvl_linelist.index = range(1, len(hvl_linelist) + 1)
     hvl_linelist_facility.index = range(1, len(hvl_linelist_facility) + 1)
     request.session['hvl_linelist'] = hvl_linelist.to_dict()
+
+    llv_linelist = prepare_to_send_via_sessions(llv_linelist)
+    request.session['llv_linelist'] = llv_linelist.to_dict()
+
+    facility_resuppression_status = prepare_to_send_via_sessions(facility_resuppression_status)
+    request.session['facility_resuppression_status'] = facility_resuppression_status.to_dict()
+    confirm_rx_failure = prepare_to_send_via_sessions(confirm_rx_failure)
+    confirm_rx_failure = confirm_rx_failure[list(confirm_rx_failure.columns[0:27])]
+    request.session['confirm_rx_failure'] = confirm_rx_failure.to_dict()
+
+    date_cols = [col for col in llv_linelist_facility.columns if "date" in col.lower()]
+    for col in date_cols:
+        llv_linelist_facility[col] = pd.to_datetime(llv_linelist_facility[col])
+        llv_linelist_facility[col] = llv_linelist_facility[col].dt.date
+    llv_linelist_facility.index = range(1, len(llv_linelist_facility) + 1)
+    request.session['llv_linelist_facility'] = llv_linelist_facility.to_dict()
+
     date_cols = [col for col in hvl_linelist.columns if "date" in col.lower()]
     for col in date_cols:
         hvl_linelist[col] = pd.to_datetime(hvl_linelist[col])
         hvl_linelist[col] = hvl_linelist[col].dt.date
     request.session['hvl_linelist_facility'] = hvl_linelist_facility.to_dict()
 
-    # Convert dict_items into a list
-    dictionary = get_key_from_session_names(request)
-    dfs_vl_uptake = {"All VL Results by sex and age": all_results_df, "All VL Results by sub county": subcounty_,
+    dfs_vl_uptake = {f"{filter_text} VL Results by sex and age": all_results_df,
+                     f"{filter_text} VL Results by sub county": subcounty_,
                      "DSD: TX _PVLS (NUMERATOR)": facility_less_1000_df, "DSD: TX _PVLS (DENOMINATOR)": vl_done_df}
     dfs_vl_supp = {
         "Sub counties viral suppression": subcounty_vl, "Facilities viral suppression": facility_vl,
         "Suspected Treatment Failure (STF) line list": hvl_linelist,
-        "Suspected Treatment Failure (STF) per facility (>=1000 cp/ml)": hvl_linelist_facility
+        "Suspected Treatment Failure (STF) per facility (>=1000 cp/ml)": hvl_linelist_facility,
+        "LLV line list (200 -999 cp/ml)": llv_linelist,
+        "LLV per facility (200 -999 cp/ml)": llv_linelist_facility,
     }
+    facility_resuppression_status = facility_resuppression_status.reset_index(drop=True)
+    facility_resuppression_status.index = range(1, len(facility_resuppression_status) + 1)
 
+    confirm_rx_failure = confirm_rx_failure.reset_index(drop=True)
+    confirm_rx_failure.index = range(1, len(confirm_rx_failure) + 1)
+    re_supp_dict = {
+        "Facilities Resuppression Status": facility_resuppression_status,
+        "Resuppression Linelist": confirm_rx_failure,
+    }
+    # Convert dict_items into a list
+    dictionary = get_key_from_session_names(request)
     context = {
         "form": form,
         "dictionary": dictionary,
@@ -2508,12 +2767,20 @@ def viral_load(request):
         "monthly_trend_fig": monthly_trend_fig,
         "weekly_trend_fig": weekly_trend_fig,
         "hvl_sex_age_fig": hvl_sex_age_fig,
+        "llv_sex_age_fig": llv_sex_age_fig,
         "subcounty_fig": subcounty_fig,
         "monthly_hvl_trend_fig": monthly_hvl_trend_fig,
+        "monthly_llv_trend_fig": monthly_llv_trend_fig,
         "date_picker_form": date_picker_form,
+        "data_filter_form": data_filter_form,
         "dqa_type": "viral_load",
         "hvl_linelist": hvl_linelist,
+        "llv_linelist": llv_linelist,
         "hvl_linelist_facility": hvl_linelist_facility,
+        "llv_linelist_facility": llv_linelist_facility,
+        "llv_linelist_facility_shape": llv_linelist_facility.shape[0],
+        "re_supp_dict": re_supp_dict,
+        "justification_fig": justification_fig,
     }
 
     return render(request, 'data_analysis/vl.html', context)

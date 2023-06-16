@@ -64,6 +64,15 @@
                                 {{ form.date_of_collection|as_crispy_field }}
                             </div>
                             <div class="col-md-3 mt-2">
+                                {{ form.date_sample_received|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.received_status|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.reason_for_rejection|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
                                 {{ form.date_of_testing|as_crispy_field }}
                             </div>
                             <div class="col-md-3 mt-2">
@@ -71,6 +80,9 @@
                             </div>
                             <div class="col-md-3 mt-2">
                                 {{ form.serum_crag_results|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.reason_for_no_serum_crag|as_crispy_field }}
                             </div>
                             <div class="col-md-3 mt-2 pt-3">
                                 <input class="btn btn-success mt-1" type="submit" value="Submit">

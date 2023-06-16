@@ -17,7 +17,12 @@ class Cd4trakerForm(ModelForm):
     )
     date_of_testing = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
-        label="Testing date"
+        label="Testing date",
+        required=False
+    )
+    date_sample_received = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date sample was received"
     )
     class Meta:
         model=Cd4traker
@@ -25,6 +30,7 @@ class Cd4trakerForm(ModelForm):
         labels = {
             'cd4_count_results': 'CD4 count results',
             'serum_crag_results': 'Serum CRAG results',
+            'reason_for_no_serum_crag': 'Reason for not doing serum CRAG',
         }
 
 

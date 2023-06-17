@@ -435,7 +435,8 @@ def show_results(request):
     ######################
     # Hide update button #
     ######################
-    disable_update_buttons(request, qi_list, 'date_dispatched')
+    if qi_list:
+        disable_update_buttons(request, qi_list, 'date_dispatched')
 
     if qi_list:
         list_of_projects = [

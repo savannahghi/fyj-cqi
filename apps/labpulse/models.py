@@ -67,6 +67,12 @@ class Cd4traker(models.Model):
         verbose_name_plural="CD4 count tracker"
         ordering=["-date_dispatched"]
         unique_together=(('patient_unique_no','facility_name','date_of_collection'),)
+        permissions = [
+            ("view_show_results", "Can view show results"),
+            ("view_choose_testing_lab", "Can view choose testing lab"),
+            ("view_add_cd4_count", "Can view add CD4 count"),
+            ("view_update_cd4_results", "Can view update CD4 results"),
+        ]
 
     def __str__(self):
         return str(self.facility_name) +" "+ str(self.patient_unique_no) +""+ str(self.date_of_collection)

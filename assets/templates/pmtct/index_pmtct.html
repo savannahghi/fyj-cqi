@@ -235,7 +235,11 @@ textarea[name="description"] {
 
         </div>
 <div class="navbar-nav">
+           {% if perms.labpulse.view_add_cd4_count %}
             <a class="nav-link px-3" href="{% url 'choose_testing_lab' %}">LabPulse</a>
+        {% elif perms.labpulse.view_show_results %}
+            <a class="nav-link px-3" href="{% url 'show_results' %}">LabPulse</a>
+    {% endif %}
 
         </div>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">

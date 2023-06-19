@@ -121,6 +121,9 @@ def add_cd4_count(request, pk_lab):
             cd4_count_results = form.cleaned_data['cd4_count_results']
             serum_crag_results = form.cleaned_data['serum_crag_results']
             reason_for_no_serum_crag = form.cleaned_data['reason_for_no_serum_crag']
+            cd4_percentage = form.cleaned_data['cd4_percentage']
+            age = form.cleaned_data['age']
+            patient_unique_no = form.cleaned_data['patient_unique_no']
 
             if date_of_collection > date_sample_received:
                 error_message = f"Collection date is greater than Receipt date!"
@@ -186,6 +189,12 @@ def add_cd4_count(request, pk_lab):
                     error_message = f"Provide CD4 count results"
                     form.add_error('received_status', error_message)
                     form.add_error('cd4_count_results', error_message)
+                    return render(request, template_name, context)
+
+                if age <= 5 and not cd4_percentage:
+                    error_message = f"Please provide CD4 % values for {patient_unique_no}"
+                    form.add_error('age', error_message)
+                    form.add_error('cd4_percentage', error_message)
                     return render(request, template_name, context)
 
                 if cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
@@ -270,6 +279,9 @@ def update_cd4_results(request, pk):
             serum_crag_results = form.cleaned_data['serum_crag_results']
             reason_for_no_serum_crag = form.cleaned_data['reason_for_no_serum_crag']
             facility_name = form.cleaned_data['facility_name']
+            cd4_percentage = form.cleaned_data['cd4_percentage']
+            age = form.cleaned_data['age']
+            patient_unique_no = form.cleaned_data['patient_unique_no']
 
             if date_of_collection > date_sample_received:
                 error_message = f"Collection date is greater than Receipt date!"
@@ -337,6 +349,12 @@ def update_cd4_results(request, pk):
                     form.add_error('cd4_count_results', error_message)
                     return render(request, template_name, context)
 
+                if age <= 5 and not cd4_percentage:
+                    error_message = f"Please provide CD4 % values for {patient_unique_no}"
+                    form.add_error('age', error_message)
+                    form.add_error('cd4_percentage', error_message)
+                    return render(request, template_name, context)
+
                 if cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
                     error_message = f"Select a reason why serum CRAG was not done"
                     form.add_error('reason_for_no_serum_crag', error_message)
@@ -401,7 +419,8 @@ def pagination_(request, item_list, record_count=None):
 
 
 @login_required(login_url='login')
-@group_required(['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse','facility_staffs_labpulse'])
+@group_required(
+    ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'])
 def show_results(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -575,7 +594,7 @@ def show_results(request):
         num_samples_negative = (filtered_df['Serum Crag'] == 'Negative').sum()
 
         # Calculate the serum crag positivity
-        serum_crag_positivity = num_samples_positive / num_tests_done * 100
+        serum_crag_positivity = round(num_samples_positive / num_tests_done * 100,1)
 
         # Create the new DataFrame
         crag_positivity_df = pd.DataFrame({

@@ -12,6 +12,8 @@ class Cd4trakerFilter(django_filters.FilterSet):
     patient_unique_no = CharFilter(field_name="patient_unique_no", lookup_expr="icontains", label='Patient Unique No.')
     cd4_count_results_gte = CharFilter(field_name="cd4_count_results", lookup_expr="gte", label='CD4 count >=')
     cd4_count_results_lte = CharFilter(field_name="cd4_count_results", lookup_expr="lte", label='CD4 count <=')
+    cd4_percentage_gte = CharFilter(field_name="cd4_percentage", lookup_expr="gte", label='CD4 % >=')
+    cd4_percentage_lte = CharFilter(field_name="cd4_percentage", lookup_expr="lte", label='CD4 % <=')
     age_lte = CharFilter(field_name="age", lookup_expr="lte", label='Age <=')
     age_gte = CharFilter(field_name="age", lookup_expr="gte", label='Age >=')
     facility_name = django_filters.ModelChoiceFilter(
@@ -43,5 +45,5 @@ class Cd4trakerFilter(django_filters.FilterSet):
         model = Cd4traker
         fields = ['patient_unique_no', 'testing_laboratory','facility_name',
                   'created_by','received_status','serum_crag_results','sex',
-                  'reason_for_rejection',
+                  'reason_for_rejection','tb_lam_results','cd4_percentage',
                   ]

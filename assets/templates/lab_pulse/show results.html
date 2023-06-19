@@ -24,16 +24,16 @@
                 </div>
                 <div class="mt-3">
                     <form id="filter-form" class="row g-3" autocomplete="off">
-                        <div class="col-12 col-md-6 col-lg-3">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.testing_laboratory|as_crispy_field }}
                         </div>
-                        <div class="col-12 col-md-6 col-lg-3">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.facility_name|as_crispy_field }}
                         </div>
-                        <div class="col-12 col-md-6 col-lg-3">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.county|as_crispy_field }}
                         </div>
-                        <div class="col-12 col-md-6 col-lg-3">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.sub_county|as_crispy_field }}
                         </div>
                         <div class="col-12 col-md-6 col-lg-2">
@@ -63,10 +63,19 @@
                         <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.reason_for_rejection|as_crispy_field }}
                         </div>
-                        <div class="col-12 col-md-6 col-lg-3">
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.cd4_percentage_lte|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.cd4_percentage_gte|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.tb_lam_results|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.start_date|as_crispy_field }}
                         </div>
-                        <div class="col-12 col-md-6 col-lg-3">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.end_date|as_crispy_field }}
                         </div>
                         <div class="col-12">
@@ -213,7 +222,7 @@
                                 <th style="font-size: x-small"> Results Dispatched by</th>
                                 {% for result in qi_list %}
                                     {% if user.is_authenticated %}
-                                        {% if user.id == result.created_by.id or request.user.is_superuser %}
+                                        {% if forloop.counter == 1 and  user.id == result.created_by.id or request.user.is_superuser %}
                                             {% if not result.hide_update_button or request.user.is_superuser %}
                                                 <th style="font-size: x-small"></th>
                                             {% endif %}
@@ -243,7 +252,7 @@
                                             <span style="font-size: 8px"
                                                   class="badge alert-warning">Sex: {{ result.sex }}</span>
                                         {% else %}
-                                            {{ result.patient_unique_no }}
+                                            <p>{{ result.patient_unique_no }}</p>
                                             <br>
                                             <span style="font-size: 8px"
                                                   class="badge alert-warning">Sex: {{ result.sex }}</span>
@@ -272,12 +281,43 @@
                                     <td>
                                         {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
                                             <p class="fw-bold text-danger">Missing</p>
+                                            <br>
+                                            {% if result.tb_lam_results == "Positive" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% elif result.tb_lam_results == "Negative" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% else %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% endif %}
                                         {% elif result.serum_crag_results is None %}
-                                            N/A
+
                                         {% elif result.serum_crag_results == "Positive" %}
                                             <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>
+                                            {% if result.tb_lam_results == "Positive" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% elif result.tb_lam_results == "Negative" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% else %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% endif %}
                                         {% else %}
-                                            {{ result.serum_crag_results }}
+                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>
+                                            {% if result.tb_lam_results == "Positive" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% elif result.tb_lam_results == "Negative" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% else %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% endif %}
                                         {% endif %}
                                     </td>
                                     <td> {{ result.date_of_collection|date:"Y-m-d" }} </td>

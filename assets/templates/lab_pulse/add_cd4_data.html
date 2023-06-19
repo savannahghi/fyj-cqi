@@ -7,7 +7,7 @@
 
 {% block content %}
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-        <h6 class="display-6 text-primary text-center">{{ title }}</h6>
+        <h3 class="display-6 text-primary text-center">{{ title }}</h3>
         <hr>
         <div class="p-5 mb-4 bg-light rounded-3">
             {% if messages %}
@@ -48,46 +48,49 @@
                     {% else %}
                         <p> Please fill the fields below and then submit </p>
                         <div class="row">
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.facility_name|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.patient_unique_no|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.age|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.sex|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.date_of_collection|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.date_sample_received|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.received_status|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.reason_for_rejection|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.date_of_testing|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.cd4_count_results|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.serum_crag_results|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.reason_for_no_serum_crag|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2 pt-3">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2 pt-3">
                                 <input class="btn btn-success mt-1" type="submit" value="Submit">
                             </div>
                         </div>
+
+
+
                     {% endif %}
                 </form>
             </div>

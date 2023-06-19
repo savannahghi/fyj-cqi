@@ -6,7 +6,7 @@ import pandas as pd
 import pytz
 from datetime import timezone, timedelta
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect, HttpResponse
@@ -24,6 +24,7 @@ from apps.cqi.views import bar_chart
 from apps.data_analysis.views import get_key_from_session_names
 from apps.dqa.models import UpdateButtonSettings
 # from apps.dqa.views import disable_update_buttons
+from apps.labpulse.decorators import group_required
 from apps.labpulse.filters import Cd4trakerFilter
 from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm, Cd4TestingLabForm
 from apps.labpulse.models import Cd4TestingLabs, Cd4traker
@@ -70,6 +71,7 @@ def disable_update_buttons(request, audit_team, relevant_date_field):
 
 # Create your views here.
 @login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
 def choose_testing_lab(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -93,6 +95,7 @@ def choose_testing_lab(request):
 
 
 @login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
 def add_cd4_count(request, pk_lab):
     if not request.user.first_name:
         return redirect("profile")
@@ -236,12 +239,13 @@ def add_cd4_count(request, pk_lab):
 
     context = {
         "form": form,
-        "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()}",
+        "title": f"Add CD4 results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
 
 
 @login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
 def update_cd4_results(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -397,6 +401,7 @@ def pagination_(request, item_list, record_count=None):
 
 
 @login_required(login_url='login')
+@group_required(['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse','facility_staffs_labpulse'])
 def show_results(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -517,9 +522,9 @@ def show_results(request):
                              var_name="Test done", value_name='values')
 
         cd4_df = summary_df[summary_df['Test done'] == "Total CD4 Count"].sort_values("values").fillna(0)
-        cd4_df=cd4_df[cd4_df['values']!=0]
+        cd4_df = cd4_df[cd4_df['values'] != 0]
         crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values").fillna(0)
-        crag_df=crag_df[crag_df['values']!=0]
+        crag_df = crag_df[crag_df['values'] != 0]
         crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
                                          "Number of CRAG Reports Processed by Testing Laboratory")
         cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
@@ -581,7 +586,7 @@ def show_results(request):
         })
         crag_positivity_df = crag_positivity_df.T.reset_index().fillna(0)
         crag_positivity_df.columns = ['variables', 'values']
-        crag_positivity_df=crag_positivity_df[crag_positivity_df['values']!=0]
+        crag_positivity_df = crag_positivity_df[crag_positivity_df['values'] != 0]
         crag_positivity_fig = bar_chart(crag_positivity_df, "variables", "values",
                                         f"Serum CRAG Testing Results", color='variables')
         ###############################
@@ -596,7 +601,7 @@ def show_results(request):
         # Rename the column for clarity
         facility_positive_count.columns = ['Facilities', 'Number of Positive Serum CRAG']
         facility_positive_count = facility_positive_count.sort_values("Number of Positive Serum CRAG", ascending=False)
-        facility_positive_count=facility_positive_count[facility_positive_count['Number of Positive Serum CRAG']!=0]
+        facility_positive_count = facility_positive_count[facility_positive_count['Number of Positive Serum CRAG'] != 0]
         # top twenty facilities
         if facility_positive_count.shape[0] > 20:
             facility_positive_count = facility_positive_count.head(20)
@@ -641,14 +646,14 @@ def show_results(request):
         "rejection_summary_fig": rejection_summary_fig,
         "crag_positivity_fig": crag_positivity_fig,
         "facility_crag_positive_fig": facility_crag_positive_fig,
-        "cd4_df":cd4_df,"crag_df":crag_df,"crag_positivity_df":crag_positivity_df,
-        "facility_positive_count":facility_positive_count
+        "cd4_df": cd4_df, "crag_df": crag_df, "crag_positivity_df": crag_positivity_df,
+        "facility_positive_count": facility_positive_count
     }
     return render(request, 'lab_pulse/show results.html', context)
 
 
 def generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch, unique_no, age,
-                    cd4_count, crag, sex, reason_for_rejection,testing_laboratory, y):
+                    cd4_count, crag, sex, reason_for_rejection, testing_laboratory, y):
     # Change page size if needed
     if y < 0:
         pdf.showPage()
@@ -790,13 +795,14 @@ class GeneratePDF(View):
             reason_for_rejection = data['Rejection reason']
             testing_laboratory = data['Testing Laboratory']
             y = generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch,
-                                unique_no, age, cd4_count, crag, sex, reason_for_rejection,testing_laboratory, y)
+                                unique_no, age, cd4_count, crag, sex, reason_for_rejection, testing_laboratory, y)
 
         pdf.save()
         return response
 
 
 @login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
 def add_testing_lab(request):
     if not request.user.first_name:
         return redirect("profile")

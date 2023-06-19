@@ -31,6 +31,8 @@ class Cd4trakerForm(ModelForm):
             'cd4_count_results': 'CD4 count results',
             'serum_crag_results': 'Serum CRAG results',
             'reason_for_no_serum_crag': 'Reason for not doing serum CRAG',
+            'cd4_percentage': 'CD4 % values',
+            'tb_lam_results': 'TB-LAM results',
         }
 
 

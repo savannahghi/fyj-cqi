@@ -47,6 +47,8 @@ class Cd4traker(models.Model):
     county = models.ForeignKey(Counties, null=True, blank=True, on_delete=models.CASCADE)
     age = models.IntegerField(validators=[MaxValueValidator(150)])
     cd4_count_results = models.IntegerField(blank=True, null=True)
+    cd4_percentage = models.IntegerField(blank=True, null=True)
+    tb_lam_results = models.CharField(max_length=9,choices=CHOICES, blank=True, null=True)
     serum_crag_results = models.CharField(max_length=9,choices=CHOICES, blank=True, null=True)
     sex = models.CharField(max_length=9,choices=(('M','M'),('F','F')))
     received_status = models.CharField(max_length=9,choices=(('Accepted','Accepted'),('Rejected','Rejected')))

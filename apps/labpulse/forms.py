@@ -24,9 +24,10 @@ class Cd4trakerForm(ModelForm):
         widget=forms.DateInput(attrs={'type': 'date'}),
         label="Date sample was received"
     )
+
     class Meta:
-        model=Cd4traker
-        exclude=['created_by','modified_by','date_dispatched','date_updated','testing_laboratory']
+        model = Cd4traker
+        exclude = ['created_by', 'modified_by', 'date_dispatched', 'date_updated', 'testing_laboratory']
         labels = {
             'cd4_count_results': 'CD4 count results',
             'serum_crag_results': 'Serum CRAG results',
@@ -43,7 +44,8 @@ class Cd4TestingLabsForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
 
+
 class Cd4TestingLabForm(ModelForm):
     class Meta:
-        model=Cd4TestingLabs
-        fields="__all__"
+        model = Cd4TestingLabs
+        fields = "__all__"

@@ -107,9 +107,8 @@ def add_cd4_count(request, pk_lab):
     template_name = 'lab_pulse/add_cd4_data.html'
     context = {
         "form": form,
-        "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()}",
+        "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
     }
-
     if request.method == "POST":
         if form.is_valid():
             post = form.save(commit=False)
@@ -828,6 +827,10 @@ def add_testing_lab(request):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
+    testing_labs = Cd4TestingLabs.objects.all()
+    if testing_labs:
+        disable_update_buttons(request, testing_labs, 'date_created')
+
     form = Cd4TestingLabForm(request.POST or None)
     if form.is_valid():
         testing_lab_name = form.cleaned_data['testing_lab_name']
@@ -844,5 +847,29 @@ def add_testing_lab(request):
     context = {
         "form": form,
         "title": f"Add CD4 Testing Lab",
+        "testing_labs": testing_labs,
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
+
+
+@login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
+def update_testing_labs(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = Cd4TestingLabs.objects.get(id=pk)
+    if request.method == "POST":
+        form = Cd4TestingLabForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.error(request, "Record updated successfully!")
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = Cd4TestingLabForm(instance=item)
+    context = {
+        "form": form,
+        "title": "Update CD4 testing lab details",
+    }
+    return render(request, 'lab_pulse/update results.html', context)

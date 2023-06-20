@@ -222,9 +222,11 @@
                                 <th style="font-size: x-small"> Results Dispatched by</th>
                                 {% for result in qi_list %}
                                     {% if user.is_authenticated %}
-                                        {% if forloop.counter == 1 and  user.id == result.created_by.id or request.user.is_superuser %}
-                                            {% if not result.hide_update_button or request.user.is_superuser %}
-                                                <th style="font-size: x-small"></th>
+                                        {% if forloop.counter == 1 %}
+                                            {% if user.id == result.created_by.id or request.user.is_superuser %}
+                                                {% if not result.hide_update_button or request.user.is_superuser %}
+                                                    <th style="font-size: x-small"></th>
+                                                {% endif %}
                                             {% endif %}
                                         {% endif %}
                                     {% endif %}

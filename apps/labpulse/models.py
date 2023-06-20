@@ -10,10 +10,18 @@ from apps.cqi.models import Facilities, Sub_counties, Counties
 
 class Cd4TestingLabs(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    testing_lab_name=models.CharField(max_length=255,unique=True)
+    testing_lab_name = models.CharField(max_length=255, unique=True)
+    mfl_code = models.IntegerField(max_length=255, unique=True)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                    on_delete=models.CASCADE, related_name='+')
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name_plural="CD4 Testing Laboratories"
+        verbose_name_plural = "CD4 Testing Laboratories"
+        ordering = ["testing_lab_name"]
 
     def __str__(self):
         return str(self.testing_lab_name)
@@ -21,9 +29,9 @@ class Cd4TestingLabs(models.Model):
 
 # Create your models here.
 class Cd4traker(models.Model):
-    CHOICES=(
-        ("Negative","Negative"),
-        ("Positive","Positive"),
+    CHOICES = (
+        ("Negative", "Negative"),
+        ("Positive", "Positive"),
     )
     REJECTION_CHOICES = sorted(
         (
@@ -48,14 +56,15 @@ class Cd4traker(models.Model):
     age = models.IntegerField(validators=[MaxValueValidator(150)])
     cd4_count_results = models.IntegerField(blank=True, null=True)
     cd4_percentage = models.IntegerField(blank=True, null=True)
-    tb_lam_results = models.CharField(max_length=9,choices=CHOICES, blank=True, null=True)
-    serum_crag_results = models.CharField(max_length=9,choices=CHOICES, blank=True, null=True)
-    sex = models.CharField(max_length=9,choices=(('M','M'),('F','F')))
-    received_status = models.CharField(max_length=9,choices=(('Accepted','Accepted'),('Rejected','Rejected')))
-    reason_for_rejection = models.CharField(max_length=50,choices=REJECTION_CHOICES, blank=True, null=True)
+    tb_lam_results = models.CharField(max_length=9, choices=CHOICES, blank=True, null=True)
+    serum_crag_results = models.CharField(max_length=9, choices=CHOICES, blank=True, null=True)
+    sex = models.CharField(max_length=9, choices=(('M', 'M'), ('F', 'F')))
+    received_status = models.CharField(max_length=9, choices=(('Accepted', 'Accepted'), ('Rejected', 'Rejected')))
+    reason_for_rejection = models.CharField(max_length=50, choices=REJECTION_CHOICES, blank=True, null=True)
     date_of_testing = models.DateTimeField(blank=True, null=True)
-    reason_for_no_serum_crag = models.CharField(max_length=25,choices=(('Reagents Stock outs','Reagents Stock outs'),('Others','Others')),
-                                blank=True, null=True)
+    reason_for_no_serum_crag = models.CharField(max_length=25, choices=(
+    ('Reagents Stock outs', 'Reagents Stock outs'), ('Others', 'Others')),
+                                                blank=True, null=True)
     testing_laboratory = models.ForeignKey(Cd4TestingLabs, on_delete=models.CASCADE, blank=True, null=True)
 
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
@@ -66,9 +75,9 @@ class Cd4traker(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name_plural="CD4 count tracker"
-        ordering=["-date_dispatched"]
-        unique_together=(('patient_unique_no','facility_name','date_of_collection'),)
+        verbose_name_plural = "CD4 count tracker"
+        ordering = ["-date_dispatched"]
+        unique_together = (('patient_unique_no', 'facility_name', 'date_of_collection'),)
         permissions = [
             ("view_show_results", "Can view show results"),
             ("view_choose_testing_lab", "Can view choose testing lab"),
@@ -77,4 +86,4 @@ class Cd4traker(models.Model):
         ]
 
     def __str__(self):
-        return str(self.facility_name) +" "+ str(self.patient_unique_no) +""+ str(self.date_of_collection)
+        return str(self.facility_name) + " " + str(self.patient_unique_no) + "" + str(self.date_of_collection)

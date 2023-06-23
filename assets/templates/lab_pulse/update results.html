@@ -44,17 +44,49 @@
                                 {{ form.date_of_collection|as_crispy_field }}
                             </div>
                             <div class="col-md-3 mt-2">
+                                {{ form.date_sample_received|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.received_status|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.reason_for_rejection|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
                                 {{ form.date_of_testing|as_crispy_field }}
                             </div>
                             <div class="col-md-3 mt-2">
                                 {{ form.cd4_count_results|as_crispy_field }}
                             </div>
-                            <div class="col-md-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.cd4_percentage|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.serum_crag_results|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.reason_for_no_serum_crag|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.tb_lam_results|as_crispy_field }}
                             </div>
                             <div class="col-md-3 mt-2 pt-3">
                                 <input class="btn btn-success mt-1" type="submit" value="Submit">
                             </div>
+                        </div>
+                    </form>
+                {% elif title == "Update CD4 testing lab details" %}
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        <p> Please add a testing laboratory below and then submit </p>
+                        <div class="col-md-4 mt-2">
+                            {{ form.testing_lab_name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-2">
+                            {{ form.mfl_code|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
                     </form>
                 {% endif %}

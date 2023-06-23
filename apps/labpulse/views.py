@@ -1,10 +1,12 @@
+import math
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import pytz
 from datetime import timezone, timedelta
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect, HttpResponse
@@ -17,11 +19,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
-from apps.cqi.models import Facilities
+from apps.cqi.models import Facilities, Sub_counties, Counties
 from apps.cqi.views import bar_chart
 from apps.data_analysis.views import get_key_from_session_names
 from apps.dqa.models import UpdateButtonSettings
 # from apps.dqa.views import disable_update_buttons
+from apps.labpulse.decorators import group_required
 from apps.labpulse.filters import Cd4trakerFilter
 from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm, Cd4TestingLabForm
 from apps.labpulse.models import Cd4TestingLabs, Cd4traker
@@ -68,6 +71,7 @@ def disable_update_buttons(request, audit_team, relevant_date_field):
 
 # Create your views here.
 @login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
 def choose_testing_lab(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -91,33 +95,165 @@ def choose_testing_lab(request):
 
 
 @login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
 def add_cd4_count(request, pk_lab):
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-
     form = Cd4trakerForm(request.POST or None)
-    # cd4_results=Cd4traker.objects.all()
     selected_lab, created = Cd4TestingLabs.objects.get_or_create(id=pk_lab)
-    if form.is_valid():
-        post = form.save(commit=False)
-        selected_facility = form.cleaned_data['facility_name']
-        post.facility_name = Facilities.objects.filter(name=selected_facility).first()
-        post.testing_laboratory = Cd4TestingLabs.objects.filter(testing_lab_name=selected_lab).first()
-        post.save()
-        messages.error(request, "Record saved successfully!")
-        form = Cd4trakerForm()
+
+    template_name = 'lab_pulse/add_cd4_data.html'
+    context = {
+        "form": form,
+        "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
+    }
+    if request.method == "POST":
+        if form.is_valid():
+            post = form.save(commit=False)
+            received_status = form.cleaned_data['received_status']
+            reason_for_rejection = form.cleaned_data['reason_for_rejection']
+            date_of_collection = form.cleaned_data['date_of_collection']
+            date_sample_received = form.cleaned_data['date_sample_received']
+            date_of_testing = form.cleaned_data['date_of_testing']
+            cd4_count_results = form.cleaned_data['cd4_count_results']
+            serum_crag_results = form.cleaned_data['serum_crag_results']
+            reason_for_no_serum_crag = form.cleaned_data['reason_for_no_serum_crag']
+            cd4_percentage = form.cleaned_data['cd4_percentage']
+            age = form.cleaned_data['age']
+            patient_unique_no = form.cleaned_data['patient_unique_no']
+
+            if date_of_collection > date_sample_received:
+                error_message = f"Collection date is greater than Receipt date!"
+                form.add_error('date_of_collection', error_message)
+                form.add_error('date_sample_received', error_message)
+                return render(request, template_name, context)
+
+            if received_status == 'Rejected':
+                if not reason_for_rejection:
+                    error_message = f"Please specify the reason for rejection."
+                    form.add_error('reason_for_rejection', error_message)
+                    return render(request, template_name, context)
+                if date_of_testing or cd4_count_results or serum_crag_results or reason_for_no_serum_crag:
+                    error_message = "All fields should be empty when the status is 'Rejected'."
+                    if date_of_testing:
+                        form.add_error('date_of_testing', error_message)
+                    if cd4_count_results:
+                        form.add_error('cd4_count_results', error_message)
+                    if serum_crag_results:
+                        form.add_error('serum_crag_results', error_message)
+                    if reason_for_no_serum_crag:
+                        form.add_error('reason_for_no_serum_crag', error_message)
+                    return render(request, template_name, context)
+
+            if received_status == "Accepted":
+                if reason_for_rejection:
+                    error_message = f"Check if this information is correct"
+                    form.add_error('received_status', error_message)
+                    form.add_error('reason_for_rejection', error_message)
+                    return render(request, template_name, context)
+
+                if not date_of_testing:
+                    error_message = f"Provide Testing date"
+                    form.add_error('received_status', error_message)
+                    form.add_error('date_of_testing', error_message)
+                    return render(request, template_name, context)
+
+                if date_of_testing < date_of_collection:
+                    error_message = f"Testing date is less than Collection date!"
+                    form.add_error('date_of_testing', error_message)
+                    form.add_error('date_of_collection', error_message)
+                    return render(request, template_name, context)
+                if date_of_testing < date_sample_received:
+                    error_message = f"Testing date is less than Receipt date!"
+                    form.add_error('date_of_testing', error_message)
+                    form.add_error('date_sample_received', error_message)
+                    return render(request, template_name, context)
+
+                # Check date fields
+                today = timezone.now().date()
+                if date_of_testing > today:
+                    form.add_error('date_of_testing', "Date of testing cannot be in the future.")
+                if date_of_collection > today:
+                    form.add_error('date_of_collection', "Date of collection cannot be in the future.")
+                if date_sample_received > today:
+                    form.add_error('date_sample_received', "Date of sample received cannot be in the future.")
+
+                if form.errors:
+                    # If there are any errors, return the form with the error messages
+                    return render(request, template_name, context)
+
+                if not cd4_count_results:
+                    error_message = f"Provide CD4 count results"
+                    form.add_error('received_status', error_message)
+                    form.add_error('cd4_count_results', error_message)
+                    return render(request, template_name, context)
+
+                if age <= 5 and not cd4_percentage:
+                    error_message = f"Please provide CD4 % values for {patient_unique_no}"
+                    form.add_error('age', error_message)
+                    form.add_error('cd4_percentage', error_message)
+                    return render(request, template_name, context)
+
+                if cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
+                    error_message = f"Select a reason why serum CRAG was not done"
+                    form.add_error('reason_for_no_serum_crag', error_message)
+                    form.add_error('cd4_count_results', error_message)
+                    form.add_error('serum_crag_results', error_message)
+                    return render(request, template_name, context)
+
+                if cd4_count_results > 200 and not serum_crag_results and reason_for_no_serum_crag:
+                    error_message = f"Check if the information is correct"
+                    form.add_error('reason_for_no_serum_crag', error_message)
+                    form.add_error('cd4_count_results', error_message)
+                    form.add_error('serum_crag_results', error_message)
+                    return render(request, template_name, context)
+
+                if serum_crag_results and reason_for_no_serum_crag:
+                    error_message = f"Check if the information is correct"
+                    form.add_error('reason_for_no_serum_crag', error_message)
+                    form.add_error('serum_crag_results', error_message)
+                    return render(request, template_name, context)
+
+            selected_facility = form.cleaned_data['facility_name']
+
+            facility_id = Facilities.objects.get(name=selected_facility)
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    post.county = Counties.objects.get(id=county.counties_id)
+
+            facility_name = Facilities.objects.filter(name=selected_facility).first()
+            post.facility_name = facility_name
+            post.testing_laboratory = Cd4TestingLabs.objects.filter(testing_lab_name=selected_lab).first()
+            post.save()
+            messages.error(request, "Record saved successfully!")
+            # Generate the URL for the redirect
+            url = reverse('add_cd4_count', kwargs={'pk_lab': pk_lab})
+            return redirect(url)
+        else:
+            messages.error(request, f"Record already exists.")
+            render(request, template_name, context)
 
     context = {
         "form": form,
-        "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()}",
-        # "cd4_results":cd4_results,
+        "title": f"Add CD4 results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
 
 
 @login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
 def update_cd4_results(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -127,7 +263,132 @@ def update_cd4_results(request, pk):
     if request.method == "POST":
         form = Cd4trakerForm(request.POST, instance=item)
         if form.is_valid():
-            form.save()
+            context = {
+                "form": form,
+                "title": "Update Results",
+            }
+            template_name = 'lab_pulse/add_cd4_data.html'
+            post = form.save(commit=False)
+            received_status = form.cleaned_data['received_status']
+            reason_for_rejection = form.cleaned_data['reason_for_rejection']
+            date_of_collection = form.cleaned_data['date_of_collection']
+            date_sample_received = form.cleaned_data['date_sample_received']
+            date_of_testing = form.cleaned_data['date_of_testing']
+            cd4_count_results = form.cleaned_data['cd4_count_results']
+            serum_crag_results = form.cleaned_data['serum_crag_results']
+            reason_for_no_serum_crag = form.cleaned_data['reason_for_no_serum_crag']
+            facility_name = form.cleaned_data['facility_name']
+            cd4_percentage = form.cleaned_data['cd4_percentage']
+            age = form.cleaned_data['age']
+            patient_unique_no = form.cleaned_data['patient_unique_no']
+
+            if date_of_collection > date_sample_received:
+                error_message = f"Collection date is greater than Receipt date!"
+                form.add_error('date_of_collection', error_message)
+                form.add_error('date_sample_received', error_message)
+                return render(request, template_name, context)
+
+            if received_status == 'Rejected':
+                if not reason_for_rejection:
+                    error_message = f"Please specify the reason for rejection."
+                    form.add_error('reason_for_rejection', error_message)
+                    return render(request, template_name, context)
+                if date_of_testing or cd4_count_results or serum_crag_results or reason_for_no_serum_crag:
+                    error_message = "All fields should be empty when the status is 'Rejected'."
+                    if date_of_testing:
+                        form.add_error('date_of_testing', error_message)
+                    if cd4_count_results:
+                        form.add_error('cd4_count_results', error_message)
+                    if serum_crag_results:
+                        form.add_error('serum_crag_results', error_message)
+                    if reason_for_no_serum_crag:
+                        form.add_error('reason_for_no_serum_crag', error_message)
+                    return render(request, template_name, context)
+
+            if received_status == "Accepted":
+                if reason_for_rejection:
+                    error_message = f"Check if this information is correct"
+                    form.add_error('received_status', error_message)
+                    form.add_error('reason_for_rejection', error_message)
+                    return render(request, template_name, context)
+
+                if not date_of_testing:
+                    error_message = f"Provide Testing date"
+                    form.add_error('received_status', error_message)
+                    form.add_error('date_of_testing', error_message)
+                    return render(request, template_name, context)
+
+                if date_of_testing < date_of_collection:
+                    error_message = f"Testing date is less than Collection date!"
+                    form.add_error('date_of_testing', error_message)
+                    form.add_error('date_of_collection', error_message)
+                    return render(request, template_name, context)
+                if date_of_testing < date_sample_received:
+                    error_message = f"Testing date is less than Receipt date!"
+                    form.add_error('date_of_testing', error_message)
+                    form.add_error('date_sample_received', error_message)
+                    return render(request, template_name, context)
+
+                # Check date fields
+                today = timezone.now().date()
+                if date_of_testing > today:
+                    form.add_error('date_of_testing', "Date of testing cannot be in the future.")
+                if date_of_collection > today:
+                    form.add_error('date_of_collection', "Date of collection cannot be in the future.")
+                if date_sample_received > today:
+                    form.add_error('date_sample_received', "Date of sample received cannot be in the future.")
+
+                if form.errors:
+                    # If there are any errors, return the form with the error messages
+                    return render(request, template_name, context)
+
+                if not cd4_count_results:
+                    error_message = f"Provide CD4 count results"
+                    form.add_error('received_status', error_message)
+                    form.add_error('cd4_count_results', error_message)
+                    return render(request, template_name, context)
+
+                if age <= 5 and not cd4_percentage:
+                    error_message = f"Please provide CD4 % values for {patient_unique_no}"
+                    form.add_error('age', error_message)
+                    form.add_error('cd4_percentage', error_message)
+                    return render(request, template_name, context)
+
+                if cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
+                    error_message = f"Select a reason why serum CRAG was not done"
+                    form.add_error('reason_for_no_serum_crag', error_message)
+                    form.add_error('cd4_count_results', error_message)
+                    form.add_error('serum_crag_results', error_message)
+                    return render(request, template_name, context)
+
+                if cd4_count_results > 200 and not serum_crag_results and reason_for_no_serum_crag:
+                    error_message = f"Check if the information is correct"
+                    form.add_error('reason_for_no_serum_crag', error_message)
+                    form.add_error('cd4_count_results', error_message)
+                    form.add_error('serum_crag_results', error_message)
+                    return render(request, template_name, context)
+
+                if serum_crag_results and reason_for_no_serum_crag:
+                    error_message = f"Check if the information is correct"
+                    form.add_error('reason_for_no_serum_crag', error_message)
+                    form.add_error('serum_crag_results', error_message)
+                    return render(request, template_name, context)
+
+            facility_id = Facilities.objects.get(name=facility_name)
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    post.county = Counties.objects.get(id=county.counties_id)
+            post.save()
             messages.error(request, "Record updated successfully!")
             return HttpResponseRedirect(request.session['page_from'])
     else:
@@ -155,7 +416,10 @@ def pagination_(request, item_list, record_count=None):
             items = paginator.page(paginator.num_pages)
         return items
 
+
 @login_required(login_url='login')
+@group_required(
+    ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'])
 def show_results(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -173,9 +437,17 @@ def show_results(request):
     cd4_testing_lab_fig = None
     crag_testing_lab_fig = None
     age_distribution_fig = None
+    rejection_summary_fig = None
+    crag_positivity_fig = None
+    facility_crag_positive_fig = None
     list_of_projects_fac = pd.DataFrame()
     crag_pos_df = pd.DataFrame()
     missing_df = pd.DataFrame()
+    rejected_df = pd.DataFrame()
+    cd4_df = pd.DataFrame()
+    crag_df = pd.DataFrame()
+    crag_positivity_df = pd.DataFrame()
+    facility_positive_count = pd.DataFrame()
     cd4_results = Cd4traker.objects.all()
 
     qi_list = Cd4traker.objects.all().order_by('-date_dispatched')
@@ -186,11 +458,14 @@ def show_results(request):
     ######################
     # Hide update button #
     ######################
-    disable_update_buttons(request, qi_list, 'date_dispatched')
+    if qi_list:
+        disable_update_buttons(request, qi_list, 'date_dispatched')
 
     if qi_list:
         list_of_projects = [
-            {'Facility': x.facility_name.name,
+            {'County': x.county.county_name,
+             'Sub-county': x.sub_county.sub_counties,
+             'Facility': x.facility_name.name,
              'MFL CODE': x.facility_name.mfl_code,
              'CCC NO.': x.patient_unique_no,
              'Age': x.age,
@@ -200,6 +475,8 @@ def show_results(request):
              'Date Dispatch': x.date_dispatched,
              'CD4 Count': x.cd4_count_results,
              'Serum Crag': x.serum_crag_results,
+             'Received status': x.received_status,
+             'Rejection reason': x.reason_for_rejection,
              'Testing Laboratory': x.testing_laboratory.testing_lab_name,
              } for x in qi_list
         ]
@@ -213,6 +490,7 @@ def show_results(request):
         list_of_projects_fac['Collection Date'] = pd.to_datetime(list_of_projects_fac['Collection Date']).dt.date
         list_of_projects_fac['Date Dispatch'] = pd.to_datetime(list_of_projects_fac['Date Dispatch']).dt.date
         list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].astype(str)
+        list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].replace(np.datetime64('NaT'), '')
         list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].astype(str)
         list_of_projects_fac['Date Dispatch'] = list_of_projects_fac['Date Dispatch'].astype(str)
         list_of_projects_fac.index = range(1, len(list_of_projects_fac) + 1)
@@ -221,6 +499,7 @@ def show_results(request):
         missing_df = list_of_projects_fac.loc[
             (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['Serum Crag'].isna())]
         crag_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['Serum Crag'] == "Positive")]
+        rejected_df = list_of_projects_fac.loc[(list_of_projects_fac['Received status'] == "Rejected")]
 
         # Create the summary dataframe
         summary_df = pd.DataFrame({
@@ -231,7 +510,8 @@ def show_results(request):
             'Negative CRAG': [(list_of_projects_fac['Serum Crag'] == 'Negative').sum()],
             'Positive CRAG': [(list_of_projects_fac['Serum Crag'] == 'Positive').sum()],
             'Missing CRAG': [
-                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'Serum Crag'].isna()).sum()]
+                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'Serum Crag'].isna()).sum()],
+            'Rejected samples': [(list_of_projects_fac['Received status'] == 'Rejected').sum()],
         })
 
         # Display the summary dataframe
@@ -258,15 +538,18 @@ def show_results(request):
         summary_df = pd.melt(summary_df, id_vars="Testing Laboratory",
                              value_vars=['Total CD4 Count', 'Total CRAG Reports'],
                              var_name="Test done", value_name='values')
-        cd4_df = summary_df[summary_df['Test done'] == "Total CD4 Count"].sort_values("values")
-        crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values")
+
+        cd4_df = summary_df[summary_df['Test done'] == "Total CD4 Count"].sort_values("values").fillna(0)
+        cd4_df = cd4_df[cd4_df['values'] != 0]
+        crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values").fillna(0)
+        crag_df = crag_df[crag_df['values'] != 0]
         crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
                                          "Number of CRAG Reports Processed by Testing Laboratory")
         cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
-                                        "Number of CRAG Reports Processed by Testing Laboratory")
+                                        "Number of CD4 Reports Processed by Testing Laboratory")
 
         age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
-        age_labels = ['<1', '1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
+        age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
                       '50-54', '55-59', '60-64', '65+']
 
         list_of_projects_fac['Age Group'] = pd.cut(list_of_projects_fac['Age'], bins=age_bins, labels=age_labels)
@@ -279,10 +562,93 @@ def show_results(request):
         age_distribution_fig = bar_chart(age_sex_df, "Age Group", "# of sample processed",
                                          "CD4 Count Distribution by Age Band", color="Sex")
 
+        ###################################
+        # REJECTED SAMPLES
+        ###################################
+        # Get the unique rejection reasons excluding NaN
+        rejection_reasons = list_of_projects_fac['Rejection reason'].unique()
+        rejection_reasons = rejection_reasons[~pd.isnull(rejection_reasons)]
+
+        # Create the summary dataframe
+        rejection_summary_df = pd.DataFrame({
+            'Reasons for sample rejection': rejection_reasons,
+            'Number rejected': [(list_of_projects_fac['Rejection reason'] == reason).sum() for reason in
+                                rejection_reasons]
+        }).sort_values("Number rejected")
+        total = rejection_summary_df['Number rejected'].sum()
+        rejection_summary_fig = bar_chart(rejection_summary_df, "Reasons for sample rejection", "Number rejected",
+                                          f"Summary of Reasons for Sample Rejection N={total}")
+
+        ###########################
+        # SERUM CRAG POSITIVITY
+        ###########################
+        # Filter the DataFrame for rows with valid serum crag results
+        filtered_df = list_of_projects_fac[list_of_projects_fac['Serum Crag'].notna()]
+
+        # Calculate the number of serum crag tests done
+        num_tests_done = len(filtered_df)
+
+        # Calculate the number of samples positive for serum crag
+        num_samples_positive = (filtered_df['Serum Crag'] == 'Positive').sum()
+        num_samples_negative = (filtered_df['Serum Crag'] == 'Negative').sum()
+
+        # Calculate the serum crag positivity
+        serum_crag_positivity = round(num_samples_positive / num_tests_done * 100,1)
+
+        # Create the new DataFrame
+        crag_positivity_df = pd.DataFrame({
+            'Number of Serum CRAG Tests Done': [num_tests_done],
+            'Number of Samples Positive': [num_samples_positive],
+            'Number of Samples Negative': [num_samples_negative],
+            'Serum CRAG Positivity (%)': [serum_crag_positivity]
+        })
+        crag_positivity_df = crag_positivity_df.T.reset_index().fillna(0)
+        crag_positivity_df.columns = ['variables', 'values']
+        crag_positivity_df = crag_positivity_df[crag_positivity_df['values'] != 0]
+        crag_positivity_fig = bar_chart(crag_positivity_df, "variables", "values",
+                                        f"Serum CRAG Testing Results", color='variables')
+        ###############################
+        # FACILITY WITH POSITIVE CRAG #
+        ###############################
+        # Filter the DataFrame for rows where Serum Crag is positive
+        positive_crag_df = list_of_projects_fac[list_of_projects_fac['Serum Crag'] == 'Positive']
+
+        # Group by Facility and count the number of positive serum CRAG results
+        facility_positive_count = positive_crag_df.groupby('Facility')['Serum Crag'].count().reset_index().fillna(0)
+
+        # Rename the column for clarity
+        facility_positive_count.columns = ['Facilities', 'Number of Positive Serum CRAG']
+        facility_positive_count = facility_positive_count.sort_values("Number of Positive Serum CRAG", ascending=False)
+        facility_positive_count = facility_positive_count[facility_positive_count['Number of Positive Serum CRAG'] != 0]
+        # top twenty facilities
+        if facility_positive_count.shape[0] > 20:
+            facility_positive_count = facility_positive_count.head(20)
+            facility_crag_positive_fig = bar_chart(facility_positive_count, "Facilities",
+                                                   "Number of Positive Serum CRAG",
+                                                   f"Top Twenty Facilities with Positive Serum CRAG Results")
+        else:
+            facility_crag_positive_fig = bar_chart(facility_positive_count, "Facilities",
+                                                   "Number of Positive Serum CRAG",
+                                                   f"Number of Positive Serum CRAG Results by Facility")
+
     request.session['list_of_projects_fac'] = list_of_projects_fac.to_dict()
-    request.session['missing_df'] = missing_df.to_dict()
+
+    if missing_df.shape[0] > 0:
+        request.session['missing_df'] = missing_df.to_dict()
+    else:
+        if "missing_df" in request.session:
+            del request.session['missing_df']
     if crag_pos_df.shape[0] > 0:
         request.session['crag_pos_df'] = crag_pos_df.to_dict()
+    else:
+        if "crag_pos_df" in request.session:
+            del request.session['crag_pos_df']
+
+    if rejected_df.shape[0] > 0:
+        request.session['rejected_df'] = rejected_df.to_dict()
+    else:
+        if "rejected_df" in request.session:
+            del request.session['rejected_df']
     # Convert dict_items into a list
     dictionary = get_key_from_session_names(request)
     # list_of_projects_fac['Facility'] = list_of_projects_fac['facility'].astype(str).str.split(" ").str[0]
@@ -295,12 +661,17 @@ def show_results(request):
         "crag_testing_lab_fig": crag_testing_lab_fig,
         "cd4_testing_lab_fig": cd4_testing_lab_fig,
         "age_distribution_fig": age_distribution_fig,
+        "rejection_summary_fig": rejection_summary_fig,
+        "crag_positivity_fig": crag_positivity_fig,
+        "facility_crag_positive_fig": facility_crag_positive_fig,
+        "cd4_df": cd4_df, "crag_df": crag_df, "crag_positivity_df": crag_positivity_df,
+        "facility_positive_count": facility_positive_count
     }
     return render(request, 'lab_pulse/show results.html', context)
 
 
 def generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch, unique_no, age,
-                    cd4_count, crag, sex, y):
+                    cd4_count, crag, sex, reason_for_rejection, testing_laboratory, y):
     # Change page size if needed
     if y < 0:
         pdf.showPage()
@@ -322,7 +693,7 @@ def generate_report(request, pdf, name, mfl_code, date_collection, date_testing,
     # Rectangles
     pdf.rect(x=10, y=y, width=490, height=70, stroke=1, fill=0)
     pdf.rect(x=10, y=y, width=70, height=70, stroke=1, fill=0)
-    pdf.rect(x=10, y=y, width=140, height=70, stroke=1, fill=0)
+    pdf.rect(x=10, y=y, width=135, height=70, stroke=1, fill=0)
     pdf.rect(x=10, y=y, width=210, height=70, stroke=1, fill=0)
     pdf.rect(x=10, y=y, width=280, height=70, stroke=1, fill=0)
     pdf.rect(x=10, y=y, width=350, height=70, stroke=1, fill=0)
@@ -343,12 +714,18 @@ def generate_report(request, pdf, name, mfl_code, date_collection, date_testing,
     pdf.setFont("Helvetica", 7)
     y_position = y + 24
     pdf.drawString(110, y_position, f"{age}")
-    if int(cd4_count) <= 200:
+    if math.isnan(cd4_count):
         pdf.setFont("Helvetica-Bold", 7)
-        pdf.drawString(165, y_position, f"{cd4_count}")
+        pdf.setFillColor(colors.red)
+        pdf.drawString(165, y_position, "Rejected")
+        pdf.setFont("Helvetica", 3)
+        pdf.drawString(145, y_position - 10, f"(Reason: {reason_for_rejection})")
+    elif int(cd4_count) <= 200:
+        pdf.setFont("Helvetica-Bold", 7)
+        pdf.drawString(165, y_position, str(int(cd4_count)))
     else:
         pdf.setFont("Helvetica", 7)
-        pdf.drawString(165, y_position, f"{cd4_count}")
+        pdf.drawString(165, y_position, str(int(cd4_count)))
     pdf.setFont("Helvetica", 7)
     if crag is not None and "pos" in crag.lower():
         pdf.setFont("Helvetica-Bold", 7)
@@ -372,6 +749,11 @@ def generate_report(request, pdf, name, mfl_code, date_collection, date_testing,
 
     pdf.drawString(22, y_position, f"{unique_no}")
     y -= 50
+
+    pdf.setFont("Helvetica", 4)
+    pdf.setFillColor(colors.grey)
+    pdf.drawString((letter[0] / 10), y + 0.2 * inch,
+                   f"Testing laboratory : {testing_laboratory}")
     if y > 30:
         pdf.setDash(1, 2)  # Reset the line style
         pdf.line(x1=10, y1=y, x2=500, y2=y)
@@ -392,6 +774,7 @@ def generate_report(request, pdf, name, mfl_code, date_collection, date_testing,
     y -= 50
 
     return y
+
 
 class GeneratePDF(View):
     def get(self, request):
@@ -427,19 +810,26 @@ class GeneratePDF(View):
             sex = data['Sex']
             cd4_count = data['CD4 Count']
             crag = data['Serum Crag']
-            # crag = data['Serum Crag']
+            reason_for_rejection = data['Rejection reason']
+            testing_laboratory = data['Testing Laboratory']
             y = generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch,
-                                unique_no, age, cd4_count, crag, sex, y)
+                                unique_no, age, cd4_count, crag, sex, reason_for_rejection, testing_laboratory, y)
 
         pdf.save()
         return response
 
+
 @login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
 def add_testing_lab(request):
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    testing_labs = Cd4TestingLabs.objects.all()
+    if testing_labs:
+        disable_update_buttons(request, testing_labs, 'date_created')
 
     form = Cd4TestingLabForm(request.POST or None)
     if form.is_valid():
@@ -457,5 +847,29 @@ def add_testing_lab(request):
     context = {
         "form": form,
         "title": f"Add CD4 Testing Lab",
+        "testing_labs": testing_labs,
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
+
+
+@login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
+def update_testing_labs(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = Cd4TestingLabs.objects.get(id=pk)
+    if request.method == "POST":
+        form = Cd4TestingLabForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.error(request, "Record updated successfully!")
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = Cd4TestingLabForm(instance=item)
+    context = {
+        "form": form,
+        "title": "Update CD4 testing lab details",
+    }
+    return render(request, 'lab_pulse/update results.html', context)

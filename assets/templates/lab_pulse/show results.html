@@ -19,39 +19,77 @@
                 </ul>
             {% endif %}
             <div class="container-fluid py-3">
-                    <div class="col-md-12 alert alert-primary text-center">
-                        <h4>Customize your search or filter below</h4>
-                    </div>
-
+                <div class="col-md-12 alert alert-primary text-center">
+                    <h4>Customize your search or filter below</h4>
+                </div>
                 <div class="mt-3">
                     <form id="filter-form" class="row g-3" autocomplete="off">
-                        <div class="col-md-2">
-                            {{ my_filters.form.patient_unique_no|as_crispy_field }}
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.testing_laboratory|as_crispy_field }}
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.facility_name|as_crispy_field }}
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.county|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.sub_county|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.patient_unique_no|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.sex|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.age_lte|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.age_gte|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.received_status|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.serum_crag_results|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.cd4_count_results_lte|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.cd4_count_results_gte|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.reason_for_rejection|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.cd4_percentage_lte|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.cd4_percentage_gte|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.tb_lam_results|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.start_date|as_crispy_field }}
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.end_date|as_crispy_field }}
                         </div>
-                        <div class="row">
-                            {#                            <div class="col-md-1 mt-4 pt-2">#}
-                            <div class="col mb-2 mt-3">
-                                <button class="btn btn-outline-primary" type="submit">search</button>
+                        <div class="col-12">
+                            <div class="row">
+                                <div class="col-12 col-md-4">
+                                    <button class="btn btn-outline-primary" type="submit">Search</button>
+                                </div>
                             </div>
                         </div>
                     </form>
                 </div>
-
                 {% if qi_list %}
                     <div class="row">
-                        <div class="col mb-2">
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
                             <form id="record-form" method="GET" action="{% url 'show_results' %}">
                                 <!-- Add the dropdown menu or input field to select the number of records -->
                                 <div class="form-group">
@@ -77,43 +115,94 @@
                                 </div>
                             </form>
                         </div>
-                        <div class="col mb-2">
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
                             <a href="{% url 'download_csv' dictionary.list_of_projects_fac "cd4 results" %}"
-                               class="btn btn-secondary" role="button">
+                               class="btn btn-secondary btn-block" role="button">
                                 All records <i class="fas fa-download"></i>
                             </a>
                         </div>
                         {% if title %}
-
+                            <!-- Code for title -->
                         {% endif %}
                         {% if dictionary.crag_pos_df %}
-                            <div class="col mb-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
                                 <a href="{% url 'download_csv' dictionary.crag_pos_df "serum CRAG positive" %}"
-                                   class="btn btn-secondary" role="button">
+                                   class="btn btn-secondary btn-block" role="button">
                                     Positive CRAG <i class="fas fa-download"></i>
                                 </a>
                             </div>
                         {% endif %}
-                        <div class="col mb-2">
-                            <a href="{% url 'download_csv' dictionary.missing_df "missing serum CRAG" %}"
-                               class="btn btn-secondary" role="button">
-                                Missing CRAG <i class="fas fa-download"></i>
-                            </a>
-                        </div>
-                        <div class="col mb-2">
-                            <a href="{% url 'generate_cd4_report_pdf' %}" class="btn btn-warning mb-2" role="button">
-                                Download PDF</a>
+                        {% if dictionary.missing_df %}
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                <a href="{% url 'download_csv' dictionary.missing_df "missing serum CRAG" %}"
+                                   class="btn btn-secondary btn-block" role="button"> Missing CRAG
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                        {% endif %}
+                        {% if dictionary.rejected_df %}
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                <a href="{% url 'download_csv' dictionary.rejected_df "Rejected samples" %}"
+                                   class="btn btn-secondary btn-block" role="button">
+                                    Rejected samples <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                        {% endif %}
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                            <a href="{% url 'generate_cd4_report_pdf' %}" class="btn btn-warning btn-block mb-2"
+                               role="button"> Download PDF</a>
                         </div>
                     </div>
                     {% if title == "Results" %}
                         <hr>
                         <h4 class="fw-bold text-primary text-center"> Summary </h4>
                         <hr>
-                        <div>
-                            {{ cd4_summary_fig|safe }}
-                            {{ age_distribution_fig|safe }}
-                            {{ cd4_testing_lab_fig|safe }}
-                            {{ crag_testing_lab_fig|safe }}
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-12">
+                                    {{ cd4_summary_fig|safe }}
+                                </div>
+                            </div>
+                            {% if dictionary.rejected_df %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        {{ rejection_summary_fig|safe }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            <div class="row">
+                                <div class="col-12">
+                                    {{ age_distribution_fig|safe }}
+                                </div>
+                            </div>
+                            {% if not cd4_df.empty %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        {{ cd4_testing_lab_fig|safe }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if not crag_df.empty %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        {{ crag_testing_lab_fig|safe }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if not crag_positivity_df.empty %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        {{ crag_positivity_fig|safe }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if not facility_positive_count.empty %}
+                                <div class="row">
+                                    <div class="col-12">
+                                        {{ facility_crag_positive_fig|safe }}
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
                         <hr>
                         <h4 class="fw-bold text-primary text-center"> {{ title }}</h4>
@@ -124,6 +213,7 @@
                                 <th></th>
                                 <th style="font-size: x-small"> Patient Unique No.</th>
                                 <th style="font-size: x-small"> Facility Name</th>
+                                <th style="font-size: x-small"> Age</th>
                                 <th style="font-size: x-small"> CD4 Count Results</th>
                                 <th style="font-size: x-small"> Serum CRAG Results</th>
                                 <th style="font-size: x-small"> Collection Date</th>
@@ -131,8 +221,8 @@
                                 <th style="font-size: x-small"> Dispatch Date</th>
                                 <th style="font-size: x-small"> Results Dispatched by</th>
                                 {% for result in qi_list %}
-                                    {% if forloop.last %}
-                                        {% if user.is_authenticated %}
+                                    {% if user.is_authenticated %}
+                                        {% if forloop.counter == 1 %}
                                             {% if user.id == result.created_by.id or request.user.is_superuser %}
                                                 {% if not result.hide_update_button or request.user.is_superuser %}
                                                     <th style="font-size: x-small"></th>
@@ -150,27 +240,102 @@
                                     <td>
                                         {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
                                             <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
+                                            <br>
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-warning">Sex: {{ result.sex }}</span>
+                                        {% elif result.cd4_count_results is None %}
+                                            <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
+                                            <br>
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-warning">Sex: {{ result.sex }}</span>
+                                        {% elif result.serum_crag_results == "Positive" %}
+                                            <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
+                                            <br>
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-warning">Sex: {{ result.sex }}</span>
                                         {% else %}
-                                            {{ result.patient_unique_no }}
+                                            <p>{{ result.patient_unique_no }}</p>
+                                            <br>
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-warning">Sex: {{ result.sex }}</span>
                                         {% endif %}
                                     </td>
-                                    <td> {{ result.facility_name }} </td>
-                                    <td> {{ result.cd4_count_results }} </td>
+                                    <td>
+                                        {{ result.facility_name }}
+                                        <br>
+                                        <span style="font-size: 8px"
+                                              class="badge alert-warning">County: {{ result.county }}</span>
+                                        <br>
+                                        <span style="font-size: 8px"
+                                              class="badge alert-warning">Sub-County: {{ result.sub_county }}</span>
+
+                                    </td>
+                                    <td> {{ result.age }} </td>
+                                    <td>
+                                        {% if result.cd4_count_results is None %}
+                                            <p class="fw-bold text-danger">Rejected</p>
+                                            <p class="fw-bold text-danger"
+                                               style="font-size: xx-small">{{ result.reason_for_rejection }}</p>
+                                        {% else %}
+                                            {{ result.cd4_count_results }}
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
                                             <p class="fw-bold text-danger">Missing</p>
+                                            <br>
+                                            {% if result.tb_lam_results == "Positive" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% elif result.tb_lam_results == "Negative" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% else %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% endif %}
+                                        {% elif result.serum_crag_results is None %}
+
+                                        {% elif result.serum_crag_results == "Positive" %}
+                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>
+                                            {% if result.tb_lam_results == "Positive" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% elif result.tb_lam_results == "Negative" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% else %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% endif %}
                                         {% else %}
-                                            {{ result.serum_crag_results }}
+                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>
+                                            {% if result.tb_lam_results == "Positive" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% elif result.tb_lam_results == "Negative" %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% else %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                            {% endif %}
                                         {% endif %}
                                     </td>
                                     <td> {{ result.date_of_collection|date:"Y-m-d" }} </td>
-                                    <td> {{ result.date_of_testing|date:"Y-m-d" }} </td>
+                                    <td>
+                                        {{ result.date_of_testing|date:"Y-m-d" }}
+                                        <br>
+                                        <span style="font-size: 8px"
+                                              class="badge alert-warning">Testing Lab: {{ result.testing_laboratory }}</span>
+                                    </td>
                                     <td> {{ result.date_dispatched|date:"Y-m-d" }} </td>
                                     <td> {{ result.created_by.first_name|title }}
                                         {{ result.created_by.last_name|title }}
                                         {{ result.created_by.phone_number }}
                                     </td>
                                     {% if user.is_authenticated %}
+
                                         {% if user.id == result.created_by.id or request.user.is_superuser %}
                                             {% if not result.hide_update_button or request.user.is_superuser %}
                                                 <td>

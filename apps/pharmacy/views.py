@@ -260,7 +260,6 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
                     form.add_error('currently_in_use', error_message)
                     return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
 
-
             if currently_in_use == 'No':
                 if comments == "":
                     error_message = f"Please specify why {register_name} is not in use at {facility_name}"
@@ -305,7 +304,6 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
                         form.add_error('date_report_submitted', error_message)
                     return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
 
-
             # Try to save the form data
             try:
                 with transaction.atomic():
@@ -317,7 +315,8 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
 
                     # Set the quarter_year field of the form data
                     post.quarter_year = period
-                    register_name, created = Registers.objects.get_or_create(register_name=request.session['register_name'])
+                    register_name, created = Registers.objects.get_or_create(
+                        register_name=request.session['register_name'])
                     post.register_name = register_name
                     # post.register_name = request.session['register_name']
                     post.date_of_interview = selected_date
@@ -360,6 +359,7 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
     }
     return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
 
+
 def generate_descriptions(report_name):
     if report_name == "stock_cards":
         descriptions = [
@@ -373,20 +373,10 @@ def generate_descriptions(report_name):
             'delivery notes?',
             'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
         ]
-    # elif report_name == "quantity_delivered":
-    #     descriptions = [
-    #         'How many units were supplied by MEDS/KEMSA to this facility during the period under review from '
-    #         'delivery notes?',
-    #         'What quantity delivered from MEDS/KEMSA was captured in the bin card?'
-    #     ]
     elif report_name == "beginning_balance":
         descriptions = [
             'What was the beginning balance? (At the start of the review period)',
         ]
-    # elif report_name == "unit_received":
-    #     descriptions = [
-    #         'How many units were supplied by MEDS/KEMSA to this facility during the period under review?',
-    #     ]
     elif report_name == "s11_form_availability":
         descriptions = [
             'Is there a corresponding S11 form at this facility for each of the positive adjustment transactions?',
@@ -484,6 +474,7 @@ def create_inventory_formset(report_name, request, initial_data):
     )
 
     return formset, inventory_form_set, model_class, form_class
+
 
 def choose_facilities_inventory(request):
     if not request.user.first_name:
@@ -765,6 +756,7 @@ def add_inventory(request, report_name=None, quarter=None, year=None, pk=None, d
     }
     return render(request, 'pharmacy/add_system_assessment.html', context)
 
+
 @login_required(login_url='login')
 def create_inventory_work_plans(request, pk, report_name):
     if not request.user.first_name:
@@ -838,7 +830,7 @@ def create_inventory_work_plans(request, pk, report_name):
 def show_work_plan(request):
     if not request.user.first_name:
         return redirect("profile")
-    objects={}
+    objects = {}
     # Get the query parameters from the URL
     quarter_form_initial = request.GET.get('quarter_form')
     year_form_initial = request.GET.get('year_form')
@@ -922,8 +914,8 @@ def show_work_plan(request):
             # Append the filtered objects to the list
             filtered_data.extend(objects)
 
-        work_plans = WorkPlan.objects.filter(facility_name_id=selected_facility.id ,
-                quarter_year__id=quarter_year.id)
+        work_plans = WorkPlan.objects.filter(facility_name_id=selected_facility.id,
+                                             quarter_year__id=quarter_year.id)
         field_values = []
 
         # Iterate over the work plans
@@ -951,7 +943,7 @@ def show_work_plan(request):
         if work_plans:
             today = timezone.now().date()
             for workplan in work_plans:
-                work_plans.progress=0
+                work_plans.progress = 0
                 work_plans.progress = (workplan.complete_date - today).days
     context = {
         'form': form,
@@ -964,9 +956,9 @@ def show_work_plan(request):
         "year_form": year_form,
         "facility_form": facility_form,
         "quarter_form": quarter_form,
-        "selected_facility":selected_facility,
+        "selected_facility": selected_facility,
         # "quarter_year":quarter_year.astype(str).split(" ")[0]+"-"+quarter_year.split(" ")[-1][-2:]
-        "quarter_year":selected_quarter_year
+        "quarter_year": selected_quarter_year
     }
     return render(request, 'pharmacy/show_commodity_management.html', context)
 
@@ -992,7 +984,7 @@ def add_new_row(a, division_row, title):
     return a
 
 
-def divide_rows(a,num_index, deno_index):
+def divide_rows(a, num_index, deno_index):
     division_row = pd.Series(index=a.columns)
 
     # Iterate over the columns
@@ -1006,6 +998,7 @@ def divide_rows(a,num_index, deno_index):
         else:
             division_row[col] = 0
     return division_row
+
 
 def calculate_supply_chain_kpis(df, expected_description_order):
     # Replace values in the DataFrame
@@ -1038,7 +1031,7 @@ def calculate_supply_chain_kpis(df, expected_description_order):
 
     # Concatenate a, df4, df5 into a single DataFrame 'a'
     a = pd.concat([a, df4, df5])
-    division_row = divide_rows(a,4, 5)
+    division_row = divide_rows(a, 4, 5)
 
     a = add_new_row(a, division_row, "Stock balance accuracy")
 
@@ -1075,7 +1068,7 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     a = pd.concat([a, df13, df12])
 
     # Create a new row for the division 'Delivered in full'
-    division_row = divide_rows(a,15, 14)
+    division_row = divide_rows(a, 15, 14)
 
     a = add_new_row(a, division_row, "Delivered in full")
 
@@ -1169,7 +1162,6 @@ def show_inventory(request):
     elif quarter_form_initial != {}:
         selected_facility = facility_form_initial["name"]
         quarter_year = quarter_form_initial['quarter']
-
 
     models_to_check = {
         "stock_cards": StockCards,
@@ -1316,7 +1308,7 @@ def update_inventory(request, pk, model):
             instance.date_of_interview = date_of_interview
             instance.save()
 
-            messages.success(request,"peter:::::::::::::Record updated successfully!")
+            messages.success(request, "Record updated successfully!")
             # Set the initial values for the forms
             quarter_form_initial = {'quarter': item.quarter_year.quarter_year}
             year_form_initial = {'year': item.quarter_year.year}
@@ -1372,7 +1364,6 @@ def show_commodity_records(request):
         selected_facility = facility_form_initial["name"]
         quarter_year = quarter_form_initial['quarter']
 
-
     models_to_check = {
         "stock_cards": StockCards,
         "unit_supplied": UnitSupplied,
@@ -1417,12 +1408,11 @@ def show_commodity_records(request):
 
 @login_required(login_url='login')
 def update_pharmacy_records(request, pk, register_name):
-# def update_inventory(request, pk):
+    # def update_inventory(request, pk):
     if not request.user.first_name:
         return redirect("profile")
 
-
-    commodity_questions={}
+    commodity_questions = {}
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
         # Initialize the commodity_questions dictionary
@@ -1477,10 +1467,10 @@ def update_pharmacy_records(request, pk, register_name):
                 "date when the commodities were last received."
             ]
         }
-        request.session['commodity_questions']=commodity_questions
+        request.session['commodity_questions'] = commodity_questions
     item = PharmacyRecords.objects.get(id=pk)
     request.session['date_of_interview'] = item.date_of_interview.strftime('%Y-%m-%d')  # Convert date to string
-    facility_name=item.facility_name
+    facility_name = item.facility_name
 
     if request.method == "POST":
         form = PharmacyRecordsForm(request.POST, instance=item)
@@ -1493,7 +1483,7 @@ def update_pharmacy_records(request, pk, register_name):
                 "title": "Update commodity records/registers",
                 "commodity_questions": commodity_questions,
             }
-            template_name='pharmacy/update records.html'
+            template_name = 'pharmacy/update records.html'
             # for form in form.forms:
             register_available = form.cleaned_data.get('register_available')
             currently_in_use = form.cleaned_data.get('currently_in_use')
@@ -1579,7 +1569,7 @@ def update_pharmacy_records(request, pk, register_name):
     context = {
         "form": form,
         "title": "Update commodity records/registers",
-        "commodity_questions":commodity_questions,
+        "commodity_questions": commodity_questions,
     }
     return render(request, 'pharmacy/update records.html', context)
 
@@ -1634,20 +1624,20 @@ def update_workplan(request, pk):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = WorkPlan.objects.get(id=pk)
     foreign_keys = [
-            'model_name',
-            'beginning_balance',
-            'pharmacy_records',
-            'unit_supplied',
-            'positive_adjustments',
-            'unit_issued',
-            'negative_adjustment',
-            'expired_units',
-            'expired',
-            'expiry_tracking',
-            's11_form_availability',
-            's11_form_endorsed',
-            'stock_management',
-        ]
+        'model_name',
+        'beginning_balance',
+        'pharmacy_records',
+        'unit_supplied',
+        'positive_adjustments',
+        'unit_issued',
+        'negative_adjustment',
+        'expired_units',
+        'expired',
+        'expiry_tracking',
+        's11_form_availability',
+        's11_form_endorsed',
+        'stock_management',
+    ]
 
     for key in foreign_keys:
         try:
@@ -1695,7 +1685,7 @@ def update_workplan(request, pk):
 
             instance.save()
 
-            messages.success(request,"peter:::::::::::::Record updated successfully!")
+            messages.success(request, "peter:::::::::::::Record updated successfully!")
             # Set the initial values for the forms
             quarter_form_initial = {'quarter': item.quarter_year.quarter_year}
             year_form_initial = {'year': item.quarter_year.year}
@@ -1736,7 +1726,8 @@ def add_audit_team_pharmacy(request, pk, quarter_year):
                 messages.error(request, error_msg)
     else:
         form = PharmacyAuditTeamForm()
-    audit_team_pharmacy = PharmacyAuditTeam.objects.filter(facility_name__id=pk, quarter_year__quarter_year=quarter_year)
+    audit_team_pharmacy = PharmacyAuditTeam.objects.filter(facility_name__id=pk,
+                                                           quarter_year__quarter_year=quarter_year)
     # disable_update_buttons(request, audit_team_pharmacy)
     context = {
         "form": form,
@@ -1812,7 +1803,7 @@ def show_audit_team_pharmacy(request):
         year_suffix = selected_year[-2:]
         quarter_year = f"{selected_quarter}-{year_suffix}"
         audit_team = PharmacyAuditTeam.objects.filter(facility_name__id=selected_facility.id,
-                                              quarter_year__quarter_year=quarter_year)
+                                                      quarter_year__quarter_year=quarter_year)
         if audit_team:
             disable_update_buttons(request, audit_team)
         else:
@@ -1822,7 +1813,7 @@ def show_audit_team_pharmacy(request):
         selected_quarter = quarter_form_initial['quarter']
         selected_facility = facility_form_initial['name']
         audit_team = PharmacyAuditTeam.objects.filter(facility_name=Facilities.objects.get(name=selected_facility),
-                                              quarter_year__quarter_year=selected_quarter,module="Pharmacy")
+                                                      quarter_year__quarter_year=selected_quarter, module="Pharmacy")
         if audit_team:
             disable_update_buttons(request, audit_team)
 

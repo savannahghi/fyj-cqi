@@ -2485,7 +2485,7 @@ def viral_load(request):
                             # Replace None values with "Missing"
                             df['Age'] = np.where(df['Age'].isna(), "Missing age", df['Age'])
                             all_results = pd.crosstab(df['Sex'], [df['Age']], margins=True)
-                            all_results_df = use_availble_columns(all_results)
+                            all_results_df = use_availble_columns(all_results).fillna(0)
                             dfsss = pd.crosstab(df['Sub County'], [df['Age']], margins=True)
                             dfsss = use_availble_columns(dfsss)
                             subcounty_ = dfsss.sort_values('All').reset_index()
@@ -2493,7 +2493,9 @@ def viral_load(request):
                                 preprocess_viral_load_data(df)
 
                             newdf_HVL_age_sex, hvl_linelist, hvl_linelist_facility = prepare_age_sex_df(df, newdf_HVL)
+                            hvl_linelist=hvl_linelist.fillna(0)
                             newdf_llv_age_sex, llv_linelist, llv_linelist_facility = prepare_age_sex_df(df, newdf_llv)
+                            llv_linelist = llv_linelist.fillna(0)
                             newdf_llv_age_sex = newdf_llv_age_sex.rename(columns={"HVL": "LLV"})
                             llv_linelist_facility = llv_linelist_facility.rename(
                                 columns={"STF": "# of LLV (200-999 cp/ml)"})
@@ -2507,7 +2509,7 @@ def viral_load(request):
                             # laboratory V.L within the past 12 months #
                             ################################################################################
 
-                            facility_less_1000_df = convert_pivot_to_dataframe(facility_vl_uptake)
+                            facility_less_1000_df = convert_pivot_to_dataframe(facility_vl_uptake).fillna(0)
                             ################################################################################
                             # DSD: TX _PVLS (DENOMINATOR)
                             # Number of adults and pediatrics ART patients with a viral load V.L documented
@@ -2515,7 +2517,7 @@ def viral_load(request):
                             ################################################################################
 
                             vl_done = new_df.loc[(new_df['months since last VL'] <= 12)]
-                            vl_done_df = convert_pivot_to_dataframe(make_crosstab_facility_age(vl_done))
+                            vl_done_df = convert_pivot_to_dataframe(make_crosstab_facility_age(vl_done)).fillna(0)
                             ######################
                             # Viral suppression  #
                             ######################
@@ -2536,13 +2538,13 @@ def viral_load(request):
                             # Sub county Viral suppression  #
                             #################################
                             subcounty_vl = handle_facility_and_subcounty(new_df, ['County', "Sub County"])
-                            subcounty_vl = subcounty_vl.reset_index()
+                            subcounty_vl = subcounty_vl.reset_index().fillna(0)
 
                             ###############################
                             # Facility Viral suppression  #
                             ###############################
                             facility_vl = handle_facility_and_subcounty(new_df, ["Facility Name"])
-                            facility_vl = facility_vl.reset_index()
+                            facility_vl = facility_vl.reset_index().fillna(0)
 
                             # summarize data by groupby
                             monthly_vl_trend = \
@@ -2551,7 +2553,7 @@ def viral_load(request):
                             monthly_trend_fig = monthly_trend(monthly_vl_trend,
                                                               "Monthly VL uptake trend.      Total sample collected and "
                                                               "processed ", "VL sample taken")
-                            subcounty_fig = subcounty_[subcounty_['Sub County'] != "All"]
+                            subcounty_fig = subcounty_[subcounty_['Sub County'] != "All"].fillna(0)
                             subcounty_fig = hvl_trend(subcounty_fig, "Sub County", "All",
                                                       title=f"Viral load samples done per Sub County N = "
                                                             f"{sum(subcounty_fig['All'])}",

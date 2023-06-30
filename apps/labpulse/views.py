@@ -14,6 +14,8 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
+import plotly.express as px
+from plotly.offline import plot
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
@@ -22,12 +24,12 @@ from reportlab.pdfgen import canvas
 from apps.cqi.models import Facilities, Sub_counties, Counties
 from apps.cqi.views import bar_chart
 from apps.data_analysis.views import get_key_from_session_names
-from apps.dqa.models import UpdateButtonSettings
+
 # from apps.dqa.views import disable_update_buttons
 from apps.labpulse.decorators import group_required
 from apps.labpulse.filters import Cd4trakerFilter
-from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm, Cd4TestingLabForm
-from apps.labpulse.models import Cd4TestingLabs, Cd4traker
+from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm, Cd4TestingLabForm, LabPulseUpdateButtonSettingsForm
+from apps.labpulse.models import Cd4TestingLabs, Cd4traker, LabPulseUpdateButtonSettings
 
 
 def disable_update_buttons(request, audit_team, relevant_date_field):
@@ -35,38 +37,58 @@ def disable_update_buttons(request, audit_team, relevant_date_field):
     # DISABLE UPDATE BUTTONS AFTER A SPECIFIED TIME AND DAYS AGO #
     ##############################################################
     local_tz = pytz.timezone("Africa/Nairobi")
-    settings = UpdateButtonSettings.objects.first()
-    disable_button = settings.disable_all_dqa_update_buttons
-    # DISABLE ALL DQA UPDATE BUTTONS
-    if disable_button:
-        for data in audit_team:
-            data.hide_update_button = True
-    else:
-        try:
-            hide_button_time = settings.hide_button_time
-            days_to_keep_enabled = settings.days_to_keep_update_button_enabled
-            now = timezone.now().astimezone(local_tz)
-            enabled_datetime = now - timedelta(days=days_to_keep_enabled)
+    settings = LabPulseUpdateButtonSettings.objects.first()
+    try:
+        disable_button = settings.disable_all_dqa_update_buttons
+        # DISABLE ALL DQA UPDATE BUTTONS
+        if disable_button:
             for data in audit_team:
-                try:
-                    relevant_date = getattr(data, relevant_date_field).astimezone(local_tz).date()
-                except AttributeError:
-                    relevant_date = getattr(data, relevant_date_field).astimezone(local_tz).date()
-                hide_button_datetime = timezone.make_aware(datetime.combine(relevant_date, hide_button_time))
-                if relevant_date == now.date() and now >= hide_button_datetime:
-                    data.hide_update_button = True
-                elif relevant_date >= enabled_datetime.date():
-                    data.hide_update_button = False
-                elif now >= hide_button_datetime:
-                    data.hide_update_button = True
-                else:
-                    data.hide_update_button = False
-        except AttributeError:
-            messages.info(request,
-                          "You have not yet set the time to disable the DQA update button. Please click on the 'Change "
-                          "DQA Update Time' button on the left navigation bar to set the time or contact an "
-                          "administrator to set it for you.")
+                data.hide_update_button = True
+        else:
+            try:
+                hide_button_time = settings.hide_button_time
+                days_to_keep_enabled = settings.days_to_keep_update_button_enabled
+                now = timezone.now().astimezone(local_tz)
+                enabled_datetime = now - timedelta(days=days_to_keep_enabled)
+                for data in audit_team:
+                    try:
+                        relevant_date = getattr(data, relevant_date_field).astimezone(local_tz).date()
+                    except AttributeError:
+                        relevant_date = getattr(data, relevant_date_field).astimezone(local_tz).date()
+                    hide_button_datetime = timezone.make_aware(datetime.combine(relevant_date, hide_button_time))
+                    if relevant_date == now.date() and now >= hide_button_datetime:
+                        data.hide_update_button = True
+                    elif relevant_date >= enabled_datetime.date():
+                        data.hide_update_button = False
+                    elif now >= hide_button_datetime:
+                        data.hide_update_button = True
+                    else:
+                        data.hide_update_button = False
+            except AttributeError:
+                messages.info(request,
+                              "You have not yet set the time to disable the DQA update button. Please click on the 'Change "
+                              "DQA Update Time' button on the left navigation bar to set the time or contact an "
+                              "administrator to set it for you.")
+    except AttributeError:
+        messages.info(request,
+                      "You have not yet set the time to disable the DQA update button. Please click on the 'Change "
+                      "labPulse Update Time' button on the left navigation bar to set the time or contact an "
+                      "administrator to set it for you.")
     return redirect(request.path_info)
+
+def lab_pulse_update_button_settings(request):
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    update_settings = LabPulseUpdateButtonSettings.objects.first()
+    if request.method == 'POST':
+        form = LabPulseUpdateButtonSettingsForm(request.POST, instance=update_settings)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = LabPulseUpdateButtonSettingsForm(instance=update_settings)
+    return render(request, 'lab_pulse/upload.html', {'form': form, "title": "update time"})
 
 
 # Create your views here.
@@ -417,6 +439,118 @@ def pagination_(request, item_list, record_count=None):
         return items
 
 
+def calculate_positivity_rate(df, column_name, title):
+    # Filter the DataFrame for rows with valid results
+    filtered_df = df[df[column_name].notna()]
+
+    # Calculate the number of tests done
+    num_tests_done = len(filtered_df)
+
+    # Calculate the number of samples positive
+    num_samples_positive = (filtered_df[column_name] == 'Positive').sum()
+    num_samples_negative = (filtered_df[column_name] == 'Negative').sum()
+
+    # Calculate the positivity rate
+    positivity_rate = round(num_samples_positive / num_tests_done * 100, 1)
+
+    # Create the new DataFrame
+    positivity_df = pd.DataFrame({
+        f'Number of {title} Tests Done': [num_tests_done],
+        'Number of Samples Positive': [num_samples_positive],
+        'Number of Samples Negative': [num_samples_negative],
+        f'{title} Positivity (%)': [positivity_rate]
+    })
+    positivity_df = positivity_df.T.reset_index().fillna(0)
+    positivity_df.columns = ['variables', 'values']
+    positivity_df = positivity_df[positivity_df['values'] != 0]
+    fig = bar_chart(positivity_df, "variables", "values", f"{title} Testing Results", color='variables')
+
+    return fig, positivity_df
+
+
+def line_chart_median_mean(df, x_axis, y_axis,title):
+    df=df.copy()
+    df=df.head(52)
+    mean_sample_tested = sum(df[y_axis]) / len(df[y_axis])
+    median_sample_tested = df[y_axis].median()
+
+    fig = px.line(df, x=x_axis, y=y_axis, text=y_axis,
+              height=450,
+              title=title)
+    y = int(mean_sample_tested)
+    x = int(median_sample_tested)
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    })
+    fig.update_traces(textposition='top center')
+    fig.add_shape(type='line', x0=df[x_axis].min(), y0=y,
+              x1=df[x_axis].max(),
+              y1=y,
+              line=dict(color='red', width=2, dash='dot'))
+
+    fig.add_annotation(x=df[x_axis].max(), y=y,
+                   text=f"Mean weekly VL uptake {y}",
+                   showarrow=True, arrowhead=1,
+                   font=dict(size=8, color='red'))
+    fig.add_shape(type='line', x0=df[x_axis].min(), y0=x,
+              x1=df[x_axis].max(),
+              y1=x,
+              line=dict(color='black', width=2, dash='dot'))
+
+    fig.add_annotation(x=df[x_axis].min(), y=x,
+                   text=f"Median weekly VL uptake {x}",
+                   showarrow=True, arrowhead=1,
+                   font=dict(size=8, color='black'))
+
+    # Set the font size of the x-axis and y-axis labels
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=10
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=10
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            # text="My Line Chart",
+            font=dict(
+                size=12
+            )
+        )
+    )
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def create_summary_chart(data, column_name, title):
+    unique_values = data[column_name].unique()
+    unique_values = unique_values[~pd.isnull(unique_values)]
+
+    summary_df = pd.DataFrame({
+        column_name: unique_values,
+        'Count': [(data[column_name] == value).sum() for value in unique_values]
+    }).sort_values('Count')
+
+    total = summary_df['Count'].sum()
+    fig = bar_chart(summary_df, column_name, 'Count', f"{title} N={total}")
+
+    return fig, summary_df
+
+
+
 @login_required(login_url='login')
 @group_required(
     ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'])
@@ -436,17 +570,26 @@ def show_results(request):
     cd4_summary_fig = None
     cd4_testing_lab_fig = None
     crag_testing_lab_fig = None
+    weekly_trend_fig = None
     age_distribution_fig = None
     rejection_summary_fig = None
+    justification_summary_fig = None
     crag_positivity_fig = None
+    tb_lam_positivity_fig = None
     facility_crag_positive_fig = None
     list_of_projects_fac = pd.DataFrame()
     crag_pos_df = pd.DataFrame()
+    tb_lam_pos_df = pd.DataFrame()
+    weekly_df = pd.DataFrame()
     missing_df = pd.DataFrame()
+    missing_tb_lam_df = pd.DataFrame()
     rejected_df = pd.DataFrame()
+    rejection_summary_df = pd.DataFrame()
+    justification_summary_df = pd.DataFrame()
     cd4_df = pd.DataFrame()
     crag_df = pd.DataFrame()
     crag_positivity_df = pd.DataFrame()
+    tb_lam_positivity_df = pd.DataFrame()
     facility_positive_count = pd.DataFrame()
     cd4_results = Cd4traker.objects.all()
 
@@ -465,6 +608,7 @@ def show_results(request):
         list_of_projects = [
             {'County': x.county.county_name,
              'Sub-county': x.sub_county.sub_counties,
+             'Testing Laboratory': x.testing_laboratory.testing_lab_name,
              'Facility': x.facility_name.name,
              'MFL CODE': x.facility_name.mfl_code,
              'CCC NO.': x.patient_unique_no,
@@ -473,11 +617,14 @@ def show_results(request):
              'Collection Date': x.date_of_collection,
              'Testing date': x.date_of_testing,
              'Date Dispatch': x.date_dispatched,
+             'Justification': x.justification,
              'CD4 Count': x.cd4_count_results,
+             'Serum CRAG date': x.date_serum_crag_results_entered,
              'Serum Crag': x.serum_crag_results,
+             'TB LAM date': x.date_tb_lam_results_entered,
+             'TB LAM': x.tb_lam_results,
              'Received status': x.received_status,
              'Rejection reason': x.reason_for_rejection,
-             'Testing Laboratory': x.testing_laboratory.testing_lab_name,
              } for x in qi_list
         ]
         # convert data from database to a dataframe
@@ -489,34 +636,49 @@ def show_results(request):
         list_of_projects_fac['Testing date'] = pd.to_datetime(list_of_projects_fac['Testing date']).dt.date
         list_of_projects_fac['Collection Date'] = pd.to_datetime(list_of_projects_fac['Collection Date']).dt.date
         list_of_projects_fac['Date Dispatch'] = pd.to_datetime(list_of_projects_fac['Date Dispatch']).dt.date
+        list_of_projects_fac['TB LAM date'] = pd.to_datetime(list_of_projects_fac['TB LAM date']).dt.date
+        list_of_projects_fac['Serum CRAG date'] = pd.to_datetime(list_of_projects_fac['Serum CRAG date']).dt.date
         list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].astype(str)
         list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].replace(np.datetime64('NaT'), '')
         list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].astype(str)
         list_of_projects_fac['Date Dispatch'] = list_of_projects_fac['Date Dispatch'].astype(str)
+        list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].replace(np.datetime64('NaT'), '')
+        list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].astype(str)
+        list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].replace(np.datetime64('NaT'), '')
+        list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].astype(str)
         list_of_projects_fac.index = range(1, len(list_of_projects_fac) + 1)
         max_date = list_of_projects_fac['Collection Date'].max()
         min_date = list_of_projects_fac['Collection Date'].min()
         missing_df = list_of_projects_fac.loc[
             (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['Serum Crag'].isna())]
+        missing_tb_lam_df = list_of_projects_fac.loc[
+            (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['TB LAM'].isna())]
         crag_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['Serum Crag'] == "Positive")]
+        tb_lam_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['TB LAM'] == "Positive")]
         rejected_df = list_of_projects_fac.loc[(list_of_projects_fac['Received status'] == "Rejected")]
 
         # Create the summary dataframe
         summary_df = pd.DataFrame({
-            'Total CD4 Processed': [list_of_projects_fac.shape[0]],
-            'CD4 Count >=200': [(list_of_projects_fac['CD4 Count'] >= 200).sum()],
-            'CD4 Count < 200': [(list_of_projects_fac['CD4 Count'] < 200).sum()],
-            'Total CRAG Processed': [list_of_projects_fac['Serum Crag'].notna().sum()],
-            'Negative CRAG': [(list_of_projects_fac['Serum Crag'] == 'Negative').sum()],
-            'Positive CRAG': [(list_of_projects_fac['Serum Crag'] == 'Positive').sum()],
+            'Total CD4': [list_of_projects_fac.shape[0]],
+            'Rejected': [(list_of_projects_fac['Received status'] == 'Rejected').sum()],
+            'CD4 >200': [(list_of_projects_fac['CD4 Count'] > 200).sum()],
+            'CD4 <= 200': [(list_of_projects_fac['CD4 Count'] <= 200).sum()],
+            'TB-LAM': [list_of_projects_fac['TB LAM'].notna().sum()],
+            '-ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Negative').sum()],
+            '+ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Positive').sum()],
+            'Missing TB LAM': [
+                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'TB LAM'].isna()).sum()],
+            'CRAG': [list_of_projects_fac['Serum Crag'].notna().sum()],
+            '-ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Negative').sum()],
+            '+ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Positive').sum()],
             'Missing CRAG': [
                 (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'Serum Crag'].isna()).sum()],
-            'Rejected samples': [(list_of_projects_fac['Received status'] == 'Rejected').sum()],
         })
 
         # Display the summary dataframe
         summary_df = summary_df.T.reset_index()
         summary_df.columns = ['variables', 'values']
+        summary_df = summary_df[summary_df['values'] != 0]
         cd4_summary_fig = bar_chart(summary_df, "variables", "values",
                                     f"Summary of CD4 Records and Serum CRAG Results between {min_date} and {max_date} ")
 
@@ -544,9 +706,9 @@ def show_results(request):
         crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values").fillna(0)
         crag_df = crag_df[crag_df['values'] != 0]
         crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
-                                         "Number of CRAG Reports Processed by Testing Laboratory")
+                                         "Number of CRAG Reports Processed per Testing Laboratory")
         cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
-                                        "Number of CD4 Reports Processed by Testing Laboratory")
+                                        "Number of CD4 Reports Processed per Testing Laboratory")
 
         age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
         age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
@@ -560,53 +722,27 @@ def show_results(request):
                              var_name="Sex", value_name='# of sample processed')
 
         age_distribution_fig = bar_chart(age_sex_df, "Age Group", "# of sample processed",
-                                         "CD4 Count Distribution by Age Band", color="Sex")
+                                         "CD4 Count Distribution by Age Band and Sex", color="Sex")
+        if "Age Group" in list_of_projects_fac.columns:
+            del list_of_projects_fac['Age Group']
 
         ###################################
         # REJECTED SAMPLES
         ###################################
-        # Get the unique rejection reasons excluding NaN
-        rejection_reasons = list_of_projects_fac['Rejection reason'].unique()
-        rejection_reasons = rejection_reasons[~pd.isnull(rejection_reasons)]
+        rejection_summary_fig, rejection_summary_df = create_summary_chart(list_of_projects_fac, 'Rejection reason',
+                                                                           'Reasons for Sample Rejection')
 
-        # Create the summary dataframe
-        rejection_summary_df = pd.DataFrame({
-            'Reasons for sample rejection': rejection_reasons,
-            'Number rejected': [(list_of_projects_fac['Rejection reason'] == reason).sum() for reason in
-                                rejection_reasons]
-        }).sort_values("Number rejected")
-        total = rejection_summary_df['Number rejected'].sum()
-        rejection_summary_fig = bar_chart(rejection_summary_df, "Reasons for sample rejection", "Number rejected",
-                                          f"Summary of Reasons for Sample Rejection N={total}")
+        ###################################
+        # Justification
+        ###################################
+        justification_summary_fig, justification_summary_df = create_summary_chart(
+            list_of_projects_fac, 'Justification', 'Justification Summary')
 
         ###########################
         # SERUM CRAG POSITIVITY
         ###########################
-        # Filter the DataFrame for rows with valid serum crag results
-        filtered_df = list_of_projects_fac[list_of_projects_fac['Serum Crag'].notna()]
-
-        # Calculate the number of serum crag tests done
-        num_tests_done = len(filtered_df)
-
-        # Calculate the number of samples positive for serum crag
-        num_samples_positive = (filtered_df['Serum Crag'] == 'Positive').sum()
-        num_samples_negative = (filtered_df['Serum Crag'] == 'Negative').sum()
-
-        # Calculate the serum crag positivity
-        serum_crag_positivity = round(num_samples_positive / num_tests_done * 100,1)
-
-        # Create the new DataFrame
-        crag_positivity_df = pd.DataFrame({
-            'Number of Serum CRAG Tests Done': [num_tests_done],
-            'Number of Samples Positive': [num_samples_positive],
-            'Number of Samples Negative': [num_samples_negative],
-            'Serum CRAG Positivity (%)': [serum_crag_positivity]
-        })
-        crag_positivity_df = crag_positivity_df.T.reset_index().fillna(0)
-        crag_positivity_df.columns = ['variables', 'values']
-        crag_positivity_df = crag_positivity_df[crag_positivity_df['values'] != 0]
-        crag_positivity_fig = bar_chart(crag_positivity_df, "variables", "values",
-                                        f"Serum CRAG Testing Results", color='variables')
+        crag_positivity_fig, crag_positivity_df = calculate_positivity_rate(list_of_projects_fac, 'Serum Crag',
+                                                                            "Serum CRAG")
         ###############################
         # FACILITY WITH POSITIVE CRAG #
         ###############################
@@ -630,25 +766,48 @@ def show_results(request):
             facility_crag_positive_fig = bar_chart(facility_positive_count, "Facilities",
                                                    "Number of Positive Serum CRAG",
                                                    f"Number of Positive Serum CRAG Results by Facility")
+            ###########################
+            # TB LAM POSITIVITY
+            ###########################
+            tb_lam_positivity_fig, tb_lam_positivity_df = calculate_positivity_rate(list_of_projects_fac, 'TB LAM',
+                                                                                    "TB LAM")
+        ###################################
+        # Weekly Trend viz
+        ###################################
+        df_weekly=list_of_projects_fac.copy()
+        df_weekly['Collection Date'] = pd.to_datetime(df_weekly['Collection Date'], format='%Y-%m-%d')
+
+        df_weekly['week_start'] = df_weekly['Collection Date'].dt.to_period('W').dt.start_time
+        weekly_df = df_weekly.groupby('week_start').size().reset_index(name='# of samples processed')
+        weekly_df['Weekly Trend'] = weekly_df["week_start"].astype(str) + "."
+        weekly_trend = weekly_df['# of samples processed'].sum()
+        if weekly_df.shape[0]>1:
+            weekly_trend_fig=line_chart_median_mean(weekly_df, "Weekly Trend", "# of samples processed",
+                        f"Weekly Trend CD4 Samples processing N={weekly_trend}"
+                        f"      Maximum VLs : {max(weekly_df['# of samples processed'])}")
+
+        weekly_df['week_start'] = pd.to_datetime(weekly_df['week_start']).dt.date
+        weekly_df['week_start'] = weekly_df['week_start'].replace(np.datetime64('NaT'), '')
+        weekly_df['week_start'] = weekly_df['week_start'].astype(str)
 
     request.session['list_of_projects_fac'] = list_of_projects_fac.to_dict()
+    dataframes = [
+        (missing_df, 'missing_df'),
+        (missing_tb_lam_df, 'missing_tb_lam_df'),
+        (justification_summary_df, 'justification_summary_df'),
+        (tb_lam_pos_df, 'tb_lam_pos_df'),
+        (weekly_df, 'weekly_df'),
+        (crag_pos_df, 'crag_pos_df'),
+        (rejected_df, 'rejected_df')
+    ]
 
-    if missing_df.shape[0] > 0:
-        request.session['missing_df'] = missing_df.to_dict()
-    else:
-        if "missing_df" in request.session:
-            del request.session['missing_df']
-    if crag_pos_df.shape[0] > 0:
-        request.session['crag_pos_df'] = crag_pos_df.to_dict()
-    else:
-        if "crag_pos_df" in request.session:
-            del request.session['crag_pos_df']
+    for df, session_key in dataframes:
+        if df.shape[0] > 0:
+            request.session[session_key] = df.to_dict()
+        else:
+            if session_key in request.session:
+                del request.session[session_key]
 
-    if rejected_df.shape[0] > 0:
-        request.session['rejected_df'] = rejected_df.to_dict()
-    else:
-        if "rejected_df" in request.session:
-            del request.session['rejected_df']
     # Convert dict_items into a list
     dictionary = get_key_from_session_names(request)
     # list_of_projects_fac['Facility'] = list_of_projects_fac['facility'].astype(str).str.split(" ").str[0]
@@ -658,20 +817,21 @@ def show_results(request):
         "dictionary": dictionary,
         "my_filters": my_filters, "qi_list": qi_list, "qi_lists": qi_lists,
         "cd4_summary_fig": cd4_summary_fig,
-        "crag_testing_lab_fig": crag_testing_lab_fig,
+        "crag_testing_lab_fig": crag_testing_lab_fig,"weekly_trend_fig":weekly_trend_fig,
         "cd4_testing_lab_fig": cd4_testing_lab_fig,
         "age_distribution_fig": age_distribution_fig,
-        "rejection_summary_fig": rejection_summary_fig,
-        "crag_positivity_fig": crag_positivity_fig,
-        "facility_crag_positive_fig": facility_crag_positive_fig,
+        "rejection_summary_fig": rejection_summary_fig, "justification_summary_fig": justification_summary_fig,
+        "crag_positivity_fig": crag_positivity_fig, "justification_summary_df": justification_summary_df,
+        "facility_crag_positive_fig": facility_crag_positive_fig,"rejection_summary_df":rejection_summary_df,
         "cd4_df": cd4_df, "crag_df": crag_df, "crag_positivity_df": crag_positivity_df,
-        "facility_positive_count": facility_positive_count
+        "facility_positive_count": facility_positive_count, "tb_lam_positivity_fig": tb_lam_positivity_fig,
+        "tb_lam_positivity_df": tb_lam_positivity_df,"weekly_df":weekly_df,
     }
     return render(request, 'lab_pulse/show results.html', context)
 
 
 def generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch, unique_no, age,
-                    cd4_count, crag, sex, reason_for_rejection, testing_laboratory, y):
+                    cd4_count, crag, sex, reason_for_rejection, testing_laboratory, tb_lam_results, y):
     # Change page size if needed
     if y < 0:
         pdf.showPage()
@@ -715,32 +875,47 @@ def generate_report(request, pdf, name, mfl_code, date_collection, date_testing,
     y_position = y + 24
     pdf.drawString(110, y_position, f"{age}")
     if math.isnan(cd4_count):
+        # If cd4_count is NaN, display "Rejected" in bold red font
         pdf.setFont("Helvetica-Bold", 7)
         pdf.setFillColor(colors.red)
         pdf.drawString(165, y_position, "Rejected")
         pdf.setFont("Helvetica", 3)
         pdf.drawString(145, y_position - 10, f"(Reason: {reason_for_rejection})")
     elif int(cd4_count) <= 200:
+        # If cd4_count is <= 200, display cd4_count in bold font
         pdf.setFont("Helvetica-Bold", 7)
         pdf.drawString(165, y_position, str(int(cd4_count)))
     else:
+        # For cd4_count > 200, display cd4_count in regular font
         pdf.setFont("Helvetica", 7)
         pdf.drawString(165, y_position, str(int(cd4_count)))
+
     pdf.setFont("Helvetica", 7)
-    if crag is not None and "pos" in crag.lower():
+
+    if crag is not None and "pos" in crag.lower() or (crag is None and cd4_count <= 200):
+        # If crag is not None and contains "pos" or if crag is None and cd4_count <= 200,
+        # display "Missing" or crag value in bold red font
         pdf.setFont("Helvetica-Bold", 7)
         pdf.setFillColor(colors.red)
-        pdf.drawString(235, y_position, f"{crag}")
-    elif crag is None and cd4_count <= 200:
-        pdf.setFont("Helvetica-Bold", 7)
-        pdf.setFillColor(colors.red)
-        pdf.drawString(235, y_position, f"Missing")
+        pdf.drawString(235, y_position, "Missing" if crag is None else crag)
     else:
+        # For other cases, display crag value in regular font
         pdf.setFont("Helvetica", 7)
-        if crag is None:
-            pdf.drawString(235, y_position, "")
-        else:
-            pdf.drawString(235, y_position, f"{crag}")
+        pdf.drawString(235, y_position, "" if crag is None else crag)
+
+    if tb_lam_results is not None and "pos" in tb_lam_results.lower() or (tb_lam_results is None and cd4_count <= 200):
+        # If tb_lam_results is not None and contains "pos" or if tb_lam_results is None and cd4_count <= 200,
+        # display "TB LAM : Missing" or "TB LAM : tb_lam_results" in bold red font
+        pdf.setFont("Helvetica-Bold", 7)
+        pdf.setFillColor(colors.red)
+        pdf.drawString(225, y_position - 15,
+                       "TB LAM : Missing" if tb_lam_results is None else f"TB LAM : {tb_lam_results}")
+    else:
+        # For other cases, display "TB LAM : tb_lam_results" in regular font
+        pdf.setFont("Helvetica", 7)
+        pdf.setFillColor(colors.black)
+        pdf.drawString(225, y_position - 15, "" if tb_lam_results is None else f"TB LAM : {tb_lam_results}")
+
     pdf.setFont("Helvetica", 7)
     pdf.setFillColor(colors.black)
     pdf.drawString(305, y_position, f"{date_collection}")
@@ -812,8 +987,10 @@ class GeneratePDF(View):
             crag = data['Serum Crag']
             reason_for_rejection = data['Rejection reason']
             testing_laboratory = data['Testing Laboratory']
+            tb_lam_results = data['TB LAM']
             y = generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch,
-                                unique_no, age, cd4_count, crag, sex, reason_for_rejection, testing_laboratory, y)
+                                unique_no, age, cd4_count, crag, sex, reason_for_rejection, testing_laboratory,
+                                tb_lam_results, y)
 
         pdf.save()
         return response

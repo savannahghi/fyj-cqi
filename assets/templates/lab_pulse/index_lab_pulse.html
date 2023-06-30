@@ -242,8 +242,7 @@
 </head>
 <body>
 <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="{% url 'choose_testing_lab' %}">USAID FYJ Pharmacy
-        LabPulse</a>
+    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="{% url 'choose_testing_lab' %}">USAID FYJ LabPulse</a>
     <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
             aria-label="Toggle navigation">
@@ -264,6 +263,12 @@
     </div>
     <div class="navbar-nav">
         <a class="nav-link px-3" href="{% url 'load_data_pharmacy' %}">Data Analysis Center</a>
+    </div>
+    <div class="navbar-nav">
+       {% if perms.fyj_mentorship.view_programareas %}
+            <a class="nav-link px-3" href="{% url 'choose_facilities_mentorship' %}">Mentorship</a>
+        {% endif %}
+
     </div>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
@@ -290,8 +295,7 @@
     {##}
     {#        </div>#}
     <div class="navbar-nav">
-        <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">You are logged in
-            as {{ user.first_name|title }}</a>
+        <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">Hi, {{ user.first_name|title }}</a>
     </div>
     {% if user.is_authenticated and user.is_staff %}
         <div class="navbar-nav">

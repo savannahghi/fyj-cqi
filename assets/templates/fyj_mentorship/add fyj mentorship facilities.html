@@ -1,0 +1,369 @@
+{% extends 'fyj_mentorship/index_fyj_mentorship.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h6 class="display-6 text-primary text-center">{{ title }}</h6>
+        <hr>
+        <div class="p-5 mb-4 bg-light rounded-3">
+            {% if messages %}
+                <!--group the messages by their text and display only one message for each unique text-->
+                {% regroup messages by message as message_list %}
+                {% for message in message_list %}
+                    <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                        <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <div class="container-fluid">
+                {% if title == "Add FYJ staff details" or title == "Update FYJ staff details" %}
+                    <div class="row">
+                        <div class="col-md-2 mb-4">
+                            <a href="{% url 'add_carders' %}"
+                               class="btn btn-success"
+                               role="button">Add FYJ Staff Carder</a>
+                        </div>
+                        <div class="col-md-2 mb-4">
+                            <a href="{% url 'add_carders' %}"
+                               class="btn btn-secondary"
+                               role="button">View Available Carders</a>
+                        </div>
+                    </div>
+
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        {% if show_message %}
+                            {% if update_message %}
+                                <p class="fw-bold">You are updating data for staff named:
+                                    {{ request.user.first_name|title }} {{ request.user.last_name|title }}</p>
+                            {% else %}
+                                <p class="btn btn-success flicker-button">To proceed, please provide your details
+                                    below:</p>
+                                <p class="fw-bold">Your
+                                    Name: {{ request.user.first_name|title }} {{ request.user.last_name|title }}</p>
+                            {% endif %}
+                            <div class="col-md-4 mt-2">
+                                {{ form.hub|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4 mt-2">
+                                {{ form.carder|as_crispy_field }}
+                            </div>
+                            <div class="col-md-2 mt-2 pt-3">
+                                <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            </div>
+                        {% else %}
+                            <p class="fw-bold">Your mentorship personal details already exists</p>
+                        {% endif %}
+                    </form>
+                    {% if staff_details %}
+                        <hr>
+                        <h4 class="fw-bold text-primary text-center"> FYJ STAFF DETAILS</h4>
+                        <hr>
+                        <table class="table table-striped table-hover">
+                            <thead>
+                            <tr>
+                                <th></th>
+                                <th> CARDERS/ POSITION</th>
+                                <th> STAFF DETAILS</th>
+                                <th> HUB</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for carder in staff_details %}
+                                <tr>
+                                    <td class="text-danger fw-bold" style="width: 3%">{{ forloop.counter }}.</td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.carder }}
+                                    </td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.name }}
+                                    </td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.hub }}
+                                    </td>
+
+                                    <td style="width: calc((3%));">
+                                        <div>
+                                            {% if request.user.id == carder.name.id or request.user.is_superuser %}
+                                                <a href="{% url 'update_fyj_staff_details' carder.id %}"
+                                                   class="btn btn-info glow-button"
+                                                   role="button">Update</a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                {% elif title == "Add Carder" or title == "Update carder" %}
+                    <div class="col-md-2 mb-4">
+                        {#                            <a href="#"#}
+                        <a href="{% url 'add_fyj_staff_details' %}"
+                           class="btn btn-secondary"
+                           role="button">Add FYJ Staff Details</a>
+                    </div>
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        <div class="col-md-4 mt-2">
+                            {{ form.carder|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                    </form>
+                    {% if carders %}
+                        <hr>
+                        <h4 class="fw-bold text-primary text-center"> CARDERS/ POSITIONS</h4>
+                        <hr>
+                        <table class="table table-striped table-hover">
+                            <thead>
+                            <tr>
+                                <th></th>
+                                <th> CARDERS/ POSITION</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for carder in carders %}
+                                <tr>
+                                    <td class="text-danger fw-bold" style="width: 3%">{{ forloop.counter }}.</td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.carder }}
+                                    </td>
+                                    <td style="width: calc((3%));">
+                                        <div>
+                                            {#                                            <a href="#"#}
+                                            <a href="{% url 'update_carder' carder.id %}"
+                                               class="btn btn-info glow-button"
+                                               role="button">Update</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                {% elif title == "Add facility staff carders" or title == "Add facility staff carders" %}
+                    <div class="col-md-2 mb-4">
+                        <a href="{% url 'add_facility_staff_details' %}"
+                           class="btn btn-secondary"
+                           role="button">Add facility staff details</a>
+                    </div>
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        {#                        <div class="col-md-4 mt-2">#}
+                        {#                            {{ form.staff_name|as_crispy_field }}#}
+                        {#                        </div>#}
+                        <div class="col-md-4 mt-2">
+                            {{ form.carder|as_crispy_field }}
+                        </div>
+                        {#                        <div class="col-md-4 mt-2">#}
+                        {#                            {{ form.facility_name|as_crispy_field }}#}
+                        {#                        </div>#}
+                        <div class="col-md-2 mt-2 pt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                    </form>
+                    {% if carders %}
+                        <hr>
+                        <h4 class="fw-bold text-primary text-center"> STAFF DETAILS </h4>
+                        <hr>
+                        <table class="table table-striped table-hover">
+                            <thead>
+                            <tr>
+                                <th></th>
+                                <th> STAFF NAME</th>
+                                <th> FACILITY NAME</th>
+                                <th> CARDERS/ POSITION</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for carder in carders %}
+                                <tr>
+                                    <td class="text-danger fw-bold" style="width: 3%">{{ forloop.counter }}.</td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.staff_name }}
+                                    </td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.facility_name }}
+                                    </td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.carder }}
+                                    </td>
+                                    <td style="width: calc((3%));">
+                                        <div>
+                                            <a href="{% url 'update_facility_carder' carder.id %}"
+                                               class="btn btn-info glow-button"
+                                               role="button">Update</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+
+                {% elif title == "Add facility staff details" %}
+                    <div class="col-md-2 mb-4">
+                        <a href="{% url 'add_facility_carders' %}"
+                           class="btn btn-secondary"
+                           role="button">Add Facility Staff Carder</a>
+                    </div>
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        <div class="col-md-4 mt-2">
+                            {{ form.staff_name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-2">
+                            {{ form.carder|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-2">
+                            {{ form.facility_name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                    </form>
+                    {% if carders %}
+                        <hr>
+                        <h4 class="fw-bold text-primary text-center"> STAFF DETAILS </h4>
+                        <hr>
+                        <table class="table table-striped table-hover">
+                            <thead>
+                            <tr>
+                                <th></th>
+                                <th> STAFF NAME</th>
+                                <th> FACILITY NAME</th>
+                                <th> CARDERS/ POSITION</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for carder in carders %}
+                                <tr>
+                                    <td class="text-danger fw-bold" style="width: 3%">{{ forloop.counter }}.</td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.staff_name }}
+                                    </td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.facility_name }}
+                                    </td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ carder.carder }}
+                                    </td>
+                                    <td style="width: calc((3%));">
+                                        <div>
+                                            <a href="{% url 'update_facility_staff_details' carder.id %}"
+                                               class="btn btn-info glow-button"
+                                               role="button">Update</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                {% elif title == "Add Program Area" or title == "Update Program Area" or title == "Program Area" %}
+                    <div class="col-md-2 mb-4">
+                        <a href="{% url 'add_fyj_staff_details' %}"
+                           class="btn btn-secondary"
+                           role="button">Add staff details</a>
+                    </div>
+                    {% if title != "Program Area" %}
+                        <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data'
+                              autocomplete="off">
+                            {% csrf_token %}
+                            <div class="col-md-4 mt-2">
+                                {{ form.program_area|as_crispy_field }}
+                            </div>
+                            {#                        <div class="col-md-4 mt-2">#}
+                            {#                            {{ form.carder|as_crispy_field }}#}
+                            {#                        </div>#}
+                            {#                        <div class="col-md-4 mt-2">#}
+                            {#                            {{ form.facility_name|as_crispy_field }}#}
+                            {#                        </div>#}
+                            <div class="col-md-2 mt-2 pt-3">
+                                <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            </div>
+                        </form>
+                    {% endif %}
+                    {% if program_areas %}
+                        <hr>
+                        <h4 class="fw-bold text-primary text-center"> PROGRAM AREAS </h4>
+                        <hr>
+                        <table class="table table-striped table-hover">
+                            <thead>
+                            <tr>
+                                <th></th>
+                                <th> PROGRAM AREAS</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for program_area in program_areas %}
+                                <tr>
+                                    <td class="text-danger fw-bold" style="width: 3%">{{ forloop.counter }}.</td>
+                                    <td style="width: calc((100% - 6%) / 6);">
+                                        {{ program_area.program_area }}
+                                    </td>
+                                    {#                                    <td style="width: calc((100% - 6%) / 6);">#}
+                                    {#                                        {{ carder.facility_name }}#}
+                                    {#                                    </td>#}
+                                    {#                                    <td style="width: calc((100% - 6%) / 6);">#}
+                                    {#                                        {{ carder.carder }}#}
+                                    {#                                    </td>#}
+                                    <td style="width: calc((3%));">
+                                        <div>
+                                            <a href="{% url 'update_program_area' program_area.id %}"
+                                               class="btn btn-info glow-button"
+                                               role="button">Update</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+
+                {% else %}
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                        <a href="{% url 'add_program_area' %}"
+                           class="btn btn-secondary btn-block" role="button">
+                            Add program area
+                        </a>
+                    </div>
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        <p> Please fill the fields below and then submit </p>
+
+                        <div class="col-md-2 mt-2">
+                            {{ program_area_form.program_area|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3 mt-2">
+                            {{ facility_form.name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2">
+                            {{ quarter_form.quarter|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2 pr-5">
+                            {{ year_form.year|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2">
+                            {{ date_form.date|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-2 pt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

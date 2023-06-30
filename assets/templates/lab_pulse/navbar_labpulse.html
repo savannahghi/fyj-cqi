@@ -15,7 +15,7 @@
 {% url "sub_counties_list" as sub_counties_list %}
 {% url "lesson_learnt" as lesson_learnt %}
 {% url "load_datim_data" as load_datim_data %}
-{% url "update_button_settings" as update_button_settings %}
+{% url "lab_pulse_update_button_settings" as lab_pulse_update_button_settings %}
 {% url "dqa_dashboard" dqa_type='program' as dqa_dashboard %}
 {#{% url 'completed_closed' pk='Completed-or-Closed' as completed_closed %}#}
 {% url 'choose_facilities_inventory' as choose_facilities_inventory %}
@@ -79,10 +79,10 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == update_button_settings %} active{% endif %}"
-                           href="{% url 'update_button_settings' %}">
+                        <a class="nav-link {% if request.path == lab_pulse_update_button_settings %} active{% endif %}"
+                           href="{% url 'lab_pulse_update_button_settings' %}">
                             <span data-feather="file-text" class="align-text-bottom"></span>
-                            Change DQA Update time
+                            Change LabPulse Update Button Time
                         </a>
                     </li>
                 {% endif %}

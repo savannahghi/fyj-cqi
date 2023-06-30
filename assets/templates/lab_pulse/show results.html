@@ -322,11 +322,12 @@
                                             <p class="fw-bold text-danger"
                                                style="font-size: xx-small">{{ result.reason_for_rejection }}</p>
                                         {% else %}
-                                            {% if result.cd4_count_results <= 200 %}
+                                            {% if result.age > 5 and result.cd4_count_results <= 200 %}
                                                 <p class="fw-bold"
                                                    style="font-size: small">{{ result.cd4_count_results }}</p>
                                             {% elif result.age <= 5 %}
-                                                {{ result.cd4_count_results }}
+                                                <p class="fw-bold"
+                                                   style="font-size: small">{{ result.cd4_count_results }}</p>
                                                 <br>
                                                 <span style="font-size: 8px" class="badge alert-info">
                                                     CD4 percentage: {{ result.cd4_percentage }}%

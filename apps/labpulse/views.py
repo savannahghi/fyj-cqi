@@ -66,12 +66,12 @@ def disable_update_buttons(request, audit_team, relevant_date_field):
                         data.hide_update_button = False
             except AttributeError:
                 messages.info(request,
-                              "You have not yet set the time to disable the DQA update button. Please click on the 'Change "
-                              "DQA Update Time' button on the left navigation bar to set the time or contact an "
-                              "administrator to set it for you.")
+                              "You have not yet set the time to disable the LabPulse update button. Please click on the"
+                              " 'Change DQA Update Time' button on the left navigation bar to set the time or contact "
+                              "an administrator to set it for you.")
     except AttributeError:
         messages.info(request,
-                      "You have not yet set the time to disable the DQA update button. Please click on the 'Change "
+                      "You have not yet set the time to disable the LabPulse update button. Please click on the 'Change "
                       "labPulse Update Time' button on the left navigation bar to set the time or contact an "
                       "administrator to set it for you.")
     return redirect(request.path_info)
@@ -214,6 +214,18 @@ def add_cd4_count(request, pk_lab):
 
                 if age <= 5 and not cd4_percentage:
                     error_message = f"Please provide CD4 % values for {patient_unique_no}"
+                    form.add_error('age', error_message)
+                    form.add_error('cd4_percentage', error_message)
+                    return render(request, template_name, context)
+
+                if age > 5 and cd4_percentage:
+                    error_message = f"CD4 % values ought to be for <=5yrs."
+                    form.add_error('age', error_message)
+                    form.add_error('cd4_percentage', error_message)
+                    return render(request, template_name, context)
+
+                if age <= 5 and cd4_percentage > 100:
+                    error_message = f"Invalid CD4 % values"
                     form.add_error('age', error_message)
                     form.add_error('cd4_percentage', error_message)
                     return render(request, template_name, context)
@@ -372,6 +384,18 @@ def update_cd4_results(request, pk):
 
                 if age <= 5 and not cd4_percentage:
                     error_message = f"Please provide CD4 % values for {patient_unique_no}"
+                    form.add_error('age', error_message)
+                    form.add_error('cd4_percentage', error_message)
+                    return render(request, template_name, context)
+
+                if age > 5 and cd4_percentage:
+                    error_message = f"CD4 % values ought to be for <=5yrs."
+                    form.add_error('age', error_message)
+                    form.add_error('cd4_percentage', error_message)
+                    return render(request, template_name, context)
+
+                if age <= 5 and cd4_percentage > 100:
+                    error_message = f"Invalid CD4 % values"
                     form.add_error('age', error_message)
                     form.add_error('cd4_percentage', error_message)
                     return render(request, template_name, context)

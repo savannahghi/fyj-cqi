@@ -262,16 +262,22 @@
         <a class="nav-link px-3" href="{% url 'add_patient_details' %}">PMTCT</a>
 
     </div>
-<div class="navbar-nav">
-            {% if perms.labpulse.view_add_cd4_count %}
+    <div class="navbar-nav">
+        {% if perms.labpulse.view_add_cd4_count %}
             <a class="nav-link px-3" href="{% url 'choose_testing_lab' %}">LabPulse</a>
         {% elif perms.labpulse.view_show_results %}
             <a class="nav-link px-3" href="{% url 'show_results' %}">LabPulse</a>
-    {% endif %}
+        {% endif %}
 
-        </div>
+    </div>
     <div class="navbar-nav">
         <a class="nav-link px-3" href="{% url 'load_data_pharmacy' %}">Data Analysis Center</a>
+    </div>
+    <div class="navbar-nav">
+        {% if perms.fyj_mentorship.view_programareas %}
+            <a class="nav-link px-3" href="{% url 'choose_facilities_mentorship' %}">Mentorship</a>
+        {% endif %}
+
     </div>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
@@ -298,8 +304,7 @@
     {##}
     {#        </div>#}
     <div class="navbar-nav">
-        <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">You are logged in
-            as {{ user.first_name|title }}</a>
+        <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">Hi, {{ user.first_name|title }}</a>
     </div>
     {% if user.is_authenticated and user.is_staff %}
         <div class="navbar-nav">

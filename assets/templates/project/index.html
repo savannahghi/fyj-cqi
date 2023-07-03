@@ -80,7 +80,7 @@
         }
 
         nav {
-            font-size: 10px;
+            font-size: 8px;
         }
 
         form {
@@ -224,13 +224,17 @@
     <div class="navbar-nav">
         <a class="nav-link px-3" href="{% url 'load_data_pharmacy' %}">Data Analysis Center</a>
     </div>
+    <div class="navbar-nav">
+        {% if perms.fyj_mentorship.view_programareas %}
+            <a class="nav-link px-3" href="{% url 'choose_facilities_mentorship' %}">Mentorship</a>
+        {% endif %}
+    </div>
     {#<div class="navbar-nav">#}
     {#            <a class="nav-link px-3" href="{% url 'monthly_data_review' %}">Monthly data review</a>#}
     {##}
     {#        </div>#}
     <div class="navbar-nav">
-        <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">You are logged in
-            as {{ user.first_name|title }}</a>
+        <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">Hi, {{ user.first_name|title }}</a>
 
     </div>
     {% if user.is_authenticated and user.is_staff %}

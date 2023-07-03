@@ -2,7 +2,7 @@ from django import forms
 from django.forms import ModelForm
 
 from apps.cqi.models import Facilities
-from apps.labpulse.models import Cd4traker, Cd4TestingLabs
+from apps.labpulse.models import Cd4traker, Cd4TestingLabs, LabPulseUpdateButtonSettings
 
 
 class Cd4trakerForm(ModelForm):
@@ -49,3 +49,20 @@ class Cd4TestingLabForm(ModelForm):
     class Meta:
         model = Cd4TestingLabs
         fields = "__all__"
+
+class LabPulseUpdateButtonSettingsForm(forms.ModelForm):
+    hide_button_time = forms.TimeField(
+        widget=forms.TimeInput(format='%H:%M'),
+        label='Set time to hide update button in LabPulse module',
+        help_text='Please select a time after 5pm. (HH:MM)'
+    )
+
+    class Meta:
+        model = LabPulseUpdateButtonSettings
+        fields = ('hide_button_time',)
+
+    def clean_hide_button_time(self):
+        hide_button_time = self.cleaned_data['hide_button_time']
+        if hide_button_time.hour < 17:
+            raise forms.ValidationError("The hide button time must be after 5pm.")
+        return hide_button_time

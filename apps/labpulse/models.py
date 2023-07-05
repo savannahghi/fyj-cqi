@@ -82,7 +82,9 @@ class Cd4traker(models.Model):
                                    on_delete=models.CASCADE)
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                     on_delete=models.CASCADE, related_name='+')
-    date_dispatched = models.DateTimeField(auto_now_add=True)
+    # date_dispatched = models.DateTimeField(auto_now_add=True)
+    date_dispatched = models.DateTimeField(blank=True, null=True)
+    report_type = models.CharField(max_length=25,blank=True, null=True,default="Current")
     date_updated = models.DateTimeField(auto_now=True)
     date_tb_lam_results_entered = models.DateTimeField(blank=True, null=True)
     date_serum_crag_results_entered = models.DateTimeField(blank=True, null=True)
@@ -102,6 +104,7 @@ class Cd4traker(models.Model):
             ("view_show_results", "Can view show results"),
             ("view_choose_testing_lab", "Can view choose testing lab"),
             ("view_add_cd4_count", "Can view add CD4 count"),
+            ("view_add_retrospective_cd4_count", "Can view add retrospective CD4 count"),
             ("view_update_cd4_results", "Can view update CD4 results"),
         ]
 

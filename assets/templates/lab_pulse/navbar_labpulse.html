@@ -1,6 +1,7 @@
 <!-- Dynamically add active class to the links -->
 {% url "show_results" as show_results %}
 {% url "choose_testing_lab" as choose_testing_lab %}
+{% url "choose_testing_lab_manual" as choose_testing_lab_manual %}
 {#{% url "add_pharmacy_records" as add_pharmacy_records %}#}
 {% url "facility_dqa_summary" as facility_dqa_summary %}
 {% url "load_khis_data" as load_khis_data %}
@@ -42,6 +43,15 @@
                             CD4 & CRAG
                         </a>
                     </li>
+                    {% if perms.labpulse.view_add_retrospective_cd4_count %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == choose_testing_lab_manual %} active{% endif %}"
+                               href="{% url 'choose_testing_lab_manual' %}">
+                                <span data-feather="book" class="align-text-bottom"></span>
+                                Retrospective data entry
+                            </a>
+                        </li>
+                    {% endif %}
                 {% endif %}
                 {% if perms.labpulse.view_show_results %}
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">

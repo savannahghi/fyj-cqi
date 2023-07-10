@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models.functions import Lower
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -28,7 +28,8 @@ from apps.data_analysis.views import get_key_from_session_names
 # from apps.dqa.views import disable_update_buttons
 from apps.labpulse.decorators import group_required
 from apps.labpulse.filters import Cd4trakerFilter
-from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm, Cd4TestingLabForm, LabPulseUpdateButtonSettingsForm
+from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm, Cd4TestingLabForm, LabPulseUpdateButtonSettingsForm, \
+    Cd4trakerManualDispatchForm
 from apps.labpulse.models import Cd4TestingLabs, Cd4traker, LabPulseUpdateButtonSettings
 
 
@@ -106,7 +107,31 @@ def choose_testing_lab(request):
             # Generate the URL for the redirect
             url = reverse('add_cd4_count',
                           kwargs={
-                              'pk_lab': testing_lab_name.id})
+                              'report_type':"Current",'pk_lab': testing_lab_name.id})
+
+            return redirect(url)
+    context = {
+        "cd4_testing_lab_form": cd4_testing_lab_form,
+        "title": "CD4 TRACKER"
+    }
+    return render(request, 'lab_pulse/add_cd4_data.html', context)
+
+@login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_add_retrospective_cd4_count', raise_exception=True)
+def choose_testing_lab_manual(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    cd4_testing_lab_form = Cd4TestingLabsForm(request.POST or None)
+    if request.method == "POST":
+        if cd4_testing_lab_form.is_valid():
+            testing_lab_name = cd4_testing_lab_form.cleaned_data['testing_lab_name']
+            # Generate the URL for the redirect
+            url = reverse('add_cd4_count',
+                          kwargs={
+                              'report_type':"Retrospective",'pk_lab': testing_lab_name.id})
 
             return redirect(url)
     context = {
@@ -116,140 +141,177 @@ def choose_testing_lab(request):
     return render(request, 'lab_pulse/add_cd4_data.html', context)
 
 
+def validate_cd4_count_form(form, report_type):
+    received_status = form.cleaned_data['received_status']
+    reason_for_rejection = form.cleaned_data['reason_for_rejection']
+    date_of_collection = form.cleaned_data['date_of_collection']
+    date_sample_received = form.cleaned_data['date_sample_received']
+    date_of_testing = form.cleaned_data['date_of_testing']
+    cd4_count_results = form.cleaned_data['cd4_count_results']
+    serum_crag_results = form.cleaned_data['serum_crag_results']
+    reason_for_no_serum_crag = form.cleaned_data['reason_for_no_serum_crag']
+    cd4_percentage = form.cleaned_data['cd4_percentage']
+    age = form.cleaned_data['age']
+    patient_unique_no = form.cleaned_data['patient_unique_no']
+    today = timezone.now().date()
+
+    if report_type != "Current":
+        date_dispatched = form.cleaned_data['date_dispatched']
+        if date_of_collection and date_of_collection > date_dispatched:
+            error_message = "Collection date is greater than Dispatch date!"
+            form.add_error('date_of_collection', error_message)
+            form.add_error('date_dispatched', error_message)
+            return False
+        if date_dispatched > today:
+            form.add_error('date_dispatched', "Date of sample dispatched cannot be in the future.")
+            return False
+
+
+        if date_sample_received and date_sample_received > date_dispatched:
+            error_message = "Received date is greater than Dispatch date!"
+            form.add_error('date_sample_received', error_message)
+            form.add_error('date_dispatched', error_message)
+            return False
+
+        if date_of_testing and date_of_testing > date_dispatched:
+            error_message = "Testing date is greater than Dispatch date!"
+            form.add_error('date_of_testing', error_message)
+            form.add_error('date_dispatched', error_message)
+            return False
+
+    if date_of_collection > date_sample_received:
+        error_message = "Collection date is greater than Receipt date!"
+        form.add_error('date_of_collection', error_message)
+        form.add_error('date_sample_received', error_message)
+        return False
+
+    if received_status == 'Rejected':
+        if not reason_for_rejection:
+            error_message = "Please specify the reason for rejection."
+            form.add_error('reason_for_rejection', error_message)
+            return False
+        if date_of_testing or cd4_count_results or serum_crag_results or reason_for_no_serum_crag:
+            error_message = "All fields should be empty when the status is 'Rejected'."
+            if date_of_testing:
+                form.add_error('date_of_testing', error_message)
+            if cd4_count_results:
+                form.add_error('cd4_count_results', error_message)
+            if serum_crag_results:
+                form.add_error('serum_crag_results', error_message)
+            if reason_for_no_serum_crag:
+                form.add_error('reason_for_no_serum_crag', error_message)
+            return False
+
+    if received_status == "Accepted":
+        if reason_for_rejection:
+            error_message = f"Check if this information is correct"
+            form.add_error('received_status', error_message)
+            form.add_error('reason_for_rejection', error_message)
+            return False
+
+        if not date_of_testing:
+            error_message = f"Provide Testing date"
+            form.add_error('received_status', error_message)
+            form.add_error('date_of_testing', error_message)
+            return False
+
+        if date_of_testing < date_of_collection:
+            error_message = f"Testing date is less than Collection date!"
+            form.add_error('date_of_testing', error_message)
+            form.add_error('date_of_collection', error_message)
+            return False
+        if date_of_testing < date_sample_received:
+            error_message = f"Testing date is less than Receipt date!"
+            form.add_error('date_of_testing', error_message)
+            form.add_error('date_sample_received', error_message)
+            return False
+
+        # Check date fields
+        if date_of_testing > today:
+            form.add_error('date_of_testing', "Date of testing cannot be in the future.")
+        if date_of_collection > today:
+            form.add_error('date_of_collection', "Date of collection cannot be in the future.")
+        if date_sample_received > today:
+            form.add_error('date_sample_received', "Date of sample received cannot be in the future.")
+
+        if form.errors:
+            # If there are any errors, return the form with the error messages
+            return False
+
+        if not cd4_count_results:
+            error_message = f"Provide CD4 count results"
+            form.add_error('received_status', error_message)
+            form.add_error('cd4_count_results', error_message)
+            return False
+
+        if age <= 5 and not cd4_percentage:
+            error_message = f"Please provide CD4 % values for {patient_unique_no}"
+            form.add_error('age', error_message)
+            form.add_error('cd4_percentage', error_message)
+            return False
+
+        if age > 5 and cd4_percentage:
+            error_message = f"CD4 % values ought to be for <=5yrs."
+            form.add_error('age', error_message)
+            form.add_error('cd4_percentage', error_message)
+            return False
+
+        if age <= 5 and cd4_percentage > 100:
+            error_message = f"Invalid CD4 % values"
+            form.add_error('age', error_message)
+            form.add_error('cd4_percentage', error_message)
+            return False
+
+        if cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
+            error_message = f"Select a reason why serum CRAG was not done"
+            form.add_error('reason_for_no_serum_crag', error_message)
+            form.add_error('cd4_count_results', error_message)
+            form.add_error('serum_crag_results', error_message)
+            return False
+
+        if cd4_count_results > 200 and not serum_crag_results and reason_for_no_serum_crag:
+            error_message = f"Check if the information is correct"
+            form.add_error('reason_for_no_serum_crag', error_message)
+            form.add_error('cd4_count_results', error_message)
+            form.add_error('serum_crag_results', error_message)
+            return False
+
+        if serum_crag_results and reason_for_no_serum_crag:
+            error_message = f"Check if the information is correct"
+            form.add_error('reason_for_no_serum_crag', error_message)
+            form.add_error('serum_crag_results', error_message)
+            return False
+    return True
+
+
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse'])
-def add_cd4_count(request, pk_lab):
+def add_cd4_count(request, report_type,pk_lab):
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    form = Cd4trakerForm(request.POST or None)
+    if report_type =="Current":
+        form = Cd4trakerForm(request.POST or None)
+    else:
+        # Check if the user has the required permission
+        if not request.user.has_perm('labpulse.view_add_retrospective_cd4_count'):
+            # Redirect or handle the case where the user doesn't have the permission
+            return HttpResponseForbidden("You don't have permission to access this form.")
+        form = Cd4trakerManualDispatchForm(request.POST or None)
     selected_lab, created = Cd4TestingLabs.objects.get_or_create(id=pk_lab)
 
     template_name = 'lab_pulse/add_cd4_data.html'
     context = {
-        "form": form,
+        "form": form,"report_type":report_type,
         "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
     }
     if request.method == "POST":
         if form.is_valid():
             post = form.save(commit=False)
-            received_status = form.cleaned_data['received_status']
-            reason_for_rejection = form.cleaned_data['reason_for_rejection']
-            date_of_collection = form.cleaned_data['date_of_collection']
-            date_sample_received = form.cleaned_data['date_sample_received']
-            date_of_testing = form.cleaned_data['date_of_testing']
-            cd4_count_results = form.cleaned_data['cd4_count_results']
-            serum_crag_results = form.cleaned_data['serum_crag_results']
-            reason_for_no_serum_crag = form.cleaned_data['reason_for_no_serum_crag']
-            cd4_percentage = form.cleaned_data['cd4_percentage']
-            age = form.cleaned_data['age']
-            patient_unique_no = form.cleaned_data['patient_unique_no']
-
-            if date_of_collection > date_sample_received:
-                error_message = f"Collection date is greater than Receipt date!"
-                form.add_error('date_of_collection', error_message)
-                form.add_error('date_sample_received', error_message)
+            if not validate_cd4_count_form(form, report_type):
+                # If validation fails, return the form with error messages
                 return render(request, template_name, context)
-
-            if received_status == 'Rejected':
-                if not reason_for_rejection:
-                    error_message = f"Please specify the reason for rejection."
-                    form.add_error('reason_for_rejection', error_message)
-                    return render(request, template_name, context)
-                if date_of_testing or cd4_count_results or serum_crag_results or reason_for_no_serum_crag:
-                    error_message = "All fields should be empty when the status is 'Rejected'."
-                    if date_of_testing:
-                        form.add_error('date_of_testing', error_message)
-                    if cd4_count_results:
-                        form.add_error('cd4_count_results', error_message)
-                    if serum_crag_results:
-                        form.add_error('serum_crag_results', error_message)
-                    if reason_for_no_serum_crag:
-                        form.add_error('reason_for_no_serum_crag', error_message)
-                    return render(request, template_name, context)
-
-            if received_status == "Accepted":
-                if reason_for_rejection:
-                    error_message = f"Check if this information is correct"
-                    form.add_error('received_status', error_message)
-                    form.add_error('reason_for_rejection', error_message)
-                    return render(request, template_name, context)
-
-                if not date_of_testing:
-                    error_message = f"Provide Testing date"
-                    form.add_error('received_status', error_message)
-                    form.add_error('date_of_testing', error_message)
-                    return render(request, template_name, context)
-
-                if date_of_testing < date_of_collection:
-                    error_message = f"Testing date is less than Collection date!"
-                    form.add_error('date_of_testing', error_message)
-                    form.add_error('date_of_collection', error_message)
-                    return render(request, template_name, context)
-                if date_of_testing < date_sample_received:
-                    error_message = f"Testing date is less than Receipt date!"
-                    form.add_error('date_of_testing', error_message)
-                    form.add_error('date_sample_received', error_message)
-                    return render(request, template_name, context)
-
-                # Check date fields
-                today = timezone.now().date()
-                if date_of_testing > today:
-                    form.add_error('date_of_testing', "Date of testing cannot be in the future.")
-                if date_of_collection > today:
-                    form.add_error('date_of_collection', "Date of collection cannot be in the future.")
-                if date_sample_received > today:
-                    form.add_error('date_sample_received', "Date of sample received cannot be in the future.")
-
-                if form.errors:
-                    # If there are any errors, return the form with the error messages
-                    return render(request, template_name, context)
-
-                if not cd4_count_results:
-                    error_message = f"Provide CD4 count results"
-                    form.add_error('received_status', error_message)
-                    form.add_error('cd4_count_results', error_message)
-                    return render(request, template_name, context)
-
-                if age <= 5 and not cd4_percentage:
-                    error_message = f"Please provide CD4 % values for {patient_unique_no}"
-                    form.add_error('age', error_message)
-                    form.add_error('cd4_percentage', error_message)
-                    return render(request, template_name, context)
-
-                if age > 5 and cd4_percentage:
-                    error_message = f"CD4 % values ought to be for <=5yrs."
-                    form.add_error('age', error_message)
-                    form.add_error('cd4_percentage', error_message)
-                    return render(request, template_name, context)
-
-                if age <= 5 and cd4_percentage > 100:
-                    error_message = f"Invalid CD4 % values"
-                    form.add_error('age', error_message)
-                    form.add_error('cd4_percentage', error_message)
-                    return render(request, template_name, context)
-
-                if cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
-                    error_message = f"Select a reason why serum CRAG was not done"
-                    form.add_error('reason_for_no_serum_crag', error_message)
-                    form.add_error('cd4_count_results', error_message)
-                    form.add_error('serum_crag_results', error_message)
-                    return render(request, template_name, context)
-
-                if cd4_count_results > 200 and not serum_crag_results and reason_for_no_serum_crag:
-                    error_message = f"Check if the information is correct"
-                    form.add_error('reason_for_no_serum_crag', error_message)
-                    form.add_error('cd4_count_results', error_message)
-                    form.add_error('serum_crag_results', error_message)
-                    return render(request, template_name, context)
-
-                if serum_crag_results and reason_for_no_serum_crag:
-                    error_message = f"Check if the information is correct"
-                    form.add_error('reason_for_no_serum_crag', error_message)
-                    form.add_error('serum_crag_results', error_message)
-                    return render(request, template_name, context)
-
             selected_facility = form.cleaned_data['facility_name']
 
             facility_id = Facilities.objects.get(name=selected_facility)
@@ -270,17 +332,18 @@ def add_cd4_count(request, pk_lab):
             facility_name = Facilities.objects.filter(name=selected_facility).first()
             post.facility_name = facility_name
             post.testing_laboratory = Cd4TestingLabs.objects.filter(testing_lab_name=selected_lab).first()
+            post.report_type = report_type
             post.save()
             messages.error(request, "Record saved successfully!")
             # Generate the URL for the redirect
-            url = reverse('add_cd4_count', kwargs={'pk_lab': pk_lab})
+            url = reverse('add_cd4_count', kwargs={'report_type':report_type,'pk_lab': pk_lab})
             return redirect(url)
         else:
             messages.error(request, f"Record already exists.")
             render(request, template_name, context)
 
     context = {
-        "form": form,
+        "form": form,"report_type":report_type,
         "title": f"Add CD4 results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
@@ -288,14 +351,21 @@ def add_cd4_count(request, pk_lab):
 
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse'])
-def update_cd4_results(request, pk):
+def update_cd4_results(request, report_type, pk):
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Cd4traker.objects.get(id=pk)
     if request.method == "POST":
-        form = Cd4trakerForm(request.POST, instance=item)
+        if report_type == "Current":
+            form = Cd4trakerForm(request.POST, instance=item)
+        else:
+            # Check if the user has the required permission
+            if not request.user.has_perm('labpulse.view_add_retrospective_cd4_count'):
+                # Redirect or handle the case where the user doesn't have the permission
+                return HttpResponseForbidden("You don't have permission to access this form.")
+            form = Cd4trakerManualDispatchForm(request.POST, instance=item)
         if form.is_valid():
             context = {
                 "form": form,
@@ -303,122 +373,10 @@ def update_cd4_results(request, pk):
             }
             template_name = 'lab_pulse/add_cd4_data.html'
             post = form.save(commit=False)
-            received_status = form.cleaned_data['received_status']
-            reason_for_rejection = form.cleaned_data['reason_for_rejection']
-            date_of_collection = form.cleaned_data['date_of_collection']
-            date_sample_received = form.cleaned_data['date_sample_received']
-            date_of_testing = form.cleaned_data['date_of_testing']
-            cd4_count_results = form.cleaned_data['cd4_count_results']
-            serum_crag_results = form.cleaned_data['serum_crag_results']
-            reason_for_no_serum_crag = form.cleaned_data['reason_for_no_serum_crag']
             facility_name = form.cleaned_data['facility_name']
-            cd4_percentage = form.cleaned_data['cd4_percentage']
-            age = form.cleaned_data['age']
-            patient_unique_no = form.cleaned_data['patient_unique_no']
-
-            if date_of_collection > date_sample_received:
-                error_message = f"Collection date is greater than Receipt date!"
-                form.add_error('date_of_collection', error_message)
-                form.add_error('date_sample_received', error_message)
+            if not validate_cd4_count_form(form, report_type):
+                # If validation fails, return the form with error messages
                 return render(request, template_name, context)
-
-            if received_status == 'Rejected':
-                if not reason_for_rejection:
-                    error_message = f"Please specify the reason for rejection."
-                    form.add_error('reason_for_rejection', error_message)
-                    return render(request, template_name, context)
-                if date_of_testing or cd4_count_results or serum_crag_results or reason_for_no_serum_crag:
-                    error_message = "All fields should be empty when the status is 'Rejected'."
-                    if date_of_testing:
-                        form.add_error('date_of_testing', error_message)
-                    if cd4_count_results:
-                        form.add_error('cd4_count_results', error_message)
-                    if serum_crag_results:
-                        form.add_error('serum_crag_results', error_message)
-                    if reason_for_no_serum_crag:
-                        form.add_error('reason_for_no_serum_crag', error_message)
-                    return render(request, template_name, context)
-
-            if received_status == "Accepted":
-                if reason_for_rejection:
-                    error_message = f"Check if this information is correct"
-                    form.add_error('received_status', error_message)
-                    form.add_error('reason_for_rejection', error_message)
-                    return render(request, template_name, context)
-
-                if not date_of_testing:
-                    error_message = f"Provide Testing date"
-                    form.add_error('received_status', error_message)
-                    form.add_error('date_of_testing', error_message)
-                    return render(request, template_name, context)
-
-                if date_of_testing < date_of_collection:
-                    error_message = f"Testing date is less than Collection date!"
-                    form.add_error('date_of_testing', error_message)
-                    form.add_error('date_of_collection', error_message)
-                    return render(request, template_name, context)
-                if date_of_testing < date_sample_received:
-                    error_message = f"Testing date is less than Receipt date!"
-                    form.add_error('date_of_testing', error_message)
-                    form.add_error('date_sample_received', error_message)
-                    return render(request, template_name, context)
-
-                # Check date fields
-                today = timezone.now().date()
-                if date_of_testing > today:
-                    form.add_error('date_of_testing', "Date of testing cannot be in the future.")
-                if date_of_collection > today:
-                    form.add_error('date_of_collection', "Date of collection cannot be in the future.")
-                if date_sample_received > today:
-                    form.add_error('date_sample_received', "Date of sample received cannot be in the future.")
-
-                if form.errors:
-                    # If there are any errors, return the form with the error messages
-                    return render(request, template_name, context)
-
-                if not cd4_count_results:
-                    error_message = f"Provide CD4 count results"
-                    form.add_error('received_status', error_message)
-                    form.add_error('cd4_count_results', error_message)
-                    return render(request, template_name, context)
-
-                if age <= 5 and not cd4_percentage:
-                    error_message = f"Please provide CD4 % values for {patient_unique_no}"
-                    form.add_error('age', error_message)
-                    form.add_error('cd4_percentage', error_message)
-                    return render(request, template_name, context)
-
-                if age > 5 and cd4_percentage:
-                    error_message = f"CD4 % values ought to be for <=5yrs."
-                    form.add_error('age', error_message)
-                    form.add_error('cd4_percentage', error_message)
-                    return render(request, template_name, context)
-
-                if age <= 5 and cd4_percentage > 100:
-                    error_message = f"Invalid CD4 % values"
-                    form.add_error('age', error_message)
-                    form.add_error('cd4_percentage', error_message)
-                    return render(request, template_name, context)
-
-                if cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
-                    error_message = f"Select a reason why serum CRAG was not done"
-                    form.add_error('reason_for_no_serum_crag', error_message)
-                    form.add_error('cd4_count_results', error_message)
-                    form.add_error('serum_crag_results', error_message)
-                    return render(request, template_name, context)
-
-                if cd4_count_results > 200 and not serum_crag_results and reason_for_no_serum_crag:
-                    error_message = f"Check if the information is correct"
-                    form.add_error('reason_for_no_serum_crag', error_message)
-                    form.add_error('cd4_count_results', error_message)
-                    form.add_error('serum_crag_results', error_message)
-                    return render(request, template_name, context)
-
-                if serum_crag_results and reason_for_no_serum_crag:
-                    error_message = f"Check if the information is correct"
-                    form.add_error('reason_for_no_serum_crag', error_message)
-                    form.add_error('serum_crag_results', error_message)
-                    return render(request, template_name, context)
 
             facility_id = Facilities.objects.get(name=facility_name)
             # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
@@ -438,9 +396,16 @@ def update_cd4_results(request, pk):
             messages.error(request, "Record updated successfully!")
             return HttpResponseRedirect(request.session['page_from'])
     else:
-        form = Cd4trakerForm(instance=item)
+        if report_type == "Current":
+            form = Cd4trakerForm(instance=item)
+        else:
+            # Check if the user has the required permission
+            if not request.user.has_perm('labpulse.view_add_retrospective_cd4_count'):
+                # Redirect or handle the case where the user doesn't have the permission
+                return HttpResponseForbidden("You don't have permission to access this form.")
+            form = Cd4trakerManualDispatchForm(instance=item)
     context = {
-        "form": form,
+        "form": form,"report_type":report_type,
         "title": "Update Results",
     }
     return render(request, 'lab_pulse/update results.html', context)
@@ -516,7 +481,7 @@ def line_chart_median_mean(df, x_axis, y_axis,title):
               line=dict(color='red', width=2, dash='dot'))
 
     fig.add_annotation(x=df[x_axis].max(), y=y,
-                   text=f"Mean weekly VL uptake {y}",
+                   text=f"Mean weekly CD4 count collection {y}",
                    showarrow=True, arrowhead=1,
                    font=dict(size=8, color='red'))
     fig.add_shape(type='line', x0=df[x_axis].min(), y0=x,
@@ -525,7 +490,7 @@ def line_chart_median_mean(df, x_axis, y_axis,title):
               line=dict(color='black', width=2, dash='dot'))
 
     fig.add_annotation(x=df[x_axis].min(), y=x,
-                   text=f"Median weekly VL uptake {x}",
+                   text=f"Median weekly CD4 count collection {x}",
                    showarrow=True, arrowhead=1,
                    font=dict(size=8, color='black'))
 

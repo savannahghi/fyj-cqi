@@ -40,7 +40,7 @@
                         <a class="nav-link {% if request.path == choose_testing_lab %} active{% endif %}"
                            href="{% url 'choose_testing_lab' %}">
                             <span data-feather="book" class="align-text-bottom"></span>
-                            CD4 & CRAG
+                            CD4 and sCrAg Data Entry
                         </a>
                     </li>
                     {% if perms.labpulse.view_add_retrospective_cd4_count %}
@@ -48,7 +48,7 @@
                             <a class="nav-link {% if request.path == choose_testing_lab_manual %} active{% endif %}"
                                href="{% url 'choose_testing_lab_manual' %}">
                                 <span data-feather="book" class="align-text-bottom"></span>
-                                Retrospective data entry
+                                Retrospective Data Entry
                             </a>
                         </li>
                     {% endif %}
@@ -61,7 +61,7 @@
                         <a class="nav-link {% if request.path == show_results %} active{% endif %}"
                            href="{% url 'show_results' %}">
                             <span data-feather="book-open" class="align-text-bottom"></span>
-                            CD4 & CRAG Results
+                            CD4 and sCrAg Results
                         </a>
                     </li>
                 {% endif %}

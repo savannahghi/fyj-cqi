@@ -35,14 +35,15 @@ class Cd4traker(models.Model):
         ("Negative", "Negative"),
         ("Positive", "Positive"),
     )
+    RECEIVED_CHOICES = (('Accepted', 'Accepted'), ('Rejected', 'Rejected'))
     REJECTION_CHOICES = sorted(
         (
             ("Improper Collection Technique", "Improper Collection Technique"),
             ("Requisition & Sample Mismatch", "Requisition & Sample Mismatch"),
             ("Missing Sample ( Physical Sample Missing)", "Missing Sample ( Physical Sample Missing)"),
             ("Insufficient Volume", "Insufficient Volume"),
-            ("Clotted sample/ hemolysed sample", "Clotted sample/ hemolysed sample"),
-            ("Sample Missing on Requisition Form", "Sample Missing on Requisition Form"),
+            ("Clotted sample/ hemolysed sample", "Clotted Sample/ Hemolysed sample"),
+            ("Sample Missing on Requisition Form", "Sample Missing On Requisition Form"),
             ("Others", "Others"),
         ),
         key=lambda x: x[0]
@@ -70,7 +71,7 @@ class Cd4traker(models.Model):
     serum_crag_results = models.CharField(max_length=9, choices=CHOICES, blank=True, null=True)
     justification = models.CharField(max_length=50, choices=JUSTIFICATION_CHOICES, blank=True, null=True)
     sex = models.CharField(max_length=9, choices=(('M', 'M'), ('F', 'F')))
-    received_status = models.CharField(max_length=9, choices=(('Accepted', 'Accepted'), ('Rejected', 'Rejected')))
+    received_status = models.CharField(max_length=9, choices=RECEIVED_CHOICES)
     reason_for_rejection = models.CharField(max_length=50, choices=REJECTION_CHOICES, blank=True, null=True)
     date_of_testing = models.DateTimeField(blank=True, null=True)
     reason_for_no_serum_crag = models.CharField(max_length=25, choices=(

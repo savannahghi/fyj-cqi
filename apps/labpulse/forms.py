@@ -31,10 +31,10 @@ class Cd4trakerForm(ModelForm):
         exclude = ['created_by', 'modified_by', 'date_dispatched', 'date_updated', 'testing_laboratory','report_type']
         labels = {
             'cd4_count_results': 'CD4 count results',
-            'serum_crag_results': 'Serum CRAG results',
-            'reason_for_no_serum_crag': 'Reason for not doing serum CRAG',
+            'serum_crag_results': 'Serum CrAg Results',
+            'reason_for_no_serum_crag': 'Reason for not doing serum CrAg',
             'cd4_percentage': 'CD4 % values',
-            'tb_lam_results': 'TB-LAM results',
+            'tb_lam_results': 'TB LAM results',
         }
 
     def save(self, commit=True):
@@ -106,8 +106,8 @@ class Cd4trakerManualDispatchForm(ModelForm):
         exclude = ['created_by', 'modified_by', 'date_updated', 'testing_laboratory','report_type']
         labels = {
             'cd4_count_results': 'CD4 count results',
-            'serum_crag_results': 'Serum CRAG results',
-            'reason_for_no_serum_crag': 'Reason for not doing serum CRAG',
+            'serum_crag_results': 'Serum CrAg Results',
+            'reason_for_no_serum_crag': 'Reason for not doing serum CrAg',
             'cd4_percentage': 'CD4 % values',
-            'tb_lam_results': 'TB-LAM results',
+            'tb_lam_results': 'TB LAM results',
         }

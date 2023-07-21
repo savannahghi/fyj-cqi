@@ -1038,3 +1038,21 @@ def update_testing_labs(request, pk):
         "title": "Update CD4 testing lab details",
     }
     return render(request, 'lab_pulse/update results.html', context)
+
+
+@login_required(login_url='login')
+def instructions_lab(request, section):
+    if not request.user.first_name:
+        return redirect("profile")
+
+    # Define a list of valid sections
+    valid_sections = ["introduction", "getting_started", "entering_results", "viewing_results","recommendations"]
+
+    # Check if the provided section is valid
+    if section not in valid_sections:
+        return redirect("instructions_lab", section="introduction")
+
+    context = {
+        "section": section
+    }
+    return render(request, 'lab_pulse/instructions.html', context)

@@ -256,7 +256,7 @@ def validate_cd4_count_form(form, report_type):
             form.add_error('cd4_percentage', error_message)
             return False
 
-        if age <= 5 and cd4_percentage > 100:
+        if age <= 5 and (int(cd4_percentage) > 100 or int(cd4_percentage) < 0):
             error_message = f"Invalid CD4 % values"
             form.add_error('age', error_message)
             form.add_error('cd4_percentage', error_message)
@@ -538,8 +538,6 @@ def create_summary_chart(data, column_name, title):
 
     return fig, summary_df
 
-
-
 @login_required(login_url='login')
 @group_required(
     ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'])
@@ -555,7 +553,7 @@ def show_results(request):
         else:
             record_count = int(record_count)  # Convert to integer if a specific value is selected
     else:
-        record_count = 50  # Default record count if no selection is made
+        record_count = 100  # Default record count if no selection is made
     cd4_summary_fig = None
     cd4_testing_lab_fig = None
     crag_testing_lab_fig = None
@@ -669,7 +667,7 @@ def show_results(request):
         summary_df.columns = ['variables', 'values']
         summary_df = summary_df[summary_df['values'] != 0]
         cd4_summary_fig = bar_chart(summary_df, "variables", "values",
-                                    f"Summary of CD4 Records and Serum CRAG Results between {min_date} and {max_date} ")
+                                    f"Summary of CD4 Records and Serum CrAg Results Between {min_date} and {max_date} ")
 
         # Group the data by testing laboratory and calculate the counts
         summary_df = list_of_projects_fac.groupby('Testing Laboratory').agg({
@@ -695,7 +693,7 @@ def show_results(request):
         crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values").fillna(0)
         crag_df = crag_df[crag_df['values'] != 0]
         crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
-                                         "Number of CRAG Reports Processed per Testing Laboratory")
+                                         "Number of sCrAg Reports Processed per Testing Laboratory")
         cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
                                         "Number of CD4 Reports Processed per Testing Laboratory")
 
@@ -711,7 +709,7 @@ def show_results(request):
                              var_name="Sex", value_name='# of sample processed')
 
         age_distribution_fig = bar_chart(age_sex_df, "Age Group", "# of sample processed",
-                                         "CD4 Count Distribution by Age Band and Sex", color="Sex")
+                                         "CD4 Count Distribution By Age Band and Sex", color="Sex")
         if "Age Group" in list_of_projects_fac.columns:
             del list_of_projects_fac['Age Group']
 
@@ -731,7 +729,7 @@ def show_results(request):
         # SERUM CRAG POSITIVITY
         ###########################
         crag_positivity_fig, crag_positivity_df = calculate_positivity_rate(list_of_projects_fac, 'Serum Crag',
-                                                                            "Serum CRAG")
+                                                                            "Serum CrAg")
         ###############################
         # FACILITY WITH POSITIVE CRAG #
         ###############################
@@ -750,7 +748,7 @@ def show_results(request):
             facility_positive_count = facility_positive_count.head(20)
             facility_crag_positive_fig = bar_chart(facility_positive_count, "Facilities",
                                                    "Number of Positive Serum CRAG",
-                                                   f"Top Twenty Facilities with Positive Serum CRAG Results")
+                                                   f"Top Twenty Facilities with Positive Serum CrAg Results")
         else:
             facility_crag_positive_fig = bar_chart(facility_positive_count, "Facilities",
                                                    "Number of Positive Serum CRAG",
@@ -772,7 +770,7 @@ def show_results(request):
         weekly_trend = weekly_df['# of samples processed'].sum()
         if weekly_df.shape[0]>1:
             weekly_trend_fig=line_chart_median_mean(weekly_df, "Weekly Trend", "# of samples processed",
-                        f"Weekly Trend CD4 Samples processing N={weekly_trend}"
+                        f"Weekly Trend CD4 Samples Processing N={weekly_trend}"
                         f"      Maximum VLs : {max(weekly_df['# of samples processed'])}")
 
         weekly_df['week_start'] = pd.to_datetime(weekly_df['week_start']).dt.date
@@ -1002,8 +1000,9 @@ def add_testing_lab(request):
         testing_lab_name = form.cleaned_data['testing_lab_name']
 
         # Check for duplicate testing_lab_name (case-insensitive)
-        existing_lab = Cd4TestingLabs.objects.annotate(lower_name=Lower('testing_lab_name')).filter(
-            lower_name=testing_lab_name.lower())
+        # existing_lab = Cd4TestingLabs.objects.annotate(lower_name=Lower('testing_lab_name')).filter(
+        #     lower_name=testing_lab_name.lower())
+        existing_lab = Cd4TestingLabs.objects.filter(testing_lab_name__iexact=testing_lab_name)
         if existing_lab.exists():
             form.add_error('testing_lab_name', 'A CD4 Testing Lab with this name already exists.')
         else:
@@ -1039,3 +1038,21 @@ def update_testing_labs(request, pk):
         "title": "Update CD4 testing lab details",
     }
     return render(request, 'lab_pulse/update results.html', context)
+
+
+@login_required(login_url='login')
+def instructions_lab(request, section):
+    if not request.user.first_name:
+        return redirect("profile")
+
+    # Define a list of valid sections
+    valid_sections = ["introduction", "getting_started", "entering_results", "viewing_results","recommendations"]
+
+    # Check if the provided section is valid
+    if section not in valid_sections:
+        return redirect("instructions_lab", section="introduction")
+
+    context = {
+        "section": section
+    }
+    return render(request, 'lab_pulse/instructions.html', context)

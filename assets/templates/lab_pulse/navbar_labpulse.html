@@ -9,7 +9,8 @@
 {% url "show_inventory" as show_inventory %}
 {% url "show_audit_team_pharmacy" as show_audit_team_pharmacy %}
 {% url "show_commodity_records" as show_commodity_records %}
-{% url "instructions" as instructions %}
+{#{% url "instructions_lab" as instructions_lab %}#}
+{% url "instructions_lab" section="introduction" as instructions_lab %}
 {% url "comments" as comments %}
 {% url "resources" as resources %}
 {% url "facilities_landing_page" project_type='facility' as facilities_landing_page %}
@@ -30,6 +31,13 @@
                 <span>Instructions</span>
             </h6>
             <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == instructions_lab %} active{% endif %}"
+                       href="{% url 'instructions_lab' 'introduction'%}">
+                        <span data-feather="info" class="align-text-bottom"></span>
+                        Instructions
+                    </a>
+                </li>
             </ul>
             <ul class="nav flex-column">
                 {% if perms.labpulse.view_choose_testing_lab %}
@@ -40,7 +48,7 @@
                         <a class="nav-link {% if request.path == choose_testing_lab %} active{% endif %}"
                            href="{% url 'choose_testing_lab' %}">
                             <span data-feather="book" class="align-text-bottom"></span>
-                            CD4 & CRAG
+                            CD4 and sCrAg Data Entry
                         </a>
                     </li>
                     {% if perms.labpulse.view_add_retrospective_cd4_count %}
@@ -48,7 +56,7 @@
                             <a class="nav-link {% if request.path == choose_testing_lab_manual %} active{% endif %}"
                                href="{% url 'choose_testing_lab_manual' %}">
                                 <span data-feather="book" class="align-text-bottom"></span>
-                                Retrospective data entry
+                                Retrospective Data Entry
                             </a>
                         </li>
                     {% endif %}
@@ -61,7 +69,7 @@
                         <a class="nav-link {% if request.path == show_results %} active{% endif %}"
                            href="{% url 'show_results' %}">
                             <span data-feather="book-open" class="align-text-bottom"></span>
-                            CD4 & CRAG Results
+                            CD4 and sCrAg Results
                         </a>
                     </li>
                 {% endif %}

@@ -14,7 +14,8 @@ class QI_ProjectsAdmin(admin.ModelAdmin):
     form = QI_ProjectsForm
 
 
-admin.site.register(QI_Projects, QI_ProjectsAdmin)
+# admin.site.register(QI_Projects, QI_ProjectsAdmin)
+admin.site.register(QI_Projects)
 admin.site.register(TestedChange)
 admin.site.register(ProjectComments)
 admin.site.register(ProjectResponses)

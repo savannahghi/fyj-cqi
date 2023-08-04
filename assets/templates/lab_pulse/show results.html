@@ -180,6 +180,7 @@
                             {% if dictionary.weekly_df %}
                                 <div class="row">
                                     <div class="col-12">
+                                        {{ weekly_tat_trend_fig|safe }}
                                         {{ weekly_trend_fig|safe }}
                                     </div>
                                 </div>
@@ -235,6 +236,7 @@
                                 <div class="row">
                                     <div class="col-12">
                                         {{ facility_crag_positive_fig|safe }}
+                                        {{ facility_tb_lam_positive_fig|safe }}
                                     </div>
                                 </div>
                             {% endif %}
@@ -415,24 +417,50 @@
                                         <br>
                                         <span style="font-size: 8px"
                                               class="badge alert-info">Last update: {{ result.date_updated|date:"Y-m-d" }}</span>
+                                        <br>
+                                        <span style="font-size: 8px"
+                                              class="badge alert-info">Last update by: {{ request.user.first_name }}
+                                            {{ request.user.last_name }}
+                                        </span>
                                     </td>
                                     <td> {{ result.date_dispatched|date:"Y-m-d" }} </td>
                                     <td> {{ result.created_by.first_name|title }}
                                         {{ result.created_by.last_name|title }}
                                         {{ result.created_by.phone_number }}
+                                        <br>
+                                        <br>
+                                        <span style="font-size: 8px"
+                                              class="badge alert-info">TAT: {{ result.tat }}
+                                        </span>
                                     </td>
                                     {% if user.is_authenticated %}
-                                        {% if perms.labpulse.view_add_cd4_count %}
+                                        {% if user|has_group:'laboratory_staffs_labpulse' and user.id == result.created_by.id or request.user.is_superuser %}
                                             {% if not result.hide_update_button or request.user.is_superuser %}
                                                 <td>
                                                     <div class="row">
                                                         <div class="col-md-6">
-                                                            <a href="{% url "update_cd4_results" result.report_type result.id %}"
+                                                            <a href="{% url 'update_cd4_results' result.report_type result.id %}"
                                                                class="btn btn-info glow-button" role="button"><i
-                                                                    class="fas fa-edit"></i></a>
+                                                                    class="fas fa-edit"></i>
+                                                            </a>
                                                         </div>
                                                     </div>
                                                 </td>
+                                            {% endif %}
+                                        {% elif user|has_group:'referring_laboratory_staffs_labpulse' %}
+                                            {% if result.cd4_count_results <= 200 and result.report_type == "Current" %}
+                                                {% if not result.hide_update_button or request.user.is_superuser %}
+                                                    <td>
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <a href="{% url 'update_cd4_results' result.report_type result.id %}"
+                                                                   class="btn btn-info glow-button" role="button"><i
+                                                                        class="fas fa-edit"></i>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                {% endif %}
                                             {% endif %}
                                         {% endif %}
                                     {% endif %}

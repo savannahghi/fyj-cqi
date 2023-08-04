@@ -53,6 +53,7 @@ class Cd4traker(models.Model):
             ("Baseline (Tx_new)", "Baseline (Tx_new)"),
             ("Treatment Failure", "Treatment Failure"),
             ("Return to care > 3 months", "Return to care > 3 months"),
+            ("On Fluconazole maintenance or Dapsone prophylaxis", "On Fluconazole maintenance or Dapsone prophylaxis"),
         ),
         key=lambda x: x[0]
     )

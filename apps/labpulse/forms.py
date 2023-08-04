@@ -25,6 +25,14 @@ class Cd4trakerForm(ModelForm):
         widget=forms.DateInput(attrs={'type': 'date'}),
         label="Date sample was received"
     )
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # Pop the 'user' argument from kwargs
+        super(Cd4trakerForm, self).__init__(*args, **kwargs)
+        if user and user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
+            # If the user is in the referring_lab_group, make disable all fields
+            for field_name in self.fields:
+                if field_name != 'tb_lam_results':  # Allow editing only for the 'tb_lam' field
+                    self.fields[field_name].disabled = True
 
     class Meta:
         model = Cd4traker

@@ -74,18 +74,16 @@ def login_page(request):
             # Redirect labpulse Laboratory staffs #
             ##############################
             if user.groups.filter(name='laboratory_staffs_labpulse').exists():
-                print("Triggered choose_testing_lab:::::::::::::::::::::::::::::::::::::::::::::::")
                 return redirect("choose_testing_lab")
-            ##############################################################
-            # Redirect labpulse facility, Program and Sub-county staffs  #
-            ##############################################################
+            ##########################################################################################
+            # Redirect labpulse facility, Program and Sub-county staffs, Referring Laboratory Staffs #
+            ##########################################################################################
             elif user.groups.filter(name__in=['subcounty_staffs_labpulse','laboratory_staffs_labpulse',
-                                              'facility_staffs_labpulse']).exists():
-                print("Triggered show_results:::::::::::::::::::::::::::::::::::::::::::::::")
+                                              'facility_staffs_labpulse',
+                                              'referring_laboratory_staffs_labpulse']).exists():
                 return redirect("show_results")
             else:
                 # Redirect to CQI app
-                print("Triggered else block:::::::::::::::::::::::::::::::::::::::::::::::")
                 return redirect("facilities_landing_page", project_type="facility")
     return render(request, "account/login_page.html", {})
 

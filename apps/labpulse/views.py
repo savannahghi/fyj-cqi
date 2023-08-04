@@ -8,7 +8,6 @@ from datetime import timezone, timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -77,6 +76,7 @@ def disable_update_buttons(request, audit_team, relevant_date_field):
                       "administrator to set it for you.")
     return redirect(request.path_info)
 
+
 def lab_pulse_update_button_settings(request):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -107,7 +107,7 @@ def choose_testing_lab(request):
             # Generate the URL for the redirect
             url = reverse('add_cd4_count',
                           kwargs={
-                              'report_type':"Current",'pk_lab': testing_lab_name.id})
+                              'report_type': "Current", 'pk_lab': testing_lab_name.id})
 
             return redirect(url)
     context = {
@@ -115,6 +115,7 @@ def choose_testing_lab(request):
         "title": "CD4 TRACKER"
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
+
 
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse'])
@@ -131,7 +132,7 @@ def choose_testing_lab_manual(request):
             # Generate the URL for the redirect
             url = reverse('add_cd4_count',
                           kwargs={
-                              'report_type':"Retrospective",'pk_lab': testing_lab_name.id})
+                              'report_type': "Retrospective", 'pk_lab': testing_lab_name.id})
 
             return redirect(url)
     context = {
@@ -165,7 +166,6 @@ def validate_cd4_count_form(form, report_type):
         if date_dispatched > today:
             form.add_error('date_dispatched', "Date of sample dispatched cannot be in the future.")
             return False
-
 
         if date_sample_received and date_sample_received > date_dispatched:
             error_message = "Received date is greater than Dispatch date!"
@@ -286,12 +286,12 @@ def validate_cd4_count_form(form, report_type):
 
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse'])
-def add_cd4_count(request, report_type,pk_lab):
+def add_cd4_count(request, report_type, pk_lab):
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    if report_type =="Current":
+    if report_type == "Current":
         form = Cd4trakerForm(request.POST or None)
     else:
         # Check if the user has the required permission
@@ -303,7 +303,7 @@ def add_cd4_count(request, report_type,pk_lab):
 
     template_name = 'lab_pulse/add_cd4_data.html'
     context = {
-        "form": form,"report_type":report_type,
+        "form": form, "report_type": report_type,
         "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
     }
     if request.method == "POST":
@@ -336,21 +336,21 @@ def add_cd4_count(request, report_type,pk_lab):
             post.save()
             messages.error(request, "Record saved successfully!")
             # Generate the URL for the redirect
-            url = reverse('add_cd4_count', kwargs={'report_type':report_type,'pk_lab': pk_lab})
+            url = reverse('add_cd4_count', kwargs={'report_type': report_type, 'pk_lab': pk_lab})
             return redirect(url)
         else:
             messages.error(request, f"Record already exists.")
             render(request, template_name, context)
 
     context = {
-        "form": form,"report_type":report_type,
+        "form": form, "report_type": report_type,
         "title": f"Add CD4 results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse'])
+@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
 def update_cd4_results(request, report_type, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -359,7 +359,7 @@ def update_cd4_results(request, report_type, pk):
     item = Cd4traker.objects.get(id=pk)
     if request.method == "POST":
         if report_type == "Current":
-            form = Cd4trakerForm(request.POST, instance=item)
+            form = Cd4trakerForm(request.POST, instance=item, user=request.user)
         else:
             # Check if the user has the required permission
             if not request.user.has_perm('labpulse.view_add_retrospective_cd4_count'):
@@ -397,7 +397,7 @@ def update_cd4_results(request, report_type, pk):
             return HttpResponseRedirect(request.session['page_from'])
     else:
         if report_type == "Current":
-            form = Cd4trakerForm(instance=item)
+            form = Cd4trakerForm(instance=item, user=request.user)
         else:
             # Check if the user has the required permission
             if not request.user.has_perm('labpulse.view_add_retrospective_cd4_count'):
@@ -405,7 +405,7 @@ def update_cd4_results(request, report_type, pk):
                 return HttpResponseForbidden("You don't have permission to access this form.")
             form = Cd4trakerManualDispatchForm(instance=item)
     context = {
-        "form": form,"report_type":report_type,
+        "form": form, "report_type": report_type,
         "title": "Update Results",
     }
     return render(request, 'lab_pulse/update results.html', context)
@@ -457,15 +457,15 @@ def calculate_positivity_rate(df, column_name, title):
     return fig, positivity_df
 
 
-def line_chart_median_mean(df, x_axis, y_axis,title):
-    df=df.copy()
-    df=df.head(52)
+def line_chart_median_mean(df, x_axis, y_axis, title, color=None):
+    df = df.copy()
+    df = df.head(52)
     mean_sample_tested = sum(df[y_axis]) / len(df[y_axis])
     median_sample_tested = df[y_axis].median()
 
-    fig = px.line(df, x=x_axis, y=y_axis, text=y_axis,
-              height=450,
-              title=title)
+    fig = px.line(df, x=x_axis, y=y_axis, text=y_axis, color=color,
+                  height=450,
+                  title=title)
     y = int(mean_sample_tested)
     x = int(median_sample_tested)
     fig.update_xaxes(showgrid=False)
@@ -475,24 +475,33 @@ def line_chart_median_mean(df, x_axis, y_axis,title):
         'paper_bgcolor': 'rgba(0, 0, 0, 0)',
     })
     fig.update_traces(textposition='top center')
-    fig.add_shape(type='line', x0=df[x_axis].min(), y0=y,
-              x1=df[x_axis].max(),
-              y1=y,
-              line=dict(color='red', width=2, dash='dot'))
+    if 'TAT type' not in df.columns:
+        fig.add_shape(type='line', x0=df[x_axis].min(), y0=y,
+                      x1=df[x_axis].max(),
+                      y1=y,
+                      line=dict(color='red', width=2, dash='dot'))
 
-    fig.add_annotation(x=df[x_axis].max(), y=y,
-                   text=f"Mean weekly CD4 count collection {y}",
-                   showarrow=True, arrowhead=1,
-                   font=dict(size=8, color='red'))
-    fig.add_shape(type='line', x0=df[x_axis].min(), y0=x,
-              x1=df[x_axis].max(),
-              y1=x,
-              line=dict(color='black', width=2, dash='dot'))
+        fig.add_annotation(x=df[x_axis].max(), y=y,
+                           text=f"Mean weekly CD4 count collection {y}",
+                           showarrow=True, arrowhead=1,
+                           font=dict(size=8, color='red'))
+        fig.add_shape(type='line', x0=df[x_axis].min(), y0=x,
+                      x1=df[x_axis].max(),
+                      y1=x,
+                      line=dict(color='black', width=2, dash='dot'))
 
-    fig.add_annotation(x=df[x_axis].min(), y=x,
-                   text=f"Median weekly CD4 count collection {x}",
-                   showarrow=True, arrowhead=1,
-                   font=dict(size=8, color='black'))
+        fig.add_annotation(x=df[x_axis].min(), y=x,
+                           text=f"Median weekly CD4 count collection {x}",
+                           showarrow=True, arrowhead=1,
+                           font=dict(size=8, color='black'))
+    else:
+        fig.update_layout(legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
 
     # Set the font size of the x-axis and y-axis labels
     fig.update_layout(
@@ -538,9 +547,87 @@ def create_summary_chart(data, column_name, title):
 
     return fig, summary_df
 
+
+def calculate_weekly_tat(df):
+    """
+    Calculate weekly mean Turnaround Time (TAT) for different types and reshape the data.
+
+    Parameters:
+        df (DataFrame): Input DataFrame containing relevant columns.
+
+    Returns:
+        DataFrame: Reshaped DataFrame with weekly mean TAT values.
+    """
+    # Convert date columns to datetime
+    df['Date Dispatch'] = pd.to_datetime(df['Date Dispatch'])
+    df['Collection Date'] = pd.to_datetime(df['Collection Date'])
+    df['Received date'] = pd.to_datetime(df['Received date'])
+
+    # Calculate TAT values in days
+    df['sample TAT (c-d)'] = (df['Date Dispatch'] - df['Collection Date']).dt.days
+    df['sample TAT (c-r)'] = (df['Received date'] - df['Collection Date']).dt.days
+
+    # Group by week_start and calculate mean TAT
+    df['week_start'] = df['Collection Date'].dt.to_period('W').dt.start_time
+    weekly_tat_df = df.groupby('week_start').mean(numeric_only=True)[
+        ['sample TAT (c-d)', 'sample TAT (c-r)']].reset_index()
+    weekly_tat_df['Mean weekly TAT(C-D)'] = weekly_tat_df['sample TAT (c-d)'].round()
+    weekly_tat_df['Mean weekly TAT(C-R)'] = weekly_tat_df['sample TAT (c-r)'].round()
+
+    # Drop unnecessary columns
+    weekly_tat_df.drop(columns=['sample TAT (c-d)', 'sample TAT (c-r)'], inplace=True)
+    weekly_tat_df = weekly_tat_df.sort_values("week_start").fillna(0)
+    weekly_tat_df['Weekly Trend'] = weekly_tat_df["week_start"].astype(str) + "."
+
+    # Reshape the DataFrame using melt
+    weekly_tat = pd.melt(
+        weekly_tat_df,
+        id_vars=['Weekly Trend'],
+        value_vars=['Mean weekly TAT(C-R)', 'Mean weekly TAT(C-D)'],
+        var_name="TAT type",
+        value_name="Weekly mean TAT"
+    )
+
+    weekly_tat.reset_index(drop=True, inplace=True)
+
+    return weekly_tat
+
+
+def visualize_facility_results_positivity(df, test_type, title):
+    if df.shape[0] > 20:
+        df = df.head(20)
+        title = f"Top Twenty Facilities with Positive {title} Results"
+    else:
+        title = f"Number of Positive {title} Results by Facility"
+
+    fig = bar_chart(df, "Facilities",
+                    f"Number of Positive {test_type}",
+                    title)
+    return fig
+
+
+def filter_result_type(list_of_projects_fac, column_name):
+    rename_column_name = column_name.split(" ")[0] + " " + column_name.split(" ")[1].upper()
+    # Filter the DataFrame for rows where Serum Crag is positive
+    positive_crag_df = list_of_projects_fac[list_of_projects_fac[column_name] == 'Positive']
+
+    # Group by Facility and count the number of positive serum CRAG results
+    facility_positive_count = positive_crag_df.groupby('Facility')[column_name].count().reset_index().fillna(0)
+
+    # rename column
+    column_name = f'Number of Positive {rename_column_name}'
+
+    # Rename the column for clarity
+    facility_positive_count.columns = ['Facilities', column_name]
+    facility_positive_count = facility_positive_count.sort_values(column_name, ascending=False)
+    facility_positive_count = facility_positive_count[facility_positive_count[column_name] != 0]
+    return facility_positive_count
+
+
 @login_required(login_url='login')
 @group_required(
-    ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'])
+    ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'
+        , 'referring_laboratory_staffs_labpulse'])
 def show_results(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -557,6 +644,8 @@ def show_results(request):
     cd4_summary_fig = None
     cd4_testing_lab_fig = None
     crag_testing_lab_fig = None
+    weekly_tat_trend_fig = None
+    facility_tb_lam_positive_fig = None
     weekly_trend_fig = None
     age_distribution_fig = None
     rejection_summary_fig = None
@@ -584,6 +673,12 @@ def show_results(request):
     my_filters = Cd4trakerFilter(request.GET, queryset=qi_list)
     qi_lists = my_filters.qs
 
+    # Calculate TAT and add it as a column to qi_lists
+    for cd4_instance in qi_lists:
+        if cd4_instance.date_dispatched:
+            tat = cd4_instance.date_dispatched - cd4_instance.date_of_collection
+            cd4_instance.tat = tat.days  # Adding TAT in days to the instance
+
     qi_list = pagination_(request, qi_lists, record_count)
     ######################
     # Hide update button #
@@ -603,6 +698,7 @@ def show_results(request):
              'Sex': x.sex,
              'Collection Date': x.date_of_collection,
              'Testing date': x.date_of_testing,
+             'Received date': x.date_of_testing,
              'Date Dispatch': x.date_dispatched,
              'Justification': x.justification,
              'CD4 Count': x.cd4_count_results,
@@ -612,6 +708,7 @@ def show_results(request):
              'TB LAM': x.tb_lam_results,
              'Received status': x.received_status,
              'Rejection reason': x.reason_for_rejection,
+             'TAT': x.tat,
              } for x in qi_list
         ]
         # convert data from database to a dataframe
@@ -621,6 +718,7 @@ def show_results(request):
         # Convert Timestamp objects to strings
         list_of_projects_fac = list_of_projects_fac.sort_values('Collection Date').reset_index(drop=True)
         list_of_projects_fac['Testing date'] = pd.to_datetime(list_of_projects_fac['Testing date']).dt.date
+        list_of_projects_fac['Received date'] = pd.to_datetime(list_of_projects_fac['Received date']).dt.date
         list_of_projects_fac['Collection Date'] = pd.to_datetime(list_of_projects_fac['Collection Date']).dt.date
         list_of_projects_fac['Date Dispatch'] = pd.to_datetime(list_of_projects_fac['Date Dispatch']).dt.date
         list_of_projects_fac['TB LAM date'] = pd.to_datetime(list_of_projects_fac['TB LAM date']).dt.date
@@ -628,10 +726,13 @@ def show_results(request):
         list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].astype(str)
         list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].replace(np.datetime64('NaT'), '')
         list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].astype(str)
+        list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].replace(np.datetime64('NaT'), '')
+        list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].astype(str)
         list_of_projects_fac['Date Dispatch'] = list_of_projects_fac['Date Dispatch'].astype(str)
         list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].replace(np.datetime64('NaT'), '')
         list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].astype(str)
-        list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].replace(np.datetime64('NaT'), '')
+        list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].replace(np.datetime64('NaT'),
+                                                                                                  '')
         list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].astype(str)
         list_of_projects_fac.index = range(1, len(list_of_projects_fac) + 1)
         max_date = list_of_projects_fac['Collection Date'].max()
@@ -733,49 +834,51 @@ def show_results(request):
         ###############################
         # FACILITY WITH POSITIVE CRAG #
         ###############################
-        # Filter the DataFrame for rows where Serum Crag is positive
-        positive_crag_df = list_of_projects_fac[list_of_projects_fac['Serum Crag'] == 'Positive']
+        facility_positive_count = filter_result_type(list_of_projects_fac, "Serum Crag")
 
-        # Group by Facility and count the number of positive serum CRAG results
-        facility_positive_count = positive_crag_df.groupby('Facility')['Serum Crag'].count().reset_index().fillna(0)
-
-        # Rename the column for clarity
-        facility_positive_count.columns = ['Facilities', 'Number of Positive Serum CRAG']
-        facility_positive_count = facility_positive_count.sort_values("Number of Positive Serum CRAG", ascending=False)
-        facility_positive_count = facility_positive_count[facility_positive_count['Number of Positive Serum CRAG'] != 0]
-        # top twenty facilities
-        if facility_positive_count.shape[0] > 20:
-            facility_positive_count = facility_positive_count.head(20)
-            facility_crag_positive_fig = bar_chart(facility_positive_count, "Facilities",
-                                                   "Number of Positive Serum CRAG",
-                                                   f"Top Twenty Facilities with Positive Serum CrAg Results")
-        else:
-            facility_crag_positive_fig = bar_chart(facility_positive_count, "Facilities",
-                                                   "Number of Positive Serum CRAG",
-                                                   f"Number of Positive Serum CRAG Results by Facility")
-            ###########################
-            # TB LAM POSITIVITY
-            ###########################
-            tb_lam_positivity_fig, tb_lam_positivity_df = calculate_positivity_rate(list_of_projects_fac, 'TB LAM',
-                                                                                    "TB LAM")
+        facility_crag_positive_fig = visualize_facility_results_positivity(facility_positive_count, "Serum CRAG",
+                                                                           "Serum CrAg")
+        #################################
+        # FACILITY WITH POSITIVE TB LAM #
+        #################################
+        facility_positive_count = filter_result_type(list_of_projects_fac, "TB LAM")
+        facility_tb_lam_positive_fig = visualize_facility_results_positivity(facility_positive_count, "TB LAM",
+                                                                             "TB LAM")
+        ###########################
+        # TB LAM POSITIVITY
+        ###########################
+        tb_lam_positivity_fig, tb_lam_positivity_df = calculate_positivity_rate(list_of_projects_fac, 'TB LAM',
+                                                                                "TB LAM")
         ###################################
         # Weekly Trend viz
         ###################################
-        df_weekly=list_of_projects_fac.copy()
+        df_weekly = list_of_projects_fac.copy()
         df_weekly['Collection Date'] = pd.to_datetime(df_weekly['Collection Date'], format='%Y-%m-%d')
 
         df_weekly['week_start'] = df_weekly['Collection Date'].dt.to_period('W').dt.start_time
         weekly_df = df_weekly.groupby('week_start').size().reset_index(name='# of samples processed')
         weekly_df['Weekly Trend'] = weekly_df["week_start"].astype(str) + "."
         weekly_trend = weekly_df['# of samples processed'].sum()
-        if weekly_df.shape[0]>1:
-            weekly_trend_fig=line_chart_median_mean(weekly_df, "Weekly Trend", "# of samples processed",
-                        f"Weekly Trend CD4 Samples Processing N={weekly_trend}"
-                        f"      Maximum VLs : {max(weekly_df['# of samples processed'])}")
+        if weekly_df.shape[0] > 1:
+            weekly_trend_fig = line_chart_median_mean(weekly_df, "Weekly Trend", "# of samples processed",
+                                                      f"Weekly Trend CD4 Samples Processing N={weekly_trend}"
+                                                      f"      Maximum # CD4 counts : {max(weekly_df['# of samples processed'])}")
 
         weekly_df['week_start'] = pd.to_datetime(weekly_df['week_start']).dt.date
         weekly_df['week_start'] = weekly_df['week_start'].replace(np.datetime64('NaT'), '')
         weekly_df['week_start'] = weekly_df['week_start'].astype(str)
+
+        ###################################
+        # Weekly TAT Trend viz
+        ###################################
+        melted_tat_df = calculate_weekly_tat(list_of_projects_fac.copy())
+        if melted_tat_df.shape[0] > 1:
+            melted_tat_df = melted_tat_df.head(52)
+            weekly_tat_trend_fig = line_chart_median_mean(melted_tat_df, "Weekly Trend", "Weekly mean TAT",
+                                                          f"Weekly Collection to Dispatch vs Collection to Receipt Mean "
+                                                          f"TAT Trend  N={list_of_projects_fac.shape[0]}",
+                                                          color="TAT type"
+                                                          )
 
     request.session['list_of_projects_fac'] = list_of_projects_fac.to_dict()
     dataframes = [
@@ -804,21 +907,23 @@ def show_results(request):
         "dictionary": dictionary,
         "my_filters": my_filters, "qi_list": qi_list, "qi_lists": qi_lists,
         "cd4_summary_fig": cd4_summary_fig,
-        "crag_testing_lab_fig": crag_testing_lab_fig,"weekly_trend_fig":weekly_trend_fig,
+        "crag_testing_lab_fig": crag_testing_lab_fig, "weekly_trend_fig": weekly_trend_fig,
         "cd4_testing_lab_fig": cd4_testing_lab_fig,
         "age_distribution_fig": age_distribution_fig,
         "rejection_summary_fig": rejection_summary_fig, "justification_summary_fig": justification_summary_fig,
         "crag_positivity_fig": crag_positivity_fig, "justification_summary_df": justification_summary_df,
-        "facility_crag_positive_fig": facility_crag_positive_fig,"rejection_summary_df":rejection_summary_df,
+        "facility_crag_positive_fig": facility_crag_positive_fig, "rejection_summary_df": rejection_summary_df,
         "cd4_df": cd4_df, "crag_df": crag_df, "crag_positivity_df": crag_positivity_df,
         "facility_positive_count": facility_positive_count, "tb_lam_positivity_fig": tb_lam_positivity_fig,
-        "tb_lam_positivity_df": tb_lam_positivity_df,"weekly_df":weekly_df,
+        "tb_lam_positivity_df": tb_lam_positivity_df, "weekly_df": weekly_df,
+        "weekly_tat_trend_fig": weekly_tat_trend_fig,
+        "facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
     }
     return render(request, 'lab_pulse/show results.html', context)
 
 
 def generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch, unique_no, age,
-                    cd4_count, crag, sex, reason_for_rejection, testing_laboratory, tb_lam_results, y):
+                    cd4_count, crag, sex, reason_for_rejection, testing_laboratory, tb_lam_results, tat, y):
     # Change page size if needed
     if y < 0:
         pdf.showPage()
@@ -908,6 +1013,9 @@ def generate_report(request, pdf, name, mfl_code, date_collection, date_testing,
     pdf.drawString(305, y_position, f"{date_collection}")
     pdf.drawString(375, y_position, f"{date_testing}")
     pdf.drawString(435, y_position, f"{date_dispatch}")
+    pdf.setFont("Helvetica-Bold", 3)
+    pdf.drawString(432, y_position - 10, f"Collection to Dispatch TAT: {tat} Days")
+    pdf.setFont("Helvetica", 7)
 
     pdf.drawString(22, y_position, f"{unique_no}")
     y -= 50
@@ -975,9 +1083,10 @@ class GeneratePDF(View):
             reason_for_rejection = data['Rejection reason']
             testing_laboratory = data['Testing Laboratory']
             tb_lam_results = data['TB LAM']
+            tat = data['TAT']
             y = generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch,
                                 unique_no, age, cd4_count, crag, sex, reason_for_rejection, testing_laboratory,
-                                tb_lam_results, y)
+                                tb_lam_results, tat, y)
 
         pdf.save()
         return response
@@ -1046,7 +1155,7 @@ def instructions_lab(request, section):
         return redirect("profile")
 
     # Define a list of valid sections
-    valid_sections = ["introduction", "getting_started", "entering_results", "viewing_results","recommendations"]
+    valid_sections = ["introduction", "getting_started", "entering_results", "viewing_results", "recommendations"]
 
     # Check if the provided section is valid
     if section not in valid_sections:

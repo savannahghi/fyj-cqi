@@ -1,4 +1,5 @@
 {% extends 'pmtct/index_pmtct.html' %}
+{% load crispy_forms_filters %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -68,17 +69,17 @@
             <div class="col-md-2">
               {{ filter.form.on_art|as_crispy_field }}
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               {{ filter.form.date_started_on_art_above|as_crispy_field }}
             </div>
-              <div class="col-md-3">
+              <div class="col-md-2">
               {{ filter.form.date_started_on_art|as_crispy_field }}
             </div>
             <div class="col-md-2">
                 {{ filter.form.update_status|as_crispy_field }}
             </div>
 
-            <div class="col-md-3 mt-4 p-1">
+            <div class="col-md-2 mt-4 p-1">
               <button type="submit" class="btn btn-primary">Filter</button>
             </div>
             </form>

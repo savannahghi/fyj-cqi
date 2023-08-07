@@ -1,6 +1,7 @@
 import django_filters
 from django_filters import CharFilter, DateFilter, NumberFilter
 
+from . import forms
 from .models import *
 
 
@@ -14,6 +15,12 @@ class QiprojectFilter(django_filters.FilterSet):
                                     label='Problem Background')
     # measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
     settings = CharFilter(field_name="settings", lookup_expr="icontains", label='Settings')
+    facility_name = django_filters.ModelChoiceFilter(
+        queryset=Facilities.objects.all(),
+        field_name='facility_name__name',
+        label='Facility Name',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
 
     class Meta:
         model = QI_Projects

@@ -1,24 +1,15 @@
 import math
+from datetime import datetime
+from io import BytesIO
 
-import pytest
-from django.test import Client, RequestFactory
-from django.urls import reverse
-from django.contrib.auth.models import User
-from django.http import HttpResponse, HttpResponseRedirect
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+import PyPDF2
 import pandas as pd
+import pytest
+from django.http import HttpResponse
+from django.urls import reverse
 
 from apps.account.models import CustomUser
 from apps.labpulse.views import GeneratePDF
-from io import BytesIO
-import PyPDF2
-
-# @pytest.fixture
-# def authenticated_client():
-#     user = User.objects.create_user(username='testuser', password='testpass')
-#     return user
-
 
 @pytest.fixture
 def generate_pdf_view():
@@ -28,7 +19,7 @@ def generate_pdf_view():
 @pytest.fixture
 def mock_list_of_projects_fac_dict():
     """Fixture to return mock report data for testing."""
-    return {
+    data = {
         'Facility': ['Facility A', 'Facility B','Facility A', 'Facility B'],
         'MFL CODE': [123456, 789012,123456, 789012],
         'Collection Date': ['2023-01-01', '2023-01-02','2023-01-01', '2023-01-02'],
@@ -41,8 +32,15 @@ def mock_list_of_projects_fac_dict():
         'Serum Crag': ['Negative', 'Positive','Negative', 'Positive'],
         'Rejection reason': ['Missing Sample', 'Improper Collection','Missing Sample', 'Improper Collection'],
         'Testing Laboratory': ['Lab A', 'Lab B','Lab A', 'Lab B'],
-        'TB LAM': ['Negative', 'Positive','Negative', 'Positive']
+        'TB LAM': ['Negative', 'Positive','Negative', 'Positive'],
+        'TAT':[]
     }
+    for collection_date, dispatch_date in zip(data['Collection Date'], data['Date Dispatch']):
+        collection_date = datetime.strptime(collection_date, '%Y-%m-%d')
+        dispatch_date = datetime.strptime(dispatch_date, '%Y-%m-%d')
+        tat = (dispatch_date - collection_date).days
+        data['TAT'].append(str(int(tat)))
+    return data
 
 
 
@@ -174,6 +172,7 @@ class TestGenerateReport:
             expected_testing_lab = mock_list_of_projects_fac.loc[i, 'Testing Laboratory']
             expected_rejection_reason = mock_list_of_projects_fac.loc[i, 'Rejection reason']
             expected_tb_lam = mock_list_of_projects_fac.loc[i, 'TB LAM']
+            tat = mock_list_of_projects_fac.loc[i, 'TAT']
 
             # Extract the text content from the page
             page_content = page.extract_text()
@@ -187,6 +186,7 @@ class TestGenerateReport:
             assert expected_ccc_no in page_content
             assert expected_age in page_content
             assert expected_sex in page_content
+            assert tat in page_content
 
             # Validate CD4 count display
             # expected_cd4_count = mock_list_of_projects_fac.loc[i, 'CD4 Count']

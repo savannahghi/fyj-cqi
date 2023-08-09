@@ -419,8 +419,8 @@
                                               class="badge alert-info">Last update: {{ result.date_updated|date:"Y-m-d" }}</span>
                                         <br>
                                         <span style="font-size: 8px"
-                                              class="badge alert-info">Last update by: {{ request.user.first_name }}
-                                            {{ request.user.last_name }}
+                                              class="badge alert-info">Last update by: {{ result.modified_by.first_name|title }}
+                                            {{ result.modified_by.last_name|title }}
                                         </span>
                                     </td>
                                     <td> {{ result.date_dispatched|date:"Y-m-d" }} </td>

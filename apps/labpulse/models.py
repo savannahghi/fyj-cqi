@@ -1,8 +1,10 @@
 import uuid
 
-from crum import get_current_user
+from crum import get_current_request, get_current_user
 from django.core.validators import MaxValueValidator
 from django.db import models
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from django.utils import timezone
 
 from apps.account.models import CustomUser
@@ -92,11 +94,46 @@ class Cd4traker(models.Model):
     date_serum_crag_results_entered = models.DateTimeField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
+        """
+        Overrides the default save method to update created_by, modified_by, and timestamp fields.
+
+        Args:
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Notes:
+            - If the model instance has a primary key, it means it's being updated, and we don't modify the created_by field.
+            - If the user is authenticated and not a new user (pk exists), assign the current user to the created_by and modified_by fields.
+            - If self.tb_lam_results is set and date_tb_lam_results_entered is not set, set the current time as date_tb_lam_results_entered.
+            - If self.serum_crag_results is set and date_serum_crag_results_entered is not set, set the current time as date_serum_crag_results_entered.
+            - Call the parent class's save method to finalize the saving process.
+
+        Returns:
+            None
+        """
+        user = get_current_user()
+        if user and not user.pk:
+            user = None
+
+        if not self.pk:
+            # If the instance is being created, set the created_by field
+            self.created_by = user
+        self.modified_by = user
+
         if self.tb_lam_results and not self.date_tb_lam_results_entered:
+            # If TB LAM result is set and date is not entered, set the date_tb_lam_results_entered to current time
             self.date_tb_lam_results_entered = timezone.now()
         if self.serum_crag_results and not self.date_serum_crag_results_entered:
+            # If Serum Crag result is set and date is not entered, set the date_serum_crag_results_entered to current time
             self.date_serum_crag_results_entered = timezone.now()
-        super().save(*args, **kwargs)
+        if self.pk or self.date_dispatched:
+            try:
+                # If the instance is being updated and date_dispatched already exists, do not update it
+                obj = Cd4traker.objects.get(pk=self.pk)
+                self.date_dispatched = obj.date_dispatched
+            except Cd4traker.DoesNotExist:
+                pass  # Handle the case where the object doesn't exist
+        super().save(*args, **kwargs)  # Call parent class's save method
 
     class Meta:
         verbose_name_plural = "CD4 count tracker"

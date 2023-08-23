@@ -3,7 +3,7 @@ from django.forms import ModelForm
 from django.utils import timezone
 
 from apps.cqi.models import Facilities
-from apps.labpulse.models import Cd4traker, Cd4TestingLabs, LabPulseUpdateButtonSettings
+from apps.labpulse.models import Cd4traker, Cd4TestingLabs, Commodities, LabPulseUpdateButtonSettings, ReagentStock
 
 
 class Cd4trakerForm(ModelForm):
@@ -52,6 +52,23 @@ class Cd4trakerForm(ModelForm):
             instance.save()
         return instance
 
+    # def clean(self):
+    #     cleaned_data = super().clean()
+    #
+    #     # Check if CD4 test was performed
+    #     if cleaned_data.get('cd4_count_results') is not None:
+    #         cleaned_data['cd4_reagent_used'] = True
+    #
+    #     # Check if TB LAM test was performed
+    #     if cleaned_data.get('tb_lam_results') is not None:
+    #         cleaned_data['tb_lam_reagent_used'] = True
+    #
+    #     # Check if serum CRAG test was performed
+    #     if cleaned_data.get('serum_crag_results') is not None:
+    #         cleaned_data['serum_crag_reagent_used'] = True
+    #
+    #     return cleaned_data
+
 
 class Cd4TestingLabsForm(forms.Form):
     testing_lab_name = forms.ModelChoiceField(
@@ -59,7 +76,13 @@ class Cd4TestingLabsForm(forms.Form):
         empty_label="Select Testing Lab ...",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
-
+class facilities_lab_Form(forms.Form):
+    facility_name = forms.ModelChoiceField(
+        queryset=Facilities.objects.all(),
+        # queryset=Facilities.objects.filter(fyj_facilities=True),
+        empty_label="Select Testing Lab ...",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
 
 class Cd4TestingLabForm(ModelForm):
     class Meta:
@@ -119,3 +142,48 @@ class Cd4trakerManualDispatchForm(ModelForm):
             'cd4_percentage': 'CD4 % values',
             'tb_lam_results': 'TB LAM results',
         }
+
+class CommoditiesForm(ModelForm):
+    date_commodity_received = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Commodity Received"
+    )
+    expiry_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Expiry Date",
+        required=False
+    )
+
+    class Meta:
+        model = Commodities
+        exclude = ['created_by', 'modified_by', 'date_modified', 'date_created','facility_name']
+        labels = {
+            'number_received': 'Number of Reagents Received',
+            'type_of_reagent': 'Type Of Reagent',
+            'received_from': 'Received From',
+            'negative_adjustment': 'Negative Adjustment',
+            'positive_adjustment': 'Positive Adjustment',
+        }
+class ReagentStockForm(ModelForm):
+    date_commodity_received = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Commodity Received"
+    )
+    expiry_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Expiry Date",
+        required=False
+    )
+
+    class Meta:
+        model = ReagentStock
+        exclude = ['created_by', 'modified_by', 'date_modified', 'date_created','facility_name','quantity_used',
+                   'remaining_quantity']
+        labels = {
+            'number_received': 'Number of Reagents Received',
+            'type_of_reagent': 'Type Of Reagent',
+            'received_from': 'Received From',
+            'negative_adjustment': 'Negative Adjustment',
+            'positive_adjustment': 'Positive Adjustment',
+        }
+

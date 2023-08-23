@@ -12,6 +12,31 @@ from apps.cqi.models import Facilities, Sub_counties, Counties
 from apps.dqa.models import UpdateButtonSettings
 
 
+class BaseModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                    on_delete=models.CASCADE, related_name='+')
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # the BaseModel won't create a separate database table
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            # Record is being created, set created_by and modified_by fields
+            self.created_by = get_current_user()
+            self.modified_by = self.created_by
+        else:
+            # Record is being updated, set modified_by field
+            self.modified_by = get_current_user()
+
+        return super().save(*args, **kwargs)
+
+
 class Cd4TestingLabs(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     testing_lab_name = models.CharField(max_length=255, unique=True)
@@ -29,6 +54,10 @@ class Cd4TestingLabs(models.Model):
 
     def __str__(self):
         return str(self.testing_lab_name)
+
+    def save(self, *args, **kwargs):
+        self.testing_lab_name = self.testing_lab_name.upper()
+        super().save(*args, **kwargs)
 
 
 # Create your models here.
@@ -53,6 +82,7 @@ class Cd4traker(models.Model):
     JUSTIFICATION_CHOICES = sorted(
         (
             ("Baseline (Tx_new)", "Baseline (Tx_new)"),
+            ("Drug Resistance Test", "Drug Resistance Test"),
             ("Treatment Failure", "Treatment Failure"),
             ("Return to care > 3 months", "Return to care > 3 months"),
             ("On Fluconazole maintenance or Dapsone prophylaxis", "On Fluconazole maintenance or Dapsone prophylaxis"),
@@ -88,10 +118,14 @@ class Cd4traker(models.Model):
                                     on_delete=models.CASCADE, related_name='+')
     # date_dispatched = models.DateTimeField(auto_now_add=True)
     date_dispatched = models.DateTimeField(blank=True, null=True)
-    report_type = models.CharField(max_length=25,blank=True, null=True,default="Current")
+    report_type = models.CharField(max_length=25, blank=True, null=True, default="Current")
     date_updated = models.DateTimeField(auto_now=True)
     date_tb_lam_results_entered = models.DateTimeField(blank=True, null=True)
     date_serum_crag_results_entered = models.DateTimeField(blank=True, null=True)
+    # Fields to track reagent usage
+    cd4_reagent_used = models.BooleanField(default=False)
+    tb_lam_reagent_used = models.BooleanField(default=False)
+    serum_crag_reagent_used = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         """
@@ -133,6 +167,87 @@ class Cd4traker(models.Model):
                 self.date_dispatched = obj.date_dispatched
             except Cd4traker.DoesNotExist:
                 pass  # Handle the case where the object doesn't exist
+        # ########################
+        # # Update quantity used #
+        # ########################
+        # if not self.pk:
+        #     try:
+        #         original_instance = Cd4traker.objects.get(pk=self.pk)
+        #     except Cd4traker.DoesNotExist:
+        #         original_instance = None
+        #
+        #         # Rest of your update logic here
+        #     if original_instance is not None:
+        #
+        # # Check for changes in reagent fields and update reagent usage flags
+        # if self.cd4_count_results != original_instance.cd4_count_results:
+        #     self.cd4_reagent_used = True
+        #
+        # if self.tb_lam_results != original_instance.tb_lam_results:
+        #     self.tb_lam_reagent_used = True
+        #
+        # if self.serum_crag_results != original_instance.serum_crag_results:
+        #     self.serum_crag_reagent_used = True
+        #
+        # # Update reagent usage flags
+        # # Check if any reagent type has been used and not tracked before
+        # if self.cd4_reagent_used and ReagentStock.objects.filter(reagent_type='CD4',
+        #                                                              facility_name=self.facility_name,
+        #                                                              ).exists():
+        #     cd4_reagent_stock = ReagentStock.objects.get(reagent_type='CD4', facility_name=self.facility_name)
+        #     cd4_reagent_stock.quantity_used += 1
+        #     cd4_reagent_stock.save()
+        #
+        # if self.tb_lam_reagent_used and ReagentStock.objects.filter(reagent_type='TB LAM',
+        #                                                                 facility_name=self.facility_name,
+        #                                                                 ).exists():
+        #     tb_lam_reagent_stock = ReagentStock.objects.get(reagent_type='TB LAM',
+        #                                                     facility_name=self.facility_name)
+        #     tb_lam_reagent_stock.quantity_used += 1
+        #     tb_lam_reagent_stock.save()
+        #
+        # if self.serum_crag_reagent_used and ReagentStock.objects.filter(reagent_type='Serum CrAg',
+        #                                                                     facility_name=self.facility_name,
+        #                                                                     ).exists():
+        #     serum_crag_reagent_stock = ReagentStock.objects.get(reagent_type='Serum CrAg',
+        #                                                         facility_name=self.facility_name)
+        #     serum_crag_reagent_stock.quantity_used += 1
+        #     serum_crag_reagent_stock.save()
+        # else:
+        #     # This is a new record, you can directly set reagent usage flags
+        #     if self.cd4_count_results is not None:
+        #         self.cd4_reagent_used = True
+        #
+        #     if self.tb_lam_results is not None:
+        #         self.tb_lam_reagent_used = True
+        #
+        #     if self.serum_crag_results is not None:
+        #         self.serum_crag_reagent_used = True
+        #
+        #     # Check if any reagent type has been used and not tracked before
+        #     if self.cd4_reagent_used and ReagentStock.objects.filter(reagent_type='CD4',
+        #                                                              facility_name=self.facility_name,
+        #                                                              ).exists():
+        #         cd4_reagent_stock = ReagentStock.objects.get(reagent_type='CD4', facility_name=self.facility_name)
+        #         cd4_reagent_stock.quantity_used += 1
+        #         cd4_reagent_stock.save()
+        #
+        #     if self.tb_lam_reagent_used and ReagentStock.objects.filter(reagent_type='TB LAM',
+        #                                                                     facility_name=self.facility_name,
+        #                                                                     ).exists():
+        #         tb_lam_reagent_stock = ReagentStock.objects.get(reagent_type='TB LAM',
+        #                                                         facility_name=self.facility_name)
+        #         tb_lam_reagent_stock.quantity_used += 1
+        #         tb_lam_reagent_stock.save()
+        #
+        #     if self.serum_crag_reagent_used and ReagentStock.objects.filter(reagent_type='Serum CrAg',
+        #                                                                         facility_name=self.facility_name,
+        #                                                                         ).exists():
+        #         serum_crag_reagent_stock = ReagentStock.objects.get(reagent_type='Serum CrAg',
+        #                                                             facility_name=self.facility_name)
+        #         serum_crag_reagent_stock.quantity_used += 1
+        #         serum_crag_reagent_stock.save()
+
         super().save(*args, **kwargs)  # Call parent class's save method
 
     class Meta:
@@ -154,3 +269,56 @@ class Cd4traker(models.Model):
 class LabPulseUpdateButtonSettings(UpdateButtonSettings):
     def __str__(self):
         return str(self.hide_button_time)
+
+
+class Commodities(BaseModel):
+    type_of_reagent = models.CharField(max_length=25, choices=(
+        ('CD4', 'CD4'), ('Serum CrAg', 'Serum CrAg'), ('TB LAM', 'TB LAM')))
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
+    sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
+    county = models.ForeignKey(Counties, null=True, blank=True, on_delete=models.CASCADE)
+    number_received = models.IntegerField(blank=True, null=True)
+    date_commodity_received = models.DateTimeField()
+    expiry_date = models.DateTimeField(blank=True, null=True)
+    received_from = models.CharField(max_length=25, choices=(
+        ('KEMSA', 'KEMSA'), ('Another Facility', 'Another Facility')))
+    negative_adjustment = models.IntegerField(blank=True, null=True)
+    positive_adjustment = models.IntegerField(blank=True, null=True)
+
+
+class ReagentStock(BaseModel):
+    REAGENT_CHOICES = (
+        ('CD4', 'CD4'),
+        ('TB LAM', 'TB LAM'),
+        ('Serum CrAg', 'Serum CrAg')
+    )
+
+    reagent_type = models.CharField(max_length=25, choices=REAGENT_CHOICES)
+    received_from = models.CharField(max_length=25, choices=(
+        ('KEMSA', 'KEMSA'), ('Another Facility', 'Another Facility')))
+    beginning_balance = models.IntegerField(default=0)
+    quantity_received = models.IntegerField(default=0)
+    positive_adjustments = models.IntegerField(default=0)
+    quantity_used = models.IntegerField(default=0, blank=True)
+    negative_adjustment = models.IntegerField(default=0)
+    expiry_date = models.DateTimeField(blank=True, null=True)
+    quantity_expired = models.IntegerField(default=0)
+    remaining_quantity = models.IntegerField(default=0)
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
+    date_commodity_received = models.DateTimeField(default=timezone.now)
+
+    def calculate_remaining_quantity(self):
+        remaining_quantity = (self.beginning_balance + self.quantity_received + self.positive_adjustments -\
+                                  self.quantity_used - self.negative_adjustment - self.quantity_expired)
+        return remaining_quantity
+
+    def save(self, *args, **kwargs):
+        self.remaining_quantity = self.calculate_remaining_quantity()
+        super().save(*args, **kwargs)
+
+    class Meta:
+        verbose_name_plural = "Reagent stocks"
+
+    def __str__(self):
+        return str(self.facility_name) + " - " + str(self.reagent_type)+\
+            " Remaining quantity ("+ str(self.remaining_quantity)+")"

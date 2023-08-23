@@ -62,6 +62,7 @@ class Facilities(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=250, unique=True)
     mfl_code = models.IntegerField(unique=True)
+    fyj_facilities = models.BooleanField(default=False,blank=True)  # Set default value to False
 
     class Meta:
         verbose_name_plural = 'facilities'

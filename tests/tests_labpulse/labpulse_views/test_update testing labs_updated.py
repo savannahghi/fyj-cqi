@@ -145,7 +145,7 @@ class TestUpdateTestingLabsView:
 
         # Reload instance and assert attributes updated
         lab = Cd4TestingLabs.objects.get(pk=item.pk)
-        assert lab.testing_lab_name == 'Updated Lab'
+        assert lab.testing_lab_name == 'UPDATED LAB'
         assert lab.mfl_code == 5678
 
     @pytest.mark.parametrize('group_client', ['laboratory_staffs_labpulse'], indirect=True)
@@ -194,7 +194,7 @@ class TestUpdateTestingLabsView:
         assert response.context['form'].errors
 
         # Verify item fields unchanged
-        assert item.testing_lab_name == 'Lab 1'
+        assert item.testing_lab_name == 'LAB 1'
         assert item.mfl_code == 1234
 
     @pytest.mark.parametrize('group_client', ['laboratory_staffs_labpulse'], indirect=True)

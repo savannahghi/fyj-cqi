@@ -488,6 +488,7 @@ class FacilitiesForm(ModelForm):
     class Meta:
         model = Facilities
         fields = "__all__"
+        labels= {'name': "Facility Name",'mfl_code':"MFL CODE"}
 
 
 class CountiesForm(ModelForm):

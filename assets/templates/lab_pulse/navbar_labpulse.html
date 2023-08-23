@@ -1,9 +1,11 @@
+{% load remove_underscores %}
 <!-- Dynamically add active class to the links -->
 {% url "show_results" as show_results %}
 {% url "choose_testing_lab" as choose_testing_lab %}
+{% url "choose_lab" as choose_lab %}
 {% url "choose_testing_lab_manual" as choose_testing_lab_manual %}
 {#{% url "add_pharmacy_records" as add_pharmacy_records %}#}
-{% url "facility_dqa_summary" as facility_dqa_summary %}
+{% url "commodity_summary" as commodity_summary %}
 {% url "load_khis_data" as load_khis_data %}
 {% url "show_work_plan" as show_work_plan %}
 {% url "show_inventory" as show_inventory %}
@@ -33,13 +35,34 @@
             <ul class="nav flex-column">
                 <li class="nav-item">
                     <a class="nav-link {% if request.path == instructions_lab %} active{% endif %}"
-                       href="{% url 'instructions_lab' 'introduction'%}">
+                       href="{% url 'instructions_lab' 'introduction' %}">
                         <span data-feather="info" class="align-text-bottom"></span>
                         Instructions
                     </a>
                 </li>
             </ul>
             <ul class="nav flex-column">
+
+                {% if request.user|has_group_permission:"laboratory_staffs_labpulse,referring_laboratory_staffs_labpulse" or request.user.is_superuser %}
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                        <span>COMMODITIES</span>
+                    </h6>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == choose_lab %} active{% endif %}"
+                           href="{% url 'choose_lab' %}">
+                            <span data-feather="book" class="align-text-bottom"></span>
+                            Add Commodities
+                        </a>
+                    </li>
+
+                {% endif %}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link {% if request.path == choose_lab %} active{% endif %}"#}
+{#                       href="{% url 'commodity_summary' %}">#}
+{#                        <span data-feather="flag" class="align-text-bottom"></span>#}
+{#                        Commodity Report#}
+{#                    </a>#}
+{#                </li>#}
                 {% if perms.labpulse.view_choose_testing_lab %}
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
                         <span>Data entry</span>

@@ -44,7 +44,7 @@ from reportlab.pdfgen import canvas
 def load_data(request):
     if not request.user.first_name:
         return redirect("profile")
-    if request.method == 'POST':
+    if request.method == 'POST' and "file" in request.FILES:
         file = request.FILES['file']
         # Read the data from the an excel file into a pandas DataFrame
         keyword = "faci"

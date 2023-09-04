@@ -218,6 +218,7 @@ class FyjPerformance(models.Model):
 
     class Meta:
         unique_together = (('mfl_code', 'quarter_year'),)
+        ordering = ['facility']
 
     def __str__(self):
         return f"{self.facility} - {self.month}"
@@ -401,6 +402,7 @@ class KhisPerformance(models.Model):
 
     class Meta:
         unique_together = (('mfl_code', 'month'),)
+        ordering=['facility']
 
     def __str__(self):
         return f"{self.facility} - {self.month}"

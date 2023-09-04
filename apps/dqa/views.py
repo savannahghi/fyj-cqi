@@ -221,7 +221,7 @@ def khis_data_prep(df):
 def load_khis_data(request):
     if not request.user.first_name:
         return redirect("profile")
-    if request.method == 'POST':
+    if request.method == 'POST' and "file" in request.FILES:
         file = request.FILES['file']
         # Read the data from the Excel file into a pandas DataFrame
         keyword = "his"
@@ -307,7 +307,7 @@ def load_khis_data(request):
 def load_system_data(request):
     if not request.user.first_name:
         return redirect("profile")
-    if request.method == 'POST':
+    if request.method == 'POST' and "file" in request.FILES:
         file = request.FILES['file']
         df = pd.read_excel(file, usecols=[0])
         for index, row in df.iterrows():
@@ -324,7 +324,7 @@ def load_system_data(request):
 def load_data(request):
     if not request.user.first_name:
         return redirect("profile")
-    if request.method == 'POST':
+    if request.method == 'POST' and "file" in request.FILES:
         file = request.FILES['file']
         # Read the data from the Excel file into a pandas DataFrame
         keyword = "perf"
@@ -2431,24 +2431,134 @@ def calc_percentage(row):
     return row
 
 
-def prepare_data_system_assessment(system_assessments_df, description_list):
-    green = system_assessments_df[system_assessments_df['calculations'] == 3.0]
-    green = green.rename(columns={"count": "greens"})
-    yellow = system_assessments_df[system_assessments_df['calculations'] == 2.0]
-    yellow = yellow.rename(columns={"count": "yellows"})
-    red = system_assessments_df[system_assessments_df['calculations'] == 1.0]
-    red = red.rename(columns={"count": "reds"})
+# def different_dfs(system_assessments_df):
+#     green = system_assessments_df[system_assessments_df['calculations'] == 3.0]
+#     green = green.rename(columns={"count": "greens"})
+#     yellow = system_assessments_df[system_assessments_df['calculations'] == 2.0]
+#     yellow = yellow.rename(columns={"count": "yellows"})
+#     red = system_assessments_df[system_assessments_df['calculations'] == 1.0]
+#     red = red.rename(columns={"count": "reds"})
+#
+#     na_dfs = system_assessments_df[system_assessments_df['calculations'].isnull()].fillna(0)
+#     blue = na_dfs.copy()
+#     na_dfs = na_dfs.rename(columns={"count": "not applicable"})
+#
+#     greens = green.groupby('description').sum(numeric_only=True)['greens'].reset_index().sort_values('greens',
+#                                                                                                      ascending=False)
+#     yellows = yellow.groupby('description').sum(numeric_only=True)['yellows'].reset_index().sort_values('yellows',
+#                                                                                                         ascending=False)
+#     reds = red.groupby('description').sum(numeric_only=True)['reds'].reset_index().sort_values('reds', ascending=False)
+#     na_dfs = na_dfs.groupby('description').sum(numeric_only=True)['not applicable'].reset_index()
+#     return red,reds,yellow,yellows,green,greens,na_dfs,blue
 
-    na_dfs = system_assessments_df[system_assessments_df['calculations'].isnull()].fillna(0)
-    blue = na_dfs.copy()
-    na_dfs = na_dfs.rename(columns={"count": "not applicable"})
+def different_dfs(system_assessments_df, calculation_mapping):
+    dfs = {}
 
-    greens = green.groupby('description').sum(numeric_only=True)['greens'].reset_index().sort_values('greens',
-                                                                                                     ascending=False)
-    yellows = yellow.groupby('description').sum(numeric_only=True)['yellows'].reset_index().sort_values('yellows',
-                                                                                                        ascending=False)
-    reds = red.groupby('description').sum(numeric_only=True)['reds'].reset_index().sort_values('reds', ascending=False)
-    na_dfs = na_dfs.groupby('description').sum(numeric_only=True)['not applicable'].reset_index()
+    for calculation_value, (label, column_name) in calculation_mapping.items():
+        if calculation_value == 0:
+            # Handle the 'not applicable' case separately
+            na_df = system_assessments_df[(system_assessments_df['calculations'] == 0) |
+                                          (system_assessments_df['calculations'] == 0)].fillna(0)
+            na_df = na_df.rename(columns={"count": column_name})
+            dfs[label] = (na_df, na_df)
+        else:
+            sub_df = system_assessments_df[system_assessments_df['calculations'] == calculation_value]
+            sub_df = sub_df.rename(columns={"count": column_name})
+            grouped_df = sub_df.groupby('description').sum(numeric_only=True)[column_name].reset_index().sort_values(
+                column_name, ascending=False)
+            dfs[label] = (sub_df, grouped_df)
+
+    return dfs
+
+
+# Example usage with a custom calculation_mapping:
+custom_mapping = {
+    1: ("red", "reds"),
+    2: ("yellow", "yellows"),
+    3: ("light_green", "light_greens"),
+    4: ("green", "greens"),
+    5: ("blue", "blues"),
+    0: ("not_applicable", "not applicable"),
+}
+
+
+# system_assessments_df = ...  # Your DataFrame here
+# result_dfs = different_dfs(system_assessments_df, custom_mapping)
+#
+# # Access the DataFrames and grouped DataFrames by label
+# red_df, red_grouped_df = result_dfs['red']
+# yellow_df, yellow_grouped_df = result_dfs['yellow']
+#
+#
+# # ... and so on for other labels
+def get_df_from_results(result_dfs):
+    if "red" in result_dfs.keys():
+        red_df, red_grouped_df = result_dfs['red']
+    else:
+        red_df = pd.DataFrame(columns=['wards', 'ward_code', 'description', "auditor's note", 'calculations', 'reds'])
+        red_grouped_df = pd.DataFrame(columns=['description', 'reds'])
+
+    if "yellow" in result_dfs.keys():
+        yellow_df, yellow_grouped_df = result_dfs['yellow']
+    else:
+        yellow_df = pd.DataFrame(
+            columns=['wards', 'ward_code', 'description', "auditor's note", 'calculations', 'yellows'])
+        yellow_grouped_df = pd.DataFrame(columns=['description', 'yellows'])
+
+    if "light_green" in result_dfs.keys():
+        light_green_df, light_green_grouped_df = result_dfs['light_green']
+    else:
+        light_green_df = pd.DataFrame(
+            columns=['wards', 'ward_code', 'description', "auditor's note", 'calculations', 'light_greens'])
+        light_green_grouped_df = pd.DataFrame(columns=['description', 'light_greens'])
+
+    if "green" in result_dfs.keys():
+        green_df, green_grouped_df = result_dfs['green']
+    else:
+        green_df = pd.DataFrame(
+            columns=['wards', 'ward_code', 'description', "auditor's note", 'calculations', 'greens'])
+        green_grouped_df = pd.DataFrame(columns=['description', 'greens'])
+
+    if "blue" in result_dfs.keys():
+        blue_df, blue_grouped_df = result_dfs['blue']
+    else:
+        blue_df = pd.DataFrame(columns=['wards', 'ward_code', 'description', "auditor's note", 'calculations', 'blues'])
+        blue_grouped_df = pd.DataFrame(columns=['description', 'blues'])
+
+    if "not_applicable" in result_dfs.keys():
+        na_df, na_df_grouped_df = result_dfs['not_applicable']
+    else:
+        na_df = pd.DataFrame(
+            columns=['wards', 'ward_code', 'description', "auditor's note", 'calculations', 'not applicable'])
+        na_df_grouped_df = pd.DataFrame(columns=['description', 'not applicable'])
+    return red_df, red_grouped_df, yellow_df, yellow_grouped_df, light_green_df, light_green_grouped_df, green_df, green_grouped_df, blue_df, blue_grouped_df, na_df, na_df_grouped_df
+
+
+def prepare_data_system_assessment(system_assessments_df, custom_mapping,description_list):
+    # system_assessments_df.to_csv("system_assessments_df.csv", index=False)
+    result_dfs = different_dfs(system_assessments_df, custom_mapping)
+
+    red, reds, yellow, yellows, light_green, light_greens, green, greens, blue, blues, na_df, na_dfs = get_df_from_results(
+        result_dfs)
+
+    # red,reds,yellow,yellows,green,greens,na_dfs,blue=different_dfs(system_assessments_df)
+    # green = system_assessments_df[system_assessments_df['calculations'] == 3.0]
+    # green = green.rename(columns={"count": "greens"})
+    # yellow = system_assessments_df[system_assessments_df['calculations'] == 2.0]
+    # yellow = yellow.rename(columns={"count": "yellows"})
+    # red = system_assessments_df[system_assessments_df['calculations'] == 1.0]
+    # red = red.rename(columns={"count": "reds"})
+    #
+    # na_dfs = system_assessments_df[system_assessments_df['calculations'].isnull()].fillna(0)
+    # blue = na_dfs.copy()
+    # na_dfs = na_dfs.rename(columns={"count": "not applicable"})
+    #
+    # greens = green.groupby('description').sum(numeric_only=True)['greens'].reset_index().sort_values('greens',
+    #                                                                                                  ascending=False)
+    # yellows = yellow.groupby('description').sum(numeric_only=True)['yellows'].reset_index().sort_values('yellows',
+    #                                                                                                     ascending=False)
+    # reds = red.groupby('description').sum(numeric_only=True)['reds'].reset_index().sort_values('reds', ascending=False)
+    # na_dfs = na_dfs.groupby('description').sum(numeric_only=True)['not applicable'].reset_index()
 
     scores_df = greens.merge(yellows, on='description', how='outer').merge(reds, on='description', how='outer').merge(
         na_dfs, on='description', how='outer')
@@ -2601,7 +2711,7 @@ def prepare_data_system_assessment(system_assessments_df, description_list):
 
     yellow = assign_component(yellow)
     red = assign_component(red)
-    blue = assign_component(blue)
+    blue = assign_component(na_df)
     return m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report, m_e_emr_systems, red, yellow, blue, all_dfs
 
 
@@ -3574,7 +3684,14 @@ def prepare_dqa_workplan_viz(dqa_workplan_df):
     return facilities_df, area_reviewed_df, action_point_status_df, weekly_counts, timeframe_df, area_reviewed_facility_df
 
 
-def create_system_assessment_chart(df, fyj_mean, quarter_year):
+def get_mean_color(fyj_mean, thresholds, list_colors):
+    for i in range(len(thresholds)):
+        if fyj_mean >= thresholds[i]:
+            return fyj_mean, list_colors[i]
+    return fyj_mean, list_colors[-1]
+
+
+def create_system_assessment_chart(df, fyj_mean, mean_color, quarter_year):
     # Creating the plot using plotly express
     fig = px.bar(df, x='Component of the M&E System', y='Mean', height=450,
                  title=f'FYJ {quarter_year} DQA system assessment', text='Mean',
@@ -3582,19 +3699,19 @@ def create_system_assessment_chart(df, fyj_mean, quarter_year):
                  , color='color', color_discrete_sequence=df['color'].unique(),
                  # template='simple_white'
                  )
-
+    line_length = df.shape[0] - 0.5
     # Adding the mean line to the plot
-    fig.add_shape(type='line', x0=-0.5, y0=fyj_mean, x1=4.5, y1=fyj_mean,
+    fig.add_shape(type='line', x0=-0.5, y0=fyj_mean, x1=line_length, y1=fyj_mean,
                   line=dict(color='red', width=2, dash='dot'))
-    if fyj_mean >= 2.5:
-        mean_color = "green"
-    elif fyj_mean < 2.5 and fyj_mean >= 1.5:
-        mean_color = "#ebba34"
-    else:
-        mean_color = "red"
+    # if fyj_mean >= 2.5:
+    #     mean_color = "green"
+    # elif fyj_mean < 2.5 and fyj_mean >= 1.5:
+    #     mean_color = "#ebba34"
+    # else:
+    #     mean_color = "red"
 
     # Adding the mean label to the plot
-    fig.add_annotation(x=4.5, y=fyj_mean, text=f'Mean: {fyj_mean}', showarrow=True,
+    fig.add_annotation(x=line_length, y=fyj_mean, text=f'Mean: {fyj_mean}', showarrow=True,
                        font=dict(size=14, color=mean_color), arrowhead=1)
 
     fig.update_xaxes(showgrid=False)
@@ -3986,7 +4103,10 @@ def dqa_dashboard(request, dqa_type=None):
                 "What is your main challenge regarding data management and reporting?"]
             average_dictionary, expected_counts_dictionary = calculate_averages(system_assessment,
                                                                                 description_list)
+            print("AVG DICTS DQA::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+            print(average_dictionary)
             df = pd.DataFrame(average_dictionary.items(), columns=['Component of the M&E System', 'Mean'])
+            print(df)
             df['Component of the M&E System'] = df['Component of the M&E System'].str.replace(
                 "average_calculations_5_12", "Data Management Processes")
             df['Component of the M&E System'] = df['Component of the M&E System'].str.replace(
@@ -4003,11 +4123,19 @@ def dqa_dashboard(request, dqa_type=None):
             cond_list = [df['Mean'] >= 2.5, (df['Mean'] >= 1.5) & (df['Mean'] < 2.5), df['Mean'] < 1.5]
             choice_list = ["green", "yellow", "red"]
             df['color'] = np.select(cond_list, choice_list, default="n/a")
-
-            system_assessment_viz = create_system_assessment_chart(df, fyj_mean, quarter_year)
+            thresholds = [2.5, 1.5]
+            color_list = ["green", "#ebba34", "red"]
+            fyj_mean, mean_color = get_mean_color(fyj_mean, thresholds, color_list)
+            system_assessment_viz = create_system_assessment_chart(df, fyj_mean, mean_color, quarter_year)
             # Show system assessment performance
+            custom_mapping = {
+                1: ("red", "reds"),
+                2: ("yellow", "yellows"),
+                3: ("green", "greens"),
+                 0: ("not_applicable", "not applicable"),
+            }
             m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report, m_e_emr_systems, red, \
-            yellow, blue, all_dfs = prepare_data_system_assessment(system_assessments_df, description_list)
+                yellow, blue, all_dfs = prepare_data_system_assessment(system_assessments_df, custom_mapping,description_list)
             names = ["I - M&E Structure, Functions and Capabilities", "II - Data Management Processes",
                      "III - Indicator Definitions and Reporting Guidelines",
                      "IV - Data-collection and Reporting Forms / Tools",
@@ -4156,7 +4284,7 @@ def dqa_dashboard(request, dqa_type=None):
             # convert data from database to a dataframe
             dqa_workplan_df = pd.DataFrame(dqa_workplan_qs)
             facilities_df, area_reviewed_df, action_point_status_df, weekly_counts, timeframe_df, \
-            area_reviewed_facility_df = prepare_dqa_workplan_viz(dqa_workplan_df)
+                area_reviewed_facility_df = prepare_dqa_workplan_viz(dqa_workplan_df)
             work_plan_facilities_viz = bar_chart_dqa(facilities_df, "Facilities", "Number of action points",
                                                      title=f"Distribution of DQA action points per facility N = "
                                                            f"{facilities_df['Number of action points'].sum()}"

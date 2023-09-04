@@ -1,5 +1,5 @@
 import math
-from datetime import datetime
+from datetime import date, datetime
 
 import numpy as np
 import pandas as pd
@@ -284,6 +284,36 @@ def validate_cd4_count_form(form, report_type):
     return True
 
 
+def validate_date_fields(form, date_fields):
+    """
+    Validate date fields in a form.
+
+    Args:
+        form (Form): The form containing the date fields.
+        date_fields (list): List of date field names to validate.
+
+    Returns:
+        bool: True if all date fields are valid, False otherwise.
+    """
+    # Loop through each date field for validation
+    for field_name in date_fields:
+        # Get the date value from the cleaned data
+        date_value = form.cleaned_data.get(field_name)
+        if date_value:
+            # Define the allowable date range
+            min_date = date(1900, 1, 1)  # Minimum allowable date
+            max_date = date(3100, 12, 31)  # Maximum allowable date
+            # Check if the date is within the allowable range
+            if not (min_date <= date_value <= max_date):
+                # Add an error to the form for invalid date
+                form.add_error(field_name, 'Please enter a valid date.')
+
+    # Check if any errors were added to the form
+    if any(field_name in form.errors for field_name in date_fields):
+        return False  # Validation failed
+    else:
+        return True  # Validation succeeded
+
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse'])
 def add_cd4_count(request, report_type, pk_lab):
@@ -309,6 +339,13 @@ def add_cd4_count(request, report_type, pk_lab):
     if request.method == "POST":
         if form.is_valid():
             post = form.save(commit=False)
+            #################
+            # Validate date
+            #################
+            date_fields_to_validate = ['date_of_collection', 'date_of_testing', 'date_sample_received']
+            if not validate_date_fields(form, date_fields_to_validate):
+                # Render the template with the form and errors
+                return render(request, template_name, context)
             if not validate_cd4_count_form(form, report_type):
                 # If validation fails, return the form with error messages
                 return render(request, template_name, context)
@@ -373,6 +410,13 @@ def update_cd4_results(request, report_type, pk):
             }
             template_name = 'lab_pulse/add_cd4_data.html'
             post = form.save(commit=False)
+            #################
+            # Validate date
+            #################
+            date_fields_to_validate = ['date_of_collection', 'date_of_testing', 'date_sample_received']
+            if not validate_date_fields(form, date_fields_to_validate):
+                # Render the template with the form and errors
+                return render(request, template_name, context)
             facility_name = form.cleaned_data['facility_name']
             if not validate_cd4_count_form(form, report_type):
                 # If validation fails, return the form with error messages

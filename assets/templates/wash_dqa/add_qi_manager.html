@@ -1,0 +1,447 @@
+{% extends 'wash_dqa/index_dqa.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info col-12" role="alert">
+                            <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
+                        </div>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <div class="container-fluid py-5">
+                <h1 class="display-6 fw-bold text-primary text-center">{{ title }} </h1>
+                {% if qi_project %}
+                    <h4 class="display-6">FACILITY: {{ qi_project.facility_name }}</h4>
+                    <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title }}</h6>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <strong>OBJECTIVE: </strong>{{ qi_project.objective }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>NUMERATOR: </strong> {{ qi_project.numerator }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>DENOMINATOR: </strong>{{ qi_project.denominator }}
+                        </div>
+                    </div>
+                {% endif %}
+                {% if lesson_learnt %}
+                    <div class="row mb-4">
+                        <div class="col-md-12 text-primary">
+                            {% for lesson in lesson_learnt %}
+                                <strong>FUTURE PLANS: </strong>{{ lesson.future_plans }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+
+                {% if "ADD RESOURCES" in title %}
+
+                    <form class="row " method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            {% if "description" in field.html_name or "name" in field.html_name|lower %}
+                                <div class="col-md-12 mt-4">
+                                    {{ field|as_crispy_field }}
+                                </div>
+                            {% else %}
+                                <div class="col-md-6 mt-4">
+                                    {{ field|as_crispy_field }}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        <div class="col-md-4 mt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
+
+                {% elif "test of change" in title %}
+                    <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            {% if "comment" in field.html_name or "tested" in field.html_name|lower %}
+                                <div class="col-md-12 mt-4">
+                                    {{ field|as_crispy_field }}
+                                </div>
+                            {% else %}
+                                <div class="col-md-6 mt-4">
+                                    {{ field|as_crispy_field }}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        <div class="col-md-4 mt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
+
+                {% elif "Action Plan" in title %}
+                    <form class="row mt-5" method="POST" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            {% if "comment" in field.html_name or "tested" in field.html_name|lower %}
+                                <div class="col-md-12 mt-4">
+                                    {{ field|as_crispy_field }}
+                                </div>
+                            {% else %}
+                                <div class="col-md-6 mt-4">
+                                    {{ field|as_crispy_field }}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        <div class="col-md-12 mt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
+
+                {% elif "DQA Work Plan" in title %}
+                    <h6 class="mb-4 mt-4">WARD: {{ facility }}</h6>
+                    <h6 class="mb-4 mt-4">WARD CODE: {{ mfl_code }}</h6>
+                    <h6 class="mb-4 mt-4">DQA date: {{ date_modified }}</h6>
+                    {% if system_assessment_no or system_assessment_partly %}
+                        <p class="text-primary small">Ensuring the accuracy, reliability, completeness, timeliness, and
+                            consistency of the data that Fahari ya Jamii (FYJ) collected is crucial. To achieve this, we
+                            recommend adopting a proactive approach that involves ongoing data quality assessment (DQA)
+                            and implementing continuous quality improvement (CQI) processes.
+                        </p>
+                        <p class="text-primary small">
+                            CQI helps address the root causes of data quality issues identified through DQA, which
+                            prompts us to create action plans for all system assessment areas that score <strong
+                                class="text-warning">Yellow</strong> or <strong class="text-danger">Red</strong>.
+                            Through CQI, we remain focused on our goals, maintain accountability, and continuously
+                            improve the quality of care we provide to our patients.
+                        </p>
+                        <p class="text-primary small">
+                            By adopting ongoing DQA and CQI, we ensure that our data is accurate and reliable,
+                            supporting better decision-making, program planning, and overall performance. It also
+                            ensures we meet reporting and accountability requirements for external funding sources.
+
+                        </p>
+                        <div class="row">
+                            {% if system_assessment_partly %}
+                                <div class="col-md-6">
+                                    <div>
+                                        <a class="btn btn-warning" data-bs-toggle="collapse" href="#collapseyellows"
+                                           role="button" aria-expanded="false" aria-controls="collapseyellows">
+                                            WASH assessment YELLOW scores
+                                            <span class="badge bg-secondary" data-bs-toggle="tooltip"
+                                                  title="Number of YELLOW scores. Click to view">
+                                                {{ system_assessment_partly_count }}
+                                            </span>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if system_assessment_no %}
+                                <div class="col-md-6">
+                                    <div>
+                                        <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapsereds"
+                                           role="button" aria-expanded="false" aria-controls="collapsereds">
+                                            WASH assessment RED scores
+                                            <span class="badge bg-secondary" data-bs-toggle="tooltip"
+                                                  title="Number of RED scores. Click to view">
+                                                {{ system_assessment_no_count }}
+                                            </span>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            <div class="collapse bg-light mt-2" id="collapseyellows">
+                                {% if system_assessment_partly %}
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th>Focus Area</th>
+                                            <th>Description</th>
+                                            <th>Auditors Note</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% if documentation_partly.count > 0 %}
+                                            {% for system_assessment in documentation_partly %}
+                                                <tr>
+                                                    <td class="text-warning fw-bold">Documentation</td>
+                                                    <td>{{ system_assessment.description }}</td>
+                                                    <td class="text-warning">{{ system_assessment.auditor_note }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if data_quality_partly.count > 0 %}
+                                            {% for system_assessment in data_quality_partly %}
+                                                <tr>
+                                                    <td class="text-warning fw-bold">Data Quality Systems</td>
+                                                    <td>{{ system_assessment.description }}</td>
+                                                    <td class="text-warning">{{ system_assessment.auditor_note }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if data_collection_partly.count > 0 %}
+                                            {% for system_assessment in data_collection_partly %}
+                                                <tr>
+                                                    <td class="text-warning fw-bold">Data Collection, Reporting and
+                                                        Management
+                                                    </td>
+                                                    <td>{{ system_assessment.description }}</td>
+                                                    <td class="text-warning">{{ system_assessment.auditor_note }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if data_assessment_partly.count > 0 %}
+                                            {% for system_assessment in data_assessment_partly %}
+                                                <tr>
+                                                    <td class="text-warning fw-bold">Data Quality Assessment By Data
+                                                        Source
+                                                    </td>
+                                                    <td>{{ system_assessment.description }}</td>
+                                                    <td class="text-warning">{{ system_assessment.auditor_note }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                        </tbody>
+                                    </table>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="collapse bg-light mt-2" id="collapsereds">
+                                {% if system_assessment_no %}
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th>Focus Area</th>
+                                            <th>Description</th>
+                                            <th>Auditors Note</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% if documentation_no.count > 0 %}
+                                            {% for system_assessment in documentation_no %}
+                                                <tr>
+                                                    <td class="text-danger fw-bold">Documentation</td>
+                                                    <td>{{ system_assessment.description }}</td>
+                                                    <td class="text-danger">{{ system_assessment.auditor_note }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if data_quality_no.count > 0 %}
+                                            {% for system_assessment in data_quality_no %}
+                                                <tr>
+                                                    <td class="text-danger fw-bold">Data Quality Systems</td>
+                                                    <td>{{ system_assessment.description }}</td>
+                                                    <td class="text-danger">{{ system_assessment.auditor_note }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if data_collection_no.count > 0 %}
+                                            {% for system_assessment in data_collection_no %}
+                                                <tr>
+                                                    <td class="text-danger fw-bold">Data Collection, Reporting and
+                                                        Management
+                                                    </td>
+                                                    <td>{{ system_assessment.description }}</td>
+                                                    <td class="text-danger">{{ system_assessment.auditor_note }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if data_assessment_no.count > 0 %}
+                                            {% for system_assessment in data_assessment_no %}
+                                                <tr>
+                                                    <td class="text-danger fw-bold">Data Quality Assessment</td>
+                                                    <td>{{ system_assessment.description }}</td>
+                                                    <td class="text-danger">{{ system_assessment.auditor_note }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endif %}
+                                        </tbody>
+                                    </table>
+                                {% endif %}
+                            </div>
+                        </div>
+                        </div>
+                    {% endif %}
+
+
+                    <form class="row mt-5" method="POST" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+
+                        <div class="col-md-6 mt-4">
+                            {{ form.dqa_date|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.program_areas_reviewed|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.strengths_identified|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.gaps_identified|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.individuals_conducting_dqa|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.recommendation|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4 mt-4">
+                            {{ form.individuals_responsible|as_crispy_field }}
+                        </div>
+
+                        <div class="col-md-4 mt-4">
+                            {{ form.comments|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.percent_completed|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.due_complete_by|as_crispy_field }}
+                        </div>
+
+                        <div class="col-md-12 mt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
+
+
+                {% elif "SUSTAINMENT PLAN" in title %}
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapserootcause" role="button"
+                               aria-expanded="false" aria-controls="collapserootcause">
+                                SUSTAINMENT PLAN IN BRIEF
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="collapse bg-light mt-2" id="collapserootcause">
+                        <p>Ensuring the longevity of the improvements made during a quality improvement project is a
+                            part
+                            of the sustainment plan. The plan captures all the vital information needed to maintain
+                            progress
+                            , including objectives, metrics for measuring success, communication plan, budget, risks,
+                            training and support, feedback mechanisms, and reaction plan.
+                        </p>
+                        <p>
+                            The RACI matrix outlines the roles and responsibilities of each person involved in the
+                            sustainment plan, helping to ensure that everyone is aware of their part in maintaining the
+                            improvements. This information will help track the progress of the sustainment plan and keep
+                            all
+                            stakeholders informed of their responsibilities.
+                        </p>
+                        <p>
+                            This section will provide you with a comprehensive understanding of the key elements of a
+                            successful Sustainment Plan and its critical role in ensuring the sustainability of
+                            improvements made during a quality improvement project.
+                        </p>
+                        <p>
+                            The information captured in the Sustainment Plan serves as a guide to ensure that we take
+                            all
+                            necessary steps to maintain progress and overcome any challenges that may arise during the
+                            sustainment phase. By planning and documenting all aspects of the sustainment plan
+                            carefully,
+                            you increase the likelihood of success and ensure the long-term sustainability of your
+                            quality
+                            improvement project.
+                        </p>
+                    </div>
+                    <form class="row mt-5" method="POST" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        <div class="col-md-6 mt-4 mb-5">
+                            <div class="col-md-12 mt-4">
+                                {{ form.start_date|as_crispy_field }}
+                            </div>
+                            <div class="col-md-12 mt-5">
+                                {{ form.end_date|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.objectives|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.metrics|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.communication_plan|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.risks|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.budget|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.mitigation|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.training_and_support|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.feedback_mechanisms|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.reaction_plan|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.responsible|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.accountable|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.consulted|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6 mt-4">
+                            {{ form.informed|as_crispy_field }}
+                        </div>
+                        <div class="col-md-12 mt-3">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
+                {% else %}
+                    <form method="POST" class="mt-5" enctype='multipart/form-data'>
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <input class="btn btn-success mt-1" type="submit" value="Submit">
+                    </form>
+                {% endif %}
+        </div>
+        </div>
+    </main>
+{% endblock %}

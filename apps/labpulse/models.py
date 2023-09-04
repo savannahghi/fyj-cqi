@@ -148,7 +148,7 @@ class Cd4traker(models.Model):
         ]
 
     def __str__(self):
-        return str(self.facility_name) + " " + str(self.patient_unique_no) + "" + str(self.date_of_collection)
+        return str(self.facility_name) + "_" + str(self.patient_unique_no) + "_" + str(self.date_of_collection)
 
 
 class LabPulseUpdateButtonSettings(UpdateButtonSettings):

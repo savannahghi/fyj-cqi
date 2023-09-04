@@ -1,0 +1,278 @@
+{% extends 'wash_dqa/index_dqa.html' %}
+{% load crispy_forms_filters %}
+{#{% extends 'cqi/index.html' %}#}
+{% load static %}
+{% load crispy_forms_tags %}
+{% regroup sub_counties by counties as sub_counties_by_county %}
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <div class="col-md-12">
+                <h6 class="display-6 text-primary text-center">WASH DQA Data Verification Assessment Tool</h6>
+                <hr>
+                {% if messages %}
+                    {% if messages|length >= 1 %}
+                        {% for message in messages %}
+                            {% if "dqa indicator" in message|lower %}
+                                <div class="mb-3">
+                                    <a href="{% url 'add_data_verification' %}" class="btn btn-success flicker-button"
+                                       role="button"> ADD FACILITY DQA DATA
+                                    </a>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    <!--group the messages by their text and display only one message for each unique text-->
+                    {% regroup messages by message as message_list %}
+                    {% for message in message_list %}
+                        <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                            <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if data_verification %}
+                    {% for data in data_verification|slice:":1" %}
+                        <h5 class="h5">WARD: {{ data.ward_name.name }} </h5>
+                        <h6 class="h6">SUB COUNTY: {{ data.ward_name.sub_county }} </h6>
+                        <h6 class="h6">DATE OF AUDIT: {{ data.date_modified }} </h6>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+            {% csrf_token %}
+            <p> Please choose quarter, year, ward and then submit </p>
+
+            <div class="col-md-2 mt-2">
+                {{ form.quarter|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-2 pr-5">
+                {{ year_form.year|as_crispy_field }}
+            </div>
+            <div class="col-md-4 mt-2">
+                {{ ward_form.name|as_crispy_field }}
+            </div>
+            <div class="col-md-2 mt-2 pt-3">
+                <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+            </div>
+        </form>
+
+        <table class="table table-striped table-hover" style="font-size: small;">
+            <thead class="thead-dark">
+            <tr>
+                <th></th>
+                <th colspan="3" style="font-size: x-small"> Primary Data source (Registers)</th>
+                <th></th>
+                <th colspan="3" style="font-size: x-small"> Verification Monthly Reports</th>
+                <th></th>
+                <th colspan="3" style="font-size: x-small"> Verification JPHES</th>
+                <th></th>
+                <th></th>
+            </tr>
+            <tr>
+                <th></th>
+                <th colspan="3" style="font-size: x-small"> VALUE COUNTED FROM SOURCE</th>
+                <th></th>
+                <th colspan="3" style="font-size: x-small"> VALUE REPORTED</th>
+                <th></th>
+                <th colspan="3" style="font-size: x-small"> VALUE REPORTED JPHES</th>
+                <th></th>
+                <th></th>
+            </tr>
+            {% if quarters %}
+                <tr>
+                    <th style="font-size: x-small">Indicator</th>
+                    {% for key,months in quarters.items %}
+                        {% for month in months %}
+                            <th style="font-size: x-small">{{ month }}</th>
+                        {% endfor %}
+                        {% for month in months %}
+                            <th style="font-size: x-small">{{ month }}</th>
+                        {% endfor %}
+                        {% for month in months|slice:":-1" %}
+                            <th style="font-size: x-small">{{ month }}</th>
+                        {% endfor %}
+                        <th class="align-middle text-center" style="font-size: x-small ">
+                            FY {{ selected_year }} {{ key }}</th>
+                        {% for data in data_verification %}
+                            {% if forloop.last %}
+                                {% if not data.hide_update_button or request.user.is_superuser %}
+                                    <th></th>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </tr>
+            {% endif %}
+            </thead>
+            <tbody>
+            {#            {% if data_verification and khis_performance and fyj_performance %}#}
+            {% for data in data_verification %}
+                <tr>
+                    <!-- INDICATORS -->
+                    <td class="text-left">{{ data.indicator }}</td>
+                    <!-- REGISTERS RAW DATA-->
+                    <td class="align-middle text-center">{{ data.field_1 }}</td>
+                    <td class="align-middle text-center">{{ data.field_2 }}</td>
+                    <td class="align-middle text-center">{{ data.field_3 }}</td>
+                    <!-- REGISTERS/SOURCE TOTAL-->
+                    {% for performance in khis_performance %}
+                        {% if forloop.last %}
+                            {% if "hl.8.1-1" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_basic_water_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_source }}
+                                </td>
+                            {% elif "hl.8.1-2" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_safe_water_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_source }}
+                                </td>
+                            {% elif "hl.8.2-1" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_community_open_defecation_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_source }}
+                                </td>
+                            {% elif "hl.8.2-2" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_basic_sanitation_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_source }}
+                                </td>
+                            {% elif "hl.8.2-3" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_safe_sanitation_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_source }}
+                                </td>
+                            {% elif "hl.8.2-4" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_basic_sanitation_institutions_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_source }}
+                                </td>
+                            {% elif "hl.cust mch 12.0" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_trained_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_source }}
+                                </td>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    <!-- MOH 731 RAW DATA-->
+                    <td class="align-middle text-center">{{ data.field_5 }}</td>
+                    <td class="align-middle text-center">{{ data.field_6 }}</td>
+                    <td class="align-middle text-center">{{ data.field_7 }}</td>
+                    <!-- MOH 731 TOTALS-->
+                    {% for performance in khis_performance %}
+                        {% if forloop.last %}
+                            {% if "hl.8.1-1" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_basic_water_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_monthly_report }}
+                                </td>
+                            {% elif "hl.8.1-2" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_safe_water_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_monthly_report }}
+                                </td>
+                            {% elif "hl.8.2-1" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_community_open_defecation_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_monthly_report }}
+                                </td>
+                            {% elif "hl.8.2-2" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_basic_sanitation_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_monthly_report }}
+                                </td>
+                            {% elif "hl.8.2-3" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_safe_sanitation_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_monthly_report }}
+                                </td>
+                            {% elif "hl.8.2-4" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_basic_sanitation_institutions_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_monthly_report }}
+                                </td>
+                            {% elif "hl.cust mch 12.0" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_trained_total %}green{% else %}red{% endif %}">
+                                    {{ data.total_monthly_report }}
+                                </td>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    <!-- KHIS RAW DATA-->
+                    {% for performance in khis_performance %}
+                        {% if "hl.8.1-1" in data.indicator|lower %}
+                            <td class="align-middle text-center">{{ performance.number_access_basic_water }}</td>
+                        {% elif "hl.8.1-2" in data.indicator|lower %}
+                            <td class="align-middle text-center">{{ performance.number_access_safe_water }}</td>
+                        {% elif "hl.8.2-1" in data.indicator|lower %}
+                            <td class="align-middle text-center">{{ performance.number_community_open_defecation }}</td>
+                        {% elif "hl.8.2-2" in data.indicator|lower %}
+                            <td class="align-middle text-center">{{ performance.number_access_basic_sanitation }}</td>
+                        {% elif "hl.8.2-3" in data.indicator|lower %}
+                            <td class="align-middle text-center">{{ performance.number_access_safe_sanitation }}</td>
+                        {% elif "hl.8.2-4" in data.indicator|lower %}
+                            <td class="align-middle text-center">{{ performance.number_access_basic_sanitation_institutions }}</td>
+                        {% elif "hl.cust mch 12.0" in data.indicator|lower %}
+                            <td class="align-middle text-center">{{ performance.number_trained }}</td>
+                        {% endif %}
+                    {% endfor %}
+                    <!-- KHIS TOTALS-->
+                    {% for performance in khis_performance %}
+                        {% if forloop.last %}
+                            {% if "hl.8.1-1" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_basic_water_total %}green{% else %}red{% endif %}">
+                                    {{ total.number_access_basic_water_total }}
+                                </td>
+                            {% elif "hl.8.1-2" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_safe_water_total %}green{% else %}red{% endif %}">
+                                    {{ total.number_access_safe_water_total }}
+                                </td>
+                            {% elif "hl.8.2-1" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_community_open_defecation_total %}green{% else %}red{% endif %}">
+                                    {{ total.number_community_open_defecation_total }}
+                                </td>
+                            {% elif "hl.8.2-2" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_basic_sanitation_total %}green{% else %}red{% endif %}">
+                                    {{ total.number_access_basic_sanitation_total }}
+                                </td>
+                            {% elif "hl.8.2-3" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_safe_sanitation_total %}green{% else %}red{% endif %}">
+                                    {{ total.number_access_safe_sanitation_total }}
+                                </td>
+                            {% elif "hl.8.2-4" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_access_basic_sanitation_institutions_total %}green{% else %}red{% endif %}">
+                                    {{ total.number_access_basic_sanitation_institutions_total }}
+                                </td>
+                            {% elif "hl.cust mch 12.0" in data.indicator|lower %}
+                                <td class="align-middle text-center text-white fw-bold"
+                                    style="background-color: {% if data.total_source|add:"0" == data.total_monthly_report|add:"0" and data.total_monthly_report|add:"0" == total.number_trained_total %}green{% else %}red{% endif %}">
+                                    {{ total.number_trained_total }}
+                                </td>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if "_total" in data.indicator|lower or "positive (pmtct)" in data.indicator|lower or "haart total" in data.indicator|lower or "children currently on art" in data.indicator|lower or "children starting art" in data.indicator|lower or "infant prophylaxis" in data.indicator|lower %}
+                    {% else %}
+                        {% if not data.hide_update_button or request.user.is_superuser %}
+                            <td class="text-center">
+                                <a href="{% url 'update_data_concordance' data.id %}" class="btn btn-info"
+                                   role="button" id="update-btn-{{ data.id }}">Update</a>
+                            </td>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+            {% endfor %}
+            {#            {% endif %}#}
+            </tbody>
+        </table>
+    </main>
+{% endblock %}

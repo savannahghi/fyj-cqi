@@ -1,0 +1,136 @@
+{% extends 'dqa/index_dqa.html' %}
+{#{% extends 'cqi/index.html' %}#}
+{% load static %}
+{% load crispy_forms_tags %}
+{% regroup sub_counties by counties as sub_counties_by_county %}
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+           <div class="col-md-12">
+           <h6 class="display-6 text-primary text-center">DQA INSTRUCTIONS</h6>
+               <hr>
+               <div class="row" >
+                  <div class="col mt-3" >
+                    <div class="card " >
+                      <div class="card-body">
+                          <div class="container">
+                            <div class="col">
+                                <div class="row ">
+                                    <h6>OBJECTIVE</h6>
+                                    <p>
+                                        The objective of this DQA tool is to review and assess a facility's data
+                                        management and reporting system to determine if the system is able to
+                                        produce reports with good data quality and to verify that the data reported
+                                        by the facility meets the national required standards. The tool will also be
+                                        used to verify weekly & monthly reports submitted by a facility during the
+                                        RRI period.
+                                    </p>
+                                </div>
+                            </div>
+                          </div>
+                      </div>
+                    </div>
+                      <div class="card mt-3" >
+                      <div class="card-body">
+                          <div class="container">
+                            <div class="col">
+                                <div class="row ">
+                                    <h6>CONTENT</h6>
+                                    <div>
+                                        <p>
+                                        The DQA tool comprises 4 sections: </p>
+                                        <ol>
+                                        <li>Summary Dashboard</li>
+                                        <li>Systems Assessment</li>
+                                        <li>Data Verification</li>
+                                        <li>DQA Action plan</li>
+                                    </ol>
+                                    <p>
+                                        Each section should be completed to allow a complete outlook of the facility's
+                                        performance. System Assessment is arranged into five sections:
+                                    </p>
+                                         <ol>
+                                            <li>Organisation of M&E Structure and Functions</li>
+                                            <li>Data Management Processes</li>
+                                            <li>Indicator Definitions and Reporting Guidelines</li>
+                                            <li>Data-collection and Reporting Forms / Tools</li>
+                                            <li>EMR Systems</li>
+                                        </ol>
+                                        <p>
+                                            These assessment areas are critical to evaluating whether the Data Management
+                                            and Reporting System is able to produce quality data. Questions related to
+                                            the five areas are asked at different levels of the reporting system. </p>
+                                        <p><strong>Data Verification</strong> comprise of select indicators reported through the National
+                                            Reporting System (K.H.I.S). </p>
+                                        <p><strong>Verification</strong> of the data is to be done through a recount of primary data
+                                            sources in this case registers and EMR if available.</p>
+                                        <p><strong>Prevention data RRI verification </strong>looks at the reportable Prevention indicators where
+                                            verification will be done against the reported monthly data. </p>
+                                        <p><strong>Facility DQA Action Plan</strong> allows for all the issues noted in the exercise to be documented
+                                            with clear action points, timelines and the responsible staff.
+                                            The period of assessment will be as directed by the data manager.
+                                    </p>
+                                    </div>
+                                </div>
+                            </div>
+                          </div>
+                      </div>
+                    </div>
+                      <div class="card mt-3" >
+                          <div class="card-body">
+                              <div class="container">
+                                <div class="col">
+                                    <div class="row ">
+                                        <h6>DATA COLLECTION</h6>
+                                        <div>
+                                            <p>
+                                            Each facility should have its own data entry in system assessment, data
+                                            verification and Facility DQA action plan filled. The data should be entered
+                                            with care. Data verification should be filled with results of the recount
+                                            from registers, data reported in MOH 731, data reported in KHIS and data
+                                            reported in DATIM. Data from KHIS and DATIM can be prepopulated before the
+                                            start of the exercise. The Facility DQA Action Plan sheet should be utilized
+                                            to highlight the various strengths and gaps noted during the exercise and
+                                            the agreed action plan with the facility.
+                                            </p>
+
+                                        </div>
+                                    </div>
+                                </div>
+                              </div>
+                          </div>
+                      </div>
+                      <div class="card mt-3" >
+                          <div class="card-body">
+                              <div class="container">
+                                <div class="col">
+                                    <div class="row ">
+                                        <h6>CORRECTIVE ACTIONS</h6>
+                                        <div>
+                                           <p class="text-danger">
+                                               Corrective actions after the DQA are very important and should be worked on
+                                               immediately. The action Plan template will be utilized for documentation and
+                                               follow up of the same. Any facility scoring a red i.e <1.5 in any component of
+                                               the system assessment should be earmarked for immediate remedial action. The
+                                               FYJMEO should take charge of this together with the SCHRIO. There should be
+                                               0% margin of error for the following indicators: HTS_POS, PMTCT_POS, Maternal
+                                               HAART, Infant Prophylaxis, TX_NEW, IPT_NEW. An allowable margin of error of
+                                               +-3% will be accepted for TX_CURR. If the validated data goes beyond the
+                                               allowable margin the facility report and submitted reports should be
+                                               corrected immediately. The facility HRIO should take charge of reconstructing
+                                               the reports in the MOH 731. The FYJMEO staff should submit corrected reports
+                                               within a week to Data Management Unit, the SCHRIO should update KHIS within
+                                               2 weeks post DQA.
+                                           </p>
+                                        </div>
+                                    </div>
+                                </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                </div>
+           </div>
+           </div>
+    </main>
+{% endblock %}

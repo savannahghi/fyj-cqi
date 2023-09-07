@@ -1,5 +1,6 @@
 import ast
 import csv
+from collections import defaultdict
 
 import matplotlib
 import numpy as np
@@ -7,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db.models.functions import Cast, Concat
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.utils import ImageReader
-from reportlab.platypus import TableStyle, Table, Paragraph
+from reportlab.platypus import Paragraph, Table, TableStyle
 
 matplotlib.use('Agg')
 matplotlib.rcParams['agg.path.chunksize'] = 10000
@@ -49,7 +50,7 @@ from apps.dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm
 from apps.dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan, SystemAssessment, \
     AuditTeam, KhisPerformance, UpdateButtonSettings
 # from apps.cqi.views import bar_chart
-from apps.cqi.models import Facilities, Sub_counties, Hub
+from apps.cqi.models import Facilities, Sub_counties
 
 from datetime import datetime
 import pytz
@@ -1579,16 +1580,15 @@ def delete_data_verification(request, pk):
     return render(request, 'project/delete_test_of_change.html', context)
 
 
-def bar_chart(df, x_axis, y_axis, title=None):
+def bar_chart(df, x_axis, y_axis, title=None, description_list=None):
+    if description_list:
+        category_orders = {x_axis: ['Source', 'MOH 731', 'KHIS', 'DATIM']}
+        color_discrete_map = {'Source': '#5B9BD5', 'MOH 731': '#ED7D31', 'KHIS': '#A5A5A5', 'DATIM': '#FFC000'}
+    else:
+        category_orders = {x_axis: ['Source', 'Monthly Report', 'JPHES']}
+        color_discrete_map = {'Source': '#5B9BD5', 'Monthly Report': '#ED7D31', 'JPHES': '#FFC000'}
     fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=200,
-                 color=x_axis,
-                 category_orders={
-                     x_axis: ['Source', 'MOH 731', 'KHIS', 'DATIM']},
-                 color_discrete_map={'Source': '#5B9BD5',
-                                     'MOH 731': '#ED7D31',
-                                     'KHIS': '#A5A5A5',
-                                     'DATIM': '#FFC000',
-                                     }
+                 color=x_axis, category_orders=category_orders, color_discrete_map=color_discrete_map
                  )
 
     fig.update_xaxes(showgrid=False)
@@ -2330,14 +2330,14 @@ def create_dqa_df(dqa):
     return dqa_df
 
 
-def compare_data_verification(merged_df):
+def compare_data_verification(merged_df, pepfar_col, description_list=None):
     try:
         merged_viz_df = merged_df.copy()
-        merged_viz_df['DATIM'] = merged_viz_df['DATIM'].astype(int)
+        merged_viz_df[pepfar_col] = merged_viz_df[pepfar_col].astype(int)
         merged_viz_df['Source'] = merged_viz_df['Source'].astype(int)
-        merged_viz_df['Difference (DATIM-Source)'] = (merged_viz_df['DATIM'] - merged_viz_df['Source'])
+        merged_viz_df[f'Difference ({pepfar_col}-Source)'] = (merged_viz_df[pepfar_col] - merged_viz_df['Source'])
         merged_viz_df['Absolute difference proportion'] = round(
-            (merged_viz_df['DATIM'] - merged_viz_df['Source']) / merged_viz_df['Source'] * 100, 1).abs()
+            (merged_viz_df[pepfar_col] - merged_viz_df['Source']) / merged_viz_df['Source'] * 100, 1).abs()
 
         merged_viz_df['Percentage'] = merged_viz_df['Absolute difference proportion'].astype(str) + " %"
         cond_list = [merged_viz_df['Absolute difference proportion'] > 10,
@@ -2345,7 +2345,7 @@ def compare_data_verification(merged_df):
                              merged_viz_df['Absolute difference proportion'] <= 10),
                      merged_viz_df['Absolute difference proportion'] <= 5]
         choice_list = ["Needs urgent remediation", "Needs improvement", "Meets standard"]
-        merged_viz_df['Score'] = np.select(cond_list, choice_list, default="n/a")
+        merged_viz_df['Score'] = np.select(cond_list, choice_list, default=0)
         merged_viz_df.sort_values('Absolute difference proportion', inplace=True)
         merged_viz_df["Score"] = merged_viz_df["Score"].astype("category")
         merged_viz_df['indicator'] = merged_viz_df['indicator'].replace('Number Starting ART Total', 'TX_NEW')
@@ -2359,13 +2359,19 @@ def compare_data_verification(merged_df):
             columns={"Absolute difference proportion": "Absolute difference proportion (Difference/Source*100)"})
     except KeyError:
         merged_viz_df = pd.DataFrame(columns=['indicator', 'quarter_year', 'mfl_code', 'Source', 'MOH 731', 'KHIS',
-                                              'DATIM', 'Difference (DATIM-Source)',
+                                              pepfar_col, f'Difference ({pepfar_col}-Source)',
                                               'Absolute difference proportion (Difference/Source*100)', 'Percentage',
                                               'Score'])
 
-    merged_df = pd.melt(merged_df, id_vars=['mfl_code', 'indicator', 'quarter_year'],
-                        value_vars=list(merged_df.columns[3:]),
-                        var_name='data sources', value_name='performance')
+    if description_list:
+        merged_df = pd.melt(merged_df, id_vars=['mfl_code', 'indicator', 'quarter_year'],
+                            value_vars=list(merged_df.columns[3:]),
+                            var_name='data sources', value_name='performance')
+    else:
+        merged_df = pd.melt(merged_df, id_vars=['indicator', 'quarter_year'],
+                            value_vars=list(merged_df.columns[2:]),
+                            # value_vars=['Source', 'Monthly Report', pepfar_col],
+                            var_name='data sources', value_name='performance')
 
     merged_df['performance'] = merged_df['performance'].fillna(0)
     merged_df['performance'] = merged_df['performance'].astype(int)
@@ -2395,6 +2401,40 @@ def compare_data_verification(merged_df):
     return dicts, merged_viz_df
 
 
+# def calc_percentage(row):
+#     """
+#     Calculates the percentage of 'greens', 'yellows', and 'reds' values in the given row
+#     and returns a new row with the percentage values added as new columns.
+#
+#     Args:
+#         row: A pandas Series representing a single row in a DataFrame.
+#
+#     Returns:
+#         A new pandas Series representing the same row as the input, but with three additional
+#         columns: 'greens %', 'yellows %', and 'reds %'. These columns contain the percentage
+#         of 'greens', 'yellows', and 'reds' values in the row, respectively.
+#     """
+#     total = row['greens'] + row['yellows'] + row['reds'] + row['not applicable']
+#
+#     # Check for division by zero
+#     if total == 0:
+#         return row
+#
+#     # Calculate the percentage values and format them as strings with one decimal place and a percent sign
+#     row['greens %'] = f"{round(row['greens'] / total * 100, 1)}%"
+#     if row['greens %'] == '0.0%':
+#         row['greens %'] = ''
+#     row['yellows %'] = f"{round(row['yellows'] / total * 100, 1)}%"
+#     if row['yellows %'] == '0.0%':
+#         row['yellows %'] = ''
+#     row['reds %'] = f"{round(row['reds'] / total * 100, 1)}%"
+#     if row['reds %'] == '0.0%':
+#         row['reds %'] = ''
+#     row['not applicable %'] = f"{round(row['not applicable'] / total * 100, 1)}%"
+#     if row['not applicable %'] == '0.0%':
+#         row['not applicable %'] = ''
+#
+#     return row
 def calc_percentage(row):
     """
     Calculates the percentage of 'greens', 'yellows', and 'reds' values in the given row
@@ -2408,16 +2448,22 @@ def calc_percentage(row):
         columns: 'greens %', 'yellows %', and 'reds %'. These columns contain the percentage
         of 'greens', 'yellows', and 'reds' values in the row, respectively.
     """
-    total = row['greens'] + row['yellows'] + row['reds'] + row['not applicable']
+    total = row['blues'] + row['greens'] + row['light_greens'] + row['yellows'] + row['reds'] + row['not applicable']
 
     # Check for division by zero
     if total == 0:
         return row
 
     # Calculate the percentage values and format them as strings with one decimal place and a percent sign
+    row['blues %'] = f"{round(row['blues'] / total * 100, 1)}%"
+    if row['blues %'] == '0.0%':
+        row['blues %'] = ''
     row['greens %'] = f"{round(row['greens'] / total * 100, 1)}%"
     if row['greens %'] == '0.0%':
         row['greens %'] = ''
+    row['light_greens %'] = f"{round(row['light_greens'] / total * 100, 1)}%"
+    if row['light_greens %'] == '0.0%':
+        row['light_greens %'] = ''
     row['yellows %'] = f"{round(row['yellows'] / total * 100, 1)}%"
     if row['yellows %'] == '0.0%':
         row['yellows %'] = ''
@@ -2431,26 +2477,6 @@ def calc_percentage(row):
     return row
 
 
-# def different_dfs(system_assessments_df):
-#     green = system_assessments_df[system_assessments_df['calculations'] == 3.0]
-#     green = green.rename(columns={"count": "greens"})
-#     yellow = system_assessments_df[system_assessments_df['calculations'] == 2.0]
-#     yellow = yellow.rename(columns={"count": "yellows"})
-#     red = system_assessments_df[system_assessments_df['calculations'] == 1.0]
-#     red = red.rename(columns={"count": "reds"})
-#
-#     na_dfs = system_assessments_df[system_assessments_df['calculations'].isnull()].fillna(0)
-#     blue = na_dfs.copy()
-#     na_dfs = na_dfs.rename(columns={"count": "not applicable"})
-#
-#     greens = green.groupby('description').sum(numeric_only=True)['greens'].reset_index().sort_values('greens',
-#                                                                                                      ascending=False)
-#     yellows = yellow.groupby('description').sum(numeric_only=True)['yellows'].reset_index().sort_values('yellows',
-#                                                                                                         ascending=False)
-#     reds = red.groupby('description').sum(numeric_only=True)['reds'].reset_index().sort_values('reds', ascending=False)
-#     na_dfs = na_dfs.groupby('description').sum(numeric_only=True)['not applicable'].reset_index()
-#     return red,reds,yellow,yellows,green,greens,na_dfs,blue
-
 def different_dfs(system_assessments_df, calculation_mapping):
     dfs = {}
 
@@ -2458,16 +2484,30 @@ def different_dfs(system_assessments_df, calculation_mapping):
         if calculation_value == 0:
             # Handle the 'not applicable' case separately
             na_df = system_assessments_df[(system_assessments_df['calculations'] == 0) |
-                                          (system_assessments_df['calculations'] == 0)].fillna(0)
+                                          (system_assessments_df['calculations'].isnull())].fillna(0)
             na_df = na_df.rename(columns={"count": column_name})
-            dfs[label] = (na_df, na_df)
+            if "model_name" in sub_df.columns:
+                grouped_df = na_df.groupby(['description', 'model_name']).sum(numeric_only=True)[
+                    column_name].reset_index().sort_values(
+                    column_name, ascending=False)
+            else:
+                grouped_df = na_df.groupby(['description']).sum(numeric_only=True)[
+                    column_name].reset_index().sort_values(
+                    column_name, ascending=False)
+
+            dfs[label] = (na_df, grouped_df)
         else:
             sub_df = system_assessments_df[system_assessments_df['calculations'] == calculation_value]
             sub_df = sub_df.rename(columns={"count": column_name})
-            grouped_df = sub_df.groupby('description').sum(numeric_only=True)[column_name].reset_index().sort_values(
-                column_name, ascending=False)
+            if "model_name" in sub_df.columns:
+                grouped_df = sub_df.groupby(['description', 'model_name']).sum(numeric_only=True)[
+                    column_name].reset_index().sort_values(
+                    column_name, ascending=False)
+            else:
+                grouped_df = sub_df.groupby(['description']).sum(numeric_only=True)[
+                    column_name].reset_index().sort_values(
+                    column_name, ascending=False)
             dfs[label] = (sub_df, grouped_df)
-
     return dfs
 
 
@@ -2481,16 +2521,6 @@ custom_mapping = {
     0: ("not_applicable", "not applicable"),
 }
 
-
-# system_assessments_df = ...  # Your DataFrame here
-# result_dfs = different_dfs(system_assessments_df, custom_mapping)
-#
-# # Access the DataFrames and grouped DataFrames by label
-# red_df, red_grouped_df = result_dfs['red']
-# yellow_df, yellow_grouped_df = result_dfs['yellow']
-#
-#
-# # ... and so on for other labels
 def get_df_from_results(result_dfs):
     if "red" in result_dfs.keys():
         red_df, red_grouped_df = result_dfs['red']
@@ -2534,139 +2564,310 @@ def get_df_from_results(result_dfs):
     return red_df, red_grouped_df, yellow_df, yellow_grouped_df, light_green_df, light_green_grouped_df, green_df, green_grouped_df, blue_df, blue_grouped_df, na_df, na_df_grouped_df
 
 
-def prepare_data_system_assessment(system_assessments_df, custom_mapping,description_list):
+def prepare_data_system_assessment(system_assessments_df, custom_mapping, description_list=None):
     # system_assessments_df.to_csv("system_assessments_df.csv", index=False)
     result_dfs = different_dfs(system_assessments_df, custom_mapping)
 
     red, reds, yellow, yellows, light_green, light_greens, green, greens, blue, blues, na_df, na_dfs = get_df_from_results(
         result_dfs)
+    if description_list:
+        scores_df = greens.merge(yellows, on='description', how='outer').merge(reds, on='description',
+                                                                               how='outer').merge(
+            na_dfs, on='description', how='outer')
+    else:
+        scores_df = greens.merge(yellows, on=['description', 'model_name'], how='outer').merge(reds, on=['description',
+                                                                                                         'model_name'],
+                                                                                               how='outer').merge(
+            na_dfs, on=['description', 'model_name'], how='outer').merge(
+            light_greens, on=['description', 'model_name'], how='outer').merge(
+            blues, on=['description', 'model_name'], how='outer')
+        scores_df = scores_df[['description', 'model_name', 'blues', 'light_greens', 'greens', 'yellows', 'reds',
+                               'not applicable']].fillna(0)
+        for i in scores_df.columns[2:]:
+            scores_df[i] = scores_df[i].astype(int)
 
-    # red,reds,yellow,yellows,green,greens,na_dfs,blue=different_dfs(system_assessments_df)
-    # green = system_assessments_df[system_assessments_df['calculations'] == 3.0]
-    # green = green.rename(columns={"count": "greens"})
-    # yellow = system_assessments_df[system_assessments_df['calculations'] == 2.0]
-    # yellow = yellow.rename(columns={"count": "yellows"})
-    # red = system_assessments_df[system_assessments_df['calculations'] == 1.0]
-    # red = red.rename(columns={"count": "reds"})
-    #
-    # na_dfs = system_assessments_df[system_assessments_df['calculations'].isnull()].fillna(0)
-    # blue = na_dfs.copy()
-    # na_dfs = na_dfs.rename(columns={"count": "not applicable"})
-    #
-    # greens = green.groupby('description').sum(numeric_only=True)['greens'].reset_index().sort_values('greens',
-    #                                                                                                  ascending=False)
-    # yellows = yellow.groupby('description').sum(numeric_only=True)['yellows'].reset_index().sort_values('yellows',
-    #                                                                                                     ascending=False)
-    # reds = red.groupby('description').sum(numeric_only=True)['reds'].reset_index().sort_values('reds', ascending=False)
-    # na_dfs = na_dfs.groupby('description').sum(numeric_only=True)['not applicable'].reset_index()
+    m_e_structures_list = []
+    if description_list:
+        scores_df = scores_df.set_index('description')
+        scores_df = scores_df.loc[description_list].fillna(0)
+        # display(scores_df)
+        for i in scores_df.columns[1:]:
+            scores_df[i] = scores_df[i].astype(int)
+        scores_df = scores_df.reset_index()
+        # Slice the dataframe by description
+        df_list = [scores_df[scores_df['description'].isin(description_list[:5])],
+                   scores_df[scores_df['description'].isin(description_list[5:12])],
+                   scores_df[scores_df['description'].isin(description_list[12:17])],
+                   scores_df[scores_df['description'].isin(description_list[17:21])],
+                   scores_df[scores_df['description'].isin(description_list[21:])]]
 
-    scores_df = greens.merge(yellows, on='description', how='outer').merge(reds, on='description', how='outer').merge(
-        na_dfs, on='description', how='outer')
+        m_e_structures = df_list[0]
+        m_e_structures_list = list(m_e_structures['description'].unique())
+        value_map = {
+            "There is a documented structure/chart that clearly identifies positions that have data management responsibilities at the Facility.": "Documented structure/chart",
+            "Positions dedicated to M&E and data management systems in the facility are filled.": "Dedicated position",
+            "There is a training plan which includes staff involved in data-collection and reporting at all levels in the reporting process.": "Training plan",
+            "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and timeliness) before submission to the Sub County.": "Designated DQA staff",
+            "All relevant staff have received training on the data management processes and tools.": "Training on data mnx"
+        }
 
-    # scores_df.reindex(description_list)
-    scores_df = scores_df.set_index('description')
+        # loop through the value_map and replace the old values with the new values using .loc
+        for old_value, new_value in value_map.items():
+            m_e_structures.loc[m_e_structures['description'] == old_value, 'description'] = new_value
 
-    scores_df = scores_df.loc[description_list].fillna(0)
-    for i in scores_df.columns[1:]:
-        scores_df[i] = scores_df[i].astype(int)
-    scores_df = scores_df.reset_index()
-    # Slice the dataframe by description
-    df_list = [scores_df[scores_df['description'].isin(description_list[:5])],
-               scores_df[scores_df['description'].isin(description_list[5:12])],
-               scores_df[scores_df['description'].isin(description_list[12:17])],
-               scores_df[scores_df['description'].isin(description_list[17:21])],
-               scores_df[scores_df['description'].isin(description_list[21:])]]
+        m_e_structures = m_e_structures.copy()
+        m_e_structures['blues'] = 0
+        m_e_structures['light_greens'] = 0
 
-    m_e_structures = df_list[0]
-    m_e_structures_list = list(m_e_structures['description'].unique())
-    value_map = {
-        "There is a documented structure/chart that clearly identifies positions that have data management responsibilities at the Facility.": "Documented structure/chart",
-        "Positions dedicated to M&E and data management systems in the facility are filled.": "Dedicated position",
-        "There is a training plan which includes staff involved in data-collection and reporting at all levels in the reporting process.": "Training plan",
-        "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and timeliness) before submission to the Sub County.": "Designated DQA staff",
-        "All relevant staff have received training on the data management processes and tools.": "Training on data mnx"
-    }
+        m_e_data_mnx = df_list[1]
+        m_e_data_mnx_list = list(m_e_data_mnx['description'].unique())
 
-    # loop through the value_map and replace the old values with the new values using .loc
-    for old_value, new_value in value_map.items():
-        m_e_structures.loc[m_e_structures['description'] == old_value, 'description'] = new_value
+        # create a dictionary to map old values to new values
+        value_map = {
+            "The facility has data quality SOPs for monthly reporting processes and quality checks": "Data quality SOPs",
+            "The facility conducts internal data quality checks and validation before submission of reports": "Internal data quality checks",
+            "The facility has conducted a data quality audit in the last 6 months": "Conducted DQA 6/12 ago",
+            "There is a documented data improvement action plan? Verify by seeing": "Data improvement action plan",
+            "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, completeness and timeliness).": "Systematic feedback",
+            "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, MDT feedback data template": "Regular reviews",
+            "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts": "Yearly targets awareness"
+        }
 
-    m_e_data_mnx = df_list[1]
-    m_e_data_mnx_list = list(m_e_data_mnx['description'].unique())
+        # loop through the value_map and replace the old values with the new values using .loc
+        for old_value, new_value in value_map.items():
+            m_e_data_mnx.loc[m_e_data_mnx['description'] == old_value, 'description'] = new_value
 
-    # create a dictionary to map old values to new values
-    value_map = {
-        "The facility has data quality SOPs for monthly reporting processes and quality checks": "Data quality SOPs",
-        "The facility conducts internal data quality checks and validation before submission of reports": "Internal data quality checks",
-        "The facility has conducted a data quality audit in the last 6 months": "Conducted DQA 6/12 ago",
-        "There is a documented data improvement action plan? Verify by seeing": "Data improvement action plan",
-        "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, completeness and timeliness).": "Systematic feedback",
-        "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, MDT feedback data template": "Regular reviews",
-        "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts": "Yearly targets awareness"
-    }
+        m_e_data_mnx = m_e_data_mnx.copy()
+        m_e_data_mnx['blues'] = 0
+        m_e_data_mnx['light_greens'] = 0
 
-    # loop through the value_map and replace the old values with the new values using .loc
-    for old_value, new_value in value_map.items():
-        m_e_data_mnx.loc[m_e_data_mnx['description'] == old_value, 'description'] = new_value
+        m_e_indicator_definition = df_list[2]
+        m_e_indicator_definition_list = list(m_e_indicator_definition['description'].unique())
 
-    m_e_indicator_definition = df_list[2]
-    m_e_indicator_definition_list = list(m_e_indicator_definition['description'].unique())
+        # create a dictionary to map old values to new values
+        value_map = {
+            'The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 '
+            'indicators.': 'Indicator reference guides',
+            'The facility staff are very clear on what they are supposed to report on.': 'Clarity on reporting content',
+            'The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.': 'Clarity on reporting format',
+            'The facility staff are very clear on to whom the reports should be submitted.': 'Clarity on reporting '
+                                                                                             'recipients',
+            'The facility staff are very clear on when the reports are due.': 'Clarity on reporting deadlines'
+        }
 
-    # create a dictionary to map old values to new values
-    value_map = {
-        'The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 '
-        'indicators.': 'Indicator reference guides',
-        'The facility staff are very clear on what they are supposed to report on.': 'Clarity on reporting content',
-        'The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.': 'Clarity on reporting format',
-        'The facility staff are very clear on to whom the reports should be submitted.': 'Clarity on reporting '
-                                                                                         'recipients',
-        'The facility staff are very clear on when the reports are due.': 'Clarity on reporting deadlines'
-    }
+        # loop through the value_map and replace the old values with the new values using .loc
+        for old_value, new_value in value_map.items():
+            m_e_indicator_definition.loc[
+                m_e_indicator_definition['description'] == old_value, 'description'] = new_value
+        m_e_indicator_definition = m_e_indicator_definition.copy()
+        m_e_indicator_definition['blues'] = 0
+        m_e_indicator_definition['light_greens'] = 0
 
-    # loop through the value_map and replace the old values with the new values using .loc
-    for old_value, new_value in value_map.items():
-        m_e_indicator_definition.loc[m_e_indicator_definition['description'] == old_value, 'description'] = new_value
+        m_e_data_collect_report = df_list[3]
+        m_e_data_collect_report_list = list(m_e_data_collect_report['description'].unique())
 
-    m_e_data_collect_report = df_list[3]
-    m_e_data_collect_report_list = list(m_e_data_collect_report['description'].unique())
+        # create a dictionary to map old values to new values
+        value_map = {
+            'The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)': 'Latest source documents and MOH 731',
+            'Clear instructions have been provided to the facility on how to complete the data collection and reporting forms/tools.': 'Clear instructions',
+            'The facility has the revised HTS register in all service delivery points and a clear inventory is available detailing the number of HTS registers in use by service delivery point': 'Revised HTS register',
+            'HIV client files are well organised and stored in a secure location': 'Organized HIV files'}
 
-    # create a dictionary to map old values to new values
-    value_map = {
-        'The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)': 'Latest source documents and MOH 731',
-        'Clear instructions have been provided to the facility on how to complete the data collection and reporting forms/tools.': 'Clear instructions',
-        'The facility has the revised HTS register in all service delivery points and a clear inventory is available detailing the number of HTS registers in use by service delivery point': 'Revised HTS register',
-        'HIV client files are well organised and stored in a secure location': 'Organized HIV files'}
+        # loop through the value_map and replace the old values with the new values using .loc
+        for old_value, new_value in value_map.items():
+            m_e_data_collect_report.loc[m_e_data_collect_report['description'] == old_value, 'description'] = new_value
+        m_e_data_collect_report = m_e_data_collect_report.copy()
+        m_e_data_collect_report['blues'] = 0
+        m_e_data_collect_report['light_greens'] = 0
 
-    # loop through the value_map and replace the old values with the new values using .loc
-    for old_value, new_value in value_map.items():
-        m_e_data_collect_report.loc[m_e_data_collect_report['description'] == old_value, 'description'] = new_value
+        m_e_emr_systems = df_list[4]
+        m_e_emr_systems_list = list(m_e_emr_systems['description'].unique())
 
-    m_e_emr_systems = df_list[4]
-    m_e_emr_systems_list = list(m_e_emr_systems['description'].unique())
+        # create a dictionary to map old values to new values
+        value_map = {
+            'Do you use your EMR to generate reports?': 'EMR report generation',
+            'There is a clearly documented and actively implemented database administration procedure in place. This '
+            'includes backup/recovery procedures, security admininstration, and user administration.': 'Database '
+                                                                                                       'administration '
+                                                                                                       'procedure',
+            'The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)': 'Daily '
+                                                                                                                  'EMR data backup',
+            'The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,'
+            'What is your main challenge regarding data management and reporting?': 'Recent RDQA with action points '
+        }
 
-    # create a dictionary to map old values to new values
-    value_map = {
-        'Do you use your EMR to generate reports?': 'EMR report generation',
-        'There is a clearly documented and actively implemented database administration procedure in place. This '
-        'includes backup/recovery procedures, security admininstration, and user administration.': 'Database '
-                                                                                                   'administration '
-                                                                                                   'procedure',
-        'The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)': 'Daily '
-                                                                                                              'EMR data backup',
-        'The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,'
-        'What is your main challenge regarding data management and reporting?': 'Recent RDQA with action points '
-    }
+        # loop through the value_map and replace the old values with the new values using .loc
+        for old_value, new_value in value_map.items():
+            m_e_emr_systems.loc[m_e_emr_systems['description'] == old_value, 'description'] = new_value
+        m_e_emr_systems = m_e_emr_systems.copy()
+        m_e_emr_systems['blues'] = 0
+        m_e_emr_systems['light_greens'] = 0
+    else:
+        # documentation
+        m_e_structures = scores_df[scores_df['model_name'] == "documentation"]
+        value_map = {
+            'The M&E plan has a logic model/ results framework and/or Theory of Change linking project/ program goal, outcomes and outputs':
+                'M&E plan with logic model/ToC',
+            'There are guidelines and schedules for routine supervisory site visits':
+                'Guidelines for site visits',
+            'There is a detailed data flow diagram from Service Delivery Sites (facilities) to Intermediate Aggregation Levels (e.g. project district or regional offices); and from Intermediate Aggregation Levels (if any) to the national office (could be part of the M&E plan)':
+                'Detailed data flow diagram',
+            'Sub grantee have a copy of standard guidelines describing reporting requirements (what to report on, due dates, data sources, report recipients, etc.)':
+                'Standard reporting guidelines for sub grantees',
+            'There is a written guideline to all reporting entities (e.g., regions, districts, facilities) on reporting requirements and deadlines':
+                'Written guidelines for reporting entities',
+            'There is an up to date M&E plan/PMP':
+                'Up-to-date M&E plan/PMP',
+            'There is an up-to-date M&E work plan that details the implementation timeline for M&E activities and indicates persons responsible for each activity':
+                'Up-to-date M&E work plan with responsibilities',
+            'The M&E plan or other project design document has an organogram describing the organization of the M&E unit in relation to the overall project team':
+                'Organogram in M&E plan/project design document',
+            'All indicators being tracked have documented operational definitions (including data disaggregation by age, sex, etc) in the indicator reference sheets':
+                'Indicators with operational definitions and data disaggregation',
+            'The M&E plan includes indicators for measuring input, outputs, outcomes and where relevant, impact indicators, and the indicators are linked to the project objectives':
+                'M&E plan with linked indicators to objectives',
+            "There is an up to date Performance Indicator Tracking Table that is complete (include a list of indicators, baseline, annual and cummulative targets, and data sources)":
+                'Up-to-date Performance Indicator Tracking Table with complete data',
+            'There is a written description or guidance of how project activities (such as service delivery, training and follow-up, etc) are documented in source documents (e.g registers, supervision reports, etc)':
+                'Written description of documenting project activities in source documents'
+        }
 
-    # loop through the value_map and replace the old values with the new values using .loc
-    for old_value, new_value in value_map.items():
-        m_e_emr_systems.loc[m_e_emr_systems['description'] == old_value, 'description'] = new_value
+        # loop through the value_map and replace the old values with the new values using .loc
+        for old_value, new_value in value_map.items():
+            m_e_structures.loc[m_e_structures['description'] == old_value, 'description'] = new_value
+        # data analysis system
+        m_e_data_mnx = scores_df[scores_df['model_name'] == "data-quality"]
+        value_map = {
+            'The DQA plan is implemented and on track as planned': 'Implemented DQA plan on track',
+            'There are clear links between fields on data entry/collection forms and summary or compilation forms to reduce transcription error (for service statistics, training data and other project data that involves compiliation)': 'Clear links between data entry/collection forms and summary forms',
+            'There are designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness,  timeliness and confidentiality ) received from sub-reporting levels (e.g., regions, districts, facilities)': 'Designated staff for data quality review',
+            'There are documented procedures for addressing specific data quality challenges (e.g. double-counting, “lost to follow-up”)': 'Procedures for addressing data quality challenges',
+            'There are up-to-date DQA reports that are up to standard': 'Up-to-date and standard DQA reports',
+            'There is evidence that corrections have been made to historical data following data quality assessments': 'Corrections made to historical data after DQA',
+            'There is evidence that supervisory site visits have been made in the last 12 months where data quality has been reviewed': 'Supervisory site visits with data quality review in the last 12 months',
+            'There is up-to-date DQA plan which clearly outlines the DQA strategy (including the frequency for which data from different data sources or indicators will be assessed and for what data quality dimensions-validity, reliability, integrity, precision, timeliness, completeness, confidentiality and ethics)': 'Up-to-date DQA plan with strategy details',
+            'To the extent possible, relevant data are collected with electronic devices (check if routine data and/or research/study data are collected with electronic devices, note the difference in the rationale)': 'Relevant data collected with electronic devices',
+            'The number of transcription stages (manual transfer of data from one form to another) are minimized to limit transcription error (check if data are entered directly into the database or they are aggregated in another software or aggregated manually first)': 'Minimized transcription stages to limit error',
+            'A senior staff member (e.g., Program Director) is responsible for reviewing the aggregated numbers prior to the submission reports from the country office': 'Senior staff review of aggregated numbers',
+            'All expected sub grantees reports have been received': 'All expected sub grantees reports received',
+            'M&E work plan includes regular internal DQA activities': 'M&E work plan includes internal DQA activities',
+            'All reporting levels (facilities, districts, regions)  are reporting on all required indicators': 'All reporting levels report on required indicators',
+            'At least once a year both program and M&E staff review a sample of  completed data collection tools  for completion,  accuracy or service quality issues': 'Annual review of data collection tools',
+            'Data reported corresponds with donor-specified report periods': 'Data corresponds with donor report periods',
+            'Definitions and interpretations of indicators are followed consistently when transferring data from data collection forms to summary formats and reports': 'Consistent use of indicator definitions',
+            'Donor reports are submitted on time': 'Donor reports submitted on time',
+            'Feedback is provided to all reporting levels  on the quality of their reporting  (i.e., accuracy, completeness and timeliness)': 'Feedback provided on reporting quality',
+            'Performance indicator definitions are consistent with existing standard guidelines in the FYJ Indicator database (select a sample)': 'Performance indicator definitions consistent with FYJ database',
+            'Standard forms/tools are used consistently by all reporting levels': 'Consistent use of standard forms/tools',
+            'Steps are taken to limit calculation/aggregation errors, including automation  of spreadsheets where possible (for data aggregation)': 'Steps taken to limit calculation/aggregation errors',
+            'Sub grantees reports are filled in completely (review a sample of the tools)': 'Sub grantees reports filled in completely',
+            'Systems are in place for detecting missing data': 'Systems in place for detecting missing data',
+            'Systems are in place to adjust for double-counting': 'Systems in place to adjust for double-counting',
+            'Written instructions/guidance on correctly filling in data collection and reporting tools, including addressing data quality challenges is evident at different reporting levels (district/regional office, sub- grantee or facility level)': 'Written instructions/guidance on filling data collection/reporting tools'
+        }
+        # loop through the value_map and replace the old values with the new values using .loc
+        for old_value, new_value in value_map.items():
+            m_e_data_mnx.loc[m_e_data_mnx['description'] == old_value, 'description'] = new_value
+        # data collection, reporting and management
+        m_e_indicator_definition = scores_df[scores_df['model_name'] == "data-collection"]
+        value_map = {
+            'Safeguards (such as passwords and ascribing different data management roles to staff) are in place to prevent unauthorized changes to data': 'Safeguards for preventing unauthorized data changes',
+            'There are standard source documents (e.g.register, training report template, supervision visits etc.) to record all types of project data (service statistics, training and follow-up, supervision visits, advocacy visits, etc).': 'Standard source documents for recording project data',
+            'If beneficiary-level personal information is collected then IDs are used to protect the confidentiality of clients, and access is restricted to this information': 'Use of IDs to protect client confidentiality',
+            'There is a data management guideline that describes all data-verification, aggregation, analysis and manipulation steps performed at each reporting level': 'Data management guideline for each reporting level',
+            'The project has one or more electronic database which is up to date (last month data is available)': 'Up-to-date electronic databases',
+            'There are clear written instructions for completing the data-collection and reporting forms': 'Clear instructions for completing forms',
+            'There is a  documented or adopted guidelines on how to handle gender sensitive data for each reporting level': 'Guideline for handling gender-sensitive data',
+            'There is a written description of  the project database -what is stored, who maintains/administers it, procedure for back-up etc.': 'Written description of project database',
+            'There is a description of the filing system for paper-based data collection and/or reporting (e.g. if supervision visits are filed in physical cabinets and not uploaded in an electronic data capture system or database)': 'Description of paper-based data filing system',
+            'The number of data collection tools is sufficient for program needs and not excessive (all data collected are reported)': 'Sufficient data collection tools',
+            'There is management support for following up any persistent data gaps with partners': 'Management support for addressing data gaps',
+            'There is no (or minimal) duplication in data collection requirements for staff/partners, i.e. they are not required to report the same activityion more than one tool': 'Minimized duplication in data collection requirements',
+            'All sub-grantees use a standard reporting template': 'Standard reporting template for sub-grantees',
+            'Data collection and reporting forms include all required program/project indicators': 'Inclusion of all required indicators in forms',
+            'Historical data are properly stored, up to date and readily available (check 12-24 month data, depending on the project year)': 'Properly stored and up-to-date historical data',
+            'Project data (service statistics, training, follow-up, advocacy, sensitization, etc) are disaggregated by sex, age and other criteria (income, location, etc)': 'Data disaggregation by various criteria',
+            'Reporting forms/tools are  standardized across all district/regions of  project': 'Standardized reporting forms/tools across districts/regions',
+            'Standard reporting forms/tools are available to staff responsible for data collection at the facilities, project district/region office, and national office': 'Availability of standard forms/tools to data collection staff'
+        }
 
+        # loop through the value_map and replace the old values with the new values using .loc
+        for old_value, new_value in value_map.items():
+            m_e_indicator_definition.loc[
+                m_e_indicator_definition['description'] == old_value, 'description'] = new_value
+
+        # data quality assessment
+        m_e_data_collect_report = scores_df[scores_df['model_name'] == "data-quality-assessment"]
+        value_map = {
+            'Are procedures or safeguards in place to minimize data transcription errors?': 'Procedures to minimize data transcription errors',
+            'Has the data ever been independently reviewed by a person outside the data collection effort': 'Independent review of data',
+            'Is there a list of the required reporting units for the data?': 'List of required reporting units',
+            'Did all the required reporting units (facilities, districts) report data for the reporting period?': 'All required reporting units submitted data',
+            'Does the information collected measure what it is supposed to measure or the intended result?': 'Measurement alignment with intended result',
+            'Are data available frequently enough to inform program management decisions?': 'Frequent data availability for program decisions',
+            'If data are personally identifiable and sensitive, access to database is passworded and limited': 'Restricted access for sensitive data',
+            'Is there independence in key data collection, management, and assessment procedures?': 'Independence in data procedures',
+            'Is the date of data collection clearly identified in reports?': 'Clear identification of data collection date',
+            'Is the data collection method/tool fine-tuned or exact enough to register the expected change? (E.g. an aggregated national system may not be a precise enough to measure a change of a few districts).': 'Precision of data collection tool',
+            'If the indicator involve data manipulation such as calculation of rates or proportion,  is the same formulae are applied consistently (and correctly) within the reporting period and in all location?': 'Consistency in calculation formulae',
+            'If the data is based on a sample, is the margin of error acceptable? (i.e. is it lesser than the expected change being measured? E.g. If a change of only 2 percent is expected and the margin of error is +/- 5 percent, then the tool is not precise enough to detect the change.)': 'Acceptable margin of error for sample data',
+            'If the data is based on a sample, has the margin of error been reported along with the data?': 'Reporting of margin of error for sample data',
+            'If data is from a sample, have the organizational procedures for ethical review of the data collection protocols been adhered to?': 'Ethical review adherence for sample data',
+            'If data is from a sample, files such as pictures, success stories, and GIS data have been stored in a way that no individual or group of people can be identified': 'Protection of individual/group identity in sample data files',
+            'If data is from a sample, does the reporting/presentation exaggerates the interpretation of the data?': 'Avoidance of data exaggeration in sample data',
+            'If data is from a sample, are processes for obtaining informed consent in place?': 'Informed consent processes for sample data',
+            'If data come from different sources for different locations(e.g. regions) within a country, are the instruments are similar enough to make the data collected comparable?': 'Comparability of data from different sources/locations',
+            'Are data collection and analysis methods documented in writing and being used to ensure the same procedures are followed each time?': 'Documentation and consistency of data collection and analysis methods',
+            'If data are personally identifiable and sensitive, data are reported/presented in such a way that discrete variables cannot be used (alone or in combination) to identify an individual': 'Protection of personal identity in sensitive data reporting',
+            'If data are personally identifiable and sensitive, the data is stored in a way that cannot be traced to an individual (personal identifiable information are replaced with  identification codes in the database)': 'Protection of personal identity in sensitive data storage',
+            'Are the data available for the most current reporting period ?': 'Availability of data for the most current reporting period',
+            'Are the limitations of the data collection tool well documented and reported': 'Documentation and reporting of data collection tool limitations',
+            'Are mechanisms in place to prevent unauthorized changes to the data?': 'Mechanisms to prevent unauthorized data changes',
+            'Are sound research methods being used to collect the data?': 'Use of sound research methods in data collection',
+            'Are the data aggregated, analyzed and reported as soon as possible after collection?': 'Timely aggregation, analysis, and reporting of data',
+            'For data from a secondary source, is there a confidence in the credibility of the data?': 'Confidence in credibility of secondary data',
+            'Are the data used in computing the indicator measured from the same data source, with the same data collection tool within the reporting period, in different location (facilities, districts, regions)?': 'Consistency of data sources and collection tools for computing indicators',
+            'Was data appropriately disaggregated (sex, age, geographical location) as planned?': 'Appropriate data disaggregation as planned',
+            'Are there safeguards in place to prevent misrepresentation of data (such as marking up data, changing responses or falsification of data)?': 'Safeguards against misrepresentation of data',
+            'Did the data collection tool focus on the information needed to answer the question or measure performance? (i.e. the tools and collection procedures are well designed and  limit the potential for systematic or random errors)': 'Focus of data collection tool on needed information',
+            'Do data collected fall within a plausible range? (E.g. an indicator value of 400% compared to the target should raise a red flag)': 'Plausibility of collected data'
+        }
+
+        # loop through the value_map and replace the old values with the new values using .loc
+        for old_value, new_value in value_map.items():
+            m_e_data_collect_report.loc[m_e_data_collect_report['description'] == old_value, 'description'] = new_value
+
+        # None
+        m_e_emr_systems = pd.DataFrame(columns=['description', 'model_name', 'blues', 'light_greens', 'greens',
+                                                'yellows', 'reds', 'not applicable'])
     all_dfs = pd.concat(
-        [m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report, m_e_emr_systems])
-    all_dfs = pd.melt(all_dfs, id_vars=['description'], value_vars=['greens', 'yellows', 'reds', 'not applicable'],
-                      var_name="Scores", value_name="# of scores")
-    all_dfs = all_dfs.groupby('Scores').sum(numeric_only=True)['# of scores'].reset_index().sort_values(
-        '# of scores', ascending=False)
+        [m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report, m_e_emr_systems]).fillna(0)
+
+    # display(all_dfs)
+    for i in all_dfs.columns[2:]:
+        all_dfs[i] = all_dfs[i].astype(int)
+    # display(all_dfs)
+    if description_list:
+        all_dfs = pd.melt(all_dfs, id_vars=['description'], value_vars=['greens', 'yellows', 'reds', 'not applicable'],
+                          var_name="Scores", value_name="# of scores")
+    else:
+        all_dfs = pd.melt(all_dfs, id_vars=['description'],
+                          value_vars=['blues', 'greens', 'light_greens', 'yellows', 'reds', 'not applicable'],
+                          var_name="Scores", value_name="# of scores")
+
+    if description_list:
+        all_dfs['Scores'] = all_dfs['Scores'].replace("greens", "Meets standards")
+        all_dfs['Scores'] = all_dfs['Scores'].replace("yellows", "Needs improvement")
+        all_dfs['Scores'] = all_dfs['Scores'].replace("reds", "Needs urgent remediation")
+
+    else:
+        all_dfs['Scores'] = all_dfs['Scores'].replace("greens", "Meets standards (Greens and Blues)")
+        all_dfs['Scores'] = all_dfs['Scores'].replace("blues", "Meets standards (Greens and Blues)")
+        all_dfs['Scores'] = all_dfs['Scores'].replace("light_greens", "Needs improvement (Light greens and Yellows)")
+        all_dfs['Scores'] = all_dfs['Scores'].replace("yellows", "Needs improvement (Light greens and Yellows)")
+        all_dfs['Scores'] = all_dfs['Scores'].replace("reds", "Needs urgent remediation (Reds)")
+    all_dfs = all_dfs.groupby('Scores').sum(numeric_only=True)['# of scores'].reset_index().sort_values('# of scores',
+                                                                                                        ascending=False)
     # calculate the total number of scores
     total_scores = all_dfs['# of scores'].sum()
 
@@ -2675,11 +2876,10 @@ def prepare_data_system_assessment(system_assessments_df, custom_mapping,descrip
     all_dfs['% of scores'] = all_dfs['% of scores'].astype(str) + '%'
     all_dfs['scores (%)'] = all_dfs['# of scores'].astype(str) + " (" + all_dfs['% of scores'] + ")"
     del all_dfs['% of scores']
-    all_dfs['Scores'] = all_dfs['Scores'].replace("greens", "Meets standard")
-    all_dfs['Scores'] = all_dfs['Scores'].replace("yellows", "Needs improvement")
-    all_dfs['Scores'] = all_dfs['Scores'].replace("reds", "Needs urgent remediation")
+
 
     m_e_structures = m_e_structures.apply(calc_percentage, axis=1)
+
     m_e_data_mnx = m_e_data_mnx.apply(calc_percentage, axis=1)
     m_e_indicator_definition = m_e_indicator_definition.apply(calc_percentage, axis=1)
     m_e_data_collect_report = m_e_data_collect_report.apply(calc_percentage, axis=1)
@@ -2687,15 +2887,26 @@ def prepare_data_system_assessment(system_assessments_df, custom_mapping,descrip
 
     def assign_component(df):
         if len(df) != 0:
-            df.loc[df['description'].isin(m_e_structures_list), 'Component of the M&E System'] = \
-                'I - M&E Structure, Functions and Capabilities'
-            df.loc[df['description'].isin(m_e_data_mnx_list), 'Component of the M&E System'] = \
-                'II- Data Management Processes'
-            df.loc[df['description'].isin(m_e_indicator_definition_list), 'Component of the M&E System'] = \
-                'III- Indicator Definitions and Reporting Guidelines'
-            df.loc[df['description'].isin(m_e_data_collect_report_list), 'Component of the M&E System'] = \
-                'IV- Data-collection and Reporting Forms / Tools'
-            df.loc[df['description'].isin(m_e_emr_systems_list), 'Component of the M&E System'] = 'V- EMR Systems'
+            if len(m_e_structures_list) > 0:
+                df.loc[df['description'].isin(m_e_structures_list), 'Component of the M&E System'] = \
+                    'I - M&E Structure, Functions and Capabilities'
+                df.loc[df['description'].isin(m_e_data_mnx_list), 'Component of the M&E System'] = \
+                    'II- Data Management Processes'
+                df.loc[df['description'].isin(m_e_indicator_definition_list), 'Component of the M&E System'] = \
+                    'III- Indicator Definitions and Reporting Guidelines'
+                df.loc[df['description'].isin(m_e_data_collect_report_list), 'Component of the M&E System'] = \
+                    'IV- Data-collection and Reporting Forms / Tools'
+                df.loc[df['description'].isin(m_e_emr_systems_list), 'Component of the M&E System'] = 'V- EMR Systems'
+            else:
+                df.loc[df['model_name'] == "documentation", 'Component of the M&E System'] = \
+                    'I - Documentation'
+                df.loc[df['model_name'] == "data-quality", 'Component of the M&E System'] = \
+                    'II- Data Quality Systems'
+                df.loc[df['model_name'] == "data-collection", 'Component of the M&E System'] = \
+                    'III- Data Collection, Reporting and Management'
+                df.loc[df['model_name'] == "data-quality-assessment", 'Component of the M&E System'] = \
+                    'IV- Data Quality Assessment by Data Source'
+            #                 df.loc[df['model_name'].isin(m_e_emr_systems_list), 'Component of the M&E System'] = 'V- EMR Systems'
             df.sort_values("Component of the M&E System", inplace=True)
             if "yellows" in df.columns:
                 del df['yellows']
@@ -2711,20 +2922,57 @@ def prepare_data_system_assessment(system_assessments_df, custom_mapping,descrip
 
     yellow = assign_component(yellow)
     red = assign_component(red)
-    blue = assign_component(na_df)
-    return m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report, m_e_emr_systems, red, yellow, blue, all_dfs
+    na_df = assign_component(na_df)
+    green = assign_component(green)
+    if description_list:
+        blue = pd.DataFrame(columns=['wards', 'ward_code', 'description', "auditor's note", 'calculations',
+                                     'model_name', 'blues'])
+        light_green = pd.DataFrame(columns=['wards', 'ward_code', 'description', "auditor's note", 'calculations',
+                                            'model_name', 'light_greens'])
+    else:
+
+        blue = assign_component(blue)
+        light_green = assign_component(light_green)
+
+    return m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report, m_e_emr_systems, red, yellow, na_df, green, light_green, blue, all_dfs
 
 
-def create_system_assessment_bar_charts(dataframe, chart_title, quarter_year):
-    # create a stacked bar chart with custom colors
-    colors = {'greens': 'green', 'yellows': 'yellow', 'reds': 'red', 'not applicable': 'blue'}
-    fig = px.bar(dataframe, x='description', y=['greens', 'yellows', 'reds', 'not applicable'], barmode='stack',
-                 color_discrete_map=colors, height=450
-                 )
-    texts = [dataframe['greens %'], dataframe['yellows %'], dataframe['reds %'], dataframe['not applicable %']]
+def create_system_assessment_bar_charts(dataframe, chart_title, quarter_year, description_list=None):
+    # if description_list:
+    #     # create a stacked bar chart with custom colors
+    #     colors = {'greens': 'green', 'yellows': 'yellow', 'reds': 'red',
+    #               'not applicable': 'grey'}
+    #     column_name=['greens', 'yellows', 'reds', 'not applicable']
+    #     texts = [dataframe['greens %'], dataframe['yellows %'],
+    #              dataframe['reds %'], dataframe['not applicable %']]
+    # else:
+    #     # create a stacked bar chart with custom colors
+    #     colors = {'blues': 'blue', 'greens': 'green', 'light_greens': 'lightgreen', 'yellows': 'yellow', 'reds': 'red',
+    #               'not applicable': 'grey'}
+    #     column_name = ['blues', 'greens', 'light_greens', 'yellows', 'reds', 'not applicable']
+    #     texts = [dataframe['blues %'], dataframe['greens %'], dataframe['light_greens %'], dataframe['yellows %'],
+    #              dataframe['reds %'], dataframe['not applicable %']]
+    if description_list:
+        # create a stacked bar chart with custom colors
+        colors = {'greens': 'green', 'yellows': 'yellow', 'reds': 'red',
+                  'not applicable': 'grey'}
+        column_name = ['greens', 'yellows', 'reds', 'not applicable']
+        texts = [dataframe.get('greens %', 0), dataframe.get('yellows %', 0),
+                 dataframe.get('reds %', 0), dataframe.get('not applicable %', 0)]
+    else:
+        # create a stacked bar chart with custom colors
+        colors = {'blues': 'blue', 'greens': 'green', 'light_greens': 'lightgreen', 'yellows': 'yellow', 'reds': 'red',
+                  'not applicable': 'grey'}
+        column_name = ['blues', 'greens', 'light_greens', 'yellows', 'reds', 'not applicable']
+        texts = [dataframe.get('blues %', 0), dataframe.get('greens %', 0), dataframe.get('light_greens %', 0),
+                 dataframe.get('yellows %', 0), dataframe.get('reds %', 0), dataframe.get('not applicable %', 0)]
+
+    fig = px.bar(dataframe, x='description', y=column_name, barmode='stack', color_discrete_map=colors, height=450)
+
+    texts = texts
     for i, t in enumerate(texts):
-        fig.data[i].text = t
-        # fig.data[i].textposition = 'outside'
+        if i < len(fig.data):  # Check if i is within the range of fig.data
+            fig.data[i].text = t
     # add labels and title
     fig.update_layout(xaxis_title='Description', yaxis_title='Frequency', title=f"{chart_title} ({quarter_year})")
     fig.update_xaxes(showgrid=False)
@@ -2760,6 +3008,13 @@ def create_system_assessment_bar_charts(dataframe, chart_title, quarter_year):
         )
     )
     fig.update_traces(textfont_size=10)
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
 
     # show the chart
     return plot(fig, include_plotlyjs=False, output_type="div")
@@ -2899,7 +3154,7 @@ def dqa_summary(request):
         except KeyError:
             messages.info(request, f"No KHIS data for {selected_facility} {quarter_year}!")
             return redirect(request.path_info)
-        dicts, merged_viz_df = compare_data_verification(merged_df)
+        dicts, merged_viz_df = compare_data_verification(merged_df, 'DATIM', description_list)
 
         # retrieves a queryset of SystemAssessment objects that have the specified quarter_year and facility_name.
         system_assessments = SystemAssessment.objects.filter(
@@ -3551,7 +3806,7 @@ def update_button_settings(request):
     return render(request, 'dqa/upload.html', {'form': form, "title": "update time"})
 
 
-def bar_chart_dqa(df, x_axis, y_axis, title=None, color=None):
+def bar_chart_dqa(df, x_axis, y_axis, pepfar_col=None, title=None, color=None):
     if df.empty:
         return None
     if "Number of scores" == y_axis:
@@ -3570,9 +3825,10 @@ def bar_chart_dqa(df, x_axis, y_axis, title=None, color=None):
         colors = {'Meets standard': 'green', 'Needs improvement': 'yellow', 'Needs urgent remediation': 'red'}
         fig = px.bar(df, x=x_axis, y=y_axis, title=title, height=400, color='Score', text="Percentage",
                      color_discrete_map=colors,
-                     hover_data=['Difference (DATIM-Source)', "Absolute difference proportion (Difference/Source*100)",
+                     hover_data=[f'Difference ({pepfar_col}-Source)',
+                                 "Absolute difference proportion (Difference/Source*100)",
                                  "Percentage",
-                                 "Source", "DATIM"])
+                                 "Source", pepfar_col])
         fig.update_layout(legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -3623,9 +3879,9 @@ def bar_chart_dqa(df, x_axis, y_axis, title=None, color=None):
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def prepare_dqa_workplan_viz(dqa_workplan_df):
+def prepare_dqa_workplan_viz(dqa_workplan_df, col_name):
     dqa_workplan_df['Number of action points'] = 1
-    facilities_df = dqa_workplan_df.groupby('Facilities').sum(numeric_only=True)[
+    facilities_df = dqa_workplan_df.groupby(col_name).sum(numeric_only=True)[
         'Number of action points'].reset_index()
     facilities_df.sort_values('Number of action points', inplace=True)
 
@@ -3634,11 +3890,12 @@ def prepare_dqa_workplan_viz(dqa_workplan_df):
     area_reviewed_df.sort_values('Number of action points', inplace=True)
 
     area_reviewed_facility_df = \
-        dqa_workplan_df.groupby(['Facilities', 'Program Areas Reviewed']).sum(numeric_only=True)[
+        dqa_workplan_df.groupby([col_name, 'Program Areas Reviewed']).sum(numeric_only=True)[
             'Number of action points'].reset_index()
     # replace spaces and slashes with underscores in the column
     area_reviewed_facility_df['Program Areas Reviewed'] = area_reviewed_facility_df[
-        'Program Areas Reviewed'].str.replace(' ', '_').str.replace('/', '_').str.replace('&', '_')
+        'Program Areas Reviewed'].str.replace(', ', '_').str.replace(' ', '_').str.replace('/', '_').str.replace('&',
+                                                                                                                 '_')
     area_reviewed_facility_df.sort_values('Number of action points', inplace=True)
 
     action_point_status_df = dqa_workplan_df.groupby('completion').sum(numeric_only=True)[
@@ -3646,7 +3903,7 @@ def prepare_dqa_workplan_viz(dqa_workplan_df):
     action_point_status_df.sort_values('completion', inplace=True)
     action_point_status_df['% completetion'] = action_point_status_df['completion'].astype(str) + "%"
 
-    dqa_date_df = dqa_workplan_df.groupby(['dqa_date', 'Facilities']).sum(numeric_only=True)[
+    dqa_date_df = dqa_workplan_df.groupby(['dqa_date', col_name]).sum(numeric_only=True)[
         'Number of action points'].reset_index()
     # dqa_date_df=dqa_date_df.rename(columns={'Number of action points':"Number of DQAs done"})
     dqa_date_df['Number of DQAs done'] = 1
@@ -3660,6 +3917,7 @@ def prepare_dqa_workplan_viz(dqa_workplan_df):
     weekly_counts['dqa_date'] = weekly_counts['dqa_date'].astype(str) + "."
     weekly_counts = weekly_counts.rename(columns={"dqa_date": "dqa_dates (weekly)"})
 
+    dqa_workplan_df['Timeframe'] = dqa_workplan_df['Timeframe'] / 7
     timeframe_df = dqa_workplan_df.groupby('Timeframe').sum(numeric_only=True)['Number of action points'].reset_index()
     timeframe_df.sort_values('Timeframe', inplace=True)
 
@@ -3668,7 +3926,7 @@ def prepare_dqa_workplan_viz(dqa_workplan_df):
                  (timeframe_df['Timeframe'] > 8) & (timeframe_df['Timeframe'] <= 12),
                  timeframe_df['Timeframe'] > 12]
     choice_list = ["<2 wks", "2-4 wks", "4-8 wks", "8-12 wks", ">12 wks"]
-    timeframe_df['timeframe (wks)'] = np.select(cond_list, choice_list, default="n/a")
+    timeframe_df['timeframe (wks)'] = np.select(cond_list, choice_list, default=0)
 
     timeframe_df = timeframe_df.groupby('timeframe (wks)').sum(numeric_only=True)[
         'Number of action points'].reset_index()
@@ -3699,7 +3957,7 @@ def create_system_assessment_chart(df, fyj_mean, mean_color, quarter_year):
                  , color='color', color_discrete_sequence=df['color'].unique(),
                  # template='simple_white'
                  )
-    line_length = df.shape[0] - 0.5
+    line_length = df.shape[0] - 0.3
     # Adding the mean line to the plot
     fig.add_shape(type='line', x0=-0.5, y0=fyj_mean, x1=line_length, y1=fyj_mean,
                   line=dict(color='red', width=2, dash='dot'))
@@ -3824,6 +4082,50 @@ def prepare_deep_dive_dfs(df, col):
     return df
 
 
+def pluralize_word(word, count):
+    # This is a simple example, you can customize it for more complex pluralization rules
+    if count == 1:
+        return word
+    else:
+        return word + 's'
+
+
+def generate_missing_indicators_message(data_verification_data, model_name, interested_unit, quarter_year):
+    # Create a dictionary to track wards and the number of missing indicators
+    wards_missing_indicators = defaultdict(int)
+
+    # Iterate through unique wards
+    unique_wards = set(item[interested_unit] for item in data_verification_data)
+    for ward in unique_wards:
+        # Get the indicators for this ward
+        ward_indicators = set(
+            item['indicator'] for item in data_verification_data if item[interested_unit] == ward)
+
+        # Count the number of missing indicators for the ward
+        missing_indicators_count = sum(
+            1
+            for indicator_choice in model_name.INDICATOR_CHOICES[1:]
+            if indicator_choice[0] not in ward_indicators
+        )
+
+        # If the ward is missing any indicators, add it to the dictionary
+        if missing_indicators_count > 0:
+            wards_missing_indicators[ward] = missing_indicators_count
+
+    # Generate a message for the wards missing indicators
+    if wards_missing_indicators:
+        # Sort wards by the number of missing indicators in descending order
+        sorted_wards = sorted(wards_missing_indicators.items(), key=lambda x: x[1], reverse=True)
+
+        missing_wards_message = "\n".join(
+            f" {ward} is missing {count} {pluralize_word('indicator', count)},"
+            for ward, count in sorted_wards
+        )
+        return f"Data Verification section {quarter_year}:" + missing_wards_message
+    else:
+        return None  # No missing indicators
+
+
 def dqa_dashboard(request, dqa_type=None):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
@@ -3853,10 +4155,10 @@ def dqa_dashboard(request, dqa_type=None):
     audit_viz = None
     red = None
     yellow = None
-    blue = None
+    na_df = None
     non_performance_df = None
-    blue_viz_quest = None
-    blue_viz_comp = None
+    na_viz_quest = None
+    na_viz_comp = None
     red_viz_quest = None
     red_viz_comp = None
     yellow_viz_quest = None
@@ -3871,6 +4173,42 @@ def dqa_dashboard(request, dqa_type=None):
     work_plan_timeframe_viz = None
     data_verification_viz = None
     facility_charts = None
+    description_list = [
+        "There is a documented structure/chart that clearly identifies positions that have data management "
+        "responsibilities at the Facility.",
+        "Positions dedicated to M&E and data management systems in the facility are filled.",
+        "There is a training plan which includes staff involved in data-collection and reporting at all levels in the "
+        "reporting process.",
+        "All relevant staff have received training on the data management processes and tools.",
+        "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and "
+        "timeliness) before submission to the Sub County.",
+        "The facility has data quality SOPs for monthly reporting processes and quality checks",
+        "The facility conducts internal data quality checks and validation before submission of reports",
+        "The facility has conducted a data quality audit in the last 6 months",
+        "There is a documented data improvement action plan? Verify by seeing",
+        "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, "
+        "completeness and timeliness).",
+        "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, "
+        "MDT feedback data template",
+        "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts",
+        "The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 "
+        "indicators.",
+        "The facility staff are very clear on what they are supposed to report on.",
+        "The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.",
+        "The facility staff are very clear on to whom the reports should be submitted.",
+        "The facility staff are very clear on when the reports are due.",
+        "The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)",
+        "Clear instructions have been provided to the facility on how to complete the data collection and reporting "
+        "forms/tools.",
+        "The facility has the revised HTS register in all service delivery points and a clear inventory is available "
+        "detailing the number of HTS registers in use by service delivery point",
+        "HIV client files are well organised and stored in a secure location",
+        "Do you use your EMR to generate reports?",
+        "There is a clearly documented and actively implemented database administration procedure in place. This "
+        "includes backup/recovery procedures, security admininstration, and user administration.",
+        "The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)",
+        "The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,"
+        "What is your main challenge regarding data management and reporting?"]
     if dqa_type == "program":
         if quarter_form.is_valid() and year_form.is_valid() and program_form.is_valid():
             selected_quarter = quarter_form.cleaned_data['quarter']
@@ -4002,6 +4340,11 @@ def dqa_dashboard(request, dqa_type=None):
 
     if dqa_type is not None and quarter_form.is_valid():
         if data_verification:
+            data_verification_data = data_verification.values('facility_name__name', 'indicator')
+            message = generate_missing_indicators_message(data_verification_data, DataVerification,
+                                                          'facility_name__name',quarter_year)
+            if message:
+                messages.success(request, message)
             facilities = [
                 {'facilities': x.facility_name.name,
                  'mfl_code': x.facility_name.mfl_code,
@@ -4012,7 +4355,7 @@ def dqa_dashboard(request, dqa_type=None):
             facilities_df.sort_values('facilities', inplace=True)
             facilities_df['count'] = 1
             viz = bar_chart_dqa(facilities_df, "facilities", "count",
-                                f"{len(facilities_df)} Facilities DQA Summary for {quarter_year}")
+                                title=f"{len(facilities_df)} Facilities DQA Summary for {quarter_year}")
         else:
             facilities_df = pd.DataFrame(columns=['facilities', 'mfl_code', 'count'])
 
@@ -4034,22 +4377,22 @@ def dqa_dashboard(request, dqa_type=None):
 
             merged_df = county_hub_sub_county_df.merge(facilities_df, on=['facilities', 'mfl_code'], how="right")
             if merged_df.shape[0] > 0:
+                merged_df['sub_counties'] = merged_df['sub_counties'].str.replace(" Sub County", "")
                 sub_county_df = merged_df.groupby('sub_counties').sum(numeric_only=True)[
                     'count'].reset_index().sort_values('count')
                 sub_county_df = sub_county_df.rename(columns={"count": "Number of facilities"})
-                sub_county_df['sub_counties'] = sub_county_df['sub_counties'].str.replace(" Sub County", "")
                 sub_county_viz = bar_chart_dqa(sub_county_df, "sub_counties", "Number of facilities",
-                                               f"{len(sub_county_df)} Sub-counties DQA Summary for {quarter_year}")
+                                               title=f"{len(sub_county_df)} Sub-counties DQA Summary for {quarter_year}")
                 county_df = merged_df.groupby('counties').sum(numeric_only=True)['count'].reset_index().sort_values(
                     'count')
                 county_df = county_df.rename(columns={"count": "Number of facilities"})
                 county_viz = bar_chart_dqa(county_df, "counties", "Number of facilities",
-                                           f"Counties DQA Summary for {quarter_year}")
+                                           title=f"Counties DQA Summary for {quarter_year}")
                 hub_df = merged_df.groupby('hubs').sum(numeric_only=True)['count'].reset_index().sort_values(
                     'count')
                 hub_df = hub_df.rename(columns={"count": "Number of facilities"})
                 hub_viz = bar_chart_dqa(hub_df, "hubs", "Number of facilities",
-                                        f"{len(hub_df)} Hubs DQA Summary for {quarter_year}")
+                                        title=f"{len(hub_df)} Hubs DQA Summary for {quarter_year}")
         if system_assessment:
             system_assessments_qs = [
                 {'facilities': x.facility_name.name,
@@ -4065,48 +4408,10 @@ def dqa_dashboard(request, dqa_type=None):
             system_assessments_df.sort_values('facilities', inplace=True)
             system_assessments_df['count'] = 1
             fyj_mean = round(system_assessments_df['calculations'].mean(), 2)
-            description_list = [
-                "There is a documented structure/chart that clearly identifies positions that have data management "
-                "responsibilities at the Facility.",
-                "Positions dedicated to M&E and data management systems in the facility are filled.",
-                "There is a training plan which includes staff involved in data-collection and reporting at all levels in the "
-                "reporting process.",
-                "All relevant staff have received training on the data management processes and tools.",
-                "There is a designated staff responsible for reviewing the quality of data (i.e., accuracy, completeness and "
-                "timeliness) before submission to the Sub County.",
-                "The facility has data quality SOPs for monthly reporting processes and quality checks",
-                "The facility conducts internal data quality checks and validation before submission of reports",
-                "The facility has conducted a data quality audit in the last 6 months",
-                "There is a documented data improvement action plan? Verify by seeing",
-                "Feedback is systematically provided to the facility on the quality of their reporting (i.e., accuracy, "
-                "completeness and timeliness).",
-                "The facility regularly reviews data to inform decision making (Ask for evidence e.g.meeting minutes, "
-                "MDT feedback data template",
-                "The facility is aware of their yearly targets and are monitoring monthly performance using wall charts",
-                "The facility has been provided with indicator definitions reference guides for both MOH and MER 2.6 "
-                "indicators.",
-                "The facility staff are very clear on what they are supposed to report on.",
-                "The facility staff are very clear on how (e.g., in what specific format) reports are to be submitted.",
-                "The facility staff are very clear on to whom the reports should be submitted.",
-                "The facility staff are very clear on when the reports are due.",
-                "The facility has the latest versions of source documents (registers) and aggregation tool (MOH 731)",
-                "Clear instructions have been provided to the facility on how to complete the data collection and reporting "
-                "forms/tools.",
-                "The facility has the revised HTS register in all service delivery points and a clear inventory is available "
-                "detailing the number of HTS registers in use by service delivery point",
-                "HIV client files are well organised and stored in a secure location",
-                "Do you use your EMR to generate reports?",
-                "There is a clearly documented and actively implemented database administration procedure in place. This "
-                "includes backup/recovery procedures, security admininstration, and user administration.",
-                "The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)",
-                "The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,"
-                "What is your main challenge regarding data management and reporting?"]
+
             average_dictionary, expected_counts_dictionary = calculate_averages(system_assessment,
                                                                                 description_list)
-            print("AVG DICTS DQA::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-            print(average_dictionary)
             df = pd.DataFrame(average_dictionary.items(), columns=['Component of the M&E System', 'Mean'])
-            print(df)
             df['Component of the M&E System'] = df['Component of the M&E System'].str.replace(
                 "average_calculations_5_12", "Data Management Processes")
             df['Component of the M&E System'] = df['Component of the M&E System'].str.replace(
@@ -4132,10 +4437,12 @@ def dqa_dashboard(request, dqa_type=None):
                 1: ("red", "reds"),
                 2: ("yellow", "yellows"),
                 3: ("green", "greens"),
-                 0: ("not_applicable", "not applicable"),
+                0: ("not_applicable", "not applicable"),
             }
             m_e_structures, m_e_data_mnx, m_e_indicator_definition, m_e_data_collect_report, m_e_emr_systems, red, \
-                yellow, blue, all_dfs = prepare_data_system_assessment(system_assessments_df, custom_mapping,description_list)
+                yellow, na_df, green, light_green, blue, all_dfs = prepare_data_system_assessment(system_assessments_df,
+                                                                                                  custom_mapping,
+                                                                                                  description_list)
             names = ["I - M&E Structure, Functions and Capabilities", "II - Data Management Processes",
                      "III - Indicator Definitions and Reporting Guidelines",
                      "IV - Data-collection and Reporting Forms / Tools",
@@ -4146,7 +4453,7 @@ def dqa_dashboard(request, dqa_type=None):
             non_performance_df = {
                 "yellow": yellow,
                 "red": red,
-                "blue": blue,
+                "na_df": na_df,
             }
             all_dfs_viz = bar_chart_dqa(all_dfs, "Scores", '# of scores',
                                         title=f"Distribution of system assessment scores N = {all_dfs['# of scores'].sum()}"
@@ -4170,24 +4477,24 @@ def dqa_dashboard(request, dqa_type=None):
             red_viz_quest = bar_chart_dqa(red_dfs, "description", 'Number of scores',
                                           title="Distribution of red scores per description", color='red')
 
-            blue_dfs = prepare_deep_dive_dfs(blue, 'Component of the M&E System')
-            blue_viz_comp = bar_chart_dqa(blue_dfs, "Component of the M&E System", 'Number of scores',
-                                          title="Distribution of not applicable per component of the M&E System",
-                                          color='blue')
-            blue_dfs = prepare_deep_dive_dfs(blue, 'description')
-            blue_viz_quest = bar_chart_dqa(blue_dfs, "description", 'Number of scores',
-                                           title="Distribution of not applicable scores per description", color='blue')
+            na_dfs = prepare_deep_dive_dfs(na_df, 'Component of the M&E System')
+            na_viz_comp = bar_chart_dqa(na_dfs, "Component of the M&E System", 'Number of scores',
+                                        title="Distribution of not applicable per component of the M&E System",
+                                        color='grey')
+            na_dfs = prepare_deep_dive_dfs(na_df, 'description')
+            na_viz_quest = bar_chart_dqa(na_dfs, "description", 'Number of scores',
+                                         title="Distribution of not applicable scores per description", color='grey')
 
             charts_dict = dict(zip(names, lists))
             charts = []
             for title, df in charts_dict.items():
-                charts.append(create_system_assessment_bar_charts(df, title, quarter_year))
+                charts.append(create_system_assessment_bar_charts(df, title, quarter_year, description_list))
             if 'Number of scores' in yellow.columns:
                 del yellow['Number of scores']
             if 'Number of scores' in red.columns:
                 del red['Number of scores']
-            if 'Number of scores' in blue.columns:
-                del blue['Number of scores']
+            if 'Number of scores' in na_df.columns:
+                del na_df['Number of scores']
         else:
             messages.info(request, f"No system assessment data for {quarter_year}!")
         if data_verification:
@@ -4242,10 +4549,10 @@ def dqa_dashboard(request, dqa_type=None):
         for i in merged_df.columns[4:]:
             merged_df[i] = merged_df[i].astype(int)
         merged_df = merged_df.groupby(['indicator', 'quarter_year']).sum(numeric_only=True).reset_index()
-        dicts, merged_viz_df = compare_data_verification(merged_df)
+        dicts, merged_viz_df = compare_data_verification(merged_df, 'DATIM', description_list)
         data_verification_viz = bar_chart_dqa(merged_viz_df, "indicator",
                                               "Absolute difference proportion (Difference/Source*100)",
-                                              color='Score',
+                                              pepfar_col="DATIM", color='Score',
                                               title="Data verification final scores")
         if viz is None:
             messages.error(request, f"No DQA data found for {quarter_year}")
@@ -4284,7 +4591,7 @@ def dqa_dashboard(request, dqa_type=None):
             # convert data from database to a dataframe
             dqa_workplan_df = pd.DataFrame(dqa_workplan_qs)
             facilities_df, area_reviewed_df, action_point_status_df, weekly_counts, timeframe_df, \
-                area_reviewed_facility_df = prepare_dqa_workplan_viz(dqa_workplan_df)
+                area_reviewed_facility_df = prepare_dqa_workplan_viz(dqa_workplan_df, 'Facilities')
             work_plan_facilities_viz = bar_chart_dqa(facilities_df, "Facilities", "Number of action points",
                                                      title=f"Distribution of DQA action points per facility N = "
                                                            f"{facilities_df['Number of action points'].sum()}"
@@ -4302,7 +4609,7 @@ def dqa_dashboard(request, dqa_type=None):
             for program_area in program_areas:
                 area_reviewed_facility_df_area = area_reviewed_facility_df[
                     area_reviewed_facility_df['Program Areas Reviewed'] == program_area]
-                title = f"Distribution of {program_area} DQA action points by facility ({quarter_year})"
+                title = f"Distribution of {program_area.replace('_', ' ')} DQA action points by facility ({quarter_year})"
                 chart = bar_chart_dqa(area_reviewed_facility_df_area, "Facilities", "Number of action points",
                                       title=title, color=None)
                 facility_charts[program_area] = chart
@@ -4341,7 +4648,7 @@ def dqa_dashboard(request, dqa_type=None):
         "program_form": program_form,
         "dqa_type": dqa_type,
         "audit_viz": audit_viz,
-        "blue": blue,
+        "na_df": na_df,
         "red": red,
         "yellow": yellow,
         "non_performance_df": non_performance_df,
@@ -4349,8 +4656,8 @@ def dqa_dashboard(request, dqa_type=None):
         "yellow_viz_quest": yellow_viz_quest,
         "red_viz_comp": red_viz_comp,
         "red_viz_quest": red_viz_quest,
-        "blue_viz_comp": blue_viz_comp,
-        "blue_viz_quest": blue_viz_quest,
+        "na_viz_comp": na_viz_comp,
+        "na_viz_quest": na_viz_quest,
         "all_dfs_viz": all_dfs_viz,
         "dqa_workplan": dqa_workplan,
         "selected_level": selected_level,

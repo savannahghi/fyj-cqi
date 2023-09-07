@@ -252,6 +252,7 @@ class DataConcordance(BaseModel):
 
     class Meta:
         unique_together = (("quarter_year", "indicator", "ward_name"),)
+        ordering=['ward_name','quarter_year']
 
     def __str__(self):
         return f"{self.ward_name} {self.indicator} ({self.quarter_year})"

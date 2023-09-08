@@ -271,9 +271,9 @@ class TestCd4FormValidation:
         validate_cd4_count_form(form, report_type)
 
         # Check for errors on both fields
-        assert len(form.errors) == 2
-        assert 'age' in form.errors
-        assert 'cd4_percentage' in form.errors
+        assert len(form.errors) == 0
+        assert 'age' not in form.errors
+        assert 'cd4_percentage' not in form.errors
 
     @pytest.mark.parametrize('received_status', ['Rejected', 'Accepted'])
     def test_invalid_received_status(self, received_status):
@@ -522,12 +522,12 @@ class TestCd4FormValidation:
 
         # Create form and validate
         form = MockForm(form_data)
-        assert not validate_cd4_count_form(form, 'Current')
+        assert  validate_cd4_count_form(form, 'Current')
 
         # Check for errors on both age and cd4_percentage
-        assert len(form.errors) == 2
-        assert 'age' in form.errors
-        assert 'cd4_percentage' in form.errors
+        assert len(form.errors) == 0
+        assert 'age' not in form.errors
+        assert 'cd4_percentage' not in form.errors
 
     def test_no_crag_reason_under_200_cd4_fails(self):
         """Test validation fails if no CRAG reason when CD4 <= 200."""

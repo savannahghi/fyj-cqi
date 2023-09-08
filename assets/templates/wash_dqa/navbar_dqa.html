@@ -16,9 +16,9 @@
 {% url "lesson_learnt" as lesson_learnt %}
 {% url "load_datim_data" as load_datim_data %}
 {% url "update_button_settings" as update_button_settings %}
-{#{% url "dqa_dashboard" dqa_type='program' as dqa_dashboard %}#}
+{% url "wash_dqa_dashboard" dqa_type='program' as wash_dqa_dashboard %}
 {% url 'add_documentation' report_type='documentation' as documentation %}
-{% url "show_wash_dqa" report_type='data-quality-assessment' as show_wash_dqa %}
+{% url "show_wash_dqa" report_type='documentation' as show_wash_dqa %}
 
 
 {% block nav %}
@@ -45,7 +45,7 @@
                     <a class="nav-link {% if request.path == documentation %} active{% endif %}"
                        href="{{ documentation }}">
                         <span data-feather="book" class="align-text-bottom"></span>
-                        Add WASH Assessment
+                        Add WASH System Assessment
                     </a>
                 </li>
                 <li class="nav-item">
@@ -64,7 +64,7 @@
                     <a class="nav-link {% if request.path == show_wash_dqa %} active{% endif %}"
                        href="{{ show_wash_dqa }}">
                         <span data-feather="book-open" class="align-text-bottom"></span>
-                        WASH Assessment
+                        WASH System Assessment
                     </a>
                 </li>
                 <li class="nav-item">
@@ -96,13 +96,13 @@
                         Audit team
                     </a>
                 </li>
-{#                <li class="nav-item">#}
-{#                    <a class="nav-link {% if request.path == dqa_dashboard %} active{% endif %}" aria-current="page"#}
-{#                       href="{% url 'dqa_dashboard' dqa_type="program" %}">#}
-{#                        <span data-feather="home" class="align-text-bottom"></span>#}
-{#                        DQA DASHBOARD#}
-{#                    </a>#}
-{#                </li>#}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == wash_dqa_dashboard %} active{% endif %}" aria-current="page"
+                       href="{% url 'wash_dqa_dashboard' dqa_type="program" %}">
+                        <span data-feather="home" class="align-text-bottom"></span>
+                        DQA DASHBOARD
+                    </a>
+                </li>
                 {% if request.user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == load_datim_data %} active{% endif %}"

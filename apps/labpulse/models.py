@@ -89,6 +89,7 @@ class Cd4traker(models.Model):
         ),
         key=lambda x: x[0]
     )
+    AGE_UNIT_CHOICES=(("", "Select ..."),("years", "Years"), ("months", "Months"), ("days", "Days"))
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     patient_unique_no = models.CharField(max_length=10)
@@ -97,7 +98,10 @@ class Cd4traker(models.Model):
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
     sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
     county = models.ForeignKey(Counties, null=True, blank=True, on_delete=models.CASCADE)
-    age = models.IntegerField(validators=[MaxValueValidator(150)])
+    age = models.PositiveIntegerField(validators=[MaxValueValidator(150)])
+    age_unit = models.CharField(max_length=10,choices=AGE_UNIT_CHOICES,
+                                default="years",  # Set "years" as the default value
+                                )
     cd4_count_results = models.IntegerField(blank=True, null=True)
     cd4_percentage = models.IntegerField(blank=True, null=True)
     tb_lam_results = models.CharField(max_length=9, choices=CHOICES, blank=True, null=True)
@@ -164,89 +168,12 @@ class Cd4traker(models.Model):
             try:
                 # If the instance is being updated and date_dispatched already exists, do not update it
                 obj = Cd4traker.objects.get(pk=self.pk)
-                self.date_dispatched = obj.date_dispatched
+                if self.report_type=="Current":
+                    self.date_dispatched = obj.date_dispatched
+                else:
+                    self.date_dispatched = self.date_dispatched
             except Cd4traker.DoesNotExist:
                 pass  # Handle the case where the object doesn't exist
-        # ########################
-        # # Update quantity used #
-        # ########################
-        # if not self.pk:
-        #     try:
-        #         original_instance = Cd4traker.objects.get(pk=self.pk)
-        #     except Cd4traker.DoesNotExist:
-        #         original_instance = None
-        #
-        #         # Rest of your update logic here
-        #     if original_instance is not None:
-        #
-        # # Check for changes in reagent fields and update reagent usage flags
-        # if self.cd4_count_results != original_instance.cd4_count_results:
-        #     self.cd4_reagent_used = True
-        #
-        # if self.tb_lam_results != original_instance.tb_lam_results:
-        #     self.tb_lam_reagent_used = True
-        #
-        # if self.serum_crag_results != original_instance.serum_crag_results:
-        #     self.serum_crag_reagent_used = True
-        #
-        # # Update reagent usage flags
-        # # Check if any reagent type has been used and not tracked before
-        # if self.cd4_reagent_used and ReagentStock.objects.filter(reagent_type='CD4',
-        #                                                              facility_name=self.facility_name,
-        #                                                              ).exists():
-        #     cd4_reagent_stock = ReagentStock.objects.get(reagent_type='CD4', facility_name=self.facility_name)
-        #     cd4_reagent_stock.quantity_used += 1
-        #     cd4_reagent_stock.save()
-        #
-        # if self.tb_lam_reagent_used and ReagentStock.objects.filter(reagent_type='TB LAM',
-        #                                                                 facility_name=self.facility_name,
-        #                                                                 ).exists():
-        #     tb_lam_reagent_stock = ReagentStock.objects.get(reagent_type='TB LAM',
-        #                                                     facility_name=self.facility_name)
-        #     tb_lam_reagent_stock.quantity_used += 1
-        #     tb_lam_reagent_stock.save()
-        #
-        # if self.serum_crag_reagent_used and ReagentStock.objects.filter(reagent_type='Serum CrAg',
-        #                                                                     facility_name=self.facility_name,
-        #                                                                     ).exists():
-        #     serum_crag_reagent_stock = ReagentStock.objects.get(reagent_type='Serum CrAg',
-        #                                                         facility_name=self.facility_name)
-        #     serum_crag_reagent_stock.quantity_used += 1
-        #     serum_crag_reagent_stock.save()
-        # else:
-        #     # This is a new record, you can directly set reagent usage flags
-        #     if self.cd4_count_results is not None:
-        #         self.cd4_reagent_used = True
-        #
-        #     if self.tb_lam_results is not None:
-        #         self.tb_lam_reagent_used = True
-        #
-        #     if self.serum_crag_results is not None:
-        #         self.serum_crag_reagent_used = True
-        #
-        #     # Check if any reagent type has been used and not tracked before
-        #     if self.cd4_reagent_used and ReagentStock.objects.filter(reagent_type='CD4',
-        #                                                              facility_name=self.facility_name,
-        #                                                              ).exists():
-        #         cd4_reagent_stock = ReagentStock.objects.get(reagent_type='CD4', facility_name=self.facility_name)
-        #         cd4_reagent_stock.quantity_used += 1
-        #         cd4_reagent_stock.save()
-        #
-        #     if self.tb_lam_reagent_used and ReagentStock.objects.filter(reagent_type='TB LAM',
-        #                                                                     facility_name=self.facility_name,
-        #                                                                     ).exists():
-        #         tb_lam_reagent_stock = ReagentStock.objects.get(reagent_type='TB LAM',
-        #                                                         facility_name=self.facility_name)
-        #         tb_lam_reagent_stock.quantity_used += 1
-        #         tb_lam_reagent_stock.save()
-        #
-        #     if self.serum_crag_reagent_used and ReagentStock.objects.filter(reagent_type='Serum CrAg',
-        #                                                                         facility_name=self.facility_name,
-        #                                                                         ).exists():
-        #         serum_crag_reagent_stock = ReagentStock.objects.get(reagent_type='Serum CrAg',
-        #                                                             facility_name=self.facility_name)
-        #         serum_crag_reagent_stock.quantity_used += 1
-        #         serum_crag_reagent_stock.save()
 
         super().save(*args, **kwargs)  # Call parent class's save method
 
@@ -285,6 +212,12 @@ class Commodities(BaseModel):
     negative_adjustment = models.IntegerField(blank=True, null=True)
     positive_adjustment = models.IntegerField(blank=True, null=True)
 
+    class Meta:
+        verbose_name_plural = "Commodities"
+        ordering=['facility_name','date_created']
+    def __str__(self):
+        return str(self.facility_name)+"-"+str(self.type_of_reagent)+"-"+str(self.date_created)
+
 
 class ReagentStock(BaseModel):
     REAGENT_CHOICES = (
@@ -318,7 +251,17 @@ class ReagentStock(BaseModel):
 
     class Meta:
         verbose_name_plural = "Reagent stocks"
+        ordering=['facility_name','date_created','remaining_quantity']
 
     def __str__(self):
         return str(self.facility_name) + " - " + str(self.reagent_type)+\
-            " Remaining quantity ("+ str(self.remaining_quantity)+")"
+            " Remaining quantity ("+ str(self.remaining_quantity )+")"+'-'+str(self.date_created)
+
+class EnableDisableCommodities(BaseModel):
+    use_commodities = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name_plural='Enable Disable Commodities'
+    def __str__(self):
+        return str(self.use_commodities)
+

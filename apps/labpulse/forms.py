@@ -25,6 +25,8 @@ class Cd4trakerForm(ModelForm):
         widget=forms.DateInput(attrs={'type': 'date'}),
         label="Date sample was received"
     )
+    age_unit = forms.ChoiceField(choices=Cd4traker.AGE_UNIT_CHOICES, widget=forms.Select(
+        attrs={'class': 'form-control'}))
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)  # Pop the 'user' argument from kwargs
         super(Cd4trakerForm, self).__init__(*args, **kwargs)

@@ -1,22 +1,21 @@
 import math
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
+import plotly.express as px
 import pytz
-from datetime import timezone, timedelta
-
 import tzlocal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Sum
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
-from django.shortcuts import render, redirect
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import ExpressionWrapper, F, IntegerField, Sum
+from django.db.models.functions import Extract
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
-import plotly.express as px
 from plotly.offline import plot
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -24,17 +23,16 @@ from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
 from apps.cqi.forms import FacilitiesForm
-from apps.cqi.models import Facilities, Sub_counties, Counties
+from apps.cqi.models import Counties, Facilities, Sub_counties
 from apps.cqi.views import bar_chart
 from apps.data_analysis.views import get_key_from_session_names
-
 # from apps.dqa.views import disable_update_buttons
 from apps.labpulse.decorators import group_required
 from apps.labpulse.filters import Cd4trakerFilter
-from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm, Cd4TestingLabForm, CommoditiesForm, \
-    LabPulseUpdateButtonSettingsForm, \
-    Cd4trakerManualDispatchForm, ReagentStockForm, facilities_lab_Form
-from apps.labpulse.models import Cd4TestingLabs, Cd4traker, LabPulseUpdateButtonSettings, ReagentStock
+from apps.labpulse.forms import Cd4TestingLabForm, Cd4TestingLabsForm, Cd4trakerForm, Cd4trakerManualDispatchForm, \
+    LabPulseUpdateButtonSettingsForm, ReagentStockForm, facilities_lab_Form
+from apps.labpulse.models import Cd4TestingLabs, Cd4traker, EnableDisableCommodities, LabPulseUpdateButtonSettings, \
+    ReagentStock
 
 
 def disable_update_buttons(request, audit_team, relevant_date_field):
@@ -319,7 +317,6 @@ def show_remaining_commodities(selected_lab):
     min_date = df['date_commodity_received'].min().date()
     max_date = df['date_commodity_received'].max().date()
 
-
     # Group by reagent type and sum the total remaining quantities
     df = df.groupby('reagent_type').sum(numeric_only=True)['total_remaining'].reset_index()
 
@@ -414,6 +411,70 @@ def validate_date_fields(form, date_fields):
     else:
         return True  # Validation succeeded
 
+
+def deduct_commodities(request, form, report_type, post, selected_lab,context, template_name):
+    if report_type == "Current":
+        # Check if CD4 test was performed
+        cd4_count_results = form.cleaned_data['cd4_count_results']
+        if cd4_count_results is not None:
+            post.cd4_reagent_used = True
+
+        # Check if TB LAM test was performed
+        tb_lam_results = form.cleaned_data['tb_lam_results']
+        if tb_lam_results is not None:
+            post.tb_lam_reagent_used = True
+
+        # Check if serum CRAG test was performed
+        serum_crag_results = form.cleaned_data['serum_crag_results']
+        if serum_crag_results is not None:
+            post.serum_crag_reagent_used = True
+
+        # Update reagent usage
+        if post.cd4_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='CD4',
+                                           facility_name__mfl_code=selected_lab.mfl_code,
+                                           remaining_quantity__gt=0).exists():
+                cd4_reagent_stock = ReagentStock.objects.filter(reagent_type='CD4',
+                                                                facility_name__mfl_code=selected_lab.mfl_code,
+                                                                remaining_quantity__gt=0).order_by(
+                    'date_commodity_received').first()
+                cd4_reagent_stock.quantity_used += 1
+                cd4_reagent_stock.save()
+            else:
+                error_message = "CD4 reagents are out of stock!"
+                messages.error(request, error_message)
+                form.add_error('cd4_count_results', error_message)
+                return render(request, template_name, context)
+        if post.serum_crag_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                           facility_name__mfl_code=selected_lab.mfl_code,
+                                           remaining_quantity__gt=0).exists():
+                serum_crag_reagent_stock = ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                                                       facility_name__mfl_code=selected_lab.mfl_code,
+                                                                       remaining_quantity__gt=0).order_by(
+                    'date_commodity_received').first()
+                serum_crag_reagent_stock.quantity_used += 1
+                serum_crag_reagent_stock.save()
+            else:
+                error_message = "Serum CrAg reagents are out of stock!"
+                messages.error(request, error_message)
+                form.add_error('serum_crag_results', error_message)
+                return render(request, template_name, context)
+        if post.tb_lam_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='TB LAM',
+                                           facility_name__mfl_code=selected_lab.mfl_code,
+                                           remaining_quantity__gt=0).exists():
+                tb_lam_reagent_stock = ReagentStock.objects.filter(reagent_type='TB LAM',
+                                                                   facility_name__mfl_code=selected_lab.mfl_code,
+                                                                   remaining_quantity__gt=0).order_by(
+                    'date_commodity_received').first()
+                tb_lam_reagent_stock.quantity_used += 1
+                tb_lam_reagent_stock.save()
+            else:
+                error_message = "LF-TB LAM reagents are out of stock!"
+                messages.error(request, error_message)
+                form.add_error('tb_lam_results', error_message)
+                return render(request, template_name, context)
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse'])
 def add_cd4_count(request, report_type, pk_lab):
@@ -423,23 +484,32 @@ def add_cd4_count(request, report_type, pk_lab):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     selected_lab, created = Cd4TestingLabs.objects.get_or_create(id=pk_lab)
     template_name = 'lab_pulse/add_cd4_data.html'
+
+    use_commodities = False
+    enable_commodities = EnableDisableCommodities.objects.first()
+    if enable_commodities and enable_commodities.use_commodities:
+        use_commodities = True
+
     if report_type == "Current":
         form = Cd4trakerForm(request.POST or None)
         commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
             show_remaining_commodities(selected_lab)
         context = {
-            "form": form, "report_type": report_type,"commodities":commodities,
+            "form": form, "report_type": report_type, "commodities": commodities,"use_commodities":use_commodities,
             "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
             "commodity_status": commodity_status,
             "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
             "crag_total_remaining": crag_total_remaining,
         }
-        if crag_total_remaining == 0:
-            messages.error(request, generate_commodity_error_message("Serum CrAg"))
-        if tb_lam_total_remaining == 0:
-            messages.error(request, generate_commodity_error_message("LF TB LAM"))
-        if cd4_total_remaining == 0:
-            messages.error(request, generate_commodity_error_message("CD4"))
+        if use_commodities and form.is_valid():
+            if crag_total_remaining == 0:
+                messages.error(request, generate_commodity_error_message("Serum CrAg"))
+                form.add_error("serum_crag_results","ScrAg reagents are out of stock")
+            if tb_lam_total_remaining == 0:
+                messages.error(request, generate_commodity_error_message("LF TB LAM"))
+                form.add_error("tb_lam_results", "LF TB LAM reagents are out of stock")
+            if cd4_total_remaining == 0:
+                messages.error(request, generate_commodity_error_message("CD4"))
             return render(request, template_name, context)
     else:
         # Check if the user has the required permission
@@ -448,7 +518,7 @@ def add_cd4_count(request, report_type, pk_lab):
             return HttpResponseForbidden("You don't have permission to access this form.")
         form = Cd4trakerManualDispatchForm(request.POST or None)
         context = {
-            "form": form, "report_type": report_type,
+            "form": form, "report_type": report_type,"use_commodities":use_commodities,
             "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
         }
 
@@ -486,69 +556,12 @@ def add_cd4_count(request, report_type, pk_lab):
             post.facility_name = facility_name
             post.testing_laboratory = Cd4TestingLabs.objects.filter(testing_lab_name=selected_lab).first()
             post.report_type = report_type
+            ####################################
+            # Deduct Commodities used
+            ####################################
+            if use_commodities:
+                deduct_commodities(request, form, report_type, post, selected_lab,context, template_name)
 
-            if report_type == "Current":
-                # Check if CD4 test was performed
-                cd4_count_results = form.cleaned_data['cd4_count_results']
-                if cd4_count_results is not None:
-                    post.cd4_reagent_used = True
-
-                # Check if TB LAM test was performed
-                tb_lam_results = form.cleaned_data['tb_lam_results']
-                if tb_lam_results is not None:
-                    post.tb_lam_reagent_used = True
-
-                # Check if serum CRAG test was performed
-                serum_crag_results = form.cleaned_data['serum_crag_results']
-                if serum_crag_results is not None:
-                    post.serum_crag_reagent_used = True
-
-                # Update reagent usage
-                if post.cd4_reagent_used:
-                    if ReagentStock.objects.filter(reagent_type='CD4',
-                                                   facility_name__mfl_code=selected_lab.mfl_code,
-                                                   remaining_quantity__gt=0).exists():
-                        cd4_reagent_stock = ReagentStock.objects.filter(reagent_type='CD4',
-                                                                     facility_name__mfl_code=selected_lab.mfl_code,
-                                                                     remaining_quantity__gt=0).order_by(
-                            'date_commodity_received').first()
-                        cd4_reagent_stock.quantity_used += 1
-                        cd4_reagent_stock.save()
-                    else:
-                        error_message = "CD4 reagents are out of stock!"
-                        messages.error(request, error_message)
-                        form.add_error('cd4_count_results', error_message)
-                        return render(request, template_name, context)
-                if post.serum_crag_reagent_used:
-                    if ReagentStock.objects.filter(reagent_type='Serum CrAg',
-                                                   facility_name__mfl_code=selected_lab.mfl_code,
-                                                   remaining_quantity__gt=0).exists():
-                        serum_crag_reagent_stock = ReagentStock.objects.filter(reagent_type='Serum CrAg',
-                                                                            facility_name__mfl_code=selected_lab.mfl_code,
-                                                                            remaining_quantity__gt=0).order_by(
-                            'date_commodity_received').first()
-                        serum_crag_reagent_stock.quantity_used += 1
-                        serum_crag_reagent_stock.save()
-                    else:
-                        error_message = "Serum CrAg reagents are out of stock!"
-                        messages.error(request, error_message)
-                        form.add_error('serum_crag_results', error_message)
-                        return render(request, template_name, context)
-                if post.tb_lam_reagent_used:
-                    if ReagentStock.objects.filter(reagent_type='TB LAM',
-                                                   facility_name__mfl_code=selected_lab.mfl_code,
-                                                   remaining_quantity__gt=0).exists():
-                        tb_lam_reagent_stock = ReagentStock.objects.filter(reagent_type='TB LAM',
-                                                                        facility_name__mfl_code=selected_lab.mfl_code,
-                                                                        remaining_quantity__gt=0).order_by(
-                            'date_commodity_received').first()
-                        tb_lam_reagent_stock.quantity_used += 1
-                        tb_lam_reagent_stock.save()
-                    else:
-                        error_message = "LF-TB LAM reagents are out of stock!"
-                        messages.error(request, error_message)
-                        form.add_error('tb_lam_results', error_message)
-                        return render(request, template_name, context)
             post.save()
             messages.error(request, "Record saved successfully!")
             # Generate the URL for the redirect
@@ -557,15 +570,110 @@ def add_cd4_count(request, report_type, pk_lab):
         else:
             messages.error(request, f"Record already exists.")
             render(request, template_name, context)
-
-    # context = {
-    #     "form": form, "report_type": report_type, "commodities": commodities, "commodity_status": commodity_status,
-    #     "title": f"Add CD4 results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
-    #     "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
-    #     "crag_total_remaining": crag_total_remaining,
-    # }
     return render(request, template_name, context)
 
+
+def update_commodities(request,form,post, report_type, pk,template_name, context):
+    if report_type == "Current":
+        ###################################################
+        # Choose facility to update commodity records for #
+        ###################################################
+        item = Cd4traker.objects.get(id=pk)
+        # DEDUCT FROM TESTING LABS
+        facility_mfl_code_to_update = None
+        if item.facility_name.mfl_code == item.testing_laboratory.mfl_code:
+            # if request.user.groups.filter('laboratory_staffs_labpulse').exists():
+            facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+        elif item.facility_name.mfl_code != item.testing_laboratory.mfl_code:
+            if item.serum_crag_results != post.serum_crag_results:
+                facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+            if item.tb_lam_results != post.tb_lam_results:
+                if request.user.groups.filter(name='laboratory_staffs_labpulse').exists():
+                    facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+                # DEDUCT FROM REFERRING LABS
+                elif request.user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
+                    facility_mfl_code_to_update = item.facility_name.mfl_code
+
+        # Check for changes in reagent fields and update reagent usage flags
+
+        # if not item.cd4_reagent_used:
+        if post.cd4_count_results != item.cd4_count_results and item.cd4_reagent_used == False:
+            post.cd4_reagent_used = True
+        else:
+            post.cd4_reagent_used = item.cd4_reagent_used
+
+        # if not item.tb_lam_reagent_used:
+        if post.tb_lam_results != item.tb_lam_results and item.tb_lam_reagent_used == False:
+            post.tb_lam_reagent_used = True
+        else:
+            post.tb_lam_reagent_used = item.tb_lam_reagent_used
+
+        # if not item.serum_crag_reagent_used:
+        if post.serum_crag_results != item.serum_crag_results and item.serum_crag_reagent_used == False:
+            post.serum_crag_reagent_used = True
+        else:
+            post.serum_crag_reagent_used = item.serum_crag_reagent_used
+
+        # Update reagent usage flags
+        # Check if any reagent type has been used and not tracked before
+
+        if item.cd4_reagent_used != post.cd4_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='CD4',
+                                           facility_name__mfl_code=facility_mfl_code_to_update).exists():
+                cd4_reagent_stock = ReagentStock.objects.filter(reagent_type='CD4',
+                                                                facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                remaining_quantity__gt=0
+                                                                ).order_by('date_commodity_received').first()
+                cd4_reagent_stock.quantity_used += 1
+                cd4_reagent_stock.save()
+            else:
+                messages.error(request,
+                               "CD4 reagents are currently unavailable. The operation cannot be completed. "
+                               "Please contact your laboratory supervisor for assistance or proceed to add "
+                               "commodities to replenish the stock.")
+                error_message = "CD4 reagents are out of stock!"
+                # messages.error(request, error_message)
+                form.add_error('cd4_count_results', error_message)
+                return render(request, template_name, context)
+        if item.serum_crag_reagent_used != post.serum_crag_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                           facility_name__mfl_code=facility_mfl_code_to_update,
+                                           remaining_quantity__gt=0
+                                           ).exists():
+                serum_crag_reagent_stock = ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                                                       facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                       remaining_quantity__gt=0
+                                                                       ).order_by(
+                    'date_commodity_received').first()
+                serum_crag_reagent_stock.quantity_used += 1
+                serum_crag_reagent_stock.save()
+            else:
+                messages.error(request,
+                               "Serum CrAg reagents are currently unavailable. The operation cannot be "
+                               "completed. Please contact your laboratory supervisor for assistance or proceed"
+                               " to add commodities to replenish the stock.")
+                error_message = "Serum CrAg reagents are out of stock!"
+                # messages.error(request, error_message)
+                form.add_error('serum_crag_results', error_message)
+                return render(request, template_name, context)
+        if item.tb_lam_reagent_used != post.tb_lam_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='TB LAM',
+                                           facility_name__mfl_code=facility_mfl_code_to_update).exists():
+                tb_lam_reagent_stock = ReagentStock.objects.filter(reagent_type='TB LAM',
+                                                                   facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                   remaining_quantity__gt=0
+                                                                   ).order_by('date_commodity_received').first()
+                tb_lam_reagent_stock.quantity_used += 1
+                tb_lam_reagent_stock.save()
+            else:
+                messages.error(request,
+                               "LF TB LAM reagents are currently unavailable. The operation cannot be completed. "
+                               "Please contact your laboratory supervisor for assistance or proceed to add "
+                               "commodities to replenish the stock.")
+                error_message = "LF TB LAM reagents are out of stock!"
+                # messages.error(request, error_message)
+                form.add_error('tb_lam_results', error_message)
+                return render(request, template_name, context)
 
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
@@ -579,11 +687,19 @@ def update_cd4_results(request, report_type, pk):
         commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
             show_remaining_commodities(item.facility_name)
     else:
-        commodity_status=None
-        commodities=None
-        cd4_total_remaining=0
-        crag_total_remaining=0
-        tb_lam_total_remaining=0
+        commodity_status = None
+        commodities = None
+        cd4_total_remaining = 0
+        crag_total_remaining = 0
+        tb_lam_total_remaining = 0
+
+    # Fetch the first instance of EnableDisableCommodities
+    enable_commodities = EnableDisableCommodities.objects.first()
+    # Check if commodities should be enabled or disabled
+    if enable_commodities and enable_commodities.use_commodities:
+        use_commodities = True
+    else:
+        use_commodities = False
     template_name = 'lab_pulse/update results.html'
     if request.method == "POST":
         if report_type == "Current":
@@ -596,7 +712,7 @@ def update_cd4_results(request, report_type, pk):
             form = Cd4trakerManualDispatchForm(request.POST, instance=item)
         if form.is_valid():
             context = {
-                "form": form, "report_type": report_type,
+                "form": form, "report_type": report_type,"use_commodities":use_commodities,
                 "title": "Update Results", "commodity_status": commodity_status,
                 "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
                 "crag_total_remaining": crag_total_remaining,
@@ -629,109 +745,113 @@ def update_cd4_results(request, report_type, pk):
             for county in all_counties:
                 if sub_county_list[0] == county.sub_counties_id:
                     post.county = Counties.objects.get(id=county.counties_id)
-            if report_type == "Current":
-                ###################################################
-                # Choose facility to update commodity records for #
-                ###################################################
-                item = Cd4traker.objects.get(id=pk)
-                # DEDUCT FROM TESTING LABS
-                list_of_testing_labs = Cd4traker.objects.all().values_list('testing_laboratory__mfl_code',
-                                                                           flat=True).distinct().order_by(
-                    'testing_laboratory__mfl_code')
-                facility_mfl_code_to_update = None
-                if item.facility_name.mfl_code == item.testing_laboratory.mfl_code:
-                    # if request.user.groups.filter('laboratory_staffs_labpulse').exists():
-                    facility_mfl_code_to_update = item.testing_laboratory.mfl_code
-                elif item.facility_name.mfl_code != item.testing_laboratory.mfl_code:
-                    if item.serum_crag_results != post.serum_crag_results:
+            #############################
+            # Update Commodities used
+            #############################
+            if use_commodities:
+                # update_commodities(request, form, report_type,post, pk, template_name, context)
+                if report_type == "Current":
+                    ###################################################
+                    # Choose facility to update commodity records for #
+                    ###################################################
+                    item = Cd4traker.objects.get(id=pk)
+                    # DEDUCT FROM TESTING LABS
+                    facility_mfl_code_to_update = None
+                    if item.facility_name.mfl_code == item.testing_laboratory.mfl_code:
+                        # if request.user.groups.filter('laboratory_staffs_labpulse').exists():
                         facility_mfl_code_to_update = item.testing_laboratory.mfl_code
-                    if item.tb_lam_results != post.tb_lam_results:
-                        if request.user.groups.filter(name='laboratory_staffs_labpulse').exists():
+                    elif item.facility_name.mfl_code != item.testing_laboratory.mfl_code:
+                        if item.serum_crag_results != post.serum_crag_results:
                             facility_mfl_code_to_update = item.testing_laboratory.mfl_code
-                        # DEDUCT FROM REFERRING LABS
-                        elif request.user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
-                            facility_mfl_code_to_update = item.facility_name.mfl_code
+                        if item.tb_lam_results != post.tb_lam_results:
+                            if request.user.groups.filter(name='laboratory_staffs_labpulse').exists():
+                                facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+                            # DEDUCT FROM REFERRING LABS
+                            elif request.user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
+                                facility_mfl_code_to_update = item.facility_name.mfl_code
 
-                # Check for changes in reagent fields and update reagent usage flags
+                    # Check for changes in reagent fields and update reagent usage flags
 
-                # if not item.cd4_reagent_used:
-                if post.cd4_count_results != item.cd4_count_results and item.cd4_reagent_used == False:
-                    post.cd4_reagent_used = True
-                else:
-                    post.cd4_reagent_used = item.cd4_reagent_used
-
-                # if not item.tb_lam_reagent_used:
-                if post.tb_lam_results != item.tb_lam_results and item.tb_lam_reagent_used == False:
-                    post.tb_lam_reagent_used = True
-                else:
-
-                    post.tb_lam_reagent_used = item.tb_lam_reagent_used
-
-                # if not item.serum_crag_reagent_used:
-                if post.serum_crag_results != item.serum_crag_results and item.serum_crag_reagent_used == False:
-                    post.serum_crag_reagent_used = True
-                else:
-                    post.serum_crag_reagent_used = item.serum_crag_reagent_used
-
-                # Update reagent usage flags
-                # Check if any reagent type has been used and not tracked before
-                if item.cd4_reagent_used != post.cd4_reagent_used:
-                    if ReagentStock.objects.filter(reagent_type='CD4',
-                                                   facility_name__mfl_code=facility_mfl_code_to_update).exists():
-                        cd4_reagent_stock = ReagentStock.objects.filter(reagent_type='CD4',
-                                                                        facility_name__mfl_code=facility_mfl_code_to_update,
-                                                                        remaining_quantity__gt=0
-                                                                        ).order_by('date_commodity_received').first()
-                        cd4_reagent_stock.quantity_used += 1
-                        cd4_reagent_stock.save()
+                    # if not item.cd4_reagent_used:
+                    if post.cd4_count_results != item.cd4_count_results and item.cd4_reagent_used == False:
+                        post.cd4_reagent_used = True
                     else:
-                        messages.error(request,
-                                       "CD4 reagents are currently unavailable. The operation cannot be completed. "
-                                       "Please contact your laboratory supervisor for assistance or proceed to add "
-                                       "commodities to replenish the stock.")
-                        error_message = "CD4 reagents are out of stock!"
-                        # messages.error(request, error_message)
-                        form.add_error('cd4_count_results', error_message)
-                        return render(request, template_name, context)
-                if item.serum_crag_reagent_used != post.serum_crag_reagent_used:
-                    if ReagentStock.objects.filter(reagent_type='Serum CrAg',
-                                                   facility_name__mfl_code=facility_mfl_code_to_update,
-                                                   remaining_quantity__gt=0
-                                                   ).exists():
-                        serum_crag_reagent_stock = ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                        post.cd4_reagent_used = item.cd4_reagent_used
+
+                    # if not item.tb_lam_reagent_used:
+                    if post.tb_lam_results != item.tb_lam_results and item.tb_lam_reagent_used == False:
+                        post.tb_lam_reagent_used = True
+                    else:
+                        post.tb_lam_reagent_used = item.tb_lam_reagent_used
+
+                    # if not item.serum_crag_reagent_used:
+                    if post.serum_crag_results != item.serum_crag_results and item.serum_crag_reagent_used == False:
+                        post.serum_crag_reagent_used = True
+                    else:
+                        post.serum_crag_reagent_used = item.serum_crag_reagent_used
+
+                    # Update reagent usage flags
+                    # Check if any reagent type has been used and not tracked before
+
+                    if item.cd4_reagent_used != post.cd4_reagent_used:
+                        if ReagentStock.objects.filter(reagent_type='CD4',
+                                                       facility_name__mfl_code=facility_mfl_code_to_update).exists():
+                            cd4_reagent_stock = ReagentStock.objects.filter(reagent_type='CD4',
+                                                                            facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                            remaining_quantity__gt=0
+                                                                            ).order_by(
+                                'date_commodity_received').first()
+                            cd4_reagent_stock.quantity_used += 1
+                            cd4_reagent_stock.save()
+                        else:
+                            messages.error(request,
+                                           "CD4 reagents are currently unavailable. The operation cannot be completed. "
+                                           "Please contact your laboratory supervisor for assistance or proceed to add "
+                                           "commodities to replenish the stock.")
+                            error_message = "CD4 reagents are out of stock!"
+                            # messages.error(request, error_message)
+                            form.add_error('cd4_count_results', error_message)
+                            return render(request, template_name, context)
+                    if item.serum_crag_reagent_used != post.serum_crag_reagent_used:
+                        if ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                                       facility_name__mfl_code=facility_mfl_code_to_update,
+                                                       remaining_quantity__gt=0
+                                                       ).exists():
+                            serum_crag_reagent_stock = ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                                                                   facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                                   remaining_quantity__gt=0
+                                                                                   ).order_by(
+                                'date_commodity_received').first()
+                            serum_crag_reagent_stock.quantity_used += 1
+                            serum_crag_reagent_stock.save()
+                        else:
+                            messages.error(request,
+                                           "Serum CrAg reagents are currently unavailable. The operation cannot be "
+                                           "completed. Please contact your laboratory supervisor for assistance or proceed"
+                                           " to add commodities to replenish the stock.")
+                            error_message = "Serum CrAg reagents are out of stock!"
+                            # messages.error(request, error_message)
+                            form.add_error('serum_crag_results', error_message)
+                            return render(request, template_name, context)
+                    if item.tb_lam_reagent_used != post.tb_lam_reagent_used:
+                        if ReagentStock.objects.filter(reagent_type='TB LAM',
+                                                       facility_name__mfl_code=facility_mfl_code_to_update).exists():
+                            tb_lam_reagent_stock = ReagentStock.objects.filter(reagent_type='TB LAM',
                                                                                facility_name__mfl_code=facility_mfl_code_to_update,
                                                                                remaining_quantity__gt=0
                                                                                ).order_by(
-                            'date_commodity_received').first()
-                        serum_crag_reagent_stock.quantity_used += 1
-                        serum_crag_reagent_stock.save()
-                    else:
-                        messages.error(request,
-                                       "Serum CrAg reagents are currently unavailable. The operation cannot be "
-                                       "completed. Please contact your laboratory supervisor for assistance or proceed"
-                                       " to add commodities to replenish the stock.")
-                        error_message = "Serum CrAg reagents are out of stock!"
-                        # messages.error(request, error_message)
-                        form.add_error('serum_crag_results', error_message)
-                        return render(request, template_name, context)
-                if item.tb_lam_reagent_used != post.tb_lam_reagent_used:
-                    if ReagentStock.objects.filter(reagent_type='TB LAM',
-                                                   facility_name__mfl_code=facility_mfl_code_to_update).exists():
-                        tb_lam_reagent_stock = ReagentStock.objects.filter(reagent_type='TB LAM',
-                                                                           facility_name__mfl_code=facility_mfl_code_to_update,
-                                                                           remaining_quantity__gt=0
-                                                                           ).order_by('date_commodity_received').first()
-                        tb_lam_reagent_stock.quantity_used += 1
-                        tb_lam_reagent_stock.save()
-                    else:
-                        messages.error(request,
-                                       "LF TB LAM reagents are currently unavailable. The operation cannot be completed. "
-                                       "Please contact your laboratory supervisor for assistance or proceed to add "
-                                       "commodities to replenish the stock.")
-                        error_message = "LF TB LAM reagents are out of stock!"
-                        # messages.error(request, error_message)
-                        form.add_error('tb_lam_results', error_message)
-                        return render(request, template_name, context)
+                                'date_commodity_received').first()
+                            tb_lam_reagent_stock.quantity_used += 1
+                            tb_lam_reagent_stock.save()
+                        else:
+                            messages.error(request,
+                                           "LF TB LAM reagents are currently unavailable. The operation cannot be completed. "
+                                           "Please contact your laboratory supervisor for assistance or proceed to add "
+                                           "commodities to replenish the stock.")
+                            error_message = "LF TB LAM reagents are out of stock!"
+                            # messages.error(request, error_message)
+                            form.add_error('tb_lam_results', error_message)
+                            return render(request, template_name, context)
             post.save()
             messages.error(request, "Record updated successfully!")
             return HttpResponseRedirect(request.session['page_from'])
@@ -744,8 +864,9 @@ def update_cd4_results(request, report_type, pk):
                 # Redirect or handle the case where the user doesn't have the permission
                 return HttpResponseForbidden("You don't have permission to access this form.")
             form = Cd4trakerManualDispatchForm(instance=item)
+    # cd4_total_remaining=0
     context = {
-        "form": form, "report_type": report_type,
+        "form": form, "report_type": report_type,"use_commodities":use_commodities,
         "title": "Update Results", "commodity_status": commodity_status, "cd4_total_remaining": cd4_total_remaining,
         "tb_lam_total_remaining": tb_lam_total_remaining,
         "crag_total_remaining": crag_total_remaining,
@@ -755,10 +876,10 @@ def update_cd4_results(request, report_type, pk):
 
 def pagination_(request, item_list, record_count=None):
     page = request.GET.get('page', 1)
-    if record_count==None:
+    if record_count == None:
         record_count = request.GET.get('record_count', '50')
     else:
-        record_count=record_count
+        record_count = record_count
 
     if record_count == 'all':
         return item_list
@@ -788,7 +909,7 @@ def calculate_positivity_rate(df, column_name, title):
     try:
         positivity_rate = round(num_samples_positive / num_tests_done * 100, 1)
     except ZeroDivisionError:
-        positivity_rate=0
+        positivity_rate = 0
 
     # Create the new DataFrame
     positivity_df = pd.DataFrame({
@@ -1018,20 +1139,27 @@ def show_results(request):
     cd4_results = Cd4traker.objects.all()
 
     qi_list = Cd4traker.objects.all().order_by('-date_dispatched')
-    my_filters = Cd4trakerFilter(request.GET, queryset=qi_list)
+    # Calculate TAT in days and annotate it in the queryset
+    queryset = qi_list.annotate(
+        tat_days=ExpressionWrapper(
+            Extract(F('date_dispatched') - F('date_of_collection'), 'day'),
+            output_field=IntegerField()
+        )
+    )
+    my_filters = Cd4trakerFilter(request.GET, queryset=queryset)
     qi_lists = my_filters.qs
 
     ############################
     # UPDATE COMMODITY SECTION #
     ############################
 
-    # Calculate TAT and add it as a column to qi_lists
-    for cd4_instance in qi_lists:
-        if cd4_instance.date_dispatched:
-            tat = cd4_instance.date_dispatched - cd4_instance.date_of_collection
-            cd4_instance.tat = tat.days  # Adding TAT in days to the instance
+    # # Calculate TAT and add it as a column to qi_lists
+    # for cd4_instance in qi_lists:
+    #     if cd4_instance.date_dispatched:
+    #         tat = cd4_instance.date_dispatched - cd4_instance.date_of_collection
+    #         cd4_instance.tat = tat.days  # Adding TAT in days to the instance
     record_count_options = [("all", "All"),
-                           ] + [(str(i), str(i)) for i in [1,5, 10, 20, 30, 40, 50, 100, 250, 500, 750, 1000]]
+                            ] + [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50, 100, 250, 500, 750, 1000]]
 
     qi_list = pagination_(request, qi_lists, record_count)
     ######################
@@ -1062,8 +1190,8 @@ def show_results(request):
              'TB LAM': x.tb_lam_results,
              'Received status': x.received_status,
              'Rejection reason': x.reason_for_rejection,
-             'TAT': x.tat,
-             } for x in qi_list
+             'TAT': x.tat_days,
+             } for x in qi_lists
         ]
         # convert data from database to a dataframe
         list_of_projects = pd.DataFrame(list_of_projects)
@@ -1260,8 +1388,8 @@ def show_results(request):
     dictionary = get_key_from_session_names(request)
     # list_of_projects_fac['Facility'] = list_of_projects_fac['facility'].astype(str).str.split(" ").str[0]
     context = {
-        "title": "Results","record_count_options":record_count_options,
-        "cd4_results": cd4_results,"record_count":record_count,
+        "title": "Results", "record_count_options": record_count_options,
+        "cd4_results": cd4_results, "record_count": record_count,
         "dictionary": dictionary,
         "my_filters": my_filters, "qi_list": qi_list, "qi_lists": qi_lists,
         "cd4_summary_fig": cd4_summary_fig,
@@ -1719,4 +1847,3 @@ def update_reagent_stocks(request, pk):
         "crag_total_remaining": crag_total_remaining,
     }
     return render(request, 'lab_pulse/update results.html', context)
-

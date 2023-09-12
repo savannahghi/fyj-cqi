@@ -48,6 +48,12 @@
                         <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.age_gte|as_crispy_field }}
                         </div>
+                    <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.age_unit|as_crispy_field }}
+                        </div>
+                    <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.report_type|as_crispy_field }}
+                        </div>
                         <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.received_status|as_crispy_field }}
                         </div>
@@ -79,6 +85,12 @@
                             {{ my_filters.form.end_date|as_crispy_field }}
                         </div>
                         <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.min_tat|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.max_tat|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
                             <label for="record_count" class="form-label">Records Per Page</label>
                             <select name="record_count" id="record_count" class="form-select">
                                 {% for option_value, option_label in record_count_options %}
@@ -89,7 +101,6 @@
                                 {% endfor %}
                             </select>
                         </div>
-
                         <div class="col-12 col-md-6 col-lg-2">
                             <div class="row">
                                 <div class="mt-4">
@@ -98,9 +109,19 @@
                                     </button>
                                 </div>
                             </div>
+                            <div class="row">
+                                <div class="mt-4">
+                                    <a class="nav-link {% if request.path == choose_lab %} active{% endif %}"
+                                       href="{% url 'show_results' %}">
+                                        <span data-feather="refresh-cw" class="align-text-bottom"></span>
+                                        Reset Filters
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
+                <hr>
                 {% if qi_list %}
                     <div class="row">
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
@@ -230,10 +251,10 @@
                         <hr>
                         <div class="row justify-content-around">
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                {% if record_count != "all" or qi_list|length <= 1000 %}
+                                {% if record_count != "all" or qi_list|length <= 500 %}
                                     <h4 class="fw-bold text-primary"> {{ title }} </h4>
                                 {% else %}
-                                    <h6 class="text-primary text-sm-left"> >1000 records </h6>
+                                    <h6 class="text-primary text-sm-left"> > 500 records </h6>
                                 {% endif %}
                             </div>
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
@@ -243,7 +264,7 @@
                         </div>
 
                         <hr>
-                        {% if record_count != "all" or qi_list|length <= 1000 %}
+                        {% if record_count != "all" or qi_list|length <= 500 %}
                             <table class="table table-striped table-hover" style="font-size: small;">
                                 <thead class="thead-dark">
                                 <tr>
@@ -308,7 +329,7 @@
                                                   class="badge alert-warning">Sub-County: {{ result.sub_county }}</span>
 
                                         </td>
-                                        <td> {{ result.age }} </td>
+                                        <td> {{ result.age }} {{ result.age_unit }}</td>
                                         <td>
                                             {% if result.cd4_count_results is None %}
                                                 <p class="fw-bold text-danger">Rejected</p>
@@ -421,7 +442,7 @@
                                             <br>
                                             <br>
                                             <span style="font-size: 8px"
-                                                  class="badge alert-info">TAT: {{ result.tat }}
+                                                  class="badge alert-info">TAT: {{ result.tat_days }}
                                         </span>
                                         </td>
                                         {% if user.is_authenticated %}

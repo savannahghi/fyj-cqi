@@ -39,7 +39,7 @@ class TestCd4TestingLabs:
             created_by=user,
             modified_by=user
         )
-        assert lab.testing_lab_name == 'Test Lab'
+        assert lab.testing_lab_name == 'TEST LAB'
         assert lab.mfl_code == 12345
         assert isinstance(lab.id, uuid.UUID)
         assert isinstance(lab.created_by, CustomUser)
@@ -60,7 +60,7 @@ class TestCd4TestingLabs:
         lab.mfl_code = 54321
         lab.save()
         updated_lab = Cd4TestingLabs.objects.get(id=lab.id)
-        assert updated_lab.testing_lab_name == 'Updated Lab'
+        assert updated_lab.testing_lab_name == 'UPDATED LAB'
         assert updated_lab.mfl_code == 54321
 
     #  Tests that an existing Cd4TestingLabs instance can be deleted

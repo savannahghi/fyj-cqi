@@ -48,6 +48,12 @@
                         <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.age_gte|as_crispy_field }}
                         </div>
+                    <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.age_unit|as_crispy_field }}
+                        </div>
+                    <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.report_type|as_crispy_field }}
+                        </div>
                         <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.received_status|as_crispy_field }}
                         </div>
@@ -78,42 +84,44 @@
                         <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.end_date|as_crispy_field }}
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.min_tat|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.max_tat|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <label for="record_count" class="form-label">Records Per Page</label>
+                            <select name="record_count" id="record_count" class="form-select">
+                                {% for option_value, option_label in record_count_options %}
+                                    <option value="{{ option_value }}" {% if request.GET.record_count == option_value %}
+                                            selected {% endif %}>
+                                        {{ option_label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
                             <div class="row">
-                                <div class="col-12 col-md-4">
-                                    <button class="btn btn-outline-primary" type="submit">Search</button>
+                                <div class="mt-4">
+                                    <button class="btn btn-outline-primary btn-sm" type="submit">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
                                 </div>
-
+                            </div>
+                            <div class="row">
+                                <div class="mt-4">
+                                    <a class="nav-link {% if request.path == choose_lab %} active{% endif %}"
+                                       href="{% url 'show_results' %}">
+                                        <span data-feather="refresh-cw" class="align-text-bottom"></span>
+                                        Reset Filters
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </form>
-                    <div class="col-12">
-                        <form id="record-form" method="GET" action="{% url 'show_results' %}">
-                            <!-- Add the dropdown menu or input field to select the number of records -->
-                            <div class="form-group">
-                                <label for="record-count">Choose Records To View Per Page:</label>
-                                <select id="record-count" name="record_count">
-                                    <option value="all" {% if record_count == 'all' %}selected{% endif %}>All
-                                    </option>
-                                    <option value="5" {% if record_count == '5' %}selected{% endif %}>5</option>
-                                    <option value="10" {% if record_count == '10' %}selected{% endif %}>10</option>
-                                    <option value="20" {% if record_count == '20' %}selected{% endif %}>20</option>
-                                    <option value="30" {% if record_count == '30' %}selected{% endif %}>30</option>
-                                    <option value="40" {% if record_count == '40' %}selected{% endif %}>40</option>
-                                    <option value="50" {% if record_count == '50' %}selected{% endif %}>50</option>
-                                    <option value="100" {% if record_count == '100' %}selected{% endif %}>100
-                                    </option>
-                                    <option value="250" {% if record_count == '250' %}selected{% endif %}>250
-                                    </option>
-                                    <option value="500" {% if record_count == '500' %}selected{% endif %}>500
-                                    </option>
-                                    <option value="1000" {% if record_count == '1000' %}selected{% endif %}>1000
-                                    </option>
-                                </select>
-                            </div>
-                        </form>
-                    </div>
                 </div>
+                <hr>
                 {% if qi_list %}
                     <div class="row">
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
@@ -165,7 +173,6 @@
                                 </a>
                             </div>
                         {% endif %}
-
                     </div>
                     {% if title == "Results" %}
                         <hr>
@@ -244,7 +251,11 @@
                         <hr>
                         <div class="row justify-content-around">
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <h4 class="fw-bold text-primary"> {{ title }}</h4>
+                                {% if record_count != "all" or qi_list|length <= 500 %}
+                                    <h4 class="fw-bold text-primary"> {{ title }} </h4>
+                                {% else %}
+                                    <h6 class="text-primary text-sm-left"> > 500 records </h6>
+                                {% endif %}
                             </div>
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
                                 <a href="{% url 'generate_cd4_report_pdf' %}" class="btn btn-warning btn-block mb-2"
@@ -253,202 +264,189 @@
                         </div>
 
                         <hr>
-                        <table class="table table-striped table-hover" style="font-size: small;">
-                            <thead class="thead-dark">
-                            <tr>
-                                <th></th>
-                                <th style="font-size: x-small"> Patient Unique No.</th>
-                                <th style="font-size: x-small"> Facility Name</th>
-                                <th style="font-size: x-small"> Age</th>
-                                <th style="font-size: x-small"> CD4 Count Results</th>
-                                <th class="text-center" style="font-size: x-small">CrAg & TB LAM Results</th>
-                                <th style="font-size: x-small"> Collection Date</th>
-                                <th style="font-size: x-small"> Testing Date</th>
-                                <th style="font-size: x-small"> Dispatch Date</th>
-                                <th style="font-size: x-small"> Results Dispatched by</th>
-                                {% for result in qi_list %}
-                                    {% if user.is_authenticated %}
-                                        {% if forloop.counter == 1 %}
-                                            {% if perms.labpulse.view_add_cd4_count %}
-                                                {% if not result.hide_update_button or request.user.is_superuser %}
-                                                    <th style="font-size: x-small"></th>
+                        {% if record_count != "all" or qi_list|length <= 500 %}
+                            <table class="table table-striped table-hover" style="font-size: small;">
+                                <thead class="thead-dark">
+                                <tr>
+                                    <th></th>
+                                    <th style="font-size: x-small"> Patient Unique No.</th>
+                                    <th style="font-size: x-small"> Facility Name</th>
+                                    <th style="font-size: x-small"> Age</th>
+                                    <th style="font-size: x-small"> CD4 Count Results</th>
+                                    <th class="text-center" style="font-size: x-small">CrAg & TB LAM Results</th>
+                                    <th style="font-size: x-small"> Collection Date</th>
+                                    <th style="font-size: x-small"> Testing Date</th>
+                                    <th style="font-size: x-small"> Dispatch Date</th>
+                                    <th style="font-size: x-small"> Results Dispatched by</th>
+                                    {% for result in qi_list %}
+                                        {% if user.is_authenticated %}
+                                            {% if forloop.counter == 1 %}
+                                                {% if perms.labpulse.view_add_cd4_count %}
+                                                    {% if not result.hide_update_button or request.user.is_superuser %}
+                                                        <th style="font-size: x-small"></th>
+                                                    {% endif %}
                                                 {% endif %}
                                             {% endif %}
                                         {% endif %}
-                                    {% endif %}
-                                {% endfor %}
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for result in qi_list %}
-                                <tr>
-                                    <td> {{ forloop.counter }} </td>
-                                    <td>
-                                        {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
-                                            <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
-                                            <br>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-warning">Sex: {{ result.sex }}</span>
-                                        {% elif result.cd4_count_results is None %}
-                                            <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
-                                            <br>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-warning">Sex: {{ result.sex }}</span>
-                                        {% elif result.serum_crag_results == "Positive" or result.tb_lam_results == "Positive" %}
-                                            <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
-                                            <br>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-warning">Sex: {{ result.sex }}</span>
-                                        {% else %}
-                                            <p>{{ result.patient_unique_no }}</p>
-                                            <br>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-warning">Sex: {{ result.sex }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {{ result.facility_name }}
-                                        <br>
-                                        <span style="font-size: 8px"
-                                              class="badge alert-warning">County: {{ result.county }}</span>
-                                        <br>
-                                        <br>
-                                        <span style="font-size: 8px"
-                                              class="badge alert-warning">Sub-County: {{ result.sub_county }}</span>
-
-                                    </td>
-                                    <td> {{ result.age }} </td>
-                                    <td>
-                                        {% if result.cd4_count_results is None %}
-                                            <p class="fw-bold text-danger">Rejected</p>
-                                            <p class="fw-bold text-danger"
-                                               style="font-size: xx-small">{{ result.reason_for_rejection }}</p>
-                                        {% else %}
-                                            {% if result.age > 5 and result.cd4_count_results <= 200 %}
-                                                <p class="fw-bold"
-                                                   style="font-size: small">{{ result.cd4_count_results }}</p>
-                                            {% elif result.age <= 5 %}
-                                                <p class="fw-bold"
-                                                   style="font-size: small">{{ result.cd4_count_results }}</p>
+                                    {% endfor %}
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for result in qi_list %}
+                                    <tr>
+                                        <td> {{ forloop.counter }} </td>
+                                        <td>
+                                            {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
+                                                <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
                                                 <br>
-                                                <span style="font-size: 8px" class="badge alert-info">
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">Sex: {{ result.sex }}</span>
+                                            {% elif result.cd4_count_results is None %}
+                                                <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
+                                                <br>
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">Sex: {{ result.sex }}</span>
+                                            {% elif result.serum_crag_results == "Positive" or result.tb_lam_results == "Positive" %}
+                                                <p class="fw-bold text-danger">{{ result.patient_unique_no }}</p>
+                                                <br>
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">Sex: {{ result.sex }}</span>
+                                            {% else %}
+                                                <p>{{ result.patient_unique_no }}</p>
+                                                <br>
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">Sex: {{ result.sex }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ result.facility_name }}
+                                            <br>
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-warning">County: {{ result.county }}</span>
+                                            <br>
+                                            <br>
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-warning">Sub-County: {{ result.sub_county }}</span>
+
+                                        </td>
+                                        <td> {{ result.age }} {{ result.age_unit }}</td>
+                                        <td>
+                                            {% if result.cd4_count_results is None %}
+                                                <p class="fw-bold text-danger">Rejected</p>
+                                                <p class="fw-bold text-danger"
+                                                   style="font-size: xx-small">{{ result.reason_for_rejection }}</p>
+                                            {% else %}
+                                                {% if result.age > 5 and result.cd4_count_results <= 200 %}
+                                                    <p class="fw-bold"
+                                                       style="font-size: small">{{ result.cd4_count_results }}</p>
+                                                {% elif result.age <= 5 %}
+                                                    <p class="fw-bold"
+                                                       style="font-size: small">{{ result.cd4_count_results }}</p>
+                                                    <br>
+                                                    <span style="font-size: 8px" class="badge alert-info">
                                                     CD4 percentage: {{ result.cd4_percentage }}%
                                                 </span>
-                                            {% else %}
-                                                {{ result.cd4_count_results }}
+                                                {% else %}
+                                                    {{ result.cd4_count_results }}
+                                                {% endif %}
                                             {% endif %}
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
-                                            <p class="fw-bold text-danger">CRAG: Missing</p>
-                                            {% if result.tb_lam_results == "Positive" %}
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
-                                            {% elif result.tb_lam_results == "Negative" %}
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
-                                            {% else %}
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
-                                            {% endif %}
-                                        {% elif result.serum_crag_results is None %}
+                                        </td>
+                                        <td>
+                                            {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
+                                                <p class="fw-bold text-danger">CRAG: Missing</p>
+                                                {% if result.tb_lam_results == "Positive" %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
+                                                {% elif result.tb_lam_results == "Negative" %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
+                                                {% else %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                {% endif %}
+                                            {% elif result.serum_crag_results is None %}
 
-                                        {% elif result.serum_crag_results == "Positive" %}
-                                            {#                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>#}
-                                            <span style="font-size: 9px"
-                                                  class="badge alert-danger">Serum CrAg: {{ result.serum_crag_results }}</span>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-info">CRAG date: {{ result.date_serum_crag_results_entered|date:"Y-m-d" }}</span>
-                                            <br>
-                                            <br>
-                                            {% if result.tb_lam_results == "Positive" %}
+                                            {% elif result.serum_crag_results == "Positive" %}
+                                                {#                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>#}
+                                                <span style="font-size: 9px"
+                                                      class="badge alert-danger">Serum CrAg: {{ result.serum_crag_results }}</span>
                                                 <span style="font-size: 8px"
-                                                      class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
-                                            {% elif result.tb_lam_results == "Negative" %}
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
+                                                      class="badge alert-info">CRAG date: {{ result.date_serum_crag_results_entered|date:"Y-m-d" }}</span>
+                                                <br>
+                                                <br>
+                                                {% if result.tb_lam_results == "Positive" %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
+                                                {% elif result.tb_lam_results == "Negative" %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
+                                                {% else %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                {% endif %}
                                             {% else %}
+                                                {#                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>#}
+                                                <span style="font-size: 9px"
+                                                      class="badge alert-success">Serum CrAg: {{ result.serum_crag_results }}</span>
                                                 <span style="font-size: 8px"
-                                                      class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                      class="badge alert-info">CRAG date: {{ result.date_serum_crag_results_entered|date:"Y-m-d" }}</span>
+                                                <br>
+                                                <br>
+                                                {% if result.tb_lam_results == "Positive" %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
+                                                {% elif result.tb_lam_results == "Negative" %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
+                                                {% else %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                {% endif %}
                                             {% endif %}
-                                        {% else %}
-                                            {#                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>#}
-                                            <span style="font-size: 9px"
-                                                  class="badge alert-success">Serum CrAg: {{ result.serum_crag_results }}</span>
+                                        </td>
+                                        <td> {{ result.date_of_collection|date:"Y-m-d" }} </td>
+                                        <td>
+                                            {{ result.date_of_testing|date:"Y-m-d" }}
+                                            <br>
                                             <span style="font-size: 8px"
-                                                  class="badge alert-info">CRAG date: {{ result.date_serum_crag_results_entered|date:"Y-m-d" }}</span>
+                                                  class="badge alert-warning">Testing Lab: {{ result.testing_laboratory }}</span>
                                             <br>
                                             <br>
-                                            {% if result.tb_lam_results == "Positive" %}
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
-                                            {% elif result.tb_lam_results == "Negative" %}
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
-                                            {% else %}
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
-                                            {% endif %}
-                                        {% endif %}
-                                    </td>
-                                    <td> {{ result.date_of_collection|date:"Y-m-d" }} </td>
-                                    <td>
-                                        {{ result.date_of_testing|date:"Y-m-d" }}
-                                        <br>
-                                        <span style="font-size: 8px"
-                                              class="badge alert-warning">Testing Lab: {{ result.testing_laboratory }}</span>
-                                        <br>
-                                        <br>
-                                        <span style="font-size: 8px"
-                                              class="badge alert-warning">Justification: {{ result.justification }}</span>
-                                        <br>
-                                        <span style="font-size: 8px"
-                                              class="badge alert-info">Last update: {{ result.date_updated|date:"Y-m-d" }}</span>
-                                        <br>
-                                        <span style="font-size: 8px"
-                                              class="badge alert-info">Last update by: {{ result.modified_by.first_name|title }}
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-warning">Justification: {{ result.justification }}</span>
+                                            <br>
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-info">Last update: {{ result.date_updated|date:"Y-m-d" }}</span>
+                                            <br>
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-info">Last update by: {{ result.modified_by.first_name|title }}
                                             {{ result.modified_by.last_name|title }}
                                         </span>
-                                    </td>
-                                    <td> {{ result.date_dispatched|date:"Y-m-d" }} </td>
-                                    <td> {{ result.created_by.first_name|title }}
-                                        {{ result.created_by.last_name|title }}
-                                        {{ result.created_by.phone_number }}
-                                        <br>
-                                        <br>
-                                        <span style="font-size: 8px"
-                                              class="badge alert-info">TAT: {{ result.tat }}
+                                        </td>
+                                        <td> {{ result.date_dispatched|date:"Y-m-d" }} </td>
+                                        <td> {{ result.created_by.first_name|title }}
+                                            {{ result.created_by.last_name|title }}
+                                            {{ result.created_by.phone_number }}
+                                            <br>
+                                            <br>
+                                            <span style="font-size: 8px"
+                                                  class="badge alert-info">TAT: {{ result.tat_days }}
                                         </span>
-                                    </td>
-                                    {% if user.is_authenticated %}
-                                        {% if user|has_group:'laboratory_staffs_labpulse' and user.id == result.created_by.id or request.user.is_superuser %}
-                                            {% if not result.hide_update_button or request.user.is_superuser %}
-                                                <td>
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <a href="{% url 'update_cd4_results' result.report_type result.id %}"
-                                                               class="btn btn-info glow-button" role="button"><i
-                                                                    class="fas fa-edit"></i>
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            {% endif %}
-                                        {% elif user|has_group:'referring_laboratory_staffs_labpulse' %}
-                                            {% if result.cd4_count_results <= 200 and result.report_type == "Current" %}
+                                        </td>
+                                        {% if user.is_authenticated %}
+                                            {% if user|has_group:'laboratory_staffs_labpulse' and user.id == result.created_by.id or request.user.is_superuser %}
                                                 {% if not result.hide_update_button or request.user.is_superuser %}
                                                     <td>
                                                         <div class="row">
@@ -461,36 +459,75 @@
                                                         </div>
                                                     </td>
                                                 {% endif %}
+                                            {% elif user|has_group:'referring_laboratory_staffs_labpulse' %}
+                                                {% if result.cd4_count_results <= 200 and result.report_type == "Current" %}
+                                                    {% if not result.hide_update_button or request.user.is_superuser %}
+                                                        <td>
+                                                            <div class="row">
+                                                                <div class="col-md-6">
+                                                                    <a href="{% url 'update_cd4_results' result.report_type result.id %}"
+                                                                       class="btn btn-info glow-button" role="button"><i
+                                                                            class="fas fa-edit"></i>
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    {% endif %}
+                                                {% endif %}
                                             {% endif %}
                                         {% endif %}
-                                    {% endif %}
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        {% endif %}
                         <!-- Display the pagination links -->
                         <div class="mt-3">
                             {% if qi_list.has_other_pages %}
                                 <ul class="pagination justify-content-end">
                                     {% if qi_list.has_previous %}
-                                        <!-- request.GET.urlencode ensure that the filter parameters are preserved when
-                                        navigating to another page.-->
-                                        <li class="page-item"><a class="page-link"
-                                                                 href="?{{ request.GET.urlencode }}&page={{ qi_list.previous_page_number }}">Prev</a>
+                                        <!-- request.GET.urlencode ensure that the filter parameters are preserved when navigating to another page.-->
+                                        <li class="page-item">
+                                            <a class="page-link"
+                                               href="?{{ request.GET.urlencode }}&page={{ qi_list.previous_page_number }}">
+                                                Prev</a>
                                         </li>
-                                    {% else %}
-                                        <li class="disabled"><span class="page-link">Prev</span></li>
                                     {% endif %}
+
+                                    <!-- Display the first page -->
+                                    {% if qi_list.number > 3 %}
+                                        <li class="page-item"><a class="page-link"
+                                                                 href="?{{ request.GET.urlencode }}&page=1">1</a>
+                                        </li>
+                                    {% endif %}
+                                    <!-- Display ellipsis if there are middle pages -->
+                                    {% if qi_list.number > 4 %}
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    {% endif %}
+                                    <!-- Display pages around the current page -->
                                     {% for i in qi_list.paginator.page_range %}
-                                        {% if qi_list.number == i %}
-                                            <li class="page-item active"><span class="page-link">{{ i }} <span
-                                                    class="sr-only">(current)</span></span></li>
-                                        {% else %}
-                                            <li class="page-item"><a class="page-link"
-                                                                     href="?{{ request.GET.urlencode }}&page={{ i }}">{{ i }}</a>
-                                            </li>
+                                        {% if i > qi_list.number|add:-3 and i < qi_list.number|add:3 %}
+                                            {% if qi_list.number == i %}
+                                                <li class="page-item active"><span class="page-link">{{ i }} <span
+                                                        class="sr-only">(current)</span></span></li>
+                                            {% else %}
+                                                <li class="page-item"><a class="page-link"
+                                                                         href="?{{ request.GET.urlencode }}&page={{ i }}">{{ i }}</a>
+                                                </li>
+                                            {% endif %}
                                         {% endif %}
                                     {% endfor %}
+                                    <!-- Display ellipsis if there are middle pages -->
+                                    {% if qi_list.number < qi_list.paginator.num_pages|add:-3 %}
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    {% endif %}
+                                    <!-- Display the last page -->
+                                    {% if qi_list.number|add:2 < qi_list.paginator.num_pages %}
+                                        <li class="page-item"><a class="page-link"
+                                                                 href="?{{ request.GET.urlencode }}&page={{ qi_list.paginator.num_pages }}">{{ qi_list.paginator.num_pages }}</a>
+                                        </li>
+                                    {% endif %}
+
                                     {% if qi_list.has_next %}
                                         <li class="page-item"><a class="page-link"
                                                                  href="?{{ request.GET.urlencode }}&page={{ qi_list.next_page_number }}">Next</a>
@@ -505,28 +542,5 @@
                 {% endif %}
             </div>
         </div>
-
     </main>
-
-    <script>
-        const selectElement = document.getElementById("record-count");
-
-        // Add event listener to handle change event
-        selectElement.addEventListener("change", function () {
-            // Store the selected value in local storage
-            localStorage.setItem("selectedRecordCount", this.value);
-            // Submit the form
-            document.getElementById("record-form").submit();
-        });
-
-        // Set the selected value on page load
-        window.addEventListener("load", function () {
-            // Get the selected value from local storage
-            const selectedRecordCount = localStorage.getItem("selectedRecordCount");
-            if (selectedRecordCount) {
-                // Set the selected value of the dropdown
-                selectElement.value = selectedRecordCount;
-            }
-        });
-    </script>
 {% endblock %}

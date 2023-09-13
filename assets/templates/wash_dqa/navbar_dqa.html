@@ -1,0 +1,147 @@
+<!-- Dynamically add active class to the links -->
+{% url "show_data_concordance" as show_data_concordance %}
+{% url "add_data_concordance" as add_data_concordance %}
+{% url "add_system_verification" as add_system_verification %}
+{% url "wash_dqa_summary" as wash_dqa_summary %}
+{% url "load_jphes_data" as load_jphes_data %}
+{% url "load_county_sub_county_ward_data" as load_county_sub_county_ward_data %}
+{% url "show_wash_dqa_work_plan" as show_wash_dqa_work_plan %}
+{% url "show_wash_audit_team" as show_wash_audit_team %}
+{% url "system_assessment_table" as system_assessment_table %}
+{% url "instructions" as instructions %}
+{% url "comments" as comments %}
+{% url "resources" as resources %}
+{% url "facilities_landing_page" project_type='facility' as facilities_landing_page %}
+{% url "sub_counties_list" as sub_counties_list %}
+{% url "lesson_learnt" as lesson_learnt %}
+{% url "load_datim_data" as load_datim_data %}
+{% url "update_button_settings" as update_button_settings %}
+{% url "wash_dqa_dashboard" dqa_type='program' as wash_dqa_dashboard %}
+{% url 'add_documentation' report_type='documentation' as documentation %}
+{% url "show_wash_dqa" report_type='documentation' as show_wash_dqa %}
+
+
+{% block nav %}
+    <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+
+        <div class="position-sticky pt-3 sidebar-sticky">
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                <span>Instructions</span>
+            </h6>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == instructions %} active{% endif %}"
+                       href="{% url 'instructions' %}">
+                        <span data-feather="info" class="align-text-bottom"></span>
+                        Instructions
+                    </a>
+                </li>
+            </ul>
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                <span>Data entry</span>
+            </h6>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == documentation %} active{% endif %}"
+                       href="{{ documentation }}">
+                        <span data-feather="book" class="align-text-bottom"></span>
+                        Add WASH System Assessment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == add_data_concordance %} active{% endif %}"
+                       href="{% url 'add_data_concordance' %}">
+                        <span data-feather="database" class="align-text-bottom"></span>
+                        Add Data Verification
+                    </a>
+                </li>
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                    <span>SUMMARIES</span>
+                </h6>
+                <ul>
+                </ul>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == show_wash_dqa %} active{% endif %}"
+                       href="{{ show_wash_dqa }}">
+                        <span data-feather="book-open" class="align-text-bottom"></span>
+                        WASH System Assessment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == show_data_concordance %} active{% endif %}"
+                       aria-current="page" href="{% url 'show_data_concordance' %}">
+                        <span data-feather="home" class="align-text-bottom"></span>
+                        Data Verification
+                    </a>
+                </li>
+                <hr>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == wash_dqa_summary %} active{% endif %}"
+                       href="{% url 'wash_dqa_summary' %}">
+                        <span data-feather="activity" class="align-text-bottom"></span>
+                        DQA summary
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == show_wash_dqa_work_plan %} active{% endif %}"
+                       href="{% url 'show_wash_dqa_work_plan' %}">
+                        <span data-feather="briefcase" class="align-text-bottom"></span>
+                        Work plan
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == show_wash_audit_team %} active{% endif %}"
+                       href="{% url 'show_wash_audit_team' %}">
+                        <span data-feather="briefcase" class="align-text-bottom"></span>
+                        Audit team
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == wash_dqa_dashboard %} active{% endif %}" aria-current="page"
+                       href="{% url 'wash_dqa_dashboard' dqa_type="program" %}">
+                        <span data-feather="home" class="align-text-bottom"></span>
+                        DQA DASHBOARD
+                    </a>
+                </li>
+                {% if request.user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == load_datim_data %} active{% endif %}"
+                           href="{% url 'load_datim_data' %}">
+                            <span data-feather="file-text" class="align-text-bottom"></span>
+                            Load DATIM data
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == load_data %} active{% endif %}"
+                           href="{% url 'load_data' %}">
+                            <span data-feather="file-text" class="align-text-bottom"></span>
+                            Load FYJ facilities
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == load_jphes_data %} active{% endif %}"
+                           href="{% url 'load_jphes_data' %}">
+                            <span data-feather="file-text" class="align-text-bottom"></span>
+                            Load JPHES DATA
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == load_county_sub_county_ward_data %} active{% endif %}"
+                           href="{% url 'load_county_sub_county_ward_data' %}">
+                            <span data-feather="file-text" class="align-text-bottom"></span>
+                            Load COUNTY/SUB-COUNTY/WARD DATA
+                        </a>
+                    </li>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == update_button_settings %} active{% endif %}"
+                           href="{% url 'update_button_settings' %}">
+                            <span data-feather="file-text" class="align-text-bottom"></span>
+                            Change DQA Update time
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+{% endblock %}

@@ -24,6 +24,34 @@
                 <h1 class="display-6 fw-bold text-primary text-center">{{ title }} </h1>
                 <hr>
                 {% if title == "Update Results" %}
+                    {% if commodity_status %}
+                        <div class="mb-3">
+                            {{ commodity_status|safe }}
+                        </div>
+                        <div class="mb-3 mt-3 row justify-content-between">
+                            {% if cd4_total_remaining == 0 %}
+                                <div class="col-4">
+                                    <a href="#" class="btn btn-success flicker-button" role="button">
+                                        CD4 REAGENTS ARE OUT OF STOCKS.
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {% if tb_lam_total_remaining == 0 %}
+                                <div class="col-4">
+                                    <a href="#" class="btn btn-success flicker-button" role="button">
+                                        LF TB LAM REAGENTS ARE OUT OF STOCKS
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {% if crag_total_remaining == 0 %}
+                                <div class="col-4">
+                                    <a href="#" class="btn btn-success flicker-button" role="button">
+                                        SERUM CRAG REAGENTS ARE OUT OF STOCKS
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                     <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
                         <p> Please fill the fields below and then submit </p>
@@ -36,6 +64,9 @@
                             </div>
                             <div class="col-md-3 mt-2">
                                 {{ form.age|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mt-2">
+                                {{ form.age_unit|as_crispy_field }}
                             </div>
                             <div class="col-md-3 mt-2">
                                 {{ form.sex|as_crispy_field }}
@@ -52,7 +83,7 @@
                             <div class="col-md-3 mt-2">
                                 {{ form.reason_for_rejection|as_crispy_field }}
                             </div>
-                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.justification|as_crispy_field }}
                             </div>
                             <div class="col-md-3 mt-2">
@@ -95,6 +126,45 @@
                         </div>
                         <div class="col-md-2 mt-2 pt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                    </form>
+                {% elif title == "Update Commodities" %}
+                    <p class="text-danger">Note: Records <strong>can only be updated</strong> if they were received
+                        within the <strong>current month.</strong></p>
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        <p> Please fill the fields below and then submit </p>
+                        <div class="row">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.reagent_type|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.beginning_balance|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.received_from|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.date_commodity_received|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.quantity_received|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.negative_adjustment|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.positive_adjustments|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.quantity_expired|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.expiry_date|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2 pt-3">
+                                <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            </div>
                         </div>
                     </form>
                 {% endif %}

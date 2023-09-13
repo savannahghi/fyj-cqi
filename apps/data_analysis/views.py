@@ -23,7 +23,7 @@ from apps.data_analysis.models import FYJHealthFacility
 def load_fyj_censused(request):
     if not request.user.first_name:
         return redirect("profile")
-    if request.method == 'POST':
+    if request.method == 'POST' and "file" in request.FILES:
         file = request.FILES['file']
         # Read the data from the Excel file into a pandas DataFrame
         keyword = "census"

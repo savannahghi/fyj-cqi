@@ -181,4 +181,4 @@ class TestAddTestingLabView:
         form_errors = response.context['form'].errors
 
         # Assert expected error message
-        assert "Cd4 testing labs with this Testing lab name already exists." in form_errors['testing_lab_name'][0]
+        assert "A CD4 Testing Lab with this name already exists." in form_errors['testing_lab_name'][0]

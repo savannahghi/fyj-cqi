@@ -1,0 +1,977 @@
+{% extends 'wash_dqa/index_dqa.html' %}
+{% load custom_tags %}
+{#{% load remove_underscores %}#}
+
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h6 class="display-6 text-primary text-center">WASH DQA SUMMARIES</h6>
+        {% if selected_ward  and system_assessments %}
+            <h6 class="display-6 text-primary text-center">{{ selected_ward }} Ward</h6>
+        {% endif %}
+        <hr>
+        <div class="p-5 mb-4 bg-light rounded-3">
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info col-12" role="alert">
+                        <h5 class="small">{{ message }}</h5>
+                    </div>
+                    {#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
+                {% endfor %}
+            {% endif %}
+
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-3">
+                        {% if report_type == "documentation" %}
+                            <a href="{% url 'show_wash_dqa' "documentation" %}"
+                               class="btn btn-success">Documentation</a>
+                        {% else %}
+                            <a href="{% url 'show_wash_dqa' "documentation" %}"
+                               class="btn btn-outline-success">Documentation</a>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        {% if report_type == "data-quality" %}
+                            <a href="{% url 'show_wash_dqa' 'data-quality' %}"
+                               class="btn btn-success">Data Quality Systems</a>
+                        {% else %}
+                            <a href="{% url 'show_wash_dqa' 'data-quality' %}"
+                               class="btn btn-outline-success">Data Quality Systems</a>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        {% if report_type == 'data-collection' %}
+                            <a href="{% url 'show_wash_dqa' 'data-collection' %}"
+                               class="btn btn-success">Data Collection, Reporting and Management</a>
+                        {% else %}
+                            <a href="{% url 'show_wash_dqa' 'data-collection' %}"
+                               class="btn btn-outline-success">Data Collection, Reporting and Management</a>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        {% if report_type == 'data-quality-assessment' %}
+                            <a href="{% url 'show_wash_dqa' 'data-quality-assessment' %}"
+                               class="btn btn-success">Data Quality Assessment by Data Source</a>
+                        {% else %}
+                            <a href="{% url 'show_wash_dqa' 'data-quality-assessment' %}"
+                               class="btn btn-outline-success">Data Quality Assessment by Data Source</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <form class="row g-3 mt-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    {% csrf_token %}
+                    <p> Please choose quarter, year, ward and then submit </p>
+
+                    <div class="col-md-2 mt-2">
+                        {{ quarter_form.quarter|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-2 pr-5">
+                        {{ year_form.year|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4 mt-2">
+                        {{ ward_form.name|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-2 pt-3">
+                        <input class="btn btn-success mt-1" type="submit" value="Submit">
+                    </div>
+                </form>
+                {% if system_assessments %}
+                    {% if report_type == "data-quality-assessment" %}
+                        <table class="table table-striped table-hover w-100" style="font-size: x-small;">
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Validity : <span
+                                        class="text-warning">The data actually represents the intended result/measure</span>
+                                </th>
+                                <th>Trained Individuals - Sanitation</th>
+                                <th>Water Access - Basic Services</th>
+                                <th>Safe Water Access - Managed Service</th>
+                                <th>Open defecation Certified Communities</th>
+                                <th>Sanitation Access - Basic Service</th>
+                                <th>Safe Sanitation Access - Managed Service</th>
+                                <th>Basic Sanitation - Institutional Facilities</th>
+                                <th>Assessors comments</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in system_assessments|slice:":4" %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ form.description }}</td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_trained_numeric|format_cell }}">
+                                        <strong>{{ form.number_trained }} ({{ form.number_trained_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_water }}
+                                            ({{ form.number_access_basic_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_water }}
+                                            ({{ form.number_access_safe_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_community_open_defecation_numeric|format_cell }}">
+                                        <strong>{{ form.number_community_open_defecation }}
+                                            ({{ form.number_community_open_defecation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation }}
+                                            ({{ form.number_access_basic_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_sanitation }}
+                                            ({{ form.number_access_safe_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_institutions_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation_institutions }}
+                                            ({{ form.number_access_basic_sanitation_institutions_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if form.auditor_note is not None %}
+                                            {{ form.auditor_note }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% if not form.hide_update_button or request.user.is_superuser %}
+                                        <td class="text-center">
+                                            <a href="{% url 'update_wash_dqa' report_type form.id %}"
+                                               class="btn btn-info"
+                                               role="button">Update</a>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td class="fw-bold">
+                                    Average
+                                </td>
+                                {% for key, value in average_dictionary.items %}
+                                    {% if key == 'average_values_0_4' %}
+                                        <!-- Iterate through the dictionary of columns and values -->
+                                        {% for column_name, column_value in value.items %}
+                                            <!-- Render each cell in the table -->
+                                            <td class="text-center text-black"
+                                                style="background-color: {{ column_value|get_background_color }}">
+                                                <strong>{{ column_value }}</strong>
+                                            </td>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if key == 'average_of_averages' %}
+                                        <!-- Render the average of averages cell -->
+                                        <td class="text-center text-black"
+                                            style="background-color: {{ value.average_values_0_4|get_background_color }};
+                                                    font-size: large">
+                                            <strong class="text-info">Validity
+                                                average: {{ value.average_values_0_4 }}</strong>
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+
+                            </tr>
+                            </tbody>
+
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Reliability : <span
+                                        class="text-warning">Data is collected in a consistent way over time</span></th>
+                                </th>
+                                <th>Trained Individuals - Sanitation</th>
+                                <th>Water Access - Basic Services</th>
+                                <th>Safe Water Access - Managed Service</th>
+                                <th>Open defecation Certified Communities</th>
+                                <th>Sanitation Access - Basic Service</th>
+                                <th>Safe Sanitation Access - Managed Service</th>
+                                <th>Basic Sanitation - Institutional Facilities</th>
+                                <th>Assessors comments</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in system_assessments|slice:"4:8" %}
+                                <tr>
+                                    <td>{{ forloop.counter|add:4 }}</td>
+                                    <td>{{ form.description }}</td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_trained_numeric|format_cell }}">
+                                        <strong>{{ form.number_trained }} ({{ form.number_trained_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_water }}
+                                            ({{ form.number_access_basic_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_water }}
+                                            ({{ form.number_access_safe_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_community_open_defecation_numeric|format_cell }}">
+                                        <strong>{{ form.number_community_open_defecation }}
+                                            ({{ form.number_community_open_defecation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation }}
+                                            ({{ form.number_access_basic_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_sanitation }}
+                                            ({{ form.number_access_safe_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_institutions_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation_institutions }}
+                                            ({{ form.number_access_basic_sanitation_institutions_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if form.auditor_note is not None %}
+                                            {{ form.auditor_note }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% if not form.hide_update_button or request.user.is_superuser %}
+                                        <td class="text-center">
+                                            <a href="{% url 'update_wash_dqa' report_type form.id %}"
+                                               class="btn btn-info"
+                                               role="button">Update</a>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td class="fw-bold">
+                                    Average
+                                </td>
+                                {% for key, value in average_dictionary.items %}
+                                    {% if key == 'average_values_4_8' %}
+                                        <!-- Iterate through the dictionary of columns and values -->
+                                        {% for column_name, column_value in value.items %}
+                                            <!-- Render each cell in the table -->
+                                            <td class="text-center text-black"
+                                                style="background-color: {{ column_value|get_background_color }}">
+                                                <strong>{{ column_value }}</strong>
+                                            </td>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if key == 'average_of_averages' %}
+                                        <!-- Render the average of averages cell -->
+                                        <td class="text-center text-black"
+                                            style="background-color: {{ value.average_values_4_8|get_background_color }};
+                                                    font-size: large">
+                                            <strong class="text-info">Reliability
+                                                average: {{ value.average_values_4_8 }}</strong>
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </tbody>
+
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Integrity : <span
+                                        class="text-warning">The data is accurate and free of human or technological error</span>
+                                </th>
+                                <th>Trained Individuals - Sanitation</th>
+                                <th>Water Access - Basic Services</th>
+                                <th>Safe Water Access - Managed Service</th>
+                                <th>Open defecation Certified Communities</th>
+                                <th>Sanitation Access - Basic Service</th>
+                                <th>Safe Sanitation Access - Managed Service</th>
+                                <th>Basic Sanitation - Institutional Facilities</th>
+                                <th>Assessors comments</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in system_assessments|slice:"8:13" %}
+                                <tr>
+                                    <td>{{ forloop.counter|add:8 }}</td>
+                                    <td>{{ form.description }}</td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_trained_numeric|format_cell }}">
+                                        <strong>{{ form.number_trained }} ({{ form.number_trained_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_water }}
+                                            ({{ form.number_access_basic_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_water }}
+                                            ({{ form.number_access_safe_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_community_open_defecation_numeric|format_cell }}">
+                                        <strong>{{ form.number_community_open_defecation }}
+                                            ({{ form.number_community_open_defecation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation }}
+                                            ({{ form.number_access_basic_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_sanitation }}
+                                            ({{ form.number_access_safe_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_institutions_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation_institutions }}
+                                            ({{ form.number_access_basic_sanitation_institutions_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if form.auditor_note is not None %}
+                                            {{ form.auditor_note }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% if not form.hide_update_button or request.user.is_superuser %}
+                                        <td class="text-center">
+                                            <a href="{% url 'update_wash_dqa' report_type form.id %}"
+                                               class="btn btn-info"
+                                               role="button">Update</a>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td class="fw-bold">
+                                    Average
+                                </td>
+                                {% for key, value in average_dictionary.items %}
+                                    {% if key == 'average_values_8_13' %}
+                                        <!-- Iterate through the dictionary of columns and values -->
+                                        {% for column_name, column_value in value.items %}
+                                            <!-- Render each cell in the table -->
+                                            <td class="text-center text-black"
+                                                style="background-color: {{ column_value|get_background_color }}">
+                                                <strong>{{ column_value }}</strong>
+                                            </td>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if key == 'average_of_averages' %}
+                                        <!-- Render the average of averages cell -->
+                                        <td class="text-center text-black"
+                                            style="background-color: {{ value.average_values_8_13|get_background_color }};
+                                                    font-size: large">
+                                            <strong class="text-info">Integrity
+                                                average: {{ value.average_values_8_13 }}</strong>
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </tbody>
+
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Precision : <span
+                                        class="text-warning">Data has sufficient level of details, disaggregated as required</span>
+                                </th>
+                                <th>Trained Individuals - Sanitation</th>
+                                <th>Water Access - Basic Services</th>
+                                <th>Safe Water Access - Managed Service</th>
+                                <th>Open defecation Certified Communities</th>
+                                <th>Sanitation Access - Basic Service</th>
+                                <th>Safe Sanitation Access - Managed Service</th>
+                                <th>Basic Sanitation - Institutional Facilities</th>
+                                <th>Assessors comments</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in system_assessments|slice:"13:17" %}
+                                <tr>
+                                    <td>{{ forloop.counter|add:13 }}</td>
+                                    <td>{{ form.description }}</td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_trained_numeric|format_cell }}">
+                                        <strong>{{ form.number_trained }} ({{ form.number_trained_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_water }}
+                                            ({{ form.number_access_basic_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_water }}
+                                            ({{ form.number_access_safe_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_community_open_defecation_numeric|format_cell }}">
+                                        <strong>{{ form.number_community_open_defecation }}
+                                            ({{ form.number_community_open_defecation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation }}
+                                            ({{ form.number_access_basic_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_sanitation }}
+                                            ({{ form.number_access_safe_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_institutions_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation_institutions }}
+                                            ({{ form.number_access_basic_sanitation_institutions_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if form.auditor_note is not None %}
+                                            {{ form.auditor_note }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% if not form.hide_update_button or request.user.is_superuser %}
+                                        <td class="text-center">
+                                            <a href="{% url 'update_wash_dqa' report_type form.id %}"
+                                               class="btn btn-info"
+                                               role="button">Update</a>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td class="fw-bold">
+                                    Average
+                                </td>
+                                {% for key, value in average_dictionary.items %}
+                                    {% if key == 'average_values_13_17' %}
+                                        <!-- Iterate through the dictionary of columns and values -->
+                                        {% for column_name, column_value in value.items %}
+                                            <!-- Render each cell in the table -->
+                                            <td class="text-center text-black"
+                                                style="background-color: {{ column_value|get_background_color }}">
+                                                <strong>{{ column_value }}</strong>
+                                            </td>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if key == 'average_of_averages' %}
+                                        <!-- Render the average of averages cell -->
+                                        <td class="text-center text-black"
+                                            style="background-color: {{ value.average_values_13_17|get_background_color }};
+                                                    font-size: large">
+                                            <strong class="text-info">Precision
+                                                average: {{ value.average_values_13_17 }}</strong>
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </tbody>
+
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Timeliness : <span
+                                        class="text-warning">Data is collected frequently as needed and current</span>
+                                </th>
+                                <th>Trained Individuals - Sanitation</th>
+                                <th>Water Access - Basic Services</th>
+                                <th>Safe Water Access - Managed Service</th>
+                                <th>Open defecation Certified Communities</th>
+                                <th>Sanitation Access - Basic Service</th>
+                                <th>Safe Sanitation Access - Managed Service</th>
+                                <th>Basic Sanitation - Institutional Facilities</th>
+                                <th>Assessors comments</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in system_assessments|slice:"17:21" %}
+                                <tr>
+                                    <td>{{ forloop.counter|add:17 }}</td>
+                                    <td>{{ form.description }}</td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_trained_numeric|format_cell }}">
+                                        <strong>{{ form.number_trained }} ({{ form.number_trained_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_water }}
+                                            ({{ form.number_access_basic_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_water }}
+                                            ({{ form.number_access_safe_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_community_open_defecation_numeric|format_cell }}">
+                                        <strong>{{ form.number_community_open_defecation }}
+                                            ({{ form.number_community_open_defecation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation }}
+                                            ({{ form.number_access_basic_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_sanitation }}
+                                            ({{ form.number_access_safe_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_institutions_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation_institutions }}
+                                            ({{ form.number_access_basic_sanitation_institutions_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if form.auditor_note is not None %}
+                                            {{ form.auditor_note }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% if not form.hide_update_button or request.user.is_superuser %}
+                                        <td class="text-center">
+                                            <a href="{% url 'update_wash_dqa' report_type form.id %}"
+                                               class="btn btn-info"
+                                               role="button">Update</a>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td class="fw-bold">
+                                    Average
+                                </td>
+                                {% for key, value in average_dictionary.items %}
+                                    {% if key == 'average_values_17_21' %}
+                                        <!-- Iterate through the dictionary of columns and values -->
+                                        {% for column_name, column_value in value.items %}
+                                            <!-- Render each cell in the table -->
+                                            <td class="text-center text-black"
+                                                style="background-color: {{ column_value|get_background_color }}">
+                                                <strong>{{ column_value }}</strong>
+                                            </td>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if key == 'average_of_averages' %}
+                                        <!-- Render the average of averages cell -->
+                                        <td class="text-center text-black"
+                                            style="background-color: {{ value.average_values_17_21|get_background_color }};
+                                                    font-size: large">
+                                            <strong class="text-info">Timeliness
+                                                average: {{ value.average_values_17_21 }}</strong>
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </tbody>
+
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Completeness : <span class="text-warning">Data is not missing due to challenges/delay in the collection, entry, cleaning or analysis</span>
+                                </th>
+                                <th>Trained Individuals - Sanitation</th>
+                                <th>Water Access - Basic Services</th>
+                                <th>Safe Water Access - Managed Service</th>
+                                <th>Open defecation Certified Communities</th>
+                                <th>Sanitation Access - Basic Service</th>
+                                <th>Safe Sanitation Access - Managed Service</th>
+                                <th>Basic Sanitation - Institutional Facilities</th>
+                                <th>Assessors comments</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in system_assessments|slice:"21:23" %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ form.description }}</td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_trained_numeric|format_cell }}">
+                                        <strong>{{ form.number_trained }} ({{ form.number_trained_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_water }}
+                                            ({{ form.number_access_basic_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_water }}
+                                            ({{ form.number_access_safe_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_community_open_defecation_numeric|format_cell }}">
+                                        <strong>{{ form.number_community_open_defecation }}
+                                            ({{ form.number_community_open_defecation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation }}
+                                            ({{ form.number_access_basic_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_sanitation }}
+                                            ({{ form.number_access_safe_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_institutions_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation_institutions }}
+                                            ({{ form.number_access_basic_sanitation_institutions_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if form.auditor_note is not None %}
+                                            {{ form.auditor_note }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% if not form.hide_update_button or request.user.is_superuser %}
+                                        <td class="text-center">
+                                            <a href="{% url 'update_wash_dqa' report_type form.id %}"
+                                               class="btn btn-info"
+                                               role="button">Update</a>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td class="fw-bold">
+                                    Average
+                                </td>
+                                {% for key, value in average_dictionary.items %}
+                                    {% if key == 'average_values_21_23' %}
+                                        <!-- Iterate through the dictionary of columns and values -->
+                                        {% for column_name, column_value in value.items %}
+                                            <!-- Render each cell in the table -->
+                                            <td class="text-center text-black"
+                                                style="background-color: {{ column_value|get_background_color }}">
+                                                <strong>{{ column_value }}</strong>
+                                            </td>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if key == 'average_of_averages' %}
+                                        <!-- Render the average of averages cell -->
+                                        <td class="text-center text-black"
+                                            style="background-color: {{ value.average_values_21_23|get_background_color }};
+                                                    font-size: large">
+                                            <strong class="text-info">Completeness
+                                                average: {{ value.average_values_21_23 }}</strong>
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </tbody>
+
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Confidentiality : <span class="text-warning">Data are collected, stored, and reported in a way that protects respondents’ privacy</span>
+                                </th>
+                                <th>Trained Individuals - Sanitation</th>
+                                <th>Water Access - Basic Services</th>
+                                <th>Safe Water Access - Managed Service</th>
+                                <th>Open defecation Certified Communities</th>
+                                <th>Sanitation Access - Basic Service</th>
+                                <th>Safe Sanitation Access - Managed Service</th>
+                                <th>Basic Sanitation - Institutional Facilities</th>
+                                <th>Assessors comments</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in system_assessments|slice:"23:26" %}
+                                <tr>
+                                    <td>{{ forloop.counter|add:23 }}</td>
+                                    <td>{{ form.description }}</td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_trained_numeric|format_cell }}">
+                                        <strong>{{ form.number_trained }} ({{ form.number_trained_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_water }}
+                                            ({{ form.number_access_basic_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_water }}
+                                            ({{ form.number_access_safe_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_community_open_defecation_numeric|format_cell }}">
+                                        <strong>{{ form.number_community_open_defecation }}
+                                            ({{ form.number_community_open_defecation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation }}
+                                            ({{ form.number_access_basic_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_sanitation }}
+                                            ({{ form.number_access_safe_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_institutions_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation_institutions }}
+                                            ({{ form.number_access_basic_sanitation_institutions_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if form.auditor_note is not None %}
+                                            {{ form.auditor_note }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% if not form.hide_update_button or request.user.is_superuser %}
+                                        <td class="text-center">
+                                            <a href="{% url 'update_wash_dqa' report_type form.id %}"
+                                               class="btn btn-info"
+                                               role="button">Update</a>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td class="fw-bold">
+                                    Average
+                                </td>
+                                {% for key, value in average_dictionary.items %}
+                                    {% if key == 'average_values_23_26' %}
+                                        <!-- Iterate through the dictionary of columns and values -->
+                                        {% for column_name, column_value in value.items %}
+                                            <!-- Render each cell in the table -->
+                                            <td class="text-center text-black"
+                                                style="background-color: {{ column_value|get_background_color }}">
+                                                <strong>{{ column_value }}</strong>
+                                            </td>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if key == 'average_of_averages' %}
+                                        <!-- Render the average of averages cell -->
+                                        <td class="text-center text-black"
+                                            style="background-color: {{ value.average_values_23_26|get_background_color }};
+                                                    font-size: large">
+                                            <strong class="text-info">Confidentiality
+                                                average: {{ value.average_values_23_26 }}</strong>
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </tbody>
+
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Ethics : <span class="text-warning">Data are collected in line with organizational and international ethical standards - consent, privacy, confidentiality and integrity</span>
+                                </th>
+                                <th>Trained Individuals - Sanitation</th>
+                                <th>Water Access - Basic Services</th>
+                                <th>Safe Water Access - Managed Service</th>
+                                <th>Open defecation Certified Communities</th>
+                                <th>Sanitation Access - Basic Service</th>
+                                <th>Safe Sanitation Access - Managed Service</th>
+                                <th>Basic Sanitation - Institutional Facilities</th>
+                                <th>Assessors comments</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in system_assessments|slice:"26:" %}
+                                <tr>
+                                    <td>{{ forloop.counter|add:26 }}</td>
+                                    <td>{{ form.description }}</td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_trained_numeric|format_cell }}">
+                                        <strong>{{ form.number_trained }} ({{ form.number_trained_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_water }}
+                                            ({{ form.number_access_basic_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_water_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_water }}
+                                            ({{ form.number_access_safe_water_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_community_open_defecation_numeric|format_cell }}">
+                                        <strong>{{ form.number_community_open_defecation }}
+                                            ({{ form.number_community_open_defecation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation }}
+                                            ({{ form.number_access_basic_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_safe_sanitation_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_safe_sanitation }}
+                                            ({{ form.number_access_safe_sanitation_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center text-black"
+                                        style="background-color: {{ form.number_access_basic_sanitation_institutions_numeric|format_cell }}">
+                                        <strong>{{ form.number_access_basic_sanitation_institutions }}
+                                            ({{ form.number_access_basic_sanitation_institutions_numeric }})</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if form.auditor_note is not None %}
+                                            {{ form.auditor_note }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% if not form.hide_update_button or request.user.is_superuser %}
+                                        <td class="text-center">
+                                            <a href="{% url 'update_wash_dqa' report_type form.id %}"
+                                               class="btn btn-info"
+                                               role="button">Update</a>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td class="fw-bold">
+                                    Average
+                                </td>
+                                {% for key, value in average_dictionary.items %}
+                                    {% if key == 'average_values_26_None' %}
+                                        <!-- Iterate through the dictionary of columns and values -->
+                                        {% for column_name, column_value in value.items %}
+                                            <!-- Render each cell in the table -->
+                                            <td class="text-center text-black"
+                                                style="background-color: {{ column_value|get_background_color }}">
+                                                <strong>{{ column_value }}</strong>
+                                            </td>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if key == 'average_of_averages' %}
+                                        <!-- Render the average of averages cell -->
+                                        <td class="text-center text-black"
+                                            style="background-color: {{ value.average_values_26_None|get_background_color }};
+                                                    font-size: large">
+                                            <strong class="text-info">Ethics
+                                                average: {{ value.average_values_26_None }}</strong>
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <table class="table table-striped table-hover w-100" style="font-size: x-small;">
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Detailed checklist</th>
+                                <th>Verification means</th>
+                                <th>Field staffs to involve</th>
+                                <th>Rating</th>
+                                <th>Rationale for rating</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in system_assessments %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ form.description }}</td>
+
+                                    <td>{{ form.verification_means }}</td>
+                                    <td>{{ form.staff_involved }}</td>
+                                    {% if form.dropdown_option == "Fully meets all requirements" %}
+                                        <td style="background-color: blue;color: white">{{ form.dropdown_option }}
+                                            ({{ form.calculations|floatformat }})
+                                        </td>
+                                    {% elif form.dropdown_option == "Almost meets all requirements" %}
+                                        <td style="background-color: green;color: white">{{ form.dropdown_option }}
+                                            ({{ form.calculations|floatformat }})
+                                        </td>
+                                    {% elif form.dropdown_option == "Partially meets all requirements" %}
+                                        <td style="background-color: lightgreen;color: white">{{ form.dropdown_option }}
+                                            ({{ form.calculations|floatformat }})
+                                        </td>
+                                    {% elif form.dropdown_option == "Approaches basic requirements" %}
+                                        <td style="background-color: yellow;color: white">{{ form.dropdown_option }}
+                                            ({{ form.calculations|floatformat }})
+                                        </td>
+                                    {% elif form.dropdown_option == "Does not meet requirements" %}
+                                        <td style="background-color: red;color: white">{{ form.dropdown_option }}
+                                            ({{ form.calculations|floatformat }})
+                                        </td>
+                                    {% elif form.dropdown_option == "N/A" %}
+                                        <td style="background-color: gray;color: white">{{ form.dropdown_option }}
+                                            ({{ form.calculations|floatformat }})
+                                        </td>
+                                    {% endif %}
+
+                                    <td>
+                                        {% if form.auditor_note is not None %}
+                                            {{ form.auditor_note }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    {% if not form.hide_update_button or request.user.is_superuser %}
+                                        <td class="text-center">
+                                            <a href="{% url 'update_wash_dqa' report_type form.id %}"
+                                               class="btn btn-info"
+                                               role="button">Update</a>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td class="fw-bold">
+                                    Average
+                                </td>
+                                <td></td>
+                                <td></td>
+
+                                <td class="text-center text-white"
+                                    style="background-color: {{ average_dictionary|format_average_cell }};
+                                                    font-size: large">
+                                    <strong>{{ average_dictionary|floatformat:"2" }}</strong>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

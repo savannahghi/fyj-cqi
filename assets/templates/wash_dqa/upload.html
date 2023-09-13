@@ -1,0 +1,61 @@
+{% extends 'wash_dqa/index_dqa.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="p-5 mb-4 bg-light rounded-3">
+      <div class="container-fluid py-5">
+      {% if "facility" in title %}
+      <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
+      {% elif "program" in title %}
+          <h6 class="display-6 text-primary">CREATE {{ title|upper }} QI</h6>
+
+      {% endif %}
+      {% if messages %}
+    <ul class="messages">
+        {% for message in messages|slice:":1" %}
+            <div class="alert alert-info col-12" role="alert">
+        <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
+    </div>
+{#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
+        {% endfor %}
+    </ul>
+{% endif %}
+
+{% if title == "update time" %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+           <div class="col-md-4 mt-2 pr-5">
+            {{ form.hide_button_time|as_crispy_field }}
+        </div>
+          <button type="submit" class="btn btn-primary mt-4">Upload</button>
+          </form>
+{% else %}
+    <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+      <div class="form-group">
+        <div class="custom-file">
+
+          <input type="file" class="custom-file-input" id="fileInput" name="file">
+          <label class="custom-file-label" for="fileInput">Choose file</label>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-4">Upload</button>
+    </form>
+      {% endif %}
+
+{#<script>#}
+{#  document.querySelector('#fileInput').addEventListener('change', function(e) {#}
+{#    var fileName = document.getElementById("fileInput").files[0].name;#}
+{#    var nextSibling = e.target.nextElementSibling#}
+{#    nextSibling.innerText = fileName#}
+{#  });#}
+{#</script>#}
+
+      </div>
+    </div>
+</main>
+{% endblock %}

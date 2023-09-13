@@ -1,0 +1,162 @@
+{% extends 'wash_dqa/index_dqa.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h6 class="display-6 text-primary text-center">WASH DQA</h6>
+        <hr>
+        <div class="p-5 mb-4 bg-light rounded-3">
+            {% if messages %}
+                <!--group the messages by their text and display only one message for each unique text-->
+                {% regroup messages by message as message_list %}
+                {% for message in message_list %}
+                    <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                        <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="container-fluid">
+                {% if "facility" in title %}
+                    <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
+                {% elif "program" in title %}
+                    <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
+                {% endif %}
+                <div class="row">
+                    <div class="col-md-3">
+                        {% if report_type == "documentation" %}
+                            <a href="{% url 'add_documentation' "documentation" %}"
+                               class="btn btn-success">Documentation</a>
+                        {% else %}
+                            <a href="{% url 'add_documentation' "documentation" %}"
+                               class="btn btn-outline-success">Documentation</a>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        {% if report_type == "data-quality" %}
+                            <a href="{% url 'add_documentation' 'data-quality' %}"
+                               class="btn btn-success">Data Quality Systems</a>
+                        {% else %}
+                            <a href="{% url 'add_documentation' 'data-quality' %}"
+                               class="btn btn-outline-success">Data Quality Systems</a>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        {% if report_type == 'data-collection' %}
+                            <a href="{% url 'add_documentation' 'data-collection' %}"
+                               class="btn btn-success">Data Collection, Reporting and Management</a>
+                        {% else %}
+                            <a href="{% url 'add_documentation' 'data-collection' %}"
+                               class="btn btn-outline-success">Data Collection, Reporting and Management</a>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        {% if report_type == 'data-quality-assessment' %}
+                            <a href="{% url 'add_documentation' 'data-quality-assessment' %}"
+                               class="btn btn-success">Data Quality Assessment by Data Source</a>
+                        {% else %}
+                            <a href="{% url 'add_documentation' 'data-quality-assessment' %}"
+                               class="btn btn-outline-success">Data Quality Assessment by Data Source</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <form class="row g-3 mt-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    {% csrf_token %}
+                    <p> Please choose quarter, year, DQA date, ward and then submit </p>
+
+                    <div class="col-md-2 mt-2">
+                        {{ quarter_form.quarter|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-2 pr-5">
+                        {{ year_form.year|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-2">
+                        {{ date_form.date|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4 mt-2">
+                        {{ ward_form.name|as_crispy_field }}
+                    </div>
+                    {{ formset.management_form }}
+                    <table class="table table-striped table-hover" style="font-size: x-small;">
+                        <thead class="thead-dark text-center">
+                        <tr>
+
+                            {% if report_type != "data-quality-assessment" %}
+                                <th>Detailed checklist</th>
+                                <th>Verification means</th>
+                                <th>Field staffs to involve</th>
+                                <th>Rating</th>
+                                <th>Rationale for rating</th>
+                            {% else %}
+                                <tr>
+                                    <th></th>
+                                    <th># of people</th>
+                                    <th># of people</th>
+                                    <th># of people</th>
+                                    <th># of communities</th>
+                                    <th># of people</th>
+                                    <th># of people</th>
+                                    <th># of basic sanitation facilities</th>
+                                    <th>ASSESOR'S COMMENTS</th>
+                                </tr>
+                                <th>Detailed checklist</th>
+                                <th>Trained to implement improved sanitation methods</th>
+                                <th>Gaining access to basic drinking water services as a result of USG
+                                    assistance
+                                </th>
+                                <th>Gaining access to a safely managed drinking water service</th>
+                                <th>Certified as open defecation free (ODF) as a result of USG
+                                    assistance
+                                </th>
+                                <th>Gaining access to a basic sanitation service as a result of USG
+                                    assistance
+                                </th>
+                                <th>Gaining access to safely managed sanitation services as a result of
+                                    USG assistance.
+                                </th>
+                                <th>Provided in institutional settings as a result
+                                    of USG assistance
+                                </th>
+                                <th>
+                                    (Please provide detail for each response here, elaborate for each indicator)
+                                </th>
+
+                            {% endif %}
+
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for form in formset %}
+                            <tr>
+                                {% if report_type != "data-quality-assessment" %}
+                                    <td>{{ form.description|as_crispy_field }}</td>
+                                    <td>{{ form.verification_means|as_crispy_field }}</td>
+                                    <td>{{ form.staff_involved|as_crispy_field }}</td>
+                                    <td>{{ form.dropdown_option|as_crispy_field }}</td>
+                                    <td>{{ form.auditor_note|as_crispy_field }}</td>
+                                {% else %}
+                                    <td style="width: calc((20%) );">{{ form.description|as_crispy_field }}</td>
+                                    <td>{{ form.number_trained|as_crispy_field }}</td>
+                                    <td>{{ form.number_access_basic_water|as_crispy_field }}</td>
+                                    <td>{{ form.number_access_safe_water|as_crispy_field }}</td>
+                                    <td>{{ form.number_community_open_defecation|as_crispy_field }}</td>
+                                    <td>{{ form.number_access_basic_sanitation|as_crispy_field }}</td>
+                                    <td>{{ form.number_access_safe_sanitation|as_crispy_field }}</td>
+                                    <td>{{ form.number_access_basic_sanitation_institutions|as_crispy_field }}</td>
+                                    <td style="width: calc((15%) );">{{ form.auditor_note|as_crispy_field }}</td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="col-md-2 mt-2 pt-3">
+                        <button class="btn btn-success mt-1" type="submit">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+{% endblock %}

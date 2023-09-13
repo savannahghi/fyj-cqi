@@ -1,35 +1,38 @@
 import math
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
+import plotly.express as px
 import pytz
-from datetime import timezone, timedelta
+import tzlocal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
-from django.shortcuts import render, redirect
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import ExpressionWrapper, F, IntegerField, Sum
+from django.db.models.functions import Extract
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
-import plotly.express as px
 from plotly.offline import plot
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
-from apps.cqi.models import Facilities, Sub_counties, Counties
+from apps.cqi.forms import FacilitiesForm
+from apps.cqi.models import Counties, Facilities, Sub_counties
 from apps.cqi.views import bar_chart
 from apps.data_analysis.views import get_key_from_session_names
-
 # from apps.dqa.views import disable_update_buttons
 from apps.labpulse.decorators import group_required
 from apps.labpulse.filters import Cd4trakerFilter
-from apps.labpulse.forms import Cd4trakerForm, Cd4TestingLabsForm, Cd4TestingLabForm, LabPulseUpdateButtonSettingsForm, \
-    Cd4trakerManualDispatchForm
-from apps.labpulse.models import Cd4TestingLabs, Cd4traker, LabPulseUpdateButtonSettings
+from apps.labpulse.forms import Cd4TestingLabForm, Cd4TestingLabsForm, Cd4trakerForm, Cd4trakerManualDispatchForm, \
+    LabPulseUpdateButtonSettingsForm, ReagentStockForm, facilities_lab_Form
+from apps.labpulse.models import Cd4TestingLabs, Cd4traker, EnableDisableCommodities, LabPulseUpdateButtonSettings, \
+    ReagentStock
 
 
 def disable_update_buttons(request, audit_team, relevant_date_field):
@@ -244,24 +247,11 @@ def validate_cd4_count_form(form, report_type):
             form.add_error('cd4_count_results', error_message)
             return False
 
-        if age <= 5 and not cd4_percentage:
-            error_message = f"Please provide CD4 % values for {patient_unique_no}"
-            form.add_error('age', error_message)
-            form.add_error('cd4_percentage', error_message)
-            return False
-
         if age > 5 and cd4_percentage:
             error_message = f"CD4 % values ought to be for <=5yrs."
             form.add_error('age', error_message)
             form.add_error('cd4_percentage', error_message)
             return False
-
-        if age <= 5 and (int(cd4_percentage) > 100 or int(cd4_percentage) < 0):
-            error_message = f"Invalid CD4 % values"
-            form.add_error('age', error_message)
-            form.add_error('cd4_percentage', error_message)
-            return False
-
         if cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
             error_message = f"Select a reason why serum CRAG was not done"
             form.add_error('reason_for_no_serum_crag', error_message)
@@ -284,6 +274,226 @@ def validate_cd4_count_form(form, report_type):
     return True
 
 
+def get_total_remaining_stocks(df, reagent_type):
+    cd4_df = df[df['reagent_type'] == reagent_type]
+    cd4_total_remaining = cd4_df.loc[cd4_df['reagent_type'] == reagent_type, 'total_remaining'].values[0]
+    return cd4_total_remaining
+
+
+def show_remaining_commodities(selected_lab):
+    time_threshold = timezone.now() - timedelta(days=365)
+    commodities = ReagentStock.objects.filter(facility_name__mfl_code=selected_lab.mfl_code,
+                                              date_commodity_received__gte=time_threshold
+                                              ).order_by("-date_commodity_received")
+    # Aggregate remaining quantities by reagent type
+    remaining_commodities = commodities.values(
+        'reagent_type', 'date_commodity_received'
+    ).annotate(total_remaining=Sum('remaining_quantity'))
+
+    # Convert the remaining_commodities queryset to a list of dictionaries
+    remaining_commodities_list = list(remaining_commodities)
+    df = pd.DataFrame(remaining_commodities_list)
+    if df.empty:
+        reagent_types = ['Serum CrAg', 'TB LAM', 'CD4']
+        total_remaining = [0, 0, 0]
+
+        data = {
+            'reagent_type': reagent_types,
+            'date_commodity_received': pd.NaT,
+            'total_remaining': total_remaining
+        }
+
+        df = pd.DataFrame(data)
+        naive_timestamp = pd.Timestamp(datetime(1970, 1, 1))  # A neutral date in the past
+        df['date_commodity_received'] = pd.to_datetime(naive_timestamp, utc=True)
+
+    # Convert the dates to your local timezone
+    local_timezone = tzlocal.get_localzone()
+
+    # Convert the dates to the local timezone
+    df['date_commodity_received'] = df['date_commodity_received'].dt.tz_convert(local_timezone)
+
+    # Find the minimum and maximum dates
+    min_date = df['date_commodity_received'].min().date()
+    max_date = df['date_commodity_received'].max().date()
+
+    # Group by reagent type and sum the total remaining quantities
+    df = df.groupby('reagent_type').sum(numeric_only=True)['total_remaining'].reset_index()
+
+    # Remaining stocks
+    try:
+        cd4_total_remaining = get_total_remaining_stocks(df, 'CD4')
+    except IndexError:
+        cd4_total_remaining = 0
+    try:
+        tb_lam_total_remaining = get_total_remaining_stocks(df, 'TB LAM')
+    except IndexError:
+        tb_lam_total_remaining = 0
+    try:
+        crag_total_remaining = get_total_remaining_stocks(df, 'Serum CrAg')
+    except IndexError:
+        crag_total_remaining = 0
+
+    if min_date == pd.Timestamp('1970-01-01'):
+        title = f'Remaining commodities per reagent type'
+    else:
+        title = f'Remaining commodities per reagent type (Received between {min_date} - {max_date})'
+
+    # Create a bar chart using Plotly Express
+    fig = px.bar(df, x='reagent_type', y='total_remaining', text='total_remaining',
+                 labels={'reagent_type': 'Reagent Type', 'total_remaining': 'Reagents Remaining'},
+                 title=title, height=350,
+                 )
+    # Set the font size of the x-axis and y-axis labels
+    fig.update_layout(
+        xaxis=dict(
+            tickfont=dict(
+                size=10
+            ),
+            title_font=dict(
+                size=10
+            )
+        ),
+        yaxis=dict(
+            title_font=dict(
+                size=12
+            )
+        ),
+        legend=dict(
+            font=dict(
+                size=10
+            )
+        ),
+        title=dict(
+            # text="My Line Chart",
+            font=dict(
+                size=12
+            )
+        )
+    )
+    commodity_status = plot(fig, include_plotlyjs=False, output_type="div")
+    return commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining
+
+
+def generate_commodity_error_message(commodity_name):
+    return f"{commodity_name} reagents are currently unavailable in the database. " \
+           f"Saving {commodity_name} results will not be possible. Please contact your laboratory supervisor for assistance " \
+           f"or proceed to add commodities to replenish the stock."
+
+
+def validate_date_fields(form, date_fields):
+    """
+    Validate date fields in a form.
+
+    Args:
+        form (Form): The form containing the date fields.
+        date_fields (list): List of date field names to validate.
+
+    Returns:
+        bool: True if all date fields are valid, False otherwise.
+    """
+    # Loop through each date field for validation
+    for field_name in date_fields:
+        # Get the date value from the cleaned data
+        date_value = form.cleaned_data.get(field_name)
+        if date_value:
+            # Define the allowable date range
+            min_date = date(1900, 1, 1)  # Minimum allowable date
+            max_date = date(3100, 12, 31)  # Maximum allowable date
+            # Check if the date is within the allowable range
+            if not (min_date <= date_value <= max_date):
+                # Add an error to the form for invalid date
+                form.add_error(field_name, 'Please enter a valid date.')
+
+    # Check if any errors were added to the form
+    if any(field_name in form.errors for field_name in date_fields):
+        return False  # Validation failed
+    else:
+        return True  # Validation succeeded
+
+
+def deduct_commodities(request, form, report_type, post, selected_lab, context, template_name):
+    if report_type == "Current":
+        # Check if CD4 test was performed
+        cd4_count_results = form.cleaned_data['cd4_count_results']
+        if cd4_count_results is not None:
+            post.cd4_reagent_used = True
+
+        # Check if TB LAM test was performed
+        tb_lam_results = form.cleaned_data['tb_lam_results']
+        if tb_lam_results is not None:
+            post.tb_lam_reagent_used = True
+
+        # Check if serum CRAG test was performed
+        serum_crag_results = form.cleaned_data['serum_crag_results']
+        if serum_crag_results is not None:
+            post.serum_crag_reagent_used = True
+
+        # Update reagent usage
+        if post.cd4_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='CD4',
+                                           facility_name__mfl_code=selected_lab.mfl_code,
+                                           remaining_quantity__gt=0).exists():
+                cd4_reagent_stock = ReagentStock.objects.filter(reagent_type='CD4',
+                                                                facility_name__mfl_code=selected_lab.mfl_code,
+                                                                remaining_quantity__gt=0).order_by(
+                    'date_commodity_received').first()
+                cd4_reagent_stock.quantity_used += 1
+                cd4_reagent_stock.save()
+            else:
+                error_message = "CD4 reagents are out of stock!"
+                messages.error(request, error_message)
+                form.add_error('cd4_count_results', error_message)
+                return render(request, template_name, context)
+        if post.serum_crag_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                           facility_name__mfl_code=selected_lab.mfl_code,
+                                           remaining_quantity__gt=0).exists():
+                serum_crag_reagent_stock = ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                                                       facility_name__mfl_code=selected_lab.mfl_code,
+                                                                       remaining_quantity__gt=0).order_by(
+                    'date_commodity_received').first()
+                serum_crag_reagent_stock.quantity_used += 1
+                serum_crag_reagent_stock.save()
+            else:
+                error_message = "Serum CrAg reagents are out of stock!"
+                messages.error(request, error_message)
+                form.add_error('serum_crag_results', error_message)
+                return render(request, template_name, context)
+        if post.tb_lam_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='TB LAM',
+                                           facility_name__mfl_code=selected_lab.mfl_code,
+                                           remaining_quantity__gt=0).exists():
+                tb_lam_reagent_stock = ReagentStock.objects.filter(reagent_type='TB LAM',
+                                                                   facility_name__mfl_code=selected_lab.mfl_code,
+                                                                   remaining_quantity__gt=0).order_by(
+                    'date_commodity_received').first()
+                tb_lam_reagent_stock.quantity_used += 1
+                tb_lam_reagent_stock.save()
+            else:
+                error_message = "LF-TB LAM reagents are out of stock!"
+                messages.error(request, error_message)
+                form.add_error('tb_lam_results', error_message)
+                return render(request, template_name, context)
+
+
+def handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_remaining, template_name, context):
+    serum_crag_results = form.cleaned_data.get('serum_crag_results')
+    tb_lam_results = form.cleaned_data.get('tb_lam_results')
+
+    if serum_crag_results is not None and crag_total_remaining == 0:
+        error_message = "ScrAg reagents are out of stock."
+        form.add_error('serum_crag_results', error_message)
+        return render(request, template_name, context)
+
+    if tb_lam_results is not None and tb_lam_total_remaining == 0:
+        error_message = "LF TB LAM reagents are out of stock."
+        form.add_error('tb_lam_results', error_message)
+        return render(request, template_name, context)
+
+    return None
+
+
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse'])
 def add_cd4_count(request, report_type, pk_lab):
@@ -291,27 +501,65 @@ def add_cd4_count(request, report_type, pk_lab):
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    selected_lab, created = Cd4TestingLabs.objects.get_or_create(id=pk_lab)
+    template_name = 'lab_pulse/add_cd4_data.html'
+
+    use_commodities = False
+    enable_commodities = EnableDisableCommodities.objects.first()
+    if enable_commodities and enable_commodities.use_commodities:
+        use_commodities = True
+
     if report_type == "Current":
         form = Cd4trakerForm(request.POST or None)
+        commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
+            show_remaining_commodities(selected_lab)
+        context = {
+            "form": form, "report_type": report_type, "commodities": commodities, "use_commodities": use_commodities,
+            "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
+            "commodity_status": commodity_status,
+            "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
+            "crag_total_remaining": crag_total_remaining,
+        }
+        if use_commodities:
+            if crag_total_remaining == 0:
+                messages.error(request, generate_commodity_error_message("Serum CrAg"))
+            if tb_lam_total_remaining == 0:
+                messages.error(request, generate_commodity_error_message("LF TB LAM"))
+            if cd4_total_remaining == 0:
+                messages.error(request, generate_commodity_error_message("CD4"))
+                return render(request, template_name, context)
     else:
+        crag_total_remaining = None
+        tb_lam_total_remaining = None
         # Check if the user has the required permission
         if not request.user.has_perm('labpulse.view_add_retrospective_cd4_count'):
             # Redirect or handle the case where the user doesn't have the permission
             return HttpResponseForbidden("You don't have permission to access this form.")
         form = Cd4trakerManualDispatchForm(request.POST or None)
-    selected_lab, created = Cd4TestingLabs.objects.get_or_create(id=pk_lab)
+        context = {
+            "form": form, "report_type": report_type, "use_commodities": use_commodities,
+            "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
+        }
 
-    template_name = 'lab_pulse/add_cd4_data.html'
-    context = {
-        "form": form, "report_type": report_type,
-        "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
-    }
     if request.method == "POST":
         if form.is_valid():
             post = form.save(commit=False)
+            #################
+            # Validate date
+            #################
+            date_fields_to_validate = ['date_of_collection', 'date_of_testing', 'date_sample_received']
+            if not validate_date_fields(form, date_fields_to_validate):
+                # Render the template with the form and errors
+                return render(request, template_name, context)
             if not validate_cd4_count_form(form, report_type):
                 # If validation fails, return the form with error messages
                 return render(request, template_name, context)
+            if report_type == "Current" and use_commodities:
+                # Call the function to handle serum_crag_results and tb_lam_results errors
+                error_response = handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_remaining,
+                                                         template_name, context)
+                if error_response:
+                    return error_response  # Render with errors if any
             selected_facility = form.cleaned_data['facility_name']
 
             facility_id = Facilities.objects.get(name=selected_facility)
@@ -333,6 +581,12 @@ def add_cd4_count(request, report_type, pk_lab):
             post.facility_name = facility_name
             post.testing_laboratory = Cd4TestingLabs.objects.filter(testing_lab_name=selected_lab).first()
             post.report_type = report_type
+            ####################################
+            # Deduct Commodities used
+            ####################################
+            if use_commodities:
+                deduct_commodities(request, form, report_type, post, selected_lab, context, template_name)
+
             post.save()
             messages.error(request, "Record saved successfully!")
             # Generate the URL for the redirect
@@ -341,12 +595,110 @@ def add_cd4_count(request, report_type, pk_lab):
         else:
             messages.error(request, f"Record already exists.")
             render(request, template_name, context)
+    return render(request, template_name, context)
 
-    context = {
-        "form": form, "report_type": report_type,
-        "title": f"Add CD4 results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
-    }
-    return render(request, 'lab_pulse/add_cd4_data.html', context)
+
+def update_commodities(request, form, post, report_type, pk, template_name, context):
+    if report_type == "Current":
+        ###################################################
+        # Choose facility to update commodity records for #
+        ###################################################
+        item = Cd4traker.objects.get(id=pk)
+        # DEDUCT FROM TESTING LABS
+        facility_mfl_code_to_update = None
+        if item.facility_name.mfl_code == item.testing_laboratory.mfl_code:
+            # if request.user.groups.filter('laboratory_staffs_labpulse').exists():
+            facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+        elif item.facility_name.mfl_code != item.testing_laboratory.mfl_code:
+            if item.serum_crag_results != post.serum_crag_results:
+                facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+            if item.tb_lam_results != post.tb_lam_results:
+                if request.user.groups.filter(name='laboratory_staffs_labpulse').exists():
+                    facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+                # DEDUCT FROM REFERRING LABS
+                elif request.user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
+                    facility_mfl_code_to_update = item.facility_name.mfl_code
+
+        # Check for changes in reagent fields and update reagent usage flags
+
+        # if not item.cd4_reagent_used:
+        if post.cd4_count_results != item.cd4_count_results and item.cd4_reagent_used == False:
+            post.cd4_reagent_used = True
+        else:
+            post.cd4_reagent_used = item.cd4_reagent_used
+
+        # if not item.tb_lam_reagent_used:
+        if post.tb_lam_results != item.tb_lam_results and item.tb_lam_reagent_used == False:
+            post.tb_lam_reagent_used = True
+        else:
+            post.tb_lam_reagent_used = item.tb_lam_reagent_used
+
+        # if not item.serum_crag_reagent_used:
+        if post.serum_crag_results != item.serum_crag_results and item.serum_crag_reagent_used == False:
+            post.serum_crag_reagent_used = True
+        else:
+            post.serum_crag_reagent_used = item.serum_crag_reagent_used
+
+        # Update reagent usage flags
+        # Check if any reagent type has been used and not tracked before
+
+        if item.cd4_reagent_used != post.cd4_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='CD4',
+                                           facility_name__mfl_code=facility_mfl_code_to_update).exists():
+                cd4_reagent_stock = ReagentStock.objects.filter(reagent_type='CD4',
+                                                                facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                remaining_quantity__gt=0
+                                                                ).order_by('date_commodity_received').first()
+                cd4_reagent_stock.quantity_used += 1
+                cd4_reagent_stock.save()
+            else:
+                messages.error(request,
+                               "CD4 reagents are currently unavailable. The operation cannot be completed. "
+                               "Please contact your laboratory supervisor for assistance or proceed to add "
+                               "commodities to replenish the stock.")
+                error_message = "CD4 reagents are out of stock!"
+                # messages.error(request, error_message)
+                form.add_error('cd4_count_results', error_message)
+                return render(request, template_name, context)
+        if item.serum_crag_reagent_used != post.serum_crag_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                           facility_name__mfl_code=facility_mfl_code_to_update,
+                                           remaining_quantity__gt=0
+                                           ).exists():
+                serum_crag_reagent_stock = ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                                                       facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                       remaining_quantity__gt=0
+                                                                       ).order_by(
+                    'date_commodity_received').first()
+                serum_crag_reagent_stock.quantity_used += 1
+                serum_crag_reagent_stock.save()
+            else:
+                messages.error(request,
+                               "Serum CrAg reagents are currently unavailable. The operation cannot be "
+                               "completed. Please contact your laboratory supervisor for assistance or proceed"
+                               " to add commodities to replenish the stock.")
+                error_message = "Serum CrAg reagents are out of stock!"
+                # messages.error(request, error_message)
+                form.add_error('serum_crag_results', error_message)
+                return render(request, template_name, context)
+        if item.tb_lam_reagent_used != post.tb_lam_reagent_used:
+            if ReagentStock.objects.filter(reagent_type='TB LAM',
+                                           facility_name__mfl_code=facility_mfl_code_to_update).exists():
+                tb_lam_reagent_stock = ReagentStock.objects.filter(reagent_type='TB LAM',
+                                                                   facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                   remaining_quantity__gt=0
+                                                                   ).order_by('date_commodity_received').first()
+                tb_lam_reagent_stock.quantity_used += 1
+                tb_lam_reagent_stock.save()
+            else:
+                messages.error(request,
+                               "LF TB LAM reagents are currently unavailable. The operation cannot be completed. "
+                               "Please contact your laboratory supervisor for assistance or proceed to add "
+                               "commodities to replenish the stock.")
+                error_message = "LF TB LAM reagents are out of stock!"
+                # messages.error(request, error_message)
+                form.add_error('tb_lam_results', error_message)
+                return render(request, template_name, context)
 
 
 @login_required(login_url='login')
@@ -357,6 +709,24 @@ def update_cd4_results(request, report_type, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Cd4traker.objects.get(id=pk)
+    if report_type == "Current":
+        commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
+            show_remaining_commodities(item.facility_name)
+    else:
+        commodity_status = None
+        commodities = None
+        cd4_total_remaining = 0
+        crag_total_remaining = 0
+        tb_lam_total_remaining = 0
+
+    # Fetch the first instance of EnableDisableCommodities
+    enable_commodities = EnableDisableCommodities.objects.first()
+    # Check if commodities should be enabled or disabled
+    if enable_commodities and enable_commodities.use_commodities:
+        use_commodities = True
+    else:
+        use_commodities = False
+    template_name = 'lab_pulse/update results.html'
     if request.method == "POST":
         if report_type == "Current":
             form = Cd4trakerForm(request.POST, instance=item, user=request.user)
@@ -368,15 +738,30 @@ def update_cd4_results(request, report_type, pk):
             form = Cd4trakerManualDispatchForm(request.POST, instance=item)
         if form.is_valid():
             context = {
-                "form": form,
-                "title": "Update Results",
+                "form": form, "report_type": report_type, "use_commodities": use_commodities,
+                "title": "Update Results", "commodity_status": commodity_status,
+                "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
+                "crag_total_remaining": crag_total_remaining,
             }
-            template_name = 'lab_pulse/add_cd4_data.html'
+            # template_name = 'lab_pulse/add_cd4_data.html'
             post = form.save(commit=False)
+            #################
+            # Validate date
+            #################
+            date_fields_to_validate = ['date_of_collection', 'date_of_testing', 'date_sample_received']
+            if not validate_date_fields(form, date_fields_to_validate):
+                # Render the template with the form and errors
+                return render(request, template_name, context)
             facility_name = form.cleaned_data['facility_name']
             if not validate_cd4_count_form(form, report_type):
                 # If validation fails, return the form with error messages
                 return render(request, template_name, context)
+            if report_type == "Current" and use_commodities:
+                # Call the function to handle serum_crag_results and tb_lam_results errors
+                error_response = handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_remaining,
+                                                         template_name, context)
+                if error_response:
+                    return error_response  # Render with errors if any
 
             facility_id = Facilities.objects.get(name=facility_name)
             # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
@@ -392,6 +777,113 @@ def update_cd4_results(request, report_type, pk):
             for county in all_counties:
                 if sub_county_list[0] == county.sub_counties_id:
                     post.county = Counties.objects.get(id=county.counties_id)
+            #############################
+            # Update Commodities used
+            #############################
+            if use_commodities:
+                # update_commodities(request, form, report_type,post, pk, template_name, context)
+                if report_type == "Current":
+                    ###################################################
+                    # Choose facility to update commodity records for #
+                    ###################################################
+                    item = Cd4traker.objects.get(id=pk)
+                    # DEDUCT FROM TESTING LABS
+                    facility_mfl_code_to_update = None
+                    if item.facility_name.mfl_code == item.testing_laboratory.mfl_code:
+                        # if request.user.groups.filter('laboratory_staffs_labpulse').exists():
+                        facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+                    elif item.facility_name.mfl_code != item.testing_laboratory.mfl_code:
+                        if item.serum_crag_results != post.serum_crag_results:
+                            facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+                        if item.tb_lam_results != post.tb_lam_results:
+                            if request.user.groups.filter(name='laboratory_staffs_labpulse').exists():
+                                facility_mfl_code_to_update = item.testing_laboratory.mfl_code
+                            # DEDUCT FROM REFERRING LABS
+                            elif request.user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
+                                facility_mfl_code_to_update = item.facility_name.mfl_code
+
+                    # Check for changes in reagent fields and update reagent usage flags
+
+                    # if not item.cd4_reagent_used:
+                    if post.cd4_count_results != item.cd4_count_results and item.cd4_reagent_used == False:
+                        post.cd4_reagent_used = True
+                    else:
+                        post.cd4_reagent_used = item.cd4_reagent_used
+
+                    # if not item.tb_lam_reagent_used:
+                    if post.tb_lam_results != item.tb_lam_results and item.tb_lam_reagent_used == False:
+                        post.tb_lam_reagent_used = True
+                    else:
+                        post.tb_lam_reagent_used = item.tb_lam_reagent_used
+
+                    # if not item.serum_crag_reagent_used:
+                    if post.serum_crag_results != item.serum_crag_results and item.serum_crag_reagent_used == False:
+                        post.serum_crag_reagent_used = True
+                    else:
+                        post.serum_crag_reagent_used = item.serum_crag_reagent_used
+
+                    # Update reagent usage flags
+                    # Check if any reagent type has been used and not tracked before
+
+                    if item.cd4_reagent_used != post.cd4_reagent_used:
+                        if ReagentStock.objects.filter(reagent_type='CD4',
+                                                       facility_name__mfl_code=facility_mfl_code_to_update).exists():
+                            cd4_reagent_stock = ReagentStock.objects.filter(reagent_type='CD4',
+                                                                            facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                            remaining_quantity__gt=0
+                                                                            ).order_by(
+                                'date_commodity_received').first()
+                            cd4_reagent_stock.quantity_used += 1
+                            cd4_reagent_stock.save()
+                        else:
+                            messages.error(request,
+                                           "CD4 reagents are currently unavailable. The operation cannot be completed. "
+                                           "Please contact your laboratory supervisor for assistance or proceed to add "
+                                           "commodities to replenish the stock.")
+                            error_message = "CD4 reagents are out of stock!"
+                            # messages.error(request, error_message)
+                            form.add_error('cd4_count_results', error_message)
+                            return render(request, template_name, context)
+                    if item.serum_crag_reagent_used != post.serum_crag_reagent_used:
+                        if ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                                       facility_name__mfl_code=facility_mfl_code_to_update,
+                                                       remaining_quantity__gt=0
+                                                       ).exists():
+                            serum_crag_reagent_stock = ReagentStock.objects.filter(reagent_type='Serum CrAg',
+                                                                                   facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                                   remaining_quantity__gt=0
+                                                                                   ).order_by(
+                                'date_commodity_received').first()
+                            serum_crag_reagent_stock.quantity_used += 1
+                            serum_crag_reagent_stock.save()
+                        else:
+                            messages.error(request,
+                                           "Serum CrAg reagents are currently unavailable. The operation cannot be "
+                                           "completed. Please contact your laboratory supervisor for assistance or proceed"
+                                           " to add commodities to replenish the stock.")
+                            error_message = "Serum CrAg reagents are out of stock!"
+                            # messages.error(request, error_message)
+                            form.add_error('serum_crag_results', error_message)
+                            return render(request, template_name, context)
+                    if item.tb_lam_reagent_used != post.tb_lam_reagent_used:
+                        if ReagentStock.objects.filter(reagent_type='TB LAM',
+                                                       facility_name__mfl_code=facility_mfl_code_to_update).exists():
+                            tb_lam_reagent_stock = ReagentStock.objects.filter(reagent_type='TB LAM',
+                                                                               facility_name__mfl_code=facility_mfl_code_to_update,
+                                                                               remaining_quantity__gt=0
+                                                                               ).order_by(
+                                'date_commodity_received').first()
+                            tb_lam_reagent_stock.quantity_used += 1
+                            tb_lam_reagent_stock.save()
+                        else:
+                            messages.error(request,
+                                           "LF TB LAM reagents are currently unavailable. The operation cannot be completed. "
+                                           "Please contact your laboratory supervisor for assistance or proceed to add "
+                                           "commodities to replenish the stock.")
+                            error_message = "LF TB LAM reagents are out of stock!"
+                            # messages.error(request, error_message)
+                            form.add_error('tb_lam_results', error_message)
+                            return render(request, template_name, context)
             post.save()
             messages.error(request, "Record updated successfully!")
             return HttpResponseRedirect(request.session['page_from'])
@@ -404,16 +896,22 @@ def update_cd4_results(request, report_type, pk):
                 # Redirect or handle the case where the user doesn't have the permission
                 return HttpResponseForbidden("You don't have permission to access this form.")
             form = Cd4trakerManualDispatchForm(instance=item)
+    # cd4_total_remaining=0
     context = {
-        "form": form, "report_type": report_type,
-        "title": "Update Results",
+        "form": form, "report_type": report_type, "use_commodities": use_commodities,
+        "title": "Update Results", "commodity_status": commodity_status, "cd4_total_remaining": cd4_total_remaining,
+        "tb_lam_total_remaining": tb_lam_total_remaining,
+        "crag_total_remaining": crag_total_remaining,
     }
     return render(request, 'lab_pulse/update results.html', context)
 
 
 def pagination_(request, item_list, record_count=None):
     page = request.GET.get('page', 1)
-    record_count = request.GET.get('record_count', '50')
+    if record_count == None:
+        record_count = request.GET.get('record_count', '5')
+    else:
+        record_count = record_count
 
     if record_count == 'all':
         return item_list
@@ -440,7 +938,10 @@ def calculate_positivity_rate(df, column_name, title):
     num_samples_negative = (filtered_df[column_name] == 'Negative').sum()
 
     # Calculate the positivity rate
-    positivity_rate = round(num_samples_positive / num_tests_done * 100, 1)
+    try:
+        positivity_rate = round(num_samples_positive / num_tests_done * 100, 1)
+    except ZeroDivisionError:
+        positivity_rate = 0
 
     # Create the new DataFrame
     positivity_df = pd.DataFrame({
@@ -624,6 +1125,130 @@ def filter_result_type(list_of_projects_fac, column_name):
     return facility_positive_count
 
 
+def generate_results_df(list_of_projects):
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    list_of_projects_fac = list_of_projects.copy()
+
+    # Convert Timestamp objects to strings
+    list_of_projects_fac = list_of_projects_fac.sort_values('Collection Date').reset_index(drop=True)
+    list_of_projects_fac['Testing date'] = pd.to_datetime(list_of_projects_fac['Testing date']).dt.date
+    list_of_projects_fac['Received date'] = pd.to_datetime(list_of_projects_fac['Received date']).dt.date
+    # Convert the dates to user local timezone
+    local_timezone = tzlocal.get_localzone()
+    # Convert the dates to the local timezone
+    list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].dt.tz_convert(
+        local_timezone)
+    list_of_projects_fac['Collection Date'] = pd.to_datetime(list_of_projects_fac['Collection Date']).dt.date
+    list_of_projects_fac['Date Dispatch'] = pd.to_datetime(list_of_projects_fac['Date Dispatch']).dt.date
+    list_of_projects_fac['TB LAM date'] = pd.to_datetime(list_of_projects_fac['TB LAM date']).dt.date
+    list_of_projects_fac['Serum CRAG date'] = pd.to_datetime(list_of_projects_fac['Serum CRAG date']).dt.date
+    list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].astype(str)
+    list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].replace(np.datetime64('NaT'),
+                                                                                        '')
+    list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].astype(str)
+    list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].replace(np.datetime64('NaT'),
+                                                                                          '')
+    list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].astype(str)
+    list_of_projects_fac['Date Dispatch'] = list_of_projects_fac['Date Dispatch'].astype(str)
+    list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].replace(np.datetime64('NaT'), '')
+    list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].astype(str)
+    list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].replace(
+        np.datetime64('NaT'),
+        '')
+    list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].astype(str)
+    list_of_projects_fac.index = range(1, len(list_of_projects_fac) + 1)
+    max_date = list_of_projects_fac['Collection Date'].max()
+    min_date = list_of_projects_fac['Collection Date'].min()
+    missing_df = list_of_projects_fac.loc[
+        (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['Serum Crag'].isna())]
+    missing_tb_lam_df = list_of_projects_fac.loc[
+        (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['TB LAM'].isna())]
+    crag_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['Serum Crag'] == "Positive")]
+    tb_lam_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['TB LAM'] == "Positive")]
+    rejected_df = list_of_projects_fac.loc[(list_of_projects_fac['Received status'] == "Rejected")]
+
+    # Create the summary dataframe
+    summary_df = pd.DataFrame({
+        'Total CD4': [list_of_projects_fac.shape[0]],
+        'Rejected': [(list_of_projects_fac['Received status'] == 'Rejected').sum()],
+        'CD4 >200': [(list_of_projects_fac['CD4 Count'] > 200).sum()],
+        'CD4 <= 200': [(list_of_projects_fac['CD4 Count'] <= 200).sum()],
+        'TB-LAM': [list_of_projects_fac['TB LAM'].notna().sum()],
+        '-ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Negative').sum()],
+        '+ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Positive').sum()],
+        'Missing TB LAM': [
+            (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'TB LAM'].isna()).sum()],
+        'CRAG': [list_of_projects_fac['Serum Crag'].notna().sum()],
+        '-ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Negative').sum()],
+        '+ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Positive').sum()],
+        'Missing CRAG': [
+            (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'Serum Crag'].isna()).sum()],
+    })
+
+    # Display the summary dataframe
+    summary_df = summary_df.T.reset_index()
+    summary_df.columns = ['variables', 'values']
+    summary_df = summary_df[summary_df['values'] != 0]
+    ###################################
+    # CD4 SUMMARY CHART
+    ###################################
+    cd4_summary_fig = bar_chart(summary_df, "variables", "values",
+                                f"Summary of CD4 Records and Serum CrAg Results Between {min_date} and {max_date} ")
+
+    # Group the data by testing laboratory and calculate the counts
+    summary_df = list_of_projects_fac.groupby('Testing Laboratory').agg({
+        'CD4 Count': 'count',
+        'Serum Crag': lambda x: x.count() if x.notnull().any() else 0
+    }).reset_index()
+
+    # Rename the columns
+    summary_df.rename(columns={'CD4 Count': 'Total CD4 Count', 'Serum Crag': 'Total CRAG Reports'},
+                      inplace=True)
+
+    # Sort the dataframe by testing laboratory name
+    summary_df.sort_values('Testing Laboratory', inplace=True)
+
+    # Reset the index
+    summary_df.reset_index(drop=True, inplace=True)
+
+    summary_df = pd.melt(summary_df, id_vars="Testing Laboratory",
+                         value_vars=['Total CD4 Count', 'Total CRAG Reports'],
+                         var_name="Test done", value_name='values')
+
+    cd4_df = summary_df[summary_df['Test done'] == "Total CD4 Count"].sort_values("values").fillna(0)
+    cd4_df = cd4_df[cd4_df['values'] != 0]
+    crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values").fillna(0)
+    crag_df = crag_df[crag_df['values'] != 0]
+    ###################################
+    # CRAG TESTING SUMMARY CHART
+    ###################################
+    crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
+                                     "Number of sCrAg Reports Processed per Testing Laboratory")
+    ###################################
+    # CD4 TESTING SUMMARY CHART
+    ###################################
+    cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
+                                    "Number of CD4 Reports Processed per Testing Laboratory")
+
+    age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
+    age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
+                  '50-54', '55-59', '60-64', '65+']
+
+    list_of_projects_fac_above1age_sex = list_of_projects_fac[list_of_projects_fac['age_unit'] == "years"]
+    list_of_projects_fac_below1age_sex = list_of_projects_fac[list_of_projects_fac['age_unit'] != "years"]
+
+    list_of_projects_fac_below1age_sex['Age Group'] = "<1"
+    list_of_projects_fac_above1age_sex['Age Group'] = pd.cut(list_of_projects_fac_above1age_sex['Age'],
+                                                             bins=age_bins, labels=age_labels)
+
+    list_of_projects_fac = pd.concat([list_of_projects_fac_above1age_sex, list_of_projects_fac_below1age_sex])
+
+    age_sex_df = list_of_projects_fac.groupby(['Age Group', 'Sex']).size().unstack().reset_index()
+    return age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
+        crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac
+
+
 @login_required(login_url='login')
 @group_required(
     ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'
@@ -634,7 +1259,7 @@ def show_results(request):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
         # record_count = int(request.GET.get('record_count', 10))  # Get the selected record count (default: 10)
-        record_count = request.GET.get('record_count', '50')
+        record_count = request.GET.get('record_count', '5')
         if record_count == 'all':
             record_count = 'all'  # Preserve the 'all' value if selected
         else:
@@ -670,14 +1295,27 @@ def show_results(request):
     cd4_results = Cd4traker.objects.all()
 
     qi_list = Cd4traker.objects.all().order_by('-date_dispatched')
-    my_filters = Cd4trakerFilter(request.GET, queryset=qi_list)
+    # Calculate TAT in days and annotate it in the queryset
+    queryset = qi_list.annotate(
+        tat_days=ExpressionWrapper(
+            Extract(F('date_dispatched') - F('date_of_collection'), 'day'),
+            output_field=IntegerField()
+        )
+    )
+    my_filters = Cd4trakerFilter(request.GET, queryset=queryset)
     qi_lists = my_filters.qs
 
-    # Calculate TAT and add it as a column to qi_lists
-    for cd4_instance in qi_lists:
-        if cd4_instance.date_dispatched:
-            tat = cd4_instance.date_dispatched - cd4_instance.date_of_collection
-            cd4_instance.tat = tat.days  # Adding TAT in days to the instance
+    ############################
+    # UPDATE COMMODITY SECTION #
+    ############################
+
+    # # Calculate TAT and add it as a column to qi_lists
+    # for cd4_instance in qi_lists:
+    #     if cd4_instance.date_dispatched:
+    #         tat = cd4_instance.date_dispatched - cd4_instance.date_of_collection
+    #         cd4_instance.tat = tat.days  # Adding TAT in days to the instance
+    record_count_options = [("all", "All"),
+                            ] + [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50, 100, 250, 500, 750, 1000]]
 
     qi_list = pagination_(request, qi_lists, record_count)
     ######################
@@ -708,103 +1346,16 @@ def show_results(request):
              'TB LAM': x.tb_lam_results,
              'Received status': x.received_status,
              'Rejection reason': x.reason_for_rejection,
-             'TAT': x.tat,
-             } for x in qi_list
+             'TAT': x.tat_days,
+             'age_unit': x.age_unit,
+             } for x in qi_lists
         ]
-        # convert data from database to a dataframe
-        list_of_projects = pd.DataFrame(list_of_projects)
-        list_of_projects_fac = list_of_projects.copy()
 
-        # Convert Timestamp objects to strings
-        list_of_projects_fac = list_of_projects_fac.sort_values('Collection Date').reset_index(drop=True)
-        list_of_projects_fac['Testing date'] = pd.to_datetime(list_of_projects_fac['Testing date']).dt.date
-        list_of_projects_fac['Received date'] = pd.to_datetime(list_of_projects_fac['Received date']).dt.date
-        list_of_projects_fac['Collection Date'] = pd.to_datetime(list_of_projects_fac['Collection Date']).dt.date
-        list_of_projects_fac['Date Dispatch'] = pd.to_datetime(list_of_projects_fac['Date Dispatch']).dt.date
-        list_of_projects_fac['TB LAM date'] = pd.to_datetime(list_of_projects_fac['TB LAM date']).dt.date
-        list_of_projects_fac['Serum CRAG date'] = pd.to_datetime(list_of_projects_fac['Serum CRAG date']).dt.date
-        list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].astype(str)
-        list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].replace(np.datetime64('NaT'), '')
-        list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].astype(str)
-        list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].replace(np.datetime64('NaT'), '')
-        list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].astype(str)
-        list_of_projects_fac['Date Dispatch'] = list_of_projects_fac['Date Dispatch'].astype(str)
-        list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].replace(np.datetime64('NaT'), '')
-        list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].astype(str)
-        list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].replace(np.datetime64('NaT'),
-                                                                                                  '')
-        list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].astype(str)
-        list_of_projects_fac.index = range(1, len(list_of_projects_fac) + 1)
-        max_date = list_of_projects_fac['Collection Date'].max()
-        min_date = list_of_projects_fac['Collection Date'].min()
-        missing_df = list_of_projects_fac.loc[
-            (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['Serum Crag'].isna())]
-        missing_tb_lam_df = list_of_projects_fac.loc[
-            (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['TB LAM'].isna())]
-        crag_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['Serum Crag'] == "Positive")]
-        tb_lam_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['TB LAM'] == "Positive")]
-        rejected_df = list_of_projects_fac.loc[(list_of_projects_fac['Received status'] == "Rejected")]
-
-        # Create the summary dataframe
-        summary_df = pd.DataFrame({
-            'Total CD4': [list_of_projects_fac.shape[0]],
-            'Rejected': [(list_of_projects_fac['Received status'] == 'Rejected').sum()],
-            'CD4 >200': [(list_of_projects_fac['CD4 Count'] > 200).sum()],
-            'CD4 <= 200': [(list_of_projects_fac['CD4 Count'] <= 200).sum()],
-            'TB-LAM': [list_of_projects_fac['TB LAM'].notna().sum()],
-            '-ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Negative').sum()],
-            '+ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Positive').sum()],
-            'Missing TB LAM': [
-                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'TB LAM'].isna()).sum()],
-            'CRAG': [list_of_projects_fac['Serum Crag'].notna().sum()],
-            '-ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Negative').sum()],
-            '+ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Positive').sum()],
-            'Missing CRAG': [
-                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'Serum Crag'].isna()).sum()],
-        })
-
-        # Display the summary dataframe
-        summary_df = summary_df.T.reset_index()
-        summary_df.columns = ['variables', 'values']
-        summary_df = summary_df[summary_df['values'] != 0]
-        cd4_summary_fig = bar_chart(summary_df, "variables", "values",
-                                    f"Summary of CD4 Records and Serum CrAg Results Between {min_date} and {max_date} ")
-
-        # Group the data by testing laboratory and calculate the counts
-        summary_df = list_of_projects_fac.groupby('Testing Laboratory').agg({
-            'CD4 Count': 'count',
-            'Serum Crag': lambda x: x.count() if x.notnull().any() else 0
-        }).reset_index()
-
-        # Rename the columns
-        summary_df.rename(columns={'CD4 Count': 'Total CD4 Count', 'Serum Crag': 'Total CRAG Reports'}, inplace=True)
-
-        # Sort the dataframe by testing laboratory name
-        summary_df.sort_values('Testing Laboratory', inplace=True)
-
-        # Reset the index
-        summary_df.reset_index(drop=True, inplace=True)
-
-        summary_df = pd.melt(summary_df, id_vars="Testing Laboratory",
-                             value_vars=['Total CD4 Count', 'Total CRAG Reports'],
-                             var_name="Test done", value_name='values')
-
-        cd4_df = summary_df[summary_df['Test done'] == "Total CD4 Count"].sort_values("values").fillna(0)
-        cd4_df = cd4_df[cd4_df['values'] != 0]
-        crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values").fillna(0)
-        crag_df = crag_df[crag_df['values'] != 0]
-        crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
-                                         "Number of sCrAg Reports Processed per Testing Laboratory")
-        cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
-                                        "Number of CD4 Reports Processed per Testing Laboratory")
-
-        age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
-        age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
-                      '50-54', '55-59', '60-64', '65+']
-
-        list_of_projects_fac['Age Group'] = pd.cut(list_of_projects_fac['Age'], bins=age_bins, labels=age_labels)
-
-        age_sex_df = list_of_projects_fac.groupby(['Age Group', 'Sex']).size().unstack().reset_index()
+        age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
+        crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac = generate_results_df(list_of_projects)
+        ###################################
+        # AGE AND SEX CHART
+        ###################################
         age_sex_df = pd.melt(age_sex_df, id_vars="Age Group",
                              value_vars=list(age_sex_df.columns[1:]),
                              var_name="Sex", value_name='# of sample processed')
@@ -902,8 +1453,8 @@ def show_results(request):
     dictionary = get_key_from_session_names(request)
     # list_of_projects_fac['Facility'] = list_of_projects_fac['facility'].astype(str).str.split(" ").str[0]
     context = {
-        "title": "Results",
-        "cd4_results": cd4_results,
+        "title": "Results", "record_count_options": record_count_options,
+        "cd4_results": cd4_results, "record_count": record_count,
         "dictionary": dictionary,
         "my_filters": my_filters, "qi_list": qi_list, "qi_lists": qi_lists,
         "cd4_summary_fig": cd4_summary_fig,
@@ -1165,3 +1716,199 @@ def instructions_lab(request, section):
         "section": section
     }
     return render(request, 'lab_pulse/instructions.html', context)
+
+
+def validate_commodity_form(form):
+    quantity_received = form.cleaned_data['quantity_received']
+    negative_adjustment = form.cleaned_data['negative_adjustment']
+    positive_adjustment = form.cleaned_data['positive_adjustments']
+    date_commodity_received = form.cleaned_data['date_commodity_received']
+    quantity_expired = form.cleaned_data['quantity_expired']
+    beginning_balance = form.cleaned_data['beginning_balance']
+
+    if date_commodity_received:
+        if not quantity_received and not negative_adjustment and not positive_adjustment and not quantity_expired \
+                and not beginning_balance:
+            error_message = f"Provide a valid value!"
+            form.add_error('quantity_received', error_message)
+            form.add_error('negative_adjustment', error_message)
+            form.add_error('positive_adjustments', error_message)
+            form.add_error('quantity_expired', error_message)
+            form.add_error('beginning_balance', error_message)
+            return False
+
+    return True
+
+
+@login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+def add_commodities(request, pk_lab):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    form = ReagentStockForm(request.POST or None)
+    selected_lab, created = Facilities.objects.get_or_create(id=pk_lab)
+    # commodities = ReagentStock.objects.filter(
+    #     facility_name__mfl_code=selected_lab.mfl_code,
+    # ).order_by("-date_commodity_received")
+
+    template_name = 'lab_pulse/add_cd4_data.html'
+    context = {
+        "form": form, "report_type": "commodity",
+        "title": f"Add Commodities for {selected_lab.name.title()} Laboratory",
+    }
+    try:
+        commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
+            show_remaining_commodities(selected_lab)
+        commodities = pagination_(request, commodities, 100)
+    except KeyError:
+        # context_copy=context
+        # del context_copy['form']
+        messages.error(request,
+                       f"{selected_lab.name.upper()} reagents are currently unavailable in the database. "
+                       f"The operation cannot be completed. Please contact your laboratory supervisor for assistance "
+                       f"or proceed to add commodities to replenish the stock.")
+        commodity_status = None
+        commodities = None
+        cd4_total_remaining = None
+        crag_total_remaining = None
+        tb_lam_total_remaining = None
+        # return render(request, template_name,context )
+    if request.method == "POST":
+        if form.is_valid():
+            reagent_type = form.cleaned_data['reagent_type']
+            # try:
+            post = form.save(commit=False)
+            if not validate_commodity_form(form):
+                # If validation fails, return the form with error messages
+                return render(request, template_name, context)
+            selected_facility = selected_lab.mfl_code
+
+            facility_name = Facilities.objects.filter(mfl_code=selected_facility).first()
+            post.facility_name = facility_name
+            now = datetime.now()
+            # existing_facility_record = ReagentStock.objects.filter(reagent_type=reagent_type,
+            #                                                        facility_name__mfl_code=selected_facility,
+            #                                                        remaining_quantity__gt=0,
+            #                                                        date_commodity_received__month=now.month)
+
+            #     # TODO FILTER ACTIVE RECORDS(OPERATING BETWEEN 1ST AND END OF THE MONTH)
+
+            post.save()
+            messages.error(request, "Record saved successfully!")
+            # Generate the URL for the redirect
+            url = reverse('add_commodities', kwargs={
+                # 'report_type': report_type,
+                'pk_lab': pk_lab})
+            return redirect(url)
+
+        else:
+            messages.error(request, f"Record already exists.")
+            render(request, template_name, context)
+
+    context = {
+        "form": form, "report_type": "commodity", "commodities": commodities, "commodity_status": commodity_status,
+        "title": f"Add Commodities for {selected_lab.name.title()} Laboratory",
+        "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
+        "crag_total_remaining": crag_total_remaining,
+    }
+    return render(request, 'lab_pulse/add_cd4_data.html', context)
+
+
+@login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+def choose_lab(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    cd4_testing_lab_form = facilities_lab_Form(request.POST or None)
+    if request.method == "POST":
+        if cd4_testing_lab_form.is_valid():
+            testing_lab_name = cd4_testing_lab_form.cleaned_data['facility_name']
+            # Generate the URL for the redirect
+            url = reverse('add_commodities',
+                          kwargs={
+                              'pk_lab': testing_lab_name.id})
+
+            return redirect(url)
+    context = {
+        "cd4_testing_lab_form": cd4_testing_lab_form,
+        "title": "ADD COMMODITIES"
+    }
+    return render(request, 'lab_pulse/add_cd4_data.html', context)
+
+
+@login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse'])
+def add_facility(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    facilities = Facilities.objects.all()
+
+    form = FacilitiesForm(request.POST or None)
+    if form.is_valid():
+        facility_name = form.cleaned_data['name']
+        existing_lab = Facilities.objects.filter(name__iexact=facility_name)
+        if existing_lab.exists():
+            form.add_error('testing_lab_name', 'A CD4 Testing Lab with this name already exists.')
+        else:
+            form.save()
+            messages.error(request, "Record saved successfully!")
+            return redirect("choose_testing_lab")
+    context = {
+        "form": form,
+        "title": f"Add Missing Laboratory",
+        "facilities": facilities,
+    }
+    return render(request, 'lab_pulse/add_cd4_data.html', context)
+
+
+@login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+def update_reagent_stocks(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = ReagentStock.objects.get(id=pk)
+    commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
+        show_remaining_commodities(item.facility_name)
+    form = ReagentStockForm(instance=item)
+
+    template_name = 'lab_pulse/update results.html'
+    context = {
+        "form": form,
+        "title": "Update Commodities",
+        "commodity_status": commodity_status,
+        "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
+        "crag_total_remaining": crag_total_remaining,
+    }
+
+    if request.method == "POST":
+        form = ReagentStockForm(request.POST, instance=item)
+        if form.is_valid():
+            post = form.save(commit=False)
+            if not validate_commodity_form(form):
+                # If validation fails, return the form with error messages
+                return render(request, template_name, context)
+            selected_facility = item.facility_name.mfl_code
+
+            facility_name = Facilities.objects.filter(mfl_code=selected_facility).first()
+            post.facility_name = facility_name
+            post.save()
+            messages.error(request, "Record updated successfully!")
+            # Generate the URL for the redirect
+            return HttpResponseRedirect(request.session['page_from'])
+
+    context = {
+        "form": form,
+        "title": "Update Commodities", "commodity_status": commodity_status, "cd4_total_remaining": cd4_total_remaining,
+        "tb_lam_total_remaining": tb_lam_total_remaining,
+        "crag_total_remaining": crag_total_remaining,
+    }
+    return render(request, 'lab_pulse/update results.html', context)

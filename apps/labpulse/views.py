@@ -554,7 +554,7 @@ def add_cd4_count(request, report_type, pk_lab):
             if not validate_cd4_count_form(form, report_type):
                 # If validation fails, return the form with error messages
                 return render(request, template_name, context)
-            if report_type == "Current":
+            if report_type == "Current" and use_commodities:
                 # Call the function to handle serum_crag_results and tb_lam_results errors
                 error_response = handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_remaining,
                                                          template_name, context)
@@ -756,7 +756,7 @@ def update_cd4_results(request, report_type, pk):
             if not validate_cd4_count_form(form, report_type):
                 # If validation fails, return the form with error messages
                 return render(request, template_name, context)
-            if report_type == "Current":
+            if report_type == "Current" and use_commodities:
                 # Call the function to handle serum_crag_results and tb_lam_results errors
                 error_response = handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_remaining,
                                                          template_name, context)

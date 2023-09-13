@@ -3940,8 +3940,14 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
 
 def bar_chart(df, x_axis, y_axis, title, color=None):
     # df[x_axis]=df[x_axis].str.split(" ").str[0]
+    if x_axis =="Age Group":
+        category_orders = {"Age Group": ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
+                      '50-54', '55-59', '60-64', '65+'],}
+    else:
+        category_orders=None
 
-    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=300,color=color
+    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=300,color=color,
+                 category_orders=category_orders
                  # hover_name=x_axis,  hover_data={
                  #                                        "tested of change":True,
                  #                                        "achievements":True,}

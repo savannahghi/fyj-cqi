@@ -341,7 +341,7 @@ def show_remaining_commodities(selected_lab):
 
     # Create a bar chart using Plotly Express
     fig = px.bar(df, x='reagent_type', y='total_remaining', text='total_remaining',
-                 labels={'reagent_type': 'Reagent Type', 'total_remaining': 'Total Remaining'},
+                 labels={'reagent_type': 'Reagent Type', 'total_remaining': 'Reagents Remaining'},
                  title=title, height=350,
                  )
     # Set the font size of the x-axis and y-axis labels
@@ -412,7 +412,7 @@ def validate_date_fields(form, date_fields):
         return True  # Validation succeeded
 
 
-def deduct_commodities(request, form, report_type, post, selected_lab,context, template_name):
+def deduct_commodities(request, form, report_type, post, selected_lab, context, template_name):
     if report_type == "Current":
         # Check if CD4 test was performed
         cd4_count_results = form.cleaned_data['cd4_count_results']
@@ -475,6 +475,25 @@ def deduct_commodities(request, form, report_type, post, selected_lab,context, t
                 messages.error(request, error_message)
                 form.add_error('tb_lam_results', error_message)
                 return render(request, template_name, context)
+
+
+def handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_remaining, template_name, context):
+    serum_crag_results = form.cleaned_data.get('serum_crag_results')
+    tb_lam_results = form.cleaned_data.get('tb_lam_results')
+
+    if serum_crag_results is not None and crag_total_remaining == 0:
+        error_message = "ScrAg reagents are out of stock."
+        form.add_error('serum_crag_results', error_message)
+        return render(request, template_name, context)
+
+    if tb_lam_results is not None and tb_lam_total_remaining == 0:
+        error_message = "LF TB LAM reagents are out of stock."
+        form.add_error('tb_lam_results', error_message)
+        return render(request, template_name, context)
+
+    return None
+
+
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse'])
 def add_cd4_count(request, report_type, pk_lab):
@@ -495,30 +514,30 @@ def add_cd4_count(request, report_type, pk_lab):
         commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
             show_remaining_commodities(selected_lab)
         context = {
-            "form": form, "report_type": report_type, "commodities": commodities,"use_commodities":use_commodities,
+            "form": form, "report_type": report_type, "commodities": commodities, "use_commodities": use_commodities,
             "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
             "commodity_status": commodity_status,
             "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
             "crag_total_remaining": crag_total_remaining,
         }
-        if use_commodities and form.is_valid():
+        if use_commodities:
             if crag_total_remaining == 0:
                 messages.error(request, generate_commodity_error_message("Serum CrAg"))
-                form.add_error("serum_crag_results","ScrAg reagents are out of stock")
             if tb_lam_total_remaining == 0:
                 messages.error(request, generate_commodity_error_message("LF TB LAM"))
-                form.add_error("tb_lam_results", "LF TB LAM reagents are out of stock")
             if cd4_total_remaining == 0:
                 messages.error(request, generate_commodity_error_message("CD4"))
-            return render(request, template_name, context)
+                return render(request, template_name, context)
     else:
+        crag_total_remaining = None
+        tb_lam_total_remaining = None
         # Check if the user has the required permission
         if not request.user.has_perm('labpulse.view_add_retrospective_cd4_count'):
             # Redirect or handle the case where the user doesn't have the permission
             return HttpResponseForbidden("You don't have permission to access this form.")
         form = Cd4trakerManualDispatchForm(request.POST or None)
         context = {
-            "form": form, "report_type": report_type,"use_commodities":use_commodities,
+            "form": form, "report_type": report_type, "use_commodities": use_commodities,
             "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
         }
 
@@ -535,6 +554,12 @@ def add_cd4_count(request, report_type, pk_lab):
             if not validate_cd4_count_form(form, report_type):
                 # If validation fails, return the form with error messages
                 return render(request, template_name, context)
+            if report_type == "Current":
+                # Call the function to handle serum_crag_results and tb_lam_results errors
+                error_response = handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_remaining,
+                                                         template_name, context)
+                if error_response:
+                    return error_response  # Render with errors if any
             selected_facility = form.cleaned_data['facility_name']
 
             facility_id = Facilities.objects.get(name=selected_facility)
@@ -560,7 +585,7 @@ def add_cd4_count(request, report_type, pk_lab):
             # Deduct Commodities used
             ####################################
             if use_commodities:
-                deduct_commodities(request, form, report_type, post, selected_lab,context, template_name)
+                deduct_commodities(request, form, report_type, post, selected_lab, context, template_name)
 
             post.save()
             messages.error(request, "Record saved successfully!")
@@ -573,7 +598,7 @@ def add_cd4_count(request, report_type, pk_lab):
     return render(request, template_name, context)
 
 
-def update_commodities(request,form,post, report_type, pk,template_name, context):
+def update_commodities(request, form, post, report_type, pk, template_name, context):
     if report_type == "Current":
         ###################################################
         # Choose facility to update commodity records for #
@@ -675,6 +700,7 @@ def update_commodities(request,form,post, report_type, pk,template_name, context
                 form.add_error('tb_lam_results', error_message)
                 return render(request, template_name, context)
 
+
 @login_required(login_url='login')
 @group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
 def update_cd4_results(request, report_type, pk):
@@ -712,7 +738,7 @@ def update_cd4_results(request, report_type, pk):
             form = Cd4trakerManualDispatchForm(request.POST, instance=item)
         if form.is_valid():
             context = {
-                "form": form, "report_type": report_type,"use_commodities":use_commodities,
+                "form": form, "report_type": report_type, "use_commodities": use_commodities,
                 "title": "Update Results", "commodity_status": commodity_status,
                 "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
                 "crag_total_remaining": crag_total_remaining,
@@ -730,6 +756,12 @@ def update_cd4_results(request, report_type, pk):
             if not validate_cd4_count_form(form, report_type):
                 # If validation fails, return the form with error messages
                 return render(request, template_name, context)
+            if report_type == "Current":
+                # Call the function to handle serum_crag_results and tb_lam_results errors
+                error_response = handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_remaining,
+                                                         template_name, context)
+                if error_response:
+                    return error_response  # Render with errors if any
 
             facility_id = Facilities.objects.get(name=facility_name)
             # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
@@ -866,7 +898,7 @@ def update_cd4_results(request, report_type, pk):
             form = Cd4trakerManualDispatchForm(instance=item)
     # cd4_total_remaining=0
     context = {
-        "form": form, "report_type": report_type,"use_commodities":use_commodities,
+        "form": form, "report_type": report_type, "use_commodities": use_commodities,
         "title": "Update Results", "commodity_status": commodity_status, "cd4_total_remaining": cd4_total_remaining,
         "tb_lam_total_remaining": tb_lam_total_remaining,
         "crag_total_remaining": crag_total_remaining,
@@ -877,7 +909,7 @@ def update_cd4_results(request, report_type, pk):
 def pagination_(request, item_list, record_count=None):
     page = request.GET.get('page', 1)
     if record_count == None:
-        record_count = request.GET.get('record_count', '50')
+        record_count = request.GET.get('record_count', '5')
     else:
         record_count = record_count
 
@@ -1093,6 +1125,130 @@ def filter_result_type(list_of_projects_fac, column_name):
     return facility_positive_count
 
 
+def generate_results_df(list_of_projects):
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    list_of_projects_fac = list_of_projects.copy()
+
+    # Convert Timestamp objects to strings
+    list_of_projects_fac = list_of_projects_fac.sort_values('Collection Date').reset_index(drop=True)
+    list_of_projects_fac['Testing date'] = pd.to_datetime(list_of_projects_fac['Testing date']).dt.date
+    list_of_projects_fac['Received date'] = pd.to_datetime(list_of_projects_fac['Received date']).dt.date
+    # Convert the dates to user local timezone
+    local_timezone = tzlocal.get_localzone()
+    # Convert the dates to the local timezone
+    list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].dt.tz_convert(
+        local_timezone)
+    list_of_projects_fac['Collection Date'] = pd.to_datetime(list_of_projects_fac['Collection Date']).dt.date
+    list_of_projects_fac['Date Dispatch'] = pd.to_datetime(list_of_projects_fac['Date Dispatch']).dt.date
+    list_of_projects_fac['TB LAM date'] = pd.to_datetime(list_of_projects_fac['TB LAM date']).dt.date
+    list_of_projects_fac['Serum CRAG date'] = pd.to_datetime(list_of_projects_fac['Serum CRAG date']).dt.date
+    list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].astype(str)
+    list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].replace(np.datetime64('NaT'),
+                                                                                        '')
+    list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].astype(str)
+    list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].replace(np.datetime64('NaT'),
+                                                                                          '')
+    list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].astype(str)
+    list_of_projects_fac['Date Dispatch'] = list_of_projects_fac['Date Dispatch'].astype(str)
+    list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].replace(np.datetime64('NaT'), '')
+    list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].astype(str)
+    list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].replace(
+        np.datetime64('NaT'),
+        '')
+    list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].astype(str)
+    list_of_projects_fac.index = range(1, len(list_of_projects_fac) + 1)
+    max_date = list_of_projects_fac['Collection Date'].max()
+    min_date = list_of_projects_fac['Collection Date'].min()
+    missing_df = list_of_projects_fac.loc[
+        (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['Serum Crag'].isna())]
+    missing_tb_lam_df = list_of_projects_fac.loc[
+        (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['TB LAM'].isna())]
+    crag_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['Serum Crag'] == "Positive")]
+    tb_lam_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['TB LAM'] == "Positive")]
+    rejected_df = list_of_projects_fac.loc[(list_of_projects_fac['Received status'] == "Rejected")]
+
+    # Create the summary dataframe
+    summary_df = pd.DataFrame({
+        'Total CD4': [list_of_projects_fac.shape[0]],
+        'Rejected': [(list_of_projects_fac['Received status'] == 'Rejected').sum()],
+        'CD4 >200': [(list_of_projects_fac['CD4 Count'] > 200).sum()],
+        'CD4 <= 200': [(list_of_projects_fac['CD4 Count'] <= 200).sum()],
+        'TB-LAM': [list_of_projects_fac['TB LAM'].notna().sum()],
+        '-ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Negative').sum()],
+        '+ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Positive').sum()],
+        'Missing TB LAM': [
+            (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'TB LAM'].isna()).sum()],
+        'CRAG': [list_of_projects_fac['Serum Crag'].notna().sum()],
+        '-ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Negative').sum()],
+        '+ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Positive').sum()],
+        'Missing CRAG': [
+            (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'Serum Crag'].isna()).sum()],
+    })
+
+    # Display the summary dataframe
+    summary_df = summary_df.T.reset_index()
+    summary_df.columns = ['variables', 'values']
+    summary_df = summary_df[summary_df['values'] != 0]
+    ###################################
+    # CD4 SUMMARY CHART
+    ###################################
+    cd4_summary_fig = bar_chart(summary_df, "variables", "values",
+                                f"Summary of CD4 Records and Serum CrAg Results Between {min_date} and {max_date} ")
+
+    # Group the data by testing laboratory and calculate the counts
+    summary_df = list_of_projects_fac.groupby('Testing Laboratory').agg({
+        'CD4 Count': 'count',
+        'Serum Crag': lambda x: x.count() if x.notnull().any() else 0
+    }).reset_index()
+
+    # Rename the columns
+    summary_df.rename(columns={'CD4 Count': 'Total CD4 Count', 'Serum Crag': 'Total CRAG Reports'},
+                      inplace=True)
+
+    # Sort the dataframe by testing laboratory name
+    summary_df.sort_values('Testing Laboratory', inplace=True)
+
+    # Reset the index
+    summary_df.reset_index(drop=True, inplace=True)
+
+    summary_df = pd.melt(summary_df, id_vars="Testing Laboratory",
+                         value_vars=['Total CD4 Count', 'Total CRAG Reports'],
+                         var_name="Test done", value_name='values')
+
+    cd4_df = summary_df[summary_df['Test done'] == "Total CD4 Count"].sort_values("values").fillna(0)
+    cd4_df = cd4_df[cd4_df['values'] != 0]
+    crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values").fillna(0)
+    crag_df = crag_df[crag_df['values'] != 0]
+    ###################################
+    # CRAG TESTING SUMMARY CHART
+    ###################################
+    crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
+                                     "Number of sCrAg Reports Processed per Testing Laboratory")
+    ###################################
+    # CD4 TESTING SUMMARY CHART
+    ###################################
+    cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
+                                    "Number of CD4 Reports Processed per Testing Laboratory")
+
+    age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
+    age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
+                  '50-54', '55-59', '60-64', '65+']
+
+    list_of_projects_fac_above1age_sex = list_of_projects_fac[list_of_projects_fac['age_unit'] == "years"]
+    list_of_projects_fac_below1age_sex = list_of_projects_fac[list_of_projects_fac['age_unit'] != "years"]
+
+    list_of_projects_fac_below1age_sex['Age Group'] = "<1"
+    list_of_projects_fac_above1age_sex['Age Group'] = pd.cut(list_of_projects_fac_above1age_sex['Age'],
+                                                             bins=age_bins, labels=age_labels)
+
+    list_of_projects_fac = pd.concat([list_of_projects_fac_above1age_sex, list_of_projects_fac_below1age_sex])
+
+    age_sex_df = list_of_projects_fac.groupby(['Age Group', 'Sex']).size().unstack().reset_index()
+    return age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
+        crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac
+
+
 @login_required(login_url='login')
 @group_required(
     ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'
@@ -1103,7 +1259,7 @@ def show_results(request):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
         # record_count = int(request.GET.get('record_count', 10))  # Get the selected record count (default: 10)
-        record_count = request.GET.get('record_count', '50')
+        record_count = request.GET.get('record_count', '5')
         if record_count == 'all':
             record_count = 'all'  # Preserve the 'all' value if selected
         else:
@@ -1191,106 +1347,15 @@ def show_results(request):
              'Received status': x.received_status,
              'Rejection reason': x.reason_for_rejection,
              'TAT': x.tat_days,
+             'age_unit': x.age_unit,
              } for x in qi_lists
         ]
-        # convert data from database to a dataframe
-        list_of_projects = pd.DataFrame(list_of_projects)
-        list_of_projects_fac = list_of_projects.copy()
 
-        # Convert Timestamp objects to strings
-        list_of_projects_fac = list_of_projects_fac.sort_values('Collection Date').reset_index(drop=True)
-        list_of_projects_fac['Testing date'] = pd.to_datetime(list_of_projects_fac['Testing date']).dt.date
-        list_of_projects_fac['Received date'] = pd.to_datetime(list_of_projects_fac['Received date']).dt.date
-        # Convert the dates to user local timezone
-        local_timezone = tzlocal.get_localzone()
-        # Convert the dates to the local timezone
-        list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].dt.tz_convert(local_timezone)
-        list_of_projects_fac['Collection Date'] = pd.to_datetime(list_of_projects_fac['Collection Date']).dt.date
-        list_of_projects_fac['Date Dispatch'] = pd.to_datetime(list_of_projects_fac['Date Dispatch']).dt.date
-        list_of_projects_fac['TB LAM date'] = pd.to_datetime(list_of_projects_fac['TB LAM date']).dt.date
-        list_of_projects_fac['Serum CRAG date'] = pd.to_datetime(list_of_projects_fac['Serum CRAG date']).dt.date
-        list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].astype(str)
-        list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].replace(np.datetime64('NaT'), '')
-        list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].astype(str)
-        list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].replace(np.datetime64('NaT'), '')
-        list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].astype(str)
-        list_of_projects_fac['Date Dispatch'] = list_of_projects_fac['Date Dispatch'].astype(str)
-        list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].replace(np.datetime64('NaT'), '')
-        list_of_projects_fac['TB LAM date'] = list_of_projects_fac['TB LAM date'].astype(str)
-        list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].replace(np.datetime64('NaT'),
-                                                                                                  '')
-        list_of_projects_fac['Serum CRAG date'] = list_of_projects_fac['Serum CRAG date'].astype(str)
-        list_of_projects_fac.index = range(1, len(list_of_projects_fac) + 1)
-        max_date = list_of_projects_fac['Collection Date'].max()
-        min_date = list_of_projects_fac['Collection Date'].min()
-        missing_df = list_of_projects_fac.loc[
-            (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['Serum Crag'].isna())]
-        missing_tb_lam_df = list_of_projects_fac.loc[
-            (list_of_projects_fac['CD4 Count'] < 200) & (list_of_projects_fac['TB LAM'].isna())]
-        crag_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['Serum Crag'] == "Positive")]
-        tb_lam_pos_df = list_of_projects_fac.loc[(list_of_projects_fac['TB LAM'] == "Positive")]
-        rejected_df = list_of_projects_fac.loc[(list_of_projects_fac['Received status'] == "Rejected")]
-
-        # Create the summary dataframe
-        summary_df = pd.DataFrame({
-            'Total CD4': [list_of_projects_fac.shape[0]],
-            'Rejected': [(list_of_projects_fac['Received status'] == 'Rejected').sum()],
-            'CD4 >200': [(list_of_projects_fac['CD4 Count'] > 200).sum()],
-            'CD4 <= 200': [(list_of_projects_fac['CD4 Count'] <= 200).sum()],
-            'TB-LAM': [list_of_projects_fac['TB LAM'].notna().sum()],
-            '-ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Negative').sum()],
-            '+ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Positive').sum()],
-            'Missing TB LAM': [
-                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'TB LAM'].isna()).sum()],
-            'CRAG': [list_of_projects_fac['Serum Crag'].notna().sum()],
-            '-ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Negative').sum()],
-            '+ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Positive').sum()],
-            'Missing CRAG': [
-                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'Serum Crag'].isna()).sum()],
-        })
-
-        # Display the summary dataframe
-        summary_df = summary_df.T.reset_index()
-        summary_df.columns = ['variables', 'values']
-        summary_df = summary_df[summary_df['values'] != 0]
-        cd4_summary_fig = bar_chart(summary_df, "variables", "values",
-                                    f"Summary of CD4 Records and Serum CrAg Results Between {min_date} and {max_date} ")
-
-        # Group the data by testing laboratory and calculate the counts
-        summary_df = list_of_projects_fac.groupby('Testing Laboratory').agg({
-            'CD4 Count': 'count',
-            'Serum Crag': lambda x: x.count() if x.notnull().any() else 0
-        }).reset_index()
-
-        # Rename the columns
-        summary_df.rename(columns={'CD4 Count': 'Total CD4 Count', 'Serum Crag': 'Total CRAG Reports'}, inplace=True)
-
-        # Sort the dataframe by testing laboratory name
-        summary_df.sort_values('Testing Laboratory', inplace=True)
-
-        # Reset the index
-        summary_df.reset_index(drop=True, inplace=True)
-
-        summary_df = pd.melt(summary_df, id_vars="Testing Laboratory",
-                             value_vars=['Total CD4 Count', 'Total CRAG Reports'],
-                             var_name="Test done", value_name='values')
-
-        cd4_df = summary_df[summary_df['Test done'] == "Total CD4 Count"].sort_values("values").fillna(0)
-        cd4_df = cd4_df[cd4_df['values'] != 0]
-        crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values").fillna(0)
-        crag_df = crag_df[crag_df['values'] != 0]
-        crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
-                                         "Number of sCrAg Reports Processed per Testing Laboratory")
-        cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
-                                        "Number of CD4 Reports Processed per Testing Laboratory")
-
-        age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
-        age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
-                      '50-54', '55-59', '60-64', '65+']
-
-        list_of_projects_fac['Age Group'] = pd.cut(list_of_projects_fac['Age'], bins=age_bins, labels=age_labels)
-
-        age_sex_df = list_of_projects_fac.groupby(['Age Group', 'Sex']).size().unstack().reset_index()
+        age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
+        crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac = generate_results_df(list_of_projects)
+        ###################################
+        # AGE AND SEX CHART
+        ###################################
         age_sex_df = pd.melt(age_sex_df, id_vars="Age Group",
                              value_vars=list(age_sex_df.columns[1:]),
                              var_name="Sex", value_name='# of sample processed')

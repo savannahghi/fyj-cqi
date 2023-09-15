@@ -1154,6 +1154,9 @@ def generate_results_df(list_of_projects):
 
     # Convert Timestamp objects to strings
     list_of_projects_fac = list_of_projects_fac.sort_values('Collection Date').reset_index(drop=True)
+    # convert to datetime with UTC
+    date_columns=['Testing date','Collection Date','Received date','Date Dispatch']
+    list_of_projects_fac[date_columns] = list_of_projects_fac[date_columns].astype("datetime64[ns, UTC]")
     # Convert the dates to user local timezone
     local_timezone = tzlocal.get_localzone()
     # Convert the dates to the local timezone

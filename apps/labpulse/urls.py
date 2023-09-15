@@ -1,8 +1,8 @@
-from django.urls import path
+from django.urls import include, path
 
-from apps.data_analysis.views import download_csv
+# from apps.data_analysis.views import download_csv
 from apps.labpulse.views import add_commodities, add_facility, choose_lab, choose_testing_lab, add_cd4_count, \
-    instructions_lab, \
+    download_csv, instructions_lab, \
     update_cd4_results, show_results, \
     GeneratePDF, \
     add_testing_lab, update_reagent_stocks, update_testing_labs, lab_pulse_update_button_settings, \
@@ -21,8 +21,10 @@ urlpatterns = [
     path('update-reagent-stocks/<uuid:pk>/', update_reagent_stocks, name="update_reagent_stocks"),
     path('show-results/', show_results, name="show_results"),
     path('instructions-lab/<str:section>/', instructions_lab, name="instructions_lab"),
-    path('download/<str:name>/<str:filename>', download_csv, name='download_csv'),
+    # path('download/<str:name>/<str:filename>', download_csv, name='download_csv'),
+    path('download/<str:filter_type>', download_csv, name='download_csv_lab'),
     path('generate-pdf/', GeneratePDF.as_view(), name='generate_cd4_report_pdf'),
     path('update-button-settings/', lab_pulse_update_button_settings, name='lab_pulse_update_button_settings'),
 
 ]
+# urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]

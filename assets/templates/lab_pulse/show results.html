@@ -48,10 +48,10 @@
                         <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.age_gte|as_crispy_field }}
                         </div>
-                    <div class="col-12 col-md-6 col-lg-2">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.age_unit|as_crispy_field }}
                         </div>
-                    <div class="col-12 col-md-6 col-lg-2">
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.report_type|as_crispy_field }}
                         </div>
                         <div class="col-12 col-md-6 col-lg-2">
@@ -125,49 +125,46 @@
                 {% if qi_list %}
                     <div class="row">
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                            <a href="{% url 'download_csv' dictionary.list_of_projects_fac "cd4 results" %}"
-                               class="btn btn-secondary btn-block" role="button">
-                                All records <i class="fas fa-download"></i>
+                            <a href="{% url 'download_csv_lab' "all" %}"
+                               class="btn btn-secondary btn-block" role="button"> All records
+                                <i class="fas fa-download"></i>
                             </a>
                         </div>
-                        {% if dictionary.rejected_df %}
+                        {% if rejected_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv' dictionary.rejected_df "Rejected samples" %}"
-                                   class="btn btn-secondary btn-block" role="button">
-                                    Rejected samples <i class="fas fa-download"></i>
+                                <a href="{% url 'download_csv_lab' "rejected" %}"
+                                   class="btn btn-secondary btn-block" role="button"> Rejected samples
+                                    <i class="fas fa-download"></i>
                                 </a>
                             </div>
                         {% endif %}
-                        {% if title %}
-                            <!-- Code for title -->
-                        {% endif %}
-                        {% if dictionary.tb_lam_pos_df %}
+                        {% if tb_lam_pos_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv' dictionary.tb_lam_pos_df "TB LAM positive" %}"
-                                   class="btn btn-secondary btn-block" role="button">
-                                    Positive TB LAM <i class="fas fa-download"></i>
+                                <a href="{% url 'download_csv_lab' "positive_tb_lam" %}"
+                                   class="btn btn-secondary btn-block" role="button"> Positive TB LAM
+                                    <i class="fas fa-download"></i>
                                 </a>
                             </div>
                         {% endif %}
-                        {% if dictionary.crag_pos_df %}
+                        {% if crag_pos_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv' dictionary.crag_pos_df "serum CRAG positive" %}"
-                                   class="btn btn-secondary btn-block" role="button">
-                                    Positive CrAg <i class="fas fa-download"></i>
+                                <a href="{% url 'download_csv_lab' "positive_crag" %}"
+                                   class="btn btn-secondary btn-block" role="button"> Positive CrAg
+                                    <i class="fas fa-download"></i>
                                 </a>
                             </div>
                         {% endif %}
-                        {% if dictionary.missing_df %}
+                        {% if missing_crag_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv' dictionary.missing_df "missing serum CRAG" %}"
+                                <a href="{% url 'download_csv_lab' "missing_crag" %}"
                                    class="btn btn-secondary btn-block" role="button"> Missing CrAg
                                     <i class="fas fa-download"></i>
                                 </a>
                             </div>
                         {% endif %}
-                        {% if dictionary.missing_tb_lam_df %}
+                        {% if missing_tb_lam_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv' dictionary.missing_tb_lam_df "missing TB LAM" %}"
+                                <a href="{% url 'download_csv_lab' "missing_tb_lam" %}"
                                    class="btn btn-secondary btn-block" role="button"> Missing TB LAM
                                     <i class="fas fa-download"></i>
                                 </a>
@@ -211,14 +208,14 @@
                                     {{ age_distribution_fig|safe }}
                                 </div>
                             </div>
-                            {% if not cd4_df.empty %}
+                            {% if show_cd4_testing_workload %}
                                 <div class="row">
                                     <div class="col-12">
                                         {{ cd4_testing_lab_fig|safe }}
                                     </div>
                                 </div>
                             {% endif %}
-                            {% if not crag_df.empty %}
+                            {% if show_crag_testing_workload %}
                                 <div class="row">
                                     <div class="col-12">
                                         {{ crag_testing_lab_fig|safe }}

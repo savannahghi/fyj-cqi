@@ -1,3 +1,4 @@
+import csv
 import math
 from datetime import date, datetime, timedelta, timezone
 
@@ -8,6 +9,7 @@ import pytz
 import tzlocal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import ExpressionWrapper, F, IntegerField, Sum
 from django.db.models.functions import Extract
@@ -156,7 +158,6 @@ def validate_cd4_count_form(form, report_type):
     reason_for_no_serum_crag = form.cleaned_data['reason_for_no_serum_crag']
     cd4_percentage = form.cleaned_data['cd4_percentage']
     age = form.cleaned_data['age']
-    patient_unique_no = form.cleaned_data['patient_unique_no']
     today = timezone.now().date()
 
     if report_type != "Current":
@@ -403,7 +404,7 @@ def validate_date_fields(form, date_fields):
             # Check if the date is within the allowable range
             if not (min_date <= date_value <= max_date):
                 # Add an error to the form for invalid date
-                form.add_error(field_name, 'Please enter a valid date.')
+                form.add_error(field_name, 'Please enter a valid date using datepicker.')
 
     # Check if any errors were added to the form
     if any(field_name in form.errors for field_name in date_fields):
@@ -714,7 +715,7 @@ def update_cd4_results(request, report_type, pk):
             show_remaining_commodities(item.facility_name)
     else:
         commodity_status = None
-        commodities = None
+        # commodities = None
         cd4_total_remaining = 0
         crag_total_remaining = 0
         tb_lam_total_remaining = 0
@@ -908,7 +909,7 @@ def update_cd4_results(request, report_type, pk):
 
 def pagination_(request, item_list, record_count=None):
     page = request.GET.get('page', 1)
-    if record_count == None:
+    if record_count is None:
         record_count = request.GET.get('record_count', '5')
     else:
         record_count = record_count
@@ -1075,6 +1076,10 @@ def calculate_weekly_tat(df):
     weekly_tat_df['Mean weekly TAT(C-D)'] = weekly_tat_df['sample TAT (c-d)'].round()
     weekly_tat_df['Mean weekly TAT(C-R)'] = weekly_tat_df['sample TAT (c-r)'].round()
 
+    # Calculate means
+    mean_c_d = round(weekly_tat_df.loc[:, 'Mean weekly TAT(C-D)'].mean())
+    mean_c_r = round(weekly_tat_df.loc[:, 'Mean weekly TAT(C-R)'].mean())
+
     # Drop unnecessary columns
     weekly_tat_df.drop(columns=['sample TAT (c-d)', 'sample TAT (c-r)'], inplace=True)
     weekly_tat_df = weekly_tat_df.sort_values("week_start").fillna(0)
@@ -1091,17 +1096,18 @@ def calculate_weekly_tat(df):
 
     weekly_tat.reset_index(drop=True, inplace=True)
 
-    return weekly_tat
+    return weekly_tat, mean_c_r, mean_c_d
 
 
 def visualize_facility_results_positivity(df, test_type, title):
-    if df.shape[0] > 20:
-        df = df.head(20)
-        title = f"Top Twenty Facilities with Positive {title} Results"
+    if df.shape[0] > 50:
+        df_copy = df.head(50)
+        title = f"Top Fifty Facilities with Positive {title} Results. Total facilities {df.shape[0]}"
     else:
-        title = f"Number of Positive {title} Results by Facility"
+        df_copy = df.copy()
+        title = f"Number of Positive {title} Results by Facility. Total facilities {df.shape[0]}"
 
-    fig = bar_chart(df, "Facilities",
+    fig = bar_chart(df_copy, "Facilities",
                     f"Number of Positive {test_type}",
                     title)
     return fig
@@ -1128,17 +1134,39 @@ def filter_result_type(list_of_projects_fac, column_name):
 def generate_results_df(list_of_projects):
     # convert data from database to a dataframe
     list_of_projects = pd.DataFrame(list_of_projects)
+    # Define a dictionary to rename columns
+    cols_rename = {
+        "county__county_name": "County", "sub_county__sub_counties": "Sub-county",
+        "testing_laboratory__testing_lab_name": "Testing Laboratory", "facility_name__name": "Facility",
+        "facility_name__mfl_code": "MFL CODE", "patient_unique_no": "CCC NO.", "age": "Age", "sex": "Sex",
+        "date_of_collection": "Collection Date", "date_of_testing": "Testing date",
+        "date_sample_received": "Received date",
+        "date_dispatched": "Date Dispatch",
+        "justification": "Justification", "cd4_count_results": "CD4 Count",
+        "date_serum_crag_results_entered": "Serum CRAG date",
+        "serum_crag_results": "Serum Crag", "date_tb_lam_results_entered": "TB LAM date",
+        "tb_lam_results": "TB LAM", "received_status": "Received status",
+        "reason_for_rejection": "Rejection reason",
+        "tat_days": "TAT", "age_unit": "age_unit",
+    }
+    list_of_projects = list_of_projects.rename(columns=cols_rename)
     list_of_projects_fac = list_of_projects.copy()
 
     # Convert Timestamp objects to strings
     list_of_projects_fac = list_of_projects_fac.sort_values('Collection Date').reset_index(drop=True)
-    list_of_projects_fac['Testing date'] = pd.to_datetime(list_of_projects_fac['Testing date']).dt.date
-    list_of_projects_fac['Received date'] = pd.to_datetime(list_of_projects_fac['Received date']).dt.date
     # Convert the dates to user local timezone
     local_timezone = tzlocal.get_localzone()
     # Convert the dates to the local timezone
     list_of_projects_fac['Collection Date'] = list_of_projects_fac['Collection Date'].dt.tz_convert(
         local_timezone)
+    list_of_projects_fac['Received date'] = list_of_projects_fac['Received date'].dt.tz_convert(
+        local_timezone)
+    list_of_projects_fac['Date Dispatch'] = list_of_projects_fac['Date Dispatch'].dt.tz_convert(
+        local_timezone)
+    list_of_projects_fac['Testing date'] = list_of_projects_fac['Testing date'].dt.tz_convert(
+        local_timezone)
+    list_of_projects_fac['Testing date'] = pd.to_datetime(list_of_projects_fac['Testing date']).dt.date
+    list_of_projects_fac['Received date'] = pd.to_datetime(list_of_projects_fac['Received date']).dt.date
     list_of_projects_fac['Collection Date'] = pd.to_datetime(list_of_projects_fac['Collection Date']).dt.date
     list_of_projects_fac['Date Dispatch'] = pd.to_datetime(list_of_projects_fac['Date Dispatch']).dt.date
     list_of_projects_fac['TB LAM date'] = pd.to_datetime(list_of_projects_fac['TB LAM date']).dt.date
@@ -1215,21 +1243,26 @@ def generate_results_df(list_of_projects):
     summary_df = pd.melt(summary_df, id_vars="Testing Laboratory",
                          value_vars=['Total CD4 Count', 'Total CRAG Reports'],
                          var_name="Test done", value_name='values')
-
+    show_cd4_testing_workload = False
+    show_crag_testing_workload = False
     cd4_df = summary_df[summary_df['Test done'] == "Total CD4 Count"].sort_values("values").fillna(0)
     cd4_df = cd4_df[cd4_df['values'] != 0]
+    if not cd4_df.empty:
+        show_cd4_testing_workload = True
     crag_df = summary_df[summary_df['Test done'] == "Total CRAG Reports"].sort_values("values").fillna(0)
     crag_df = crag_df[crag_df['values'] != 0]
+    if not crag_df.empty:
+        show_crag_testing_workload = True
     ###################################
     # CRAG TESTING SUMMARY CHART
     ###################################
     crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
-                                     "Number of sCrAg Reports Processed per Testing Laboratory")
+                                     f"Number of sCrAg Reports Processed per Testing Laboratory ({crag_df.shape[0]}).")
     ###################################
     # CD4 TESTING SUMMARY CHART
     ###################################
     cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
-                                    "Number of CD4 Reports Processed per Testing Laboratory")
+                                    f"Number of CD4 Reports Processed per Testing Laboratory ({cd4_df.shape[0]})")
 
     age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
     age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
@@ -1246,7 +1279,72 @@ def generate_results_df(list_of_projects):
 
     age_sex_df = list_of_projects_fac.groupby(['Age Group', 'Sex']).size().unstack().reset_index()
     return age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
-        crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac
+        crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac, show_cd4_testing_workload, show_crag_testing_workload
+
+def download_csv(request, filter_type):
+    # Get the serialized filtered data from the session
+    filtered_data_json = request.session.get('filtered_queryset')
+
+    # Deserialize the JSON data and reconstruct the queryset
+    filtered_data = serializers.deserialize('json', filtered_data_json)
+    queryset = [item.object for item in filtered_data]
+
+    # Perform filtering based on 'filter_type'
+    if filter_type == 'all':
+        pass  # No need to filter further for 'all'
+    elif filter_type == 'rejected':
+        queryset = [item for item in queryset if item.received_status == 'Rejected']
+    elif filter_type == 'positive_tb_lam':
+        queryset = [item for item in queryset if item.tb_lam_results == 'Positive']
+    elif filter_type == 'positive_crag':
+        queryset = [item for item in queryset if item.serum_crag_results == 'Positive']
+    elif filter_type == 'missing_crag':
+        queryset = [item for item in queryset if
+                    item.cd4_count_results is not None and item.cd4_count_results <= 200 and item.serum_crag_results is None]
+    elif filter_type == 'missing_tb_lam':
+        queryset = [item for item in queryset if
+                    item.cd4_count_results is not None and item.cd4_count_results <= 200 and item.tb_lam_results is None]
+    else:
+        # Handle invalid filter_type or other conditions as needed
+        queryset = []
+
+    # Create a CSV response
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{filter_type}_records.csv"'
+
+    # Create a CSV writer and write the header row
+    writer = csv.writer(response)
+    header = ["Patient Unique No.", "Facility Name", "Age", "Age Unit", "Sex",
+              "Date of Collection", "Date of Receipt", "Date of Testing", "Dispatch Date", "CD4 Count",
+              "TB LAM Results", "Serum CRAG Results", "Justification", "Received Status", "Reason for Rejection",
+              "Reason for No Serum CRAG", "Testing Laboratory"]
+    writer.writerow(header)
+
+    # Write data rows based on the filtered queryset
+    for record in queryset:
+        data_row = [
+            record.patient_unique_no,
+            record.facility_name.name if record.facility_name else '',
+            record.age,
+            record.get_age_unit_display(),
+            record.get_sex_display(),
+            record.date_of_collection if record.date_of_collection else '',
+            record.date_sample_received if record.date_sample_received else '',
+            record.date_of_testing if record.date_of_testing else '',
+            record.date_dispatched if record.date_dispatched else '',
+            record.cd4_count_results if record.cd4_count_results else '',
+            record.tb_lam_results if record.tb_lam_results else '',
+            record.serum_crag_results if record.serum_crag_results else '',
+            record.justification if record.justification else '',
+            record.get_received_status_display(),
+            record.reason_for_rejection if record.reason_for_rejection else '',
+            record.reason_for_no_serum_crag if record.reason_for_no_serum_crag else '',
+            record.testing_laboratory.testing_lab_name if record.testing_laboratory else '',
+
+        ]
+        writer.writerow(data_row)
+
+    return response
 
 
 @login_required(login_url='login')
@@ -1287,72 +1385,69 @@ def show_results(request):
     rejected_df = pd.DataFrame()
     rejection_summary_df = pd.DataFrame()
     justification_summary_df = pd.DataFrame()
-    cd4_df = pd.DataFrame()
-    crag_df = pd.DataFrame()
+    show_cd4_testing_workload = False
+    show_crag_testing_workload = False
     crag_positivity_df = pd.DataFrame()
     tb_lam_positivity_df = pd.DataFrame()
     facility_positive_count = pd.DataFrame()
-    cd4_results = Cd4traker.objects.all()
 
-    qi_list = Cd4traker.objects.all().order_by('-date_dispatched')
+    cd4traker_qs = Cd4traker.objects.all().order_by('-date_dispatched')
     # Calculate TAT in days and annotate it in the queryset
-    queryset = qi_list.annotate(
+    queryset = cd4traker_qs.annotate(
         tat_days=ExpressionWrapper(
             Extract(F('date_dispatched') - F('date_of_collection'), 'day'),
             output_field=IntegerField()
         )
     )
     my_filters = Cd4trakerFilter(request.GET, queryset=queryset)
-    qi_lists = my_filters.qs
+    try:
+        if "filtered_queryset" in request.session:
+            del request.session['filtered_queryset']
 
-    ############################
-    # UPDATE COMMODITY SECTION #
-    ############################
+        # Serialize the filtered queryset to JSON and store it in the session
+        filtered_data_json = serializers.serialize('json', my_filters.qs)
+        request.session['filtered_queryset'] = filtered_data_json
+    except KeyError:
+        # Handles the case where the session key doesn't exist
+        pass
 
-    # # Calculate TAT and add it as a column to qi_lists
-    # for cd4_instance in qi_lists:
-    #     if cd4_instance.date_dispatched:
-    #         tat = cd4_instance.date_dispatched - cd4_instance.date_of_collection
-    #         cd4_instance.tat = tat.days  # Adding TAT in days to the instance
-    record_count_options = [("all", "All"),
-                            ] + [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50, 100, 250, 500, 750, 1000]]
+    record_count_options = [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50]] + [("all", "All"), ]
 
-    qi_list = pagination_(request, qi_lists, record_count)
+    qi_list = pagination_(request, my_filters.qs, record_count)
+
+    # Check if there records exists in filtered queryset
+    rejected_samples_exist = my_filters.qs.filter(received_status="Rejected").exists()
+    tb_lam_pos_samples_exist = my_filters.qs.filter(tb_lam_results="Positive").exists()
+    crag_pos_samples_exist = my_filters.qs.filter(serum_crag_results="Positive").exists()
+    missing_crag_samples_exist = my_filters.qs.filter(cd4_count_results__isnull=False,
+                                                      cd4_count_results__lte=200,
+                                                      serum_crag_results__isnull=True
+                                                      ).exists()
+    missing_tb_lam_samples_exist = my_filters.qs.filter(cd4_count_results__isnull=False,
+                                                        cd4_count_results__lte=200,
+                                                        tb_lam_results__isnull=True
+                                                        ).exists()
+
     ######################
     # Hide update button #
     ######################
     if qi_list:
         disable_update_buttons(request, qi_list, 'date_dispatched')
+    if my_filters.qs:
+        # fields to extract
+        fields = ['county__county_name', 'sub_county__sub_counties', 'testing_laboratory__testing_lab_name',
+                  'facility_name__name', 'facility_name__mfl_code', 'patient_unique_no', 'age', 'sex',
+                  'date_of_collection', 'date_of_testing', 'date_sample_received', 'date_dispatched', 'justification',
+                  'cd4_count_results',
+                  'date_serum_crag_results_entered', 'serum_crag_results', 'date_tb_lam_results_entered',
+                  'tb_lam_results', 'received_status', 'reason_for_rejection', 'tat_days', 'age_unit']
 
-    if qi_list:
-        list_of_projects = [
-            {'County': x.county.county_name,
-             'Sub-county': x.sub_county.sub_counties,
-             'Testing Laboratory': x.testing_laboratory.testing_lab_name,
-             'Facility': x.facility_name.name,
-             'MFL CODE': x.facility_name.mfl_code,
-             'CCC NO.': x.patient_unique_no,
-             'Age': x.age,
-             'Sex': x.sex,
-             'Collection Date': x.date_of_collection,
-             'Testing date': x.date_of_testing,
-             'Received date': x.date_of_testing,
-             'Date Dispatch': x.date_dispatched,
-             'Justification': x.justification,
-             'CD4 Count': x.cd4_count_results,
-             'Serum CRAG date': x.date_serum_crag_results_entered,
-             'Serum Crag': x.serum_crag_results,
-             'TB LAM date': x.date_tb_lam_results_entered,
-             'TB LAM': x.tb_lam_results,
-             'Received status': x.received_status,
-             'Rejection reason': x.reason_for_rejection,
-             'TAT': x.tat_days,
-             'age_unit': x.age_unit,
-             } for x in qi_lists
-        ]
+        # Extract the data from the queryset using values()
+        data = my_filters.qs.values(*fields)
 
         age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
-        crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac = generate_results_df(list_of_projects)
+            crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac, show_cd4_testing_workload,\
+            show_crag_testing_workload = generate_results_df(data)
         ###################################
         # AGE AND SEX CHART
         ###################################
@@ -1422,16 +1517,22 @@ def show_results(request):
         ###################################
         # Weekly TAT Trend viz
         ###################################
-        melted_tat_df = calculate_weekly_tat(list_of_projects_fac.copy())
+        melted_tat_df, mean_c_r, mean_c_d = calculate_weekly_tat(list_of_projects_fac.copy())
         if melted_tat_df.shape[0] > 1:
             melted_tat_df = melted_tat_df.head(52)
             weekly_tat_trend_fig = line_chart_median_mean(melted_tat_df, "Weekly Trend", "Weekly mean TAT",
                                                           f"Weekly Collection to Dispatch vs Collection to Receipt Mean "
-                                                          f"TAT Trend  N={list_of_projects_fac.shape[0]}",
+                                                          f"TAT Trend  (C-D TAT = {mean_c_d}, C-R TAT = {mean_c_r})",
                                                           color="TAT type"
                                                           )
+    try:
+        if "list_of_projects_fac" in request.session:
+            del request.session['list_of_projects_fac']
+        request.session['list_of_projects_fac'] = list_of_projects_fac.to_dict()
+    except KeyError:
+        # Handle the case where the session key doesn't exist
+        pass
 
-    request.session['list_of_projects_fac'] = list_of_projects_fac.to_dict()
     dataframes = [
         (missing_df, 'missing_df'),
         (missing_tb_lam_df, 'missing_tb_lam_df'),
@@ -1451,24 +1552,21 @@ def show_results(request):
 
     # Convert dict_items into a list
     dictionary = get_key_from_session_names(request)
-    # list_of_projects_fac['Facility'] = list_of_projects_fac['facility'].astype(str).str.split(" ").str[0]
     context = {
-        "title": "Results", "record_count_options": record_count_options,
-        "cd4_results": cd4_results, "record_count": record_count,
-        "dictionary": dictionary,
-        "my_filters": my_filters, "qi_list": qi_list, "qi_lists": qi_lists,
-        "cd4_summary_fig": cd4_summary_fig,
-        "crag_testing_lab_fig": crag_testing_lab_fig, "weekly_trend_fig": weekly_trend_fig,
-        "cd4_testing_lab_fig": cd4_testing_lab_fig,
-        "age_distribution_fig": age_distribution_fig,
-        "rejection_summary_fig": rejection_summary_fig, "justification_summary_fig": justification_summary_fig,
-        "crag_positivity_fig": crag_positivity_fig, "justification_summary_df": justification_summary_df,
-        "facility_crag_positive_fig": facility_crag_positive_fig, "rejection_summary_df": rejection_summary_df,
-        "cd4_df": cd4_df, "crag_df": crag_df, "crag_positivity_df": crag_positivity_df,
-        "facility_positive_count": facility_positive_count, "tb_lam_positivity_fig": tb_lam_positivity_fig,
+        "title": "Results", "record_count_options": record_count_options,"record_count": record_count,
+        "rejected_samples_exist": rejected_samples_exist,"tb_lam_pos_samples_exist": tb_lam_pos_samples_exist,
+        "crag_pos_samples_exist": crag_pos_samples_exist,"missing_crag_samples_exist": missing_crag_samples_exist,
+        "missing_tb_lam_samples_exist": missing_tb_lam_samples_exist,"dictionary": dictionary,"my_filters": my_filters,
+        "qi_list": qi_list,"cd4_summary_fig": cd4_summary_fig,"crag_testing_lab_fig": crag_testing_lab_fig,
+        "weekly_trend_fig": weekly_trend_fig,"cd4_testing_lab_fig": cd4_testing_lab_fig,
+        "age_distribution_fig": age_distribution_fig,"rejection_summary_fig": rejection_summary_fig,
+        "justification_summary_fig": justification_summary_fig,"crag_positivity_fig": crag_positivity_fig,
+        "justification_summary_df": justification_summary_df,"facility_crag_positive_fig": facility_crag_positive_fig,
+        "rejection_summary_df": rejection_summary_df,"show_cd4_testing_workload": show_cd4_testing_workload ,
+        "show_crag_testing_workload": show_crag_testing_workload,"crag_positivity_df": crag_positivity_df,
+        "facility_positive_count": facility_positive_count,"tb_lam_positivity_fig": tb_lam_positivity_fig,
         "tb_lam_positivity_df": tb_lam_positivity_df, "weekly_df": weekly_df,
-        "weekly_tat_trend_fig": weekly_tat_trend_fig,
-        "facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
+        "weekly_tat_trend_fig": weekly_tat_trend_fig,"facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
     }
     return render(request, 'lab_pulse/show results.html', context)
 

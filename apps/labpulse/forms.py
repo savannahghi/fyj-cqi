@@ -7,9 +7,14 @@ from apps.labpulse.models import Cd4traker, Cd4TestingLabs, Commodities, LabPuls
 
 
 class Cd4trakerForm(ModelForm):
-    facility_name = forms.ModelChoiceField(
-        queryset=Facilities.objects.all(),
-        empty_label="Select facility",
+    # facility_name = forms.ModelChoiceField(
+    #     queryset=Facilities.objects.all(),
+    #     empty_label="Select facility",
+    #     widget=forms.Select(attrs={'class': 'form-control select2'}),
+    # )
+    facility_name = forms.ChoiceField(
+        choices=[],
+        required=True,
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
     date_of_collection = forms.DateField(
@@ -27,6 +32,7 @@ class Cd4trakerForm(ModelForm):
     )
     age_unit = forms.ChoiceField(choices=Cd4traker.AGE_UNIT_CHOICES, widget=forms.Select(
         attrs={'class': 'form-control'}))
+
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)  # Pop the 'user' argument from kwargs
         super(Cd4trakerForm, self).__init__(*args, **kwargs)
@@ -36,9 +42,31 @@ class Cd4trakerForm(ModelForm):
                 if field_name != 'tb_lam_results':  # Allow editing only for the 'tb_lam' field
                     self.fields[field_name].disabled = True
 
+        # Populate the choices for the facility_name field
+        facilities = Facilities.objects.all()  # Fetch all Facilities objects from the database
+        # Create a list of choices for the facility_name field
+        # Prepend an empty choice for the initial, empty label ("Select facility")
+        self.fields['facility_name'].choices = [('', 'Select facility')] + [
+            # Generate a tuple for each facility with its primary key as the value
+            # and a display string combining name and MFL code
+            (str(facility.pk), f"{facility.name} ({facility.mfl_code})") for facility in facilities]
+
+    def clean(self):
+        cleaned_data = super().clean()  # Get the cleaned data from the form
+        facility_id = cleaned_data.get('facility_name')  # Get the selected facility's ID
+
+        try:
+            facility = Facilities.objects.get(pk=facility_id)  # Retrieve the selected Facilities instance
+            cleaned_data['facility_name'] = facility  # Set the actual Facilities instance
+        except Facilities.DoesNotExist:
+            # Raise a validation error if the selected facility does not exist
+            raise forms.ValidationError("Invalid facility selected")
+
+        return cleaned_data  # Return the cleaned data after validation
+
     class Meta:
         model = Cd4traker
-        exclude = ['created_by', 'modified_by', 'date_dispatched', 'date_updated', 'testing_laboratory','report_type']
+        exclude = ['created_by', 'modified_by', 'date_dispatched', 'date_updated', 'testing_laboratory', 'report_type']
         labels = {
             'cd4_count_results': 'CD4 count results',
             'serum_crag_results': 'Serum CrAg Results',
@@ -78,6 +106,8 @@ class Cd4TestingLabsForm(forms.Form):
         empty_label="Select Testing Lab ...",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
+
 class facilities_lab_Form(forms.Form):
     facility_name = forms.ModelChoiceField(
         queryset=Facilities.objects.all(),
@@ -85,6 +115,7 @@ class facilities_lab_Form(forms.Form):
         empty_label="Select Testing Lab ...",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
 
 class Cd4TestingLabForm(ModelForm):
     class Meta:
@@ -108,6 +139,7 @@ class LabPulseUpdateButtonSettingsForm(forms.ModelForm):
         if hide_button_time.hour < 17:
             raise forms.ValidationError("The hide button time must be after 5pm.")
         return hide_button_time
+
 
 class Cd4trakerManualDispatchForm(ModelForm):
     facility_name = forms.ModelChoiceField(
@@ -136,7 +168,7 @@ class Cd4trakerManualDispatchForm(ModelForm):
 
     class Meta:
         model = Cd4traker
-        exclude = ['created_by', 'modified_by', 'date_updated', 'testing_laboratory','report_type']
+        exclude = ['created_by', 'modified_by', 'date_updated', 'testing_laboratory', 'report_type']
         labels = {
             'cd4_count_results': 'CD4 count results',
             'serum_crag_results': 'Serum CrAg Results',
@@ -144,6 +176,7 @@ class Cd4trakerManualDispatchForm(ModelForm):
             'cd4_percentage': 'CD4 % values',
             'tb_lam_results': 'TB LAM results',
         }
+
 
 class CommoditiesForm(ModelForm):
     date_commodity_received = forms.DateField(
@@ -158,7 +191,7 @@ class CommoditiesForm(ModelForm):
 
     class Meta:
         model = Commodities
-        exclude = ['created_by', 'modified_by', 'date_modified', 'date_created','facility_name']
+        exclude = ['created_by', 'modified_by', 'date_modified', 'date_created', 'facility_name']
         labels = {
             'number_received': 'Number of Reagents Received',
             'type_of_reagent': 'Type Of Reagent',
@@ -166,6 +199,8 @@ class CommoditiesForm(ModelForm):
             'negative_adjustment': 'Negative Adjustment',
             'positive_adjustment': 'Positive Adjustment',
         }
+
+
 class ReagentStockForm(ModelForm):
     date_commodity_received = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
@@ -179,7 +214,7 @@ class ReagentStockForm(ModelForm):
 
     class Meta:
         model = ReagentStock
-        exclude = ['created_by', 'modified_by', 'date_modified', 'date_created','facility_name','quantity_used',
+        exclude = ['created_by', 'modified_by', 'date_modified', 'date_created', 'facility_name', 'quantity_used',
                    'remaining_quantity']
         labels = {
             'number_received': 'Number of Reagents Received',
@@ -188,4 +223,3 @@ class ReagentStockForm(ModelForm):
             'negative_adjustment': 'Negative Adjustment',
             'positive_adjustment': 'Positive Adjustment',
         }
-

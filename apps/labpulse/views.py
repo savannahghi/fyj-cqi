@@ -961,7 +961,7 @@ def calculate_positivity_rate(df, column_name, title):
 
 def line_chart_median_mean(df, x_axis, y_axis, title, color=None):
     df = df.copy()
-    df = df.head(52)
+    df = df.tail(52)
     mean_sample_tested = sum(df[y_axis]) / len(df[y_axis])
     median_sample_tested = df[y_axis].median()
 

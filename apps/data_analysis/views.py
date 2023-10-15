@@ -1510,8 +1510,6 @@ def missing_fcdrr(program_facilities, total_fmaps):
         (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'].isnull())
         | (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'] == 0)]
     no_fcdrr_copy = no_fcdrr.copy()
-    print("no_fcdrr_copy::::::::::::::::::::::::::::::::::::::::::::::::::")
-    print(no_fcdrr_copy['facility'].unique())
     no_fcdrr = no_fcdrr.groupby(['facility', 'MFL Code', 'month/year']).count()[
         'Facility - CDRR Revision 2019 Reporting rate on time (%)'].reset_index()
 
@@ -2365,8 +2363,6 @@ def calculate_justification_resuppression_rate(resuppression_status):
     facility_resuppression_status['Total repeat VL tests'] = facility_resuppression_status.get('LLV', 0) + \
                                                              facility_resuppression_status.get('STF (HVL)', 0) + \
                                                              facility_resuppression_status.get('re-suppressed', 0)
-    print("facility_resuppression_status:::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-    print(facility_resuppression_status)
     try:
         facility_resuppression_status["Resuppression rate %"] = round(
             facility_resuppression_status['re-suppressed'] / facility_resuppression_status['Total repeat VL tests'] * 100,

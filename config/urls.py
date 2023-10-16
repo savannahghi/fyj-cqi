@@ -17,11 +17,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 
-from django.urls import path,include
+from django.urls import path, include
 from django_select2 import urls as django_select2_urls
+from django.contrib.staticfiles.storage import staticfiles_storage
+from django.views.generic.base import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # https://stackoverflow.com/a/57042608
+    path('favicon.ico', RedirectView.as_view(url=staticfiles_storage.url('images/favicon.ico'))),
     path('', include('apps.cqi.urls')),
     path('', include('apps.account.urls')),
     path('', include('apps.dqa.urls')),

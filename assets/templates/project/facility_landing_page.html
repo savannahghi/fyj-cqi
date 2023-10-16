@@ -128,28 +128,56 @@
                         </div>
                     </form>
                     <!-- Display the pagination links -->
-                    <div class="col-md-2 mt-3">
+                    <div class="mt-3">
                         {% if qi_list.has_other_pages %}
                             <ul class="pagination justify-content-end">
                                 {% if qi_list.has_previous %}
-                                    <li class="page-item"><a class="page-link"
-                                                             href="?page={{ qi_list.previous_page_number }}">Prev</a>
+                                    <!-- request.GET.urlencode ensure that the filter parameters are preserved when navigating to another page.-->
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                           href="?{{ request.GET.urlencode }}&page={{ qi_list.previous_page_number }}">
+                                            Prev</a>
                                     </li>
-                                {% else %}
-                                    <li class="disabled"><span class="page-link">Prev</span></li>
                                 {% endif %}
+
+                                <!-- Display the first page -->
+                                {% if qi_list.number > 3 %}
+                                    <li class="page-item"><a class="page-link"
+                                                             href="?{{ request.GET.urlencode }}&page=1">1</a>
+                                    </li>
+                                {% endif %}
+                                <!-- Display ellipsis if there are middle pages -->
+                                {% if qi_list.number > 4 %}
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
+                                <!-- Display pages around the current page -->
                                 {% for i in qi_list.paginator.page_range %}
-                                    {% if qi_list.number == i %}
-                                        <li class="page-item active"><span class="page-link">{{ i }} <span
-                                                class="sr-only">(current)</span></span></li>
-                                    {% else %}
-                                        <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a>
-                                        </li>
+                                    {% if i > qi_list.number|add:-3 and i < qi_list.number|add:3 %}
+                                        {% if qi_list.number == i %}
+                                            <li class="page-item active"><span class="page-link">{{ i }} <span
+                                                    class="sr-only">(current)</span></span></li>
+                                        {% else %}
+                                            <li class="page-item"><a class="page-link"
+                                                                     href="?{{ request.GET.urlencode }}&page={{ i }}">{{ i }}</a>
+                                            </li>
+                                        {% endif %}
                                     {% endif %}
                                 {% endfor %}
+                                <!-- Display ellipsis if there are middle pages -->
+                                {% if qi_list.number < qi_list.paginator.num_pages|add:-3 %}
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
+                                <!-- Display the last page -->
+                                {% if qi_list.number|add:2 < qi_list.paginator.num_pages %}
+                                    <li class="page-item"><a class="page-link"
+                                                             href="?{{ request.GET.urlencode }}&page={{ qi_list.paginator.num_pages }}">{{ qi_list.paginator.num_pages }}</a>
+                                    </li>
+                                {% endif %}
+
                                 {% if qi_list.has_next %}
                                     <li class="page-item"><a class="page-link"
-                                                             href="?page={{ qi_list.next_page_number }}">Next</a></li>
+                                                             href="?{{ request.GET.urlencode }}&page={{ qi_list.next_page_number }}">Next</a>
+                                    </li>
                                 {% else %}
                                     <li class="disabled page-item"><span class="page-link">Next</span></li>
                                 {% endif %}
@@ -158,267 +186,294 @@
                     </div>
                 </div>
                 <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
-                {% if search %}
-                    <div class="alert alert-primary col-12" role="alert">
-                        <h6>Search returned {{ qi_list|length }} ongoing QI projects</h6>
-                    </div>
-                    {% for qi in search %}
-                        <div class="col-md-12">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h6 class="card-title"> {{ forloop.counter }}. {{ qi.project_title }}</h6>
-                                    <ul>
-                                        {% if "facility" in project_type %}
-                                            <li><strong>Facility :</strong> <a
-                                                    href="{% url 'facility_project' pk=qi.facility_name.id project_type="facility" %}">{{ qi.facility_name.name }}</a>
-                                            </li>
-                                        {% elif "program" in project_type %}
-                                            <li><strong>Program :</strong> <a
-                                                    href="{% url 'facility_project' pk=qi.program.id project_type="program" %}">{{ qi.program.program }}</a>
-                                            </li>
-                                        {% elif project_type == "county" %}
-                                            <li><strong>County :</strong> <a
-                                                    href="{% url 'facility_project' pk=qi.county.id project_type="county" %}">{{ qi.county.county_name }}</a>
-                                            </li>
-                                        {% elif project_type == "subcounty" %}
-                                            <li><strong>Subcounty :</strong> <a
-                                                    href="{% url 'facility_project' pk=qi.sub_county.id project_type="subcounty" %}">{{ qi.sub_county.sub_counties }}</a>
-                                            </li>
-                                        {% elif "hub" in project_type %}
-                                            <li><strong>Hub :</strong> <a
-                                                    href="{% url 'facility_project' pk=qi.hub.id project_type="hub" %}">{{ qi.hub.hub }}</a>
-                                            </li>
-                                        {% endif %}
-                                        <li>Problem background : {{ qi.problem_background }} </li>
-                                        <li>Objective : {{ qi.objective }} </li>
-                                        <li>Setting : {{ qi.settings }} </li>
-                                        <li>Department : {{ qi.departments.department }} </li>
-                                        <li>Measurement Frequency : <a
-                                                href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a>
-                                        </li>
-                                        <li>Created by : {{ qi.created_by }} </li>
-                                        {% if qi.comments %}
-                                            <li>Comment (s) : {{ qi.comments }} </li>
-                                        {% endif %}
-                                    </ul>
-                                    <div class="d-flex justify-content-evenly">
-                                        {% if qi.measurement_status == "Canceled" %}
-                                            <a href="{% url 'canceled_projects' qi.measurement_status %}"
-                                               class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
-                                        {% elif qi.measurement_status == "Completed-or-Closed" %}
-                                            {% if qi.facility_name %}
-                                                <a href="{% url 'completed_closed' qi.measurement_status %}"
-                                                   class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
-                                            {% elif qi.sub_county %}
-                                                <a href="{% url 'completed_closed_subcounty' qi.measurement_status %}"
-                                                   class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
-                                            {% elif qi.county %}
-                                                <a href="{% url 'completed_closed_county' qi.measurement_status %}"
-                                                   class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
-                                            {% elif qi.program %}
-                                                <a href="{% url 'completed_closed_program' qi.measurement_status %}"
-                                                   class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
-                                            {% elif qi.hub %}
-                                                <a href="{% url 'completed_closed_hub' qi.measurement_status %}"
-                                                   class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
-                                            {% endif %}
-                                        {% else %}
-                                            <a href="{% url 'ongoing' qi.measurement_status %}"
-                                               class="btn btn-success">STATUS: {{ qi.measurement_status }}</a>
-                                        {% endif %}
-                                        {#                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>#}
-                                        <button>Last updated on {{ qi.date_updated }}</button>
-                                        {% if "facility" in project_type %}
-                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View
-                                                QI project</a>
-                                        {% elif "program" in project_type %}
-                                            <a href="{% url 'single_project_program' qi.id %}"
-                                               class="btn btn-secondary">View QI project</a>
-                                        {% elif project_type == "county" %}
-                                            <a href="{% url 'single_project_county' qi.id %}"
-                                               class="btn btn-secondary">View QI project</a>
-                                        {% elif project_type == "subcounty" %}
-                                            <a href="{% url 'single_project_subcounty' qi.id %}"
-                                               class="btn btn-secondary">View QI project</a>
-                                        {% elif "hub" in project_type %}
-                                            <a href="{% url 'single_project_hub' qi.id %}"
-                                               class="btn btn-secondary">View QI project</a>
-                                        {% endif %}
-                                        {% if qi.id not in tracked_projects %}
-                                            {% if "facility" in project_type %}
-                                                <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED
-                                                    QI PROJECT</a>
-                                            {% elif "program" in project_type %}
-                                                <a href="{% url 'single_project_program' qi.id %}"
-                                                   class="btn btn-danger">UNTRACKED QI PROJECT</a>
-                                            {% elif "county" in project_type %}
-                                                <a href="{% url 'single_project_county' qi.id %}"
-                                                   class="btn btn-danger">UNTRACKED QI PROJECT</a>
-                                            {% elif "subcounty" in project_type %}
-                                                <a href="{% url 'single_project_subcounty' qi.id %}"
-                                                   class="btn btn-danger">UNTRACKED QI PROJECT</a>
-                                            {% elif "hub" in project_type %}
-                                                <a href="{% url 'single_project_hub' qi.id %}"
-                                                   class="btn btn-danger">UNTRACKED QI PROJECT</a>
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
+                    {% if search %}
+                        <div class="alert alert-primary col-12" role="alert">
+                            <h6>Search returned {{ qi_list|length }} ongoing QI projects</h6>
                         </div>
-                    {% endfor %}
-                {% else %}
-                    {% if tracked_projects %}
-                        <a href="{% url 'untracked_projects' project_type %}" class="btn btn-danger">UNTRACKED QI
-                            PROJECTS</a>
-                    {% endif %}
-                    </div>
-
-                    {% for qi in qi_list %}
-
-                        {% if qi.id not in archived_projects %}
-                            <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
-                                <div class="col-md-12">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <h6 class="card-title"> {{ qi.project_title }}</h6>
-
-                                            <ul>
-                                                {% if "facility" in project_type %}
-                                                    <li><strong>Facility :</strong> <a
-                                                            href="{% url 'facility_project' pk=qi.facility_name.id project_type="facility" %}">{{ qi.facility_name.name }}</a>
-                                                    </li>
-                                                {% elif "program" in project_type %}
-                                                    <li><strong>Program :</strong> <a
-                                                            href="{% url 'facility_project' pk=qi.program.id project_type="program" %}">{{ qi.program.program }}</a>
-                                                    </li>
-                                                {% elif project_type == "county" %}
-                                                    <li><strong>County :</strong> <a
-                                                            href="{% url 'facility_project' pk=qi.county.id project_type="county" %}">{{ qi.county.county_name }}</a>
-                                                    </li>
-                                                {% elif project_type == "subcounty" %}
-                                                    <li><strong>Subcounty :</strong> <a
-                                                            href="{% url 'facility_project' pk=qi.sub_county.id project_type="subcounty" %}">{{ qi.sub_county.sub_counties }}</a>
-                                                    </li>
-                                                {% elif "hub" in project_type %}
-                                                    <li><strong>Hub :</strong> <a
-                                                            href="{% url 'facility_project' pk=qi.hub.id project_type="hub" %}">{{ qi.hub.hub }}</a>
-                                                    </li>
-                                                {% endif %}
-                                                <li>Problem background : {{ qi.problem_background }} </li>
-                                                <li>Objective : {{ qi.objective }} </li>
-                                                <li>Setting : {{ qi.settings }} </li>
-                                                <li>Department : <a
-                                                        href="{% url 'department_project' qi.departments.id %} ">{{ qi.departments.department }}</a>
+                        {% for qi in search %}
+                            <div class="col-md-12">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title"> {{ forloop.counter }}. {{ qi.project_title }}</h6>
+                                        <ul>
+                                            {% if "facility" in project_type %}
+                                                <li><strong>Facility :</strong> <a
+                                                        href="{% url 'facility_project' pk=qi.facility_name.id project_type="facility" %}">{{ qi.facility_name.name }}</a>
                                                 </li>
-                                                <li>Measurement Frequency : <a
-                                                        href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a>
+                                            {% elif "program" in project_type %}
+                                                <li><strong>Program :</strong> <a
+                                                        href="{% url 'facility_project' pk=qi.program.id project_type="program" %}">{{ qi.program.program }}</a>
                                                 </li>
-                                                <li>Created by :
-                                                    <a href="{% url 'qi_creators' qi.created_by.id %}">
-                                                        {{ qi.created_by.first_name|title }} {{ qi.created_by.last_name|title }}
-                                                    </a>
+                                            {% elif project_type == "county" %}
+                                                <li><strong>County :</strong> <a
+                                                        href="{% url 'facility_project' pk=qi.county.id project_type="county" %}">{{ qi.county.county_name }}</a>
                                                 </li>
-                                                <li>QI manager : <a
-                                                        href="{% url 'qi_managers_projects' qi.qi_manager.id %}">{{ qi.qi_manager }}</a>
+                                            {% elif project_type == "subcounty" %}
+                                                <li><strong>Subcounty :</strong> <a
+                                                        href="{% url 'facility_project' pk=qi.sub_county.id project_type="subcounty" %}">{{ qi.sub_county.sub_counties }}</a>
                                                 </li>
-                                                {% if qi.comments %}
-                                                    <li>Comment (s) : {{ qi.comments }}</li>
-                                                {% endif %}
-                                            </ul>
-                                            <div class="d-flex justify-content-evenly">
-
-                                                {% if qi.measurement_status == "Canceled" %}
-                                                    <a href="{% url 'canceled_projects' qi.measurement_status %}"
-                                                       class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
-                                                {% elif qi.measurement_status == "Completed-or-Closed" %}
+                                            {% elif "hub" in project_type %}
+                                                <li><strong>Hub :</strong> <a
+                                                        href="{% url 'facility_project' pk=qi.hub.id project_type="hub" %}">{{ qi.hub.hub }}</a>
+                                                </li>
+                                            {% endif %}
+                                            <li>Problem background : {{ qi.problem_background }} </li>
+                                            <li>Objective : {{ qi.objective }} </li>
+                                            <li>Setting : {{ qi.settings }} </li>
+                                            <li>Department : {{ qi.departments.department }} </li>
+                                            <li>Measurement Frequency : <a
+                                                    href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a>
+                                            </li>
+                                            <li>Created by : {{ qi.created_by }} </li>
+                                            {% if qi.comments %}
+                                                <li>Comment (s) : {{ qi.comments }} </li>
+                                            {% endif %}
+                                        </ul>
+                                        <div class="d-flex justify-content-evenly">
+                                            {% if qi.measurement_status == "Canceled" %}
+                                                <a href="{% url 'canceled_projects' qi.measurement_status %}"
+                                                   class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
+                                            {% elif qi.measurement_status == "Completed-or-Closed" %}
+                                                {% if qi.facility_name %}
                                                     <a href="{% url 'completed_closed' qi.measurement_status %}"
                                                        class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
-                                                {% elif qi.measurement_status == "Postponed" %}
-                                                    <a href="{% url 'postponed' qi.measurement_status %}"
-                                                       class="btn btn-info">STATUS: {{ qi.measurement_status }}</a>
-
-                                                {% elif qi.measurement_status == 'Not started' %}
-                                                    <a href="{% url 'not_started' qi.measurement_status %}"
-                                                       class="btn btn-info">STATUS: {{ qi.measurement_status }}</a>
-                                                {% else %}
-                                                    <a href="{% url 'ongoing' qi.measurement_status %}"
-                                                       class="btn btn-success">Ongoing</a>
+                                                {% elif qi.sub_county %}
+                                                    <a href="{% url 'completed_closed_subcounty' qi.measurement_status %}"
+                                                       class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                                                {% elif qi.county %}
+                                                    <a href="{% url 'completed_closed_county' qi.measurement_status %}"
+                                                       class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                                                {% elif qi.program %}
+                                                    <a href="{% url 'completed_closed_program' qi.measurement_status %}"
+                                                       class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                                                {% elif qi.hub %}
+                                                    <a href="{% url 'completed_closed_hub' qi.measurement_status %}"
+                                                       class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
                                                 {% endif %}
-                                                <button class="btn btn-info"> Last updated
-                                                    on {{ qi.date_updated|date }} </button>
+                                            {% else %}
+                                                <a href="{% url 'ongoing' qi.measurement_status %}"
+                                                   class="btn btn-success">STATUS: {{ qi.measurement_status }}</a>
+                                            {% endif %}
+                                            {#                      <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>#}
+                                            <button>Last updated on {{ qi.date_updated }}</button>
+                                            {% if "facility" in project_type %}
+                                                <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View
+                                                    QI project</a>
+                                            {% elif "program" in project_type %}
+                                                <a href="{% url 'single_project_program' qi.id %}"
+                                                   class="btn btn-secondary">View QI project</a>
+                                            {% elif project_type == "county" %}
+                                                <a href="{% url 'single_project_county' qi.id %}"
+                                                   class="btn btn-secondary">View QI project</a>
+                                            {% elif project_type == "subcounty" %}
+                                                <a href="{% url 'single_project_subcounty' qi.id %}"
+                                                   class="btn btn-secondary">View QI project</a>
+                                            {% elif "hub" in project_type %}
+                                                <a href="{% url 'single_project_hub' qi.id %}"
+                                                   class="btn btn-secondary">View QI project</a>
+                                            {% endif %}
+                                            {% if qi.id not in tracked_projects %}
                                                 {% if "facility" in project_type %}
-                                                    <a href="{% url 'single_project' qi.id %}"
-                                                       class="btn btn-secondary">View QI project</a>
+                                                    <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED
+                                                        QI PROJECT</a>
                                                 {% elif "program" in project_type %}
                                                     <a href="{% url 'single_project_program' qi.id %}"
-                                                       class="btn btn-secondary">View QI project</a>
-                                                {% elif project_type == "county" %}
+                                                       class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                                                {% elif "county" in project_type %}
                                                     <a href="{% url 'single_project_county' qi.id %}"
-                                                       class="btn btn-secondary">View QI project</a>
-                                                {% elif project_type == "subcounty" %}
+                                                       class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                                                {% elif "subcounty" in project_type %}
                                                     <a href="{% url 'single_project_subcounty' qi.id %}"
-                                                       class="btn btn-secondary">View QI project</a>
+                                                       class="btn btn-danger">UNTRACKED QI PROJECT</a>
                                                 {% elif "hub" in project_type %}
                                                     <a href="{% url 'single_project_hub' qi.id %}"
-                                                       class="btn btn-secondary">View QI project</a>
+                                                       class="btn btn-danger">UNTRACKED QI PROJECT</a>
                                                 {% endif %}
-                                                {% if qi.id not in tracked_projects %}
-                                                    {% if "facility" in project_type %}
-                                                        <a href="{% url 'single_project' qi.id %}"
-                                                           class="btn btn-danger">UNTRACKED QI PROJECT</a>
-                                                    {% elif "program" in project_type %}
-                                                        <a href="{% url 'single_project_program' qi.id %}"
-                                                           class="btn btn-danger">UNTRACKED QI PROJECT</a>
-                                                    {% elif project_type == "county" %}
-                                                        <a href="{% url 'single_project_county' qi.id %}"
-                                                           class="btn btn-danger">UNTRACKED QI PROJECT</a>
-                                                    {% elif project_type == "subcounty" %}
-                                                        <a href="{% url 'single_project_subcounty' qi.id %}"
-                                                           class="btn btn-danger">UNTRACKED QI PROJECT</a>
-                                                    {% elif "hub" in project_type %}
-                                                        <a href="{% url 'single_project_hub' qi.id %}"
-                                                           class="btn btn-danger">UNTRACKED QI PROJECT</a>
-                                                    {% endif %}
-                                                {% endif %}
-                                            </div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                        {% endfor %}
+                    {% else %}
+                        {% if tracked_projects %}
+                            <a href="{% url 'untracked_projects' project_type %}" class="btn btn-danger">UNTRACKED QI
+                                PROJECTS</a>
                         {% endif %}
-                    {% endfor %}
-                    <!-- Display the pagination links -->
-                    <div class="mt-3">
-                        {% if qi_list.has_other_pages %}
-                            <ul class="pagination justify-content-end">
-                                {% if qi_list.has_previous %}
-                                    <li class="page-item"><a class="page-link"
-                                                             href="?page={{ qi_list.previous_page_number }}">Prev</a>
-                                    </li>
-                                {% else %}
-                                    <li class="disabled"><span class="page-link">Prev</span></li>
-                                {% endif %}
-                                {% for i in qi_list.paginator.page_range %}
-                                    {% if qi_list.number == i %}
-                                        <li class="page-item active"><span class="page-link">{{ i }} <span
-                                                class="sr-only">(current)</span></span></li>
-                                    {% else %}
-                                        <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a>
+                        </div>
+
+                        {% for qi in qi_list %}
+
+                            {% if qi.id not in archived_projects %}
+                                <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+                                    <div class="col-md-12">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <h6 class="card-title"> {{ qi.project_title }}</h6>
+
+                                                <ul>
+                                                    {% if "facility" in project_type %}
+                                                        <li><strong>Facility :</strong> <a
+                                                                href="{% url 'facility_project' pk=qi.facility_name.id project_type="facility" %}">{{ qi.facility_name.name }}</a>
+                                                        </li>
+                                                    {% elif "program" in project_type %}
+                                                        <li><strong>Program :</strong> <a
+                                                                href="{% url 'facility_project' pk=qi.program.id project_type="program" %}">{{ qi.program.program }}</a>
+                                                        </li>
+                                                    {% elif project_type == "county" %}
+                                                        <li><strong>County :</strong> <a
+                                                                href="{% url 'facility_project' pk=qi.county.id project_type="county" %}">{{ qi.county.county_name }}</a>
+                                                        </li>
+                                                    {% elif project_type == "subcounty" %}
+                                                        <li><strong>Subcounty :</strong> <a
+                                                                href="{% url 'facility_project' pk=qi.sub_county.id project_type="subcounty" %}">{{ qi.sub_county.sub_counties }}</a>
+                                                        </li>
+                                                    {% elif "hub" in project_type %}
+                                                        <li><strong>Hub :</strong> <a
+                                                                href="{% url 'facility_project' pk=qi.hub.id project_type="hub" %}">{{ qi.hub.hub }}</a>
+                                                        </li>
+                                                    {% endif %}
+                                                    <li>Problem background : {{ qi.problem_background }} </li>
+                                                    <li>Objective : {{ qi.objective }} </li>
+                                                    <li>Setting : {{ qi.settings }} </li>
+                                                    <li>Department : <a
+                                                            href="{% url 'department_project' qi.departments.id %} ">{{ qi.departments.department }}</a>
+                                                    </li>
+                                                    <li>Measurement Frequency : <a
+                                                            href="{% url 'measurement_frequency' qi.measurement_frequency %}">{{ qi.measurement_frequency }}</a>
+                                                    </li>
+                                                    <li>Created by :
+                                                        <a href="{% url 'qi_creators' qi.created_by.id %}">
+                                                            {{ qi.created_by.first_name|title }} {{ qi.created_by.last_name|title }}
+                                                        </a>
+                                                    </li>
+                                                    <li>QI manager : <a
+                                                            href="{% url 'qi_managers_projects' qi.qi_manager.id %}">{{ qi.qi_manager }}</a>
+                                                    </li>
+                                                    {% if qi.comments %}
+                                                        <li>Comment (s) : {{ qi.comments }}</li>
+                                                    {% endif %}
+                                                </ul>
+                                                <div class="d-flex justify-content-evenly">
+
+                                                    {% if qi.measurement_status == "Canceled" %}
+                                                        <a href="{% url 'canceled_projects' qi.measurement_status %}"
+                                                           class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
+                                                    {% elif qi.measurement_status == "Completed-or-Closed" %}
+                                                        <a href="{% url 'completed_closed' qi.measurement_status %}"
+                                                           class="btn btn-danger">STATUS: {{ qi.measurement_status }}</a>
+                                                    {% elif qi.measurement_status == "Postponed" %}
+                                                        <a href="{% url 'postponed' qi.measurement_status %}"
+                                                           class="btn btn-info">STATUS: {{ qi.measurement_status }}</a>
+
+                                                    {% elif qi.measurement_status == 'Not started' %}
+                                                        <a href="{% url 'not_started' qi.measurement_status %}"
+                                                           class="btn btn-info">STATUS: {{ qi.measurement_status }}</a>
+                                                    {% else %}
+                                                        <a href="{% url 'ongoing' qi.measurement_status %}"
+                                                           class="btn btn-success">Ongoing</a>
+                                                    {% endif %}
+                                                    <button class="btn btn-info"> Last updated
+                                                        on {{ qi.date_updated|date }} </button>
+                                                    {% if "facility" in project_type %}
+                                                        <a href="{% url 'single_project' qi.id %}"
+                                                           class="btn btn-secondary">View QI project</a>
+                                                    {% elif "program" in project_type %}
+                                                        <a href="{% url 'single_project_program' qi.id %}"
+                                                           class="btn btn-secondary">View QI project</a>
+                                                    {% elif project_type == "county" %}
+                                                        <a href="{% url 'single_project_county' qi.id %}"
+                                                           class="btn btn-secondary">View QI project</a>
+                                                    {% elif project_type == "subcounty" %}
+                                                        <a href="{% url 'single_project_subcounty' qi.id %}"
+                                                           class="btn btn-secondary">View QI project</a>
+                                                    {% elif "hub" in project_type %}
+                                                        <a href="{% url 'single_project_hub' qi.id %}"
+                                                           class="btn btn-secondary">View QI project</a>
+                                                    {% endif %}
+                                                    {% if qi.id not in tracked_projects %}
+                                                        {% if "facility" in project_type %}
+                                                            <a href="{% url 'single_project' qi.id %}"
+                                                               class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                                                        {% elif "program" in project_type %}
+                                                            <a href="{% url 'single_project_program' qi.id %}"
+                                                               class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                                                        {% elif project_type == "county" %}
+                                                            <a href="{% url 'single_project_county' qi.id %}"
+                                                               class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                                                        {% elif project_type == "subcounty" %}
+                                                            <a href="{% url 'single_project_subcounty' qi.id %}"
+                                                               class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                                                        {% elif "hub" in project_type %}
+                                                            <a href="{% url 'single_project_hub' qi.id %}"
+                                                               class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        <!-- Display the pagination links -->
+                        <div class="mt-3">
+                            {% if qi_list.has_other_pages %}
+                                <ul class="pagination justify-content-end">
+                                    {% if qi_list.has_previous %}
+                                        <!-- request.GET.urlencode ensure that the filter parameters are preserved when navigating to another page.-->
+                                        <li class="page-item">
+                                            <a class="page-link"
+                                               href="?{{ request.GET.urlencode }}&page={{ qi_list.previous_page_number }}">
+                                                Prev</a>
                                         </li>
                                     {% endif %}
-                                {% endfor %}
-                                {% if qi_list.has_next %}
-                                    <li class="page-item"><a class="page-link"
-                                                             href="?page={{ qi_list.next_page_number }}">Next</a>
-                                    </li>
-                                {% else %}
-                                    <li class="disabled page-item"><span class="page-link">Next</span></li>
-                                {% endif %}
-                            </ul>
-                        {% endif %}
-                    </div>
-                {% endif %}
+
+                                    <!-- Display the first page -->
+                                    {% if qi_list.number > 3 %}
+                                        <li class="page-item"><a class="page-link"
+                                                                 href="?{{ request.GET.urlencode }}&page=1">1</a>
+                                        </li>
+                                    {% endif %}
+                                    <!-- Display ellipsis if there are middle pages -->
+                                    {% if qi_list.number > 4 %}
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    {% endif %}
+                                    <!-- Display pages around the current page -->
+                                    {% for i in qi_list.paginator.page_range %}
+                                        {% if i > qi_list.number|add:-3 and i < qi_list.number|add:3 %}
+                                            {% if qi_list.number == i %}
+                                                <li class="page-item active"><span class="page-link">{{ i }} <span
+                                                        class="sr-only">(current)</span></span></li>
+                                            {% else %}
+                                                <li class="page-item"><a class="page-link"
+                                                                         href="?{{ request.GET.urlencode }}&page={{ i }}">{{ i }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    <!-- Display ellipsis if there are middle pages -->
+                                    {% if qi_list.number < qi_list.paginator.num_pages|add:-3 %}
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    {% endif %}
+                                    <!-- Display the last page -->
+                                    {% if qi_list.number|add:2 < qi_list.paginator.num_pages %}
+                                        <li class="page-item"><a class="page-link"
+                                                                 href="?{{ request.GET.urlencode }}&page={{ qi_list.paginator.num_pages }}">{{ qi_list.paginator.num_pages }}</a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% if qi_list.has_next %}
+                                        <li class="page-item"><a class="page-link"
+                                                                 href="?{{ request.GET.urlencode }}&page={{ qi_list.next_page_number }}">Next</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="disabled page-item"><span class="page-link">Next</span></li>
+                                    {% endif %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    {% endif %}
             </div>
         </div>
     </main>

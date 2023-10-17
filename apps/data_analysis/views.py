@@ -1,21 +1,18 @@
-import datetime
 import re
-from datetime import date, datetime
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from django.contrib.auth.decorators import login_required
-from plotly.offline import plot
 from django.contrib import messages
-from django.db import transaction, IntegrityError
+from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError, transaction
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
-
+from django.shortcuts import redirect, render
 # Create your views here.
 from django.utils.datastructures import MultiValueDictKeyError
+from plotly.offline import plot
 
-from apps.data_analysis.forms import DateFilterForm, FileUploadForm, DataFilterForm
+from apps.data_analysis.forms import DataFilterForm, DateFilterForm, FileUploadForm
 from apps.data_analysis.models import FYJHealthFacility
 
 
@@ -1030,6 +1027,7 @@ def transform_data(df, df1, from_date, to_date):
                 (df['Date Collected'].dt.date <= to_date)]
 
     df['month_year'] = pd.to_datetime(df['Date Collected']).dt.strftime('%b-%Y')
+    df.insert(0, "Program", "FYJ")
     ########################################
     # Collection and Receipt
     ########################################
@@ -1057,6 +1055,11 @@ def transform_data(df, df1, from_date, to_date):
         df, 'County', "Date Collected", "Date Received",
         "Collected to Received")
     county_c_r_filename = f"counties_collect_receipt_tat_{target_text}"
+
+    program_collect_receipt_tat, df_result = generate_tat_report(
+        df, 'Program', "Date Collected", "Date Received",
+        "Collected to Received")
+    program_c_r_filename = f"program_collect_receipt_tat_{target_text}"
     ########################################
     # Collection and Dispatch
     ########################################
@@ -1077,6 +1080,11 @@ def transform_data(df, df1, from_date, to_date):
         df, "County", "Date Collected", "Date Dispatched",
         "Collection to Dispatch (TAT days)")
     county_c_d_filename = f"counties_collect_dispatch_tat_{target_text}"
+
+    program_collect_dispatch_tat, df_result = generate_tat_report(
+        df, "Program", "Date Collected", "Date Dispatched",
+        "Collection to Dispatch (TAT days)")
+    program_c_d_filename = f"program_collect_dispatch_tat_{target_text}"
     ########################################
     # Merge Collect to receipt and Collection to Dispatch
     ########################################
@@ -1100,6 +1108,23 @@ def transform_data(df, df1, from_date, to_date):
          counties_collect_dispatch_tat_trend])
 
     county_viz = visualize_tat_type(counties_df, "County", target_text)
+    ################################################
+    # Program
+    ################################################
+    program_collect_receipt_tat_trend = prepare_collect_receipt_df(
+        program_collect_receipt_tat, "Program")
+
+    program_collect_dispatch_tat_trend = prepare_collect_dispatch_df(
+        program_collect_dispatch_tat, "Program")
+    program_df = pd.concat(
+        [program_collect_receipt_tat_trend,
+         program_collect_dispatch_tat_trend])
+
+    if "County" in program_df.columns:
+        del program_df['County']
+
+    program_viz_df=program_df.groupby(['Program','TAT type']).sum(numeric_only=True).reset_index()
+    fyj_viz = visualize_tat_type(program_viz_df, "Program", target_text)
 
     sub_counties_collect_receipt_tat_trend = prepare_collect_receipt_df(
         sub_counties_collect_receipt_tat, "Sub-County")
@@ -1118,7 +1143,8 @@ def transform_data(df, df1, from_date, to_date):
         sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
         hubs_collect_dispatch_tat, hub_c_d_filename, \
         counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
-        county_viz, sub_county_viz, target_text
+        county_viz, sub_county_viz, target_text,fyj_viz,program_c_d_filename,program_c_r_filename,\
+        program_collect_dispatch_tat,program_collect_receipt_tat
 
 
 @login_required(login_url='login')
@@ -1131,6 +1157,8 @@ def tat(request):
     hubs_collect_dispatch_tat = pd.DataFrame()
     counties_collect_receipt_tat = pd.DataFrame()
     counties_collect_dispatch_tat = pd.DataFrame()
+    program_collect_dispatch_tat = pd.DataFrame()
+    program_collect_receipt_tat = pd.DataFrame()
     facility_c_r_filename = None
     facility_c_d_filename = None
     subcounty_c_r_filename = None
@@ -1141,9 +1169,12 @@ def tat(request):
     hub_c_d_filename = None
     county_c_r_filename = None
     county_c_d_filename = None
+    program_c_d_filename = None
+    program_c_r_filename = None
     date_picker_form = DateFilterForm(request.POST or None)
     form = FileUploadForm(request.POST or None)
     hub_viz = None
+    fyj_viz = None
     county_viz = None
     sub_county_viz = None
     if not request.user.first_name:
@@ -1199,8 +1230,9 @@ def tat(request):
                                             sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
                                             hubs_collect_dispatch_tat, hub_c_d_filename, \
                                             counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
-                                            county_viz, sub_county_viz, target_text = transform_data(df, df1, from_date,
-                                                                                                     to_date)
+                                            county_viz, sub_county_viz, target_text,fyj_viz,program_c_d_filename,\
+                                            program_c_r_filename,program_collect_dispatch_tat,\
+                                            program_collect_receipt_tat = transform_data(df, df1, from_date,to_date)
                     else:
                         message = f"Please generate overall 'All Outcomes (+/-) for EID' or 'Detailed for VL' and " \
                                   f"upload the CSV from <a href='{url}'>NASCOP's website</a>."
@@ -1228,8 +1260,10 @@ def tat(request):
                 "hub_c_d_filename": hub_c_d_filename,
                 "county_c_r_filename": county_c_r_filename,
                 "county_c_d_filename": county_c_d_filename,
+                "program_c_d_filename": program_c_d_filename,
+                "program_c_r_filename": program_c_r_filename,
                 "hub_viz": hub_viz,
-                "county_viz": county_viz,
+                "county_viz": county_viz,"fyj_viz":fyj_viz,
                 "sub_county_viz": sub_county_viz, "dqa_type": "tat",
 
             }
@@ -1244,6 +1278,8 @@ def tat(request):
     request.session['hubs_collect_dispatch_tat'] = hubs_collect_dispatch_tat.to_dict()
     request.session['counties_collect_receipt_tat'] = counties_collect_receipt_tat.to_dict()
     request.session['counties_collect_dispatch_tat'] = counties_collect_dispatch_tat.to_dict()
+    request.session['program_collect_receipt_tat'] = program_collect_receipt_tat.to_dict()
+    request.session['program_collect_dispatch_tat'] = program_collect_dispatch_tat.to_dict()
 
     # Convert dict_items into a list
     dictionary = get_key_from_session_names(request)
@@ -1268,8 +1304,10 @@ def tat(request):
         "hub_c_d_filename": hub_c_d_filename,
         "county_c_r_filename": county_c_r_filename,
         "county_c_d_filename": county_c_d_filename,
+        "program_c_d_filename": program_c_d_filename,
+        "program_c_r_filename": program_c_r_filename,
         "hub_viz": hub_viz,
-        "county_viz": county_viz,
+        "county_viz": county_viz,"fyj_viz":fyj_viz,
         "sub_county_viz": sub_county_viz, "dqa_type": "tat",
     }
     return render(request, 'data_analysis/tat.html', context)
@@ -1379,7 +1417,7 @@ def merge_county_program_df(df, df1):
 def make_region_specific_df(nairobi_all, name):
     nairobi_all = nairobi_all.rename(columns={"periodname": "month/year"})
     nairobi_all['date'] = pd.to_datetime(nairobi_all['month/year'])
-    nairobi_all_rate = nairobi_all.groupby(['month/year', 'date']).mean()[
+    nairobi_all_rate = nairobi_all.groupby(['month/year', 'date']).mean(numeric_only=True)[
         'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
     nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'] = round(
         nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'], 1)
@@ -1452,7 +1490,7 @@ def fmarp_line_trend(reporting_rates, x_axis, y_axis, title=None, color=None):
 def make_charts(nairobi_730b, title):
     nairobi_730b.columns = nairobi_730b.columns.str.replace("'", "_")
     rates_cols = list(nairobi_730b.columns[-3:-1])
-    overall_df = nairobi_730b.groupby(['month/year', 'date']).mean()[rates_cols].reset_index().sort_values('date')
+    overall_df = nairobi_730b.groupby(['month/year', 'date']).mean(numeric_only=True)[rates_cols].reset_index().sort_values('date')
     overall_df[rates_cols[0]] = round(overall_df[rates_cols[0]], 1)
     overall_df[rates_cols[1]] = round(overall_df[rates_cols[1]], 1)
 
@@ -1507,11 +1545,11 @@ def prepare_program_facilities_df(df1, fyj_facility_mfl_code):
 
 def missing_fcdrr(program_facilities, total_fmaps):
     no_fcdrr = program_facilities[
-        (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'].isnull())
-        | (program_facilities['Facility - CDRR Revision 2019 Reporting rate on time (%)'] == 0)]
+        (program_facilities['Facility - CDRR Revision 2019 Reporting rate (%)'].isnull())
+        | (program_facilities['Facility - CDRR Revision 2019 Reporting rate (%)'] == 0)]
     no_fcdrr_copy = no_fcdrr.copy()
     no_fcdrr = no_fcdrr.groupby(['facility', 'MFL Code', 'month/year']).count()[
-        'Facility - CDRR Revision 2019 Reporting rate on time (%)'].reset_index()
+        'Facility - CDRR Revision 2019 Reporting rate (%)'].reset_index()
 
     no_fcdrr_df = no_fcdrr_copy.groupby(['month/year']).count()['facility'].reset_index()
     no_fcdrr_df = no_fcdrr_df.rename(columns={"facility": "facilities"})
@@ -1544,6 +1582,14 @@ def missing_fmaps(program_facilities):
     return no_fmaps_df, no_fmaps, total_fmaps
 
 
+def convert_and_sort_datetime(df):
+    # Convert the "month/year" column to datetime
+    df['month/year'] = pd.to_datetime(df['month/year'], format='%B %Y')
+
+    # Sort the DataFrame by the "month/year" column
+    df = df.sort_values('month/year')
+    return df
+
 def analyse_fmaps_fcdrr(df, df1):
     all_facilities = df.copy()
     all_facilities = all_facilities.rename(columns={"organisationunitname": "facility"})
@@ -1560,19 +1606,18 @@ def analyse_fmaps_fcdrr(df, df1):
 
     df = df.rename(columns={
         "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate": "F-MAPS Revision 2019 Reporting rate (%)",
-        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time": "Facility - CDRR Revision 2019 Reporting "
-                                                                           "rate on time (%)"})
+        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate": "Facility - CDRR Revision 2019 Reporting rate (%)"})
 
     df = df[['organisationunitid', 'organisationunitname', 'organisationunitcode', 'orgunitlevel2',
              'organisationunitdescription', 'periodid', 'periodname', 'periodcode',
-             'F-MAPS Revision 2019 Reporting rate (%)', "Facility - CDRR Revision 2019 Reporting rate on time (%)"]]
+             'F-MAPS Revision 2019 Reporting rate (%)', "Facility - CDRR Revision 2019 Reporting rate (%)"]]
     # drop the rows containing letters and convert to int
     df = convert_mfl_code_to_int(df)
 
     all_data = merge_county_program_df(df, df1)
     all_data['date'] = pd.to_datetime(all_data['month/year'])
     # overall
-    overall_df = all_data.groupby(['month/year', 'date']).mean()[
+    overall_df = all_data.groupby(['month/year', 'date']).mean(numeric_only=True)[
         'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
     overall_df['F-MAPS Revision 2019 Reporting rate (%)'] = round(overall_df['F-MAPS Revision 2019 Reporting rate (%)'],
                                                                   1)
@@ -1591,7 +1636,7 @@ def analyse_fmaps_fcdrr(df, df1):
         nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b = \
         transform_make_charts(all_facilities, cols_729b, "729b", fyj_facility_mfl_code)
 
-    program_facilities_rate = program_facilities.groupby(['month/year', 'date']).mean()[
+    program_facilities_rate = program_facilities.groupby(['month/year', 'date']).mean(numeric_only=True)[
         'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
     program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'] = round(
         program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'], 1)
@@ -1629,7 +1674,7 @@ def analyse_fmaps_fcdrr(df, df1):
     all_on_time = all_on_time.rename(columns={"organisationunitcode": "MFL Code"})
     all_on_time = all_on_time.rename(columns={
         "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time":
-            "Facility - CDRR Revision 2019 Reporting rate on time (%)"})
+            "Facility - CDRR Revision 2019 Reporting rate (%)"})
     program_facilities = all_on_time[all_on_time['MFL Code'].isin(fyj_facility_mfl_code)]
     # Nairobi vs FYJ
     fyj_nairobi_facilities = program_facilities[program_facilities['MFL Code'].isin(nairobi_facitities_mfl_code)]
@@ -1637,24 +1682,24 @@ def analyse_fmaps_fcdrr(df, df1):
     fyj_kajiado_facilities = program_facilities[program_facilities['MFL Code'].isin(kajiado_facitities_mfl_code)]
     fyj_kajiado_facilities['date'] = pd.to_datetime(fyj_kajiado_facilities['month/year'])
 
-    fyj_kajiado_facilities_rate = fyj_kajiado_facilities.groupby(['month/year', 'date']).mean()[
-        'Facility - CDRR Revision 2019 Reporting rate on time (%)'].reset_index().sort_values('date')
-    fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'] = round(
-        fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'], 1)
+    fyj_kajiado_facilities_rate = fyj_kajiado_facilities.groupby(['month/year', 'date']).mean(numeric_only=True)[
+        'Facility - CDRR Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
+    fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'] = round(
+        fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'], 1)
     fyj_kajiado_facilities_rate.insert(0, "region", "Kajiado")
     kajiado_average_reporting_rate = round(
-        fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'].mean(), 1)
+        fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'].mean(), 1)
     fyj_nairobi_facilities['date'] = pd.to_datetime(fyj_nairobi_facilities['month/year'])
 
-    fyj_nairobi_facilities_rate = fyj_nairobi_facilities.groupby(['month/year', 'date']).mean()[
-        'Facility - CDRR Revision 2019 Reporting rate on time (%)'].reset_index().sort_values('date')
-    fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'] = round(
-        fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'], 1)
+    fyj_nairobi_facilities_rate = fyj_nairobi_facilities.groupby(['month/year', 'date']).mean(numeric_only=True)[
+        'Facility - CDRR Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
+    fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'] = round(
+        fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'], 1)
     fyj_nairobi_facilities_rate.insert(0, "region", "Nairobi")
     nairobi_average_reporting_rate = round(
-        fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate on time (%)'].mean(), 1)
+        fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'].mean(), 1)
     reporting_rates = pd.concat([fyj_nairobi_facilities_rate, fyj_kajiado_facilities_rate])
-    fcdrr_fig = fmarp_trend(reporting_rates, "month/year", 'Facility - CDRR Revision 2019 Reporting rate on time (%)',
+    fcdrr_fig = fmarp_trend(reporting_rates, "month/year", 'Facility - CDRR Revision 2019 Reporting rate (%)',
                             title=f'F-CDRR reporting rate on time trends. FYJ Kajiado mean :  {kajiado_average_reporting_rate}%   '
                                   f'FYJ Nairobi mean :  {nairobi_average_reporting_rate}%',
                             color="region")
@@ -1667,6 +1712,9 @@ def analyse_fmaps_fcdrr(df, df1):
 
     no_reports = pd.concat([no_fcdrr_df, no_fmaps_df])
     no_reports_all = pd.concat([no_fcdrr_df_all, no_fmaps_df_all])
+
+    no_reports=convert_and_sort_datetime(no_reports)
+    no_reports_all=convert_and_sort_datetime(no_reports_all)
 
     try:
         fyj_contribution = round(total / total_all * 100, 1)

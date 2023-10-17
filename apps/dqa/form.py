@@ -75,7 +75,6 @@ class FacilitySelectionForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         initial = kwargs.get('initial', {})
-        print('Initial value:', initial.get('name'))
         super().__init__(*args, **kwargs)
         self.fields['name'].initial = initial.get('name')
 

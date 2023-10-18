@@ -1,16 +1,14 @@
 import uuid
+from datetime import date, timedelta
 
 from crum import get_current_user
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator
-from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 from django.db import models
-from datetime import date
+from django.utils import timezone
+
 # Create your models here.
 from apps.account.models import CustomUser
 from apps.cqi.models import Facilities
-from datetime import timedelta
 
 
 def validate_ccc_no(value):
@@ -23,9 +21,6 @@ def validate_ccc_no(value):
 
 def validate_date_started_art(value):
     today = timezone.now()
-    print("validate_date_started_art:::::::::::::::::::::::::::::::::")
-    print(today)
-    print(value)
     if value > today:
         raise ValidationError('Date started on ART cannot be greater than today\'s date.')
 

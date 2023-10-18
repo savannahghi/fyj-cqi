@@ -296,7 +296,7 @@ tags
 
 ### Project template
 staticfiles/
-static/
+#static/
 media/
 .pytest_cache/
 .ipython/

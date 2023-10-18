@@ -382,7 +382,7 @@
     // Function to enable or disable the reason_for_no_serum_crag field
     function toggleNoCragReason() {
         const cd4CountValue = cd4CountResultsField.value;
-        if (serumCragResultsField.value !== "" && parseFloat(cd4CountValue) <= 200 ) {
+        if (serumCragResultsField.value !== "" && parseFloat(cd4CountValue) <= 200) {
             reasonNoSerumCragField.disabled = true;
             reasonNoSerumCragField.value = "";
         } else {

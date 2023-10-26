@@ -111,15 +111,42 @@ def get_key_from_session_names(request):
 
 
 def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
+    df1.to_csv("df_allbefore.csv", index=False)
+    df1 = df1[~df1['organisationunitname'].str.contains("adventist centre", case=False)]
+    df1.to_csv("df_allafter.csv", index=False)
     # df1 = pd.read_csv(path1)
+    # Add Hope med C MFL CODE
+    df1.loc[df1['organisationunitname'] == "Hope Med C", 'organisationunitcode'] = 19278
     # st francis
-    df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
+    # df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
+    df1.loc[df1['organisationunitname'].str.contains("st francis comm", case=False), 'organisationunitcode'] = 17943
+
     # adventist
-    df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
+    # df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
+    df1.loc[df1['organisationunitname'].str.contains("better living", case=False), 'organisationunitcode'] = 18535
+    df1.loc[df1['organisationunitname'].str.contains("better living",
+                                                     case=False),
+    'organisationunitname'] = "Adventist Centre for Care and Support"
+
     # illasit
-    df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
+    # df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
+    df1.loc[df1['organisationunitname'].str.contains("illasit h", case=False), 'organisationunitcode'] = 14567
     # imara
-    df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
+    # df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
+    df1.loc[df1['organisationunitname'].str.contains("imara health", case=False), 'organisationunitcode'] = 12981
+    # mary immaculate
+    df1.loc[
+        df1['organisationunitname'].str.contains("mary immaculate sister", case=False), 'organisationunitcode'] = 13062
+
+    # biafra lion
+    df1.loc[
+        df1['organisationunitname'].str.contains("biafra lion", case=False), 'organisationunitcode'] = 12883
+
+    # for i in df1['organisationunitcode'].unique():
+    #     if "18535" in i.lower():
+    #         print(i)
+    #     print("Not found")
+    df1.to_csv("df1_all.csv", index=False)
     df1 = df1[~df1['organisationunitcode'].isnull()]
     df1 = convert_mfl_code_to_int(df1)
     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
@@ -163,7 +190,6 @@ def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
 
 def make_dfs(df1, dtg_cols, regimen, default_cols):
     dtg_df = df1[default_cols + dtg_cols].fillna(0)
-    dtg_df_original = dtg_df.copy()
     if "periodname" not in default_cols:
         for i in dtg_df.columns[2:]:
             dtg_df[i] = dtg_df[i].astype(int)
@@ -180,6 +206,66 @@ def make_dfs(df1, dtg_cols, regimen, default_cols):
     return dtg_df, tld_df, non_tld_in_dtg_df
 
 
+def process_reporting_errors(dispensed_df, tld_180s_df, default_cols, dispensed_cols, end_of_months_cols,
+                             sc_arvdisp_cols, sc_curr_cols):
+    """
+    Process and identify reporting errors in a DataFrame.
+
+    Args:
+    dispensed_df (DataFrame): DataFrame containing dispensed data.
+    tld_180s_df (DataFrame): DataFrame with tld_180s data.
+    default_cols (list): List of default columns.
+    dispensed_cols (list): List of columns specific to dispensed data.
+    end_of_months_cols (list): List of columns specific to end_of_month data.
+    sc_arvdisp_cols (dict): Dictionary for renaming columns related to sc_arvdisp data.
+    sc_curr_cols (dict): Dictionary for renaming columns related to sc_curr data.
+
+    Returns:
+    DataFrame: Processed DataFrame with reporting errors identified and processed.
+    """
+    # Create lists of specific column names
+    tle_400_90s = [x for x in dispensed_df.columns if "(TDF/3TC/EFV) FDC (300/300/400mg)" in x and "90s" in x]
+    tle_600_30s = [x for x in dispensed_df.columns if "(TDF/3TC/EFV) FDC (300/300/600mg)" in x]
+    lpv_r_pellets = [x for x in dispensed_df.columns if "40/10mg" in x]
+    azt_3tc_nvp = [x for x in dispensed_df.columns if "AZT/3TC/NVP" in x]
+    nvp_tabs = [x for x in dispensed_df.columns if "(NVP) 200mg" in x]
+
+    # Create a subset DataFrame with selected columns
+    reporting_errors_df = dispensed_df[
+        default_cols + tle_400_90s + tle_600_30s + lpv_r_pellets + azt_3tc_nvp + nvp_tabs]
+
+    # Merge tld_180s data and fill NaN values with 0
+    if "periodname" in default_cols:
+        reporting_errors_df = reporting_errors_df.merge(tld_180s_df,
+                                                        on=["organisationunitname", "organisationunitcode",
+                                                            "periodname"]).fillna(0)
+    else:
+        reporting_errors_df = reporting_errors_df.merge(tld_180s_df,
+                                                        on=["organisationunitname", "organisationunitcode"]).fillna(0)
+
+    # Rename columns based on the source of data (dispensed or end_of_month)
+    if len(dispensed_cols) > 0:
+        reporting_errors_df = reporting_errors_df.rename(columns=sc_arvdisp_cols)
+    elif len(end_of_months_cols) > 0:
+        reporting_errors_df = reporting_errors_df.rename(columns=sc_curr_cols)
+
+    # Filter columns based on values > 0
+    reporting_errors_df = reporting_errors_df[
+        (reporting_errors_df.iloc[:, 3:] != 0).any(axis=1)
+    ]
+
+    # Convert a specific column to string and reset index
+    reporting_errors_df['organisationunitcode'] = reporting_errors_df['organisationunitcode'].astype(str)
+    reporting_errors_df.reset_index(drop=True, inplace=True)
+    # Compute and add the 'Total' row
+    reporting_errors_df.loc['Total'] = reporting_errors_df.sum(numeric_only=True)
+    reporting_errors_df.loc['Total'] = reporting_errors_df.loc['Total'].fillna("")
+    # Convert relevant columns to integers
+    reporting_errors_df.iloc[:, 3:] = reporting_errors_df.iloc[:, 3:].astype(int)
+
+    return reporting_errors_df
+
+
 def analyse_pharmacy_data(request, df, df1):
     df['MFL Code'] = df['MFL Code'].astype(int)
     fyj_facility_mfl_code = list(df['MFL Code'].unique())
@@ -190,8 +276,10 @@ def analyse_pharmacy_data(request, df, df1):
     dtg_cols = [col for col in dispensed_df.columns if "dtg" in col.lower()]
     efv_cols = [col for col in dispensed_df.columns if "efv" in col.lower()]
     lpvr_cols = [col for col in dispensed_df.columns if "lpv/" in col.lower()]
+    lpvr_cols_200_50 = [col for col in dispensed_df.columns if "200/50mg" in col]
+    dtg_50_cols = [col for col in dispensed_df.columns if "50mg tabs 30s" in col]
+
     nvp_cols = [col for col in dispensed_df.columns if "nvp" in col.lower()]
-    abc_3tc_cols = [col for col in dispensed_df.columns if "(ABC/3TC) 120" in col]
     ctx_cols = [col for col in dispensed_df.columns if "Cotrimoxazole" in col]
     rifapentine_cols = [col for col in dispensed_df.columns if "Rifapentine" in col]
     dtg_df, tld_df, non_tld_in_dtg_df = make_dfs(df1, dtg_cols, "(TDF/3TC/DTG)", default_cols)
@@ -213,12 +301,17 @@ def analyse_pharmacy_data(request, df, df1):
             tld_180s_df[
                 "MoH 730B Revision 2019 Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) " \
                 "FDC Tablets 180s End of Month Physical Stock Count"] = 0
+    #########################################
+    # MERGE TLD 180S
+    #########################################
     if "periodname" in default_cols:
         tld_df = tld_df.merge(tld_180s_df,
                               on=["organisationunitname", "organisationunitcode", "periodname"])
     else:
         tld_df = tld_df.merge(tld_180s_df, on=["organisationunitname", "organisationunitcode"])
-
+    #########################################
+    # MERGE CTX
+    #########################################
     ctx, ctx_df, non_abc_3tc_in_abc_3tc_df = make_dfs(df1, ctx_cols, "Cotrimoxazole", default_cols)
 
     ctx_df = ctx_df[default_cols + ctx_cols]
@@ -226,14 +319,23 @@ def analyse_pharmacy_data(request, df, df1):
         tld_df = tld_df.merge(ctx_df, on=["organisationunitname", "organisationunitcode", "periodname"])
     else:
         tld_df = tld_df.merge(ctx_df, on=["organisationunitname", "organisationunitcode"])
+    #########################################
+    # MERGE TLE
+    #########################################
     efv_df, tle_df, non_tle_in_efv_df = make_dfs(df1, efv_cols, "(TDF/3TC/EFV)", default_cols)
     if "periodname" in default_cols:
         tld_tle_df = tld_df.merge(tle_df,
                                   on=["organisationunitname", "organisationunitcode", "periodname"])
     else:
         tld_tle_df = tld_df.merge(tle_df, on=["organisationunitname", "organisationunitcode"])
+    #########################################
+    # MERGE KALETRA
+    #########################################
 
     lpvr_df, kaletra_df, non_kaletra_in_lpv_df = make_dfs(df1, lpvr_cols, "LPV/", default_cols)
+
+    cols_to_use_lpvr_200_50 = ["organisationunitname", "organisationunitcode", "periodname"] + lpvr_cols_200_50
+    lpvr_cols_200_50_df = kaletra_df[cols_to_use_lpvr_200_50]
 
     if "periodname" in default_cols:
         tld_tle_lpv_df = tld_tle_df.merge(kaletra_df,
@@ -242,6 +344,9 @@ def analyse_pharmacy_data(request, df, df1):
     else:
         tld_tle_lpv_df = tld_tle_df.merge(kaletra_df,
                                           on=["organisationunitname", "organisationunitcode"])
+    #########################################
+    # MERGE NON IN TLD
+    #########################################
 
     if "periodname" in default_cols:
         tld_tle_lpv_dtg10_df = tld_tle_lpv_df.merge(non_tld_in_dtg_df,
@@ -250,27 +355,17 @@ def analyse_pharmacy_data(request, df, df1):
     else:
         tld_tle_lpv_dtg10_df = tld_tle_lpv_df.merge(non_tld_in_dtg_df,
                                                     on=["organisationunitname", "organisationunitcode"])
-    abc_3tc_df, abc_3tc__df, non_abc_3tc_in_abc_3tc_df = make_dfs(df1, abc_3tc_cols, "(ABC/3TC) 120",
-                                                                  default_cols)
-    if "periodname" in default_cols:
-        tld_tle_lpv_dtg10_df = tld_tle_lpv_dtg10_df.merge(abc_3tc_df,
-                                                          on=["organisationunitname",
-                                                              "organisationunitcode",
-                                                              "periodname"])
-    else:
-        tld_tle_lpv_dtg10_df = tld_tle_lpv_dtg10_df.merge(abc_3tc_df,
-                                                          on=["organisationunitname",
-                                                              "organisationunitcode"])
+
     nvp_df, nevirapine_df, non_nevirapine_in_nvp_df = make_dfs(df1, nvp_cols, "NVP", default_cols)
     adult_nvp_cols = [col for col in nevirapine_df.columns if 'Adult' in col and "/NVP)" in col]
     adult_nvp200_cols = [col for col in nevirapine_df.columns if 'Adult' in col and "(NVP)" in col]
-    paeds_nvp_cols = [col for col in nevirapine_df.columns if
-                      '(NVP)' in col and "Paediatric" in col or "Susp" in col]
+
+    paeds_nvp_cols = [col for col in nevirapine_df.columns if "paediatric" in col.lower() and "10mg/ml" not in col]
     paeds_azt3tcnvp_cols = [col for col in nevirapine_df.columns if
                             "/NVP)" in col and "Paediatric" in col]
 
     paeds_nvp = nevirapine_df[default_cols + paeds_nvp_cols]
-    othercolumns = paeds_nvp.columns[2:]
+    othercolumns = paeds_nvp.columns[3:]
     paeds_nvp['NVP (Pediatric) bottles'] = paeds_nvp[othercolumns].sum(axis=1)
 
     adult_nvp = nevirapine_df[default_cols + adult_nvp_cols]
@@ -321,6 +416,7 @@ def analyse_pharmacy_data(request, df, df1):
     set2 = set(list(tld_tle_lpv_dtg10_nvp_df.columns))
 
     missing = list(sorted(set1 - set2))
+    missing = [x for x in missing if "NVP" not in x and "(EFV)" not in x]
 
     other_paeds_bottles_df = dispensed_df[default_cols + missing].fillna(0)
 
@@ -352,8 +448,28 @@ def analyse_pharmacy_data(request, df, df1):
     set2 = set(list(tld_tle_lpv_dtg10_nvp_df.columns))
 
     missing = list(sorted(set1 - set2))
+    missing = [x for x in missing if "(EFV)" not in x and "(TDF)" not in x]
 
     other_adult_df = dispensed_df[default_cols + missing].fillna(0)
+
+    other_adult_df = other_adult_df.merge(lpvr_cols_200_50_df, on=[
+        "organisationunitname",
+        "organisationunitcode",
+        "periodname"])
+
+    cols_to_use_dtg_50 = ["organisationunitname", "organisationunitcode", "periodname"] + dtg_50_cols
+    cols_to_use_dtg_50_df = dtg_df[cols_to_use_dtg_50]
+
+    other_adult_df = other_adult_df.merge(cols_to_use_dtg_50_df, on=[
+        "organisationunitname",
+        "organisationunitcode",
+        "periodname"])
+
+    # Drop columns containing the substring 'FTC' and '3TC/3TC
+    substring_to_drop = 'FTC'
+    filtered_df = other_adult_df.filter(like=substring_to_drop, axis=1)
+    columns_to_drop = filtered_df.columns
+    other_adult_df.drop(columns=columns_to_drop, inplace=True)
 
     if "periodname" not in default_cols:
         for i in other_adult_df.columns[1:]:
@@ -399,98 +515,102 @@ def analyse_pharmacy_data(request, df, df1):
             other_paeds_bottles_df,
             on=["organisationunitname",
                 "organisationunitcode"])
+    sc_arvdisp_cols = {"MoH 730B Revision 2017 Adult preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) FDC ("
+                       "300/150/200mg) Tablets 60s Total Quantity issued this month": "AZT/3TC/NVP (Adult) bottles",
+                       "MoH 730B Revision 2017 Paediatric preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) "
+                       "FDC (60/30/50mg) Tablets 60s Total Quantity issued this month": "AZT/3TC/NVP (Pediatric) bottles",
+                       "MoH 730B Revision 2019Dolutegravir(DTG) 10mg Dispersible.Scored 30s Total Quantity issued this "
+                       "month": "DTG 10",
+                       "MoH 730B Revision 2017 Adult preparations Dolutegravir(DTG) 50mg tabs 30s Total Quantity issued "
+                       "this month": "DTG 50",
+                       "MoH 730B Revision 2019Lopinavir/ritonavir (LPV/r) 40/10mg Caps(Pellets) 120s Total Quantity "
+                       "issued this month": "LPV/r 40/10",
+                       "MoH 730B Revision 2017 Paediatric preparations Lopinavir/ritonavir (LPV/r) 100/25mg Tabs 60s "
+                       "Total Quantity issued this month": "LPV/r 100/25",
+                       "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC ("
+                       "300/300/400mg) FDC Tablets 30s Total Quantity issued this month": "TL_400 30",
+                       "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC ("
+                       "300/300/600mg) FDC Tablets 30s Total Quantity issued this month": "TLE_600 30s",
+                       "MoH 730B Revision 2019Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC (300/300/400mg) FDC "
+                       "Tablets  90s Total Quantity issued this month": "TLE_400 90s",
+                       "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC ("
+                       "300/300/50mg) FDC Tablets 30s Total Quantity issued this month": "TLD 30s",
+                       "MoH 730B Revision 2019Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
+                       "Tablets 90s Total Quantity issued this month": "TLD 90s",
+                       "MoH 730B Revision 2019 Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
+                       "Tablets 180s Total Quantity issued this month": "TLD 180s",
+                       "MoH 730B Revision 2019Rifapentine (P) 150mg tab 24s Total Quantity issued this month":
+                           "Rifapentine 150mg",
+                       "MoH 730B Revision 2019Rifapentine/Isoniazid  (P) 300mg/300mg tabs 30s Total Quantity issued this "
+                       "month": "3HP 300/300",
+                       "MoH 730B Revision 2017 Paediatric preparations Abacavir/Lamivudine (ABC/3TC) 120mg/60mg FDC "
+                       "Tablets 30s Total Quantity issued this month": "(ABC/3TC) 120mg/60mg",
+                       "MoH 730B Revision 2017 Adult preparations Nevirapine (NVP) 200mg Tablets 60s Total Quantity "
+                       "issued this month": "NVP 200",
+                       "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole suspension 240mg/5ml  100ml bottle Total "
+                       "Quantity issued this month": "CTX 240mg/5ml",
+                       "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole 960mg Tablets 100s Total Quantity issued "
+                       "this month": "CTX 960",
+                       "MoH 730B Revision 2017 Adult preparations Lopinavir/ritonavir (LPV/r) 200/50mg Tablets 120s "
+                       "Total Quantity issued this month": "LPV/r 200/50",
+                       "MoH 730B Revision 2017 Paediatric preparations Lopinavir/ritonavir (LPV/r) 40/10mg Caps 120s "
+                       "Total Quantity issued this month": "LPV/r 40/10 Caps 120s"
+                       }
+    sc_curr_cols = {
+        "MoH 730B Revision 2017 Adult preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) FDC ("
+        "300/150/200mg) Tablets 60s End of Month Physical Stock Count": "AZT/3TC/NVP (Adult) bottles",
+        "MoH 730B Revision 2017 Paediatric preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) "
+        "FDC (60/30/50mg) Tablets 60s End of Month Physical Stock Count": "AZT/3TC/NVP (Pediatric) "
+                                                                          "bottles",
+        "MoH 730B Revision 2019Dolutegravir(DTG) 10mg Dispersible.Scored 30s End of Month Physical Stock "
+        "Count": "DTG 10",
+        "MoH 730B Revision 2017 Adult preparations Dolutegravir(DTG) 50mg tabs 30s End of Month Physical "
+        "Stock Count": "DTG 50",
+        "MoH 730B Revision 2019Lopinavir/ritonavir (LPV/r) 40/10mg Caps(Pellets) 120s End of Month "
+        "Physical Stock Count": "LPV/r 40/10",
+        "MoH 730B Revision 2017 Paediatric preparations Lopinavir/ritonavir (LPV/r) 100/25mg Tabs 60s End "
+        "of Month Physical Stock Count": "LPV/r 100/25",
+        "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC ("
+        "300/300/400mg) FDC Tablets 30s End of Month Physical Stock Count": "TL_400 30",
+        "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC ("
+        "300/300/600mg) FDC Tablets 30s End of Month Physical Stock Count": "TLE_600 30s",
+        "MoH 730B Revision 2019Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC (300/300/400mg) FDC "
+        "Tablets  90s End of Month Physical Stock Count": "TLE_400 90s",
+        "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC ("
+        "300/300/50mg) FDC Tablets 30s End of Month Physical Stock Count": "TLD 30s",
+        "MoH 730B Revision 2019Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
+        "Tablets 90s End of Month Physical Stock Count": "TLD 90s",
+        "MoH 730B Revision 2019 Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
+        "Tablets 180s End of Month Physical Stock Counth": "TLD 180s",
+        "MoH 730B Revision 2019 Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
+        "Tablets 180s End of Month Physical Stock Count": "TLD 180s",
+        "MoH 730B Revision 2019Rifapentine (P) 150mg tab 24s End of Month Physical Stock Count":
+            "Rifapentine 150mg",
+        "MoH 730B Revision 2019Rifapentine/Isoniazid  (P) 300mg/300mg tabs 30s End of Month Physical "
+        "Stock Count": "3HP 300/300",
+        "MoH 730B Revision 2017 Paediatric preparations Abacavir/Lamivudine (ABC/3TC) 120mg/60mg FDC "
+        "Tablets 30s End of Month Physical Stock Count": "(ABC/3TC) 120mg/60mg",
+        "MoH 730B Revision 2017 Adult preparations Nevirapine (NVP) 200mg Tablets 60s End of Month "
+        "Physical Stock Count": "NVP 200",
+        "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole suspension 240mg/5ml  100ml bottle End of "
+        "Month Physical Stock Count": "CTX 240mg/5ml",
+        "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole 960mg Tablets 100s End of Month Physical "
+        "Stock Count": "CTX 960",
+        "MoH 730B Revision 2017 Adult preparations Lopinavir/ritonavir (LPV/r) 200/50mg Tablets 120s End of "
+        "Month Physical Stock Count": "LPV/r 200/50",
+        "MoH 730B Revision 2017 Paediatric preparations Lopinavir/ritonavir (LPV/r) 40/10mg Caps 120s "
+        "End of Month Physical Stock Count": "LPV/r 40/10 Caps 120s"
+    }
     if len(dispensed_cols) > 0:
-        tld_tle_lpv_dtg10_nvp_others_df = tld_tle_lpv_dtg10_nvp_others_df.rename(columns={
-            "MoH 730B Revision 2017 Adult preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) FDC ("
-            "300/150/200mg) Tablets 60s Total Quantity issued this month": "AZT/3TC/NVP (Adult) bottles",
-            "MoH 730B Revision 2017 Paediatric preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) "
-            "FDC (60/30/50mg) Tablets 60s Total Quantity issued this month": "AZT/3TC/NVP (Pediatric) bottles",
-            "MoH 730B Revision 2019Dolutegravir(DTG) 10mg Dispersible.Scored 30s Total Quantity issued this "
-            "month": "DTG 10",
-            "MoH 730B Revision 2017 Adult preparations Dolutegravir(DTG) 50mg tabs 30s Total Quantity issued "
-            "this month": "DTG 50",
-            "MoH 730B Revision 2019Lopinavir/ritonavir (LPV/r) 40/10mg Caps(Pellets) 120s Total Quantity "
-            "issued this month": "LPV/r 40/10",
-            "MoH 730B Revision 2017 Paediatric preparations Lopinavir/ritonavir (LPV/r) 100/25mg Tabs 60s "
-            "Total Quantity issued this month": "LPV/r 100/25",
-            "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC ("
-            "300/300/400mg) FDC Tablets 30s Total Quantity issued this month": "TL_400 30",
-            "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC ("
-            "300/300/600mg) FDC Tablets 30s Total Quantity issued this month": "TLE_600 30s",
-            "MoH 730B Revision 2019Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC (300/300/400mg) FDC "
-            "Tablets  90s Total Quantity issued this month": "TLE_400 90s",
-            "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC ("
-            "300/300/50mg) FDC Tablets 30s Total Quantity issued this month": "TLD 30s",
-            "MoH 730B Revision 2019Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
-            "Tablets 90s Total Quantity issued this month": "TLD 90s",
-            "MoH 730B Revision 2019 Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
-            "Tablets 180s Total Quantity issued this month": "TLD 180s",
-            "MoH 730B Revision 2019Rifapentine (P) 150mg tab 24s Total Quantity issued this month":
-                "Rifapentine 150mg",
-            "MoH 730B Revision 2019Rifapentine/Isoniazid  (P) 300mg/300mg tabs 30s Total Quantity issued this "
-            "month": "3HP 300/300",
-            "MoH 730B Revision 2017 Paediatric preparations Abacavir/Lamivudine (ABC/3TC) 120mg/60mg FDC "
-            "Tablets 30s Total Quantity issued this month": "(ABC/3TC) 120mg/60mg",
-            "MoH 730B Revision 2017 Adult preparations Nevirapine (NVP) 200mg Tablets 60s Total Quantity "
-            "issued this month": "NVP 200",
-            "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole suspension 240mg/5ml  100ml bottle Total "
-            "Quantity issued this month": "CTX 240mg/5ml",
-            "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole 960mg Tablets 100s Total Quantity issued "
-            "this month": "CTX 960",
-
-        })
+        tld_tle_lpv_dtg10_nvp_others_df = tld_tle_lpv_dtg10_nvp_others_df.rename(columns=sc_arvdisp_cols)
 
     elif len(end_of_months_cols) > 0:
-        tld_tle_lpv_dtg10_nvp_others_df = tld_tle_lpv_dtg10_nvp_others_df.rename(columns={
-            "MoH 730B Revision 2017 Adult preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) FDC ("
-            "300/150/200mg) Tablets 60s End of Month Physical Stock Count": "AZT/3TC/NVP (Adult) bottles",
-            "MoH 730B Revision 2017 Paediatric preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) "
-            "FDC (60/30/50mg) Tablets 60s End of Month Physical Stock Count": "AZT/3TC/NVP (Pediatric) "
-                                                                              "bottles",
-            "MoH 730B Revision 2019Dolutegravir(DTG) 10mg Dispersible.Scored 30s End of Month Physical Stock "
-            "Count": "DTG 10",
-            "MoH 730B Revision 2017 Adult preparations Dolutegravir(DTG) 50mg tabs 30s End of Month Physical "
-            "Stock Count": "DTG 50",
-            "MoH 730B Revision 2019Lopinavir/ritonavir (LPV/r) 40/10mg Caps(Pellets) 120s End of Month "
-            "Physical Stock Count": "LPV/r 40/10",
-            "MoH 730B Revision 2017 Paediatric preparations Lopinavir/ritonavir (LPV/r) 100/25mg Tabs 60s End "
-            "of Month Physical Stock Count": "LPV/r 100/25",
-            "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC ("
-            "300/300/400mg) FDC Tablets 30s End of Month Physical Stock Count": "TL_400 30",
-            "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC ("
-            "300/300/600mg) FDC Tablets 30s End of Month Physical Stock Count": "TLE_600 30s",
-            "MoH 730B Revision 2019Tenofovir/Lamivudine/Efavirenz (TDF/3TC/EFV) FDC (300/300/400mg) FDC "
-            "Tablets  90s End of Month Physical Stock Count": "TLE_400 90s",
-            "MoH 730B Revision 2017 Adult preparations Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC ("
-            "300/300/50mg) FDC Tablets 30s End of Month Physical Stock Count": "TLD 30s",
-            "MoH 730B Revision 2019Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
-            "Tablets 90s End of Month Physical Stock Count": "TLD 90s",
-            "MoH 730B Revision 2019 Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
-            "Tablets 180s End of Month Physical Stock Counth": "TLD 180s",
-            "MoH 730B Revision 2019 Tenofovir/Lamivudine/Dolutegravir (TDF/3TC/DTG) FDC (300/300/50mg) FDC "
-            "Tablets 180s End of Month Physical Stock Count": "TLD 180s",
-            "MoH 730B Revision 2019Rifapentine (P) 150mg tab 24s End of Month Physical Stock Count":
-                "Rifapentine 150mg",
-            "MoH 730B Revision 2019Rifapentine/Isoniazid  (P) 300mg/300mg tabs 30s End of Month Physical "
-            "Stock Count": "3HP 300/300",
-            "MoH 730B Revision 2017 Paediatric preparations Abacavir/Lamivudine (ABC/3TC) 120mg/60mg FDC "
-            "Tablets 30s End of Month Physical Stock Count": "(ABC/3TC) 120mg/60mg",
-            "MoH 730B Revision 2017 Adult preparations Nevirapine (NVP) 200mg Tablets 60s End of Month "
-            "Physical Stock Count": "NVP 200",
-            "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole suspension 240mg/5ml  100ml bottle End of "
-            "Month Physical Stock Count": "CTX 240mg/5ml",
-            "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole 960mg Tablets 100s End of Month Physical "
-            "Stock Count": "CTX 960",
-        })
+        tld_tle_lpv_dtg10_nvp_others_df = tld_tle_lpv_dtg10_nvp_others_df.rename(columns=sc_curr_cols)
+    # drop DTG 10MGS
+    tld_tle_lpv_dtg10_nvp_others_df = tld_tle_lpv_dtg10_nvp_others_df.drop(["DTG 50"], axis=1)
     cols_to_drop = [col for col in tld_tle_lpv_dtg10_nvp_others_df.columns if
                     "moh 730b revision" in col.lower()]
     tld_tle_lpv_dtg10_nvp_others_df = tld_tle_lpv_dtg10_nvp_others_df.drop(cols_to_drop, axis=1)
-    numeric_cols = ['TLD 30s', 'TLD 90s',
-                    'TLD 180s', "CTX 960", "CTX 240mg/5ml", 'TL_400 30', 'TLE_600 30s',
-                    'TLE_400 90s', "LPV/r 100/25",
-                    "LPV/r 40/10", "DTG 50", 'DTG 10', 'AZT/3TC/NVP (Adult) bottles', 'NVP 200',
-                    'NVP (Pediatric) bottles', '(ABC/3TC) 120mg/60mg',
-                    '3HP 300/300', 'Other (Adult) bottles', 'Other (Pediatric) bottles']
 
     if "periodname" in default_cols:
         final_df = tld_tle_lpv_dtg10_nvp_others_df.merge(df, left_on="organisationunitcode",
@@ -501,37 +621,47 @@ def analyse_pharmacy_data(request, df, df1):
     final_df['MFL Code'] = final_df['MFL Code'].astype(str)
     final_df.loc['Total'] = final_df.sum(numeric_only=True)
     final_df.loc['Total'] = final_df.loc['Total'].fillna("")
-    # final_df[numeric_cols] = final_df[numeric_cols].astype(int)
+
+    #####################################################
+    # REPORTING ERRORS
+    #####################################################
+    reporting_errors_df = process_reporting_errors(dispensed_df, tld_180s_df, default_cols, dispensed_cols,
+                                                   end_of_months_cols, sc_arvdisp_cols, sc_curr_cols)
+
+    reporting_error_filename = f"{filename}_reporting_errors"
+    request.session['reporting_errors'] = reporting_errors_df.to_dict()
+
     if "periodname" in default_cols:
         try:
             final_df = final_df[
                 ['County', 'Health Subcounty', 'Subcounty', 'organisationunitname', 'MFL Code',
-                 'Hub(1,2,3 o 4)', "periodname", 'TLD 30s', 'TLD 90s',
-                 'TLD 180s', "CTX 960", "CTX 240mg/5ml", 'TL_400 30', 'TLE_600 30s',
-                 'TLE_400 90s', "LPV/r 100/25",
-                 "LPV/r 40/10", "DTG 50", 'DTG 10', 'AZT/3TC/NVP (Adult) bottles', 'NVP 200',
-                 'NVP (Pediatric) bottles', '(ABC/3TC) 120mg/60mg',
-                 '3HP 300/300', 'Other (Adult) bottles', 'Other (Pediatric) bottles',
+                 'Hub(1,2,3 o 4)', "periodname",
+                 'TLD 30s', 'TLD 90s', 'TLD 180s',
+                 'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10', 'NVP 200', 'NVP (Pediatric) bottles',
+                 'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
+                 'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
                  'M&E Mentor/SI associate',
                  'M&E Assistant', 'Care & Treatment(Yes/No)', 'HTS(Yes/No)',
                  'VMMC(Yes/No)', 'Key Pop(Yes/No)', 'Faclity Type',
                  'Category (HVF/MVF/LVF)', 'EMR']]
+
         except KeyError as e:
             missing_columns = [col.replace("'", "") for col in
                                str(e).split("[")[1].split("]")[0].split(",")]
-            # print(f"Columns {', '.join(missing_columns)} not found. "
-            #       f"Adding missing columns with default value 0.")
             # Remove white spaces from column names
             missing_columns = [col.strip() for col in missing_columns]
             for col in missing_columns:
                 final_df[col] = 0
             final_df = final_df[
                 ['County', 'Health Subcounty', 'Subcounty', 'organisationunitname', 'MFL Code',
-                 'Hub(1,2,3 o 4)', "periodname", 'TLD 30s', 'TLD 90s',
-                 'TLD 180s', "CTX 960", "CTX 240mg/5ml", 'TL_400 30', 'TLE_600 30s',
-                 'TLE_400 90s', "LPV/r 100/25", "LPV/r 40/10", "DTG 50", 'DTG 10',
-                 'AZT/3TC/NVP (Adult) bottles', 'NVP 200', 'NVP (Pediatric) bottles',
-                 '(ABC/3TC) 120mg/60mg', 'M&E Mentor/SI associate',
+                 'Hub(1,2,3 o 4)', "periodname",
+                 'TLD 30s', 'TLD 90s', 'TLD 180s',
+                 'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10', 'NVP 200', 'NVP (Pediatric) bottles',
+                 'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
+                 'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
+                 'M&E Mentor/SI associate',
                  'M&E Assistant', 'Care & Treatment(Yes/No)', 'HTS(Yes/No)',
                  'VMMC(Yes/No)', 'Key Pop(Yes/No)', 'Faclity Type',
                  'Category (HVF/MVF/LVF)', 'EMR']]
@@ -540,12 +670,11 @@ def analyse_pharmacy_data(request, df, df1):
             final_df = final_df[
                 ['County', 'Health Subcounty', 'Subcounty', 'organisationunitname', 'MFL Code',
                  'Hub(1,2,3 o 4)',
-                 'TLD 30s', 'TLD 90s',
-                 'TLD 180s', "CTX 960", "CTX 240mg/5ml", 'TL_400 30', 'TLE_600 30s',
-                 'TLE_400 90s', "LPV/r 100/25",
-                 "LPV/r 40/10", "DTG 50", 'DTG 10', 'AZT/3TC/NVP (Adult) bottles', 'NVP 200',
-                 'NVP (Pediatric) bottles', '(ABC/3TC) 120mg/60mg',
-                 '3HP 300/300', 'Other (Adult) bottles', 'Other (Pediatric) bottles',
+                 'TLD 30s', 'TLD 90s', 'TLD 180s',
+                 'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10', 'NVP 200', 'NVP (Pediatric) bottles',
+                 'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
+                 'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
                  'M&E Mentor/SI associate', 'M&E Assistant',
                  'Care & Treatment(Yes/No)', 'HTS(Yes/No)', 'VMMC(Yes/No)', 'Key Pop(Yes/No)',
                  'Faclity Type', 'Category (HVF/MVF/LVF)'
@@ -553,8 +682,6 @@ def analyse_pharmacy_data(request, df, df1):
         except KeyError as e:
             missing_columns = [col.replace("'", "") for col in
                                str(e).split("[")[1].split("]")[0].split(",")]
-            # print(f"Columns {', '.join(missing_columns)} not found. "
-            #       f"Adding missing columns with default value 0.")
             # Remove white spaces from column names
             missing_columns = [col.strip() for col in missing_columns]
             for col in missing_columns:
@@ -562,18 +689,17 @@ def analyse_pharmacy_data(request, df, df1):
             final_df = final_df[
                 ['County', 'Health Subcounty', 'Subcounty', 'organisationunitname', 'MFL Code',
                  'Hub(1,2,3 o 4)',
-                 'TLD 30s', 'TLD 90s',
-                 'TLD 180s', "CTX 960", "CTX 240mg/5ml", 'TL_400 30', 'TLE_600 30s',
-                 'TLE_400 90s', "LPV/r 100/25",
-                 "LPV/r 40/10", "DTG 50", 'DTG 10', 'AZT/3TC/NVP (Adult) bottles', 'NVP 200',
-                 'NVP (Pediatric) bottles', '(ABC/3TC) 120mg/60mg',
-                 '3HP 300/300', 'Other (Adult) bottles', 'Other (Pediatric) bottles',
-                 'M&E Mentor/SI associate',
+                 'TLD 30s', 'TLD 90s', 'TLD 180s',
+                 'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10', 'NVP 200', 'NVP (Pediatric) bottles',
+                 'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
+                 'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
                  'M&E Assistant', 'Care & Treatment(Yes/No)', 'HTS(Yes/No)',
                  'VMMC(Yes/No)', 'Key Pop(Yes/No)', 'Faclity Type',
                  'Category (HVF/MVF/LVF)', 'EMR']]
 
-    return final_df, filename, other_adult_df_file, adult_others_filename, paeds_others_filename, other_paeds_bottles_df_file
+    return final_df, filename, other_adult_df_file, adult_others_filename, paeds_others_filename, \
+        other_paeds_bottles_df_file, reporting_errors_df, reporting_error_filename
 
 
 @login_required(login_url='login')
@@ -583,8 +709,10 @@ def pharmacy(request):
     other_adult_df_file = pd.DataFrame()
     adult_others_filename = None
     paeds_others_filename = None
+    reporting_error_filename = None
     dictionary = None
     other_paeds_bottles_df_file = pd.DataFrame()
+    reporting_errors_df = pd.DataFrame()
     form = FileUploadForm(request.POST or None)
     datasets = ["Total Quantity issued this month <strong>or</strong>", "End of Month Physical Stock Count"]
     dqa_type = "sc_curr_arvdisp"
@@ -625,7 +753,9 @@ def pharmacy(request):
                         })
                         if df.shape[0] > 0 and df1.shape[0] > 0:
                             final_df, filename, other_adult_df_file, adult_others_filename, paeds_others_filename, \
-                                other_paeds_bottles_df_file = analyse_pharmacy_data(request, df, df1)
+                                other_paeds_bottles_df_file, reporting_errors_df, reporting_error_filename = analyse_pharmacy_data(
+                                request, df,
+                                df1)
                     else:
                         message = f"Please generate and upload either the Total Quantity issued this month or End of Month " \
                                   f"Physical Stock Count CSV file from <a href='{url}'>KHIS's website</a>."
@@ -647,8 +777,9 @@ def pharmacy(request):
                 "filename": filename,
                 "other_adult_df_file": other_adult_df_file,
                 "adult_others_filename": adult_others_filename,
-                "paeds_others_filename": paeds_others_filename,
+                "paeds_others_filename": paeds_others_filename, "reporting_error_filename": reporting_error_filename,
                 "other_paeds_bottles_df_file": other_paeds_bottles_df_file,
+                "reporting_errors_df": reporting_errors_df,
                 "form": form, "datasets": datasets, "dqa_type": dqa_type, "report_name": report_name
             }
 
@@ -663,8 +794,9 @@ def pharmacy(request):
         "filename": filename,
         "other_adult_df_file": other_adult_df_file,
         "adult_others_filename": adult_others_filename,
-        "paeds_others_filename": paeds_others_filename,
+        "paeds_others_filename": paeds_others_filename, "reporting_error_filename": reporting_error_filename,
         "other_paeds_bottles_df_file": other_paeds_bottles_df_file,
+        "reporting_errors_df": reporting_errors_df,
         "form": form, "datasets": datasets, "dqa_type": dqa_type, "report_name": report_name
     }
 
@@ -1123,7 +1255,7 @@ def transform_data(df, df1, from_date, to_date):
     if "County" in program_df.columns:
         del program_df['County']
 
-    program_viz_df=program_df.groupby(['Program','TAT type']).sum(numeric_only=True).reset_index()
+    program_viz_df = program_df.groupby(['Program', 'TAT type']).sum(numeric_only=True).reset_index()
     fyj_viz = visualize_tat_type(program_viz_df, "Program", target_text)
 
     sub_counties_collect_receipt_tat_trend = prepare_collect_receipt_df(
@@ -1143,8 +1275,8 @@ def transform_data(df, df1, from_date, to_date):
         sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
         hubs_collect_dispatch_tat, hub_c_d_filename, \
         counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
-        county_viz, sub_county_viz, target_text,fyj_viz,program_c_d_filename,program_c_r_filename,\
-        program_collect_dispatch_tat,program_collect_receipt_tat
+        county_viz, sub_county_viz, target_text, fyj_viz, program_c_d_filename, program_c_r_filename, \
+        program_collect_dispatch_tat, program_collect_receipt_tat
 
 
 @login_required(login_url='login')
@@ -1230,9 +1362,9 @@ def tat(request):
                                             sub_counties_collect_dispatch_tat, subcounty_c_d_filename, \
                                             hubs_collect_dispatch_tat, hub_c_d_filename, \
                                             counties_collect_dispatch_tat, county_c_d_filename, hub_viz, \
-                                            county_viz, sub_county_viz, target_text,fyj_viz,program_c_d_filename,\
-                                            program_c_r_filename,program_collect_dispatch_tat,\
-                                            program_collect_receipt_tat = transform_data(df, df1, from_date,to_date)
+                                            county_viz, sub_county_viz, target_text, fyj_viz, program_c_d_filename, \
+                                            program_c_r_filename, program_collect_dispatch_tat, \
+                                            program_collect_receipt_tat = transform_data(df, df1, from_date, to_date)
                     else:
                         message = f"Please generate overall 'All Outcomes (+/-) for EID' or 'Detailed for VL' and " \
                                   f"upload the CSV from <a href='{url}'>NASCOP's website</a>."
@@ -1263,7 +1395,7 @@ def tat(request):
                 "program_c_d_filename": program_c_d_filename,
                 "program_c_r_filename": program_c_r_filename,
                 "hub_viz": hub_viz,
-                "county_viz": county_viz,"fyj_viz":fyj_viz,
+                "county_viz": county_viz, "fyj_viz": fyj_viz,
                 "sub_county_viz": sub_county_viz, "dqa_type": "tat",
 
             }
@@ -1307,7 +1439,7 @@ def tat(request):
         "program_c_d_filename": program_c_d_filename,
         "program_c_r_filename": program_c_r_filename,
         "hub_viz": hub_viz,
-        "county_viz": county_viz,"fyj_viz":fyj_viz,
+        "county_viz": county_viz, "fyj_viz": fyj_viz,
         "sub_county_viz": sub_county_viz, "dqa_type": "tat",
     }
     return render(request, 'data_analysis/tat.html', context)
@@ -1490,7 +1622,8 @@ def fmarp_line_trend(reporting_rates, x_axis, y_axis, title=None, color=None):
 def make_charts(nairobi_730b, title):
     nairobi_730b.columns = nairobi_730b.columns.str.replace("'", "_")
     rates_cols = list(nairobi_730b.columns[-3:-1])
-    overall_df = nairobi_730b.groupby(['month/year', 'date']).mean(numeric_only=True)[rates_cols].reset_index().sort_values('date')
+    overall_df = nairobi_730b.groupby(['month/year', 'date']).mean(numeric_only=True)[
+        rates_cols].reset_index().sort_values('date')
     overall_df[rates_cols[0]] = round(overall_df[rates_cols[0]], 1)
     overall_df[rates_cols[1]] = round(overall_df[rates_cols[1]], 1)
 
@@ -1526,14 +1659,36 @@ def transform_make_charts(all_facilities, cols_730b, name, fyj_facility_mfl_code
 
 
 def prepare_program_facilities_df(df1, fyj_facility_mfl_code):
+    df1 = df1[~df1['facility'].str.contains("adventist centre", case=False)]
+    df1.to_csv("df_allafter.csv", index=False)
+
+    # Add Hope med C MFL CODE
+    df1.loc[df1['facility'] == "Hope Med C", 'organisationunitcode'] = 19278
     # st francis
-    df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
+    # df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
+    df1.loc[df1['facility'].str.contains("st francis comm", case=False), 'organisationunitcode'] = 17943
+
     # adventist
-    df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
+    # df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
+    df1.loc[df1['facility'].str.contains("better living", case=False), 'organisationunitcode'] = 18535
+    df1.loc[df1['facility'].str.contains("better living",
+                                         case=False),
+    'facility'] = "Adventist Centre for Care and Support"
+
     # illasit
-    df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
+    # df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
+    df1.loc[df1['facility'].str.contains("illasit h", case=False), 'organisationunitcode'] = 14567
     # imara
-    df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
+    # df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
+    df1.loc[df1['facility'].str.contains("imara health", case=False), 'organisationunitcode'] = 12981
+    # mary immaculate
+    df1.loc[
+        df1['facility'].str.contains("mary immaculate sister", case=False), 'organisationunitcode'] = 13062
+
+    # biafra lion
+    df1.loc[
+        df1['facility'].str.contains("biafra lion", case=False), 'organisationunitcode'] = 12883
+
     df1 = df1[~df1['organisationunitcode'].isnull()]
     df1 = convert_mfl_code_to_int(df1)
     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
@@ -1589,6 +1744,7 @@ def convert_and_sort_datetime(df):
     # Sort the DataFrame by the "month/year" column
     df = df.sort_values('month/year')
     return df
+
 
 def analyse_fmaps_fcdrr(df, df1):
     all_facilities = df.copy()
@@ -1713,8 +1869,8 @@ def analyse_fmaps_fcdrr(df, df1):
     no_reports = pd.concat([no_fcdrr_df, no_fmaps_df])
     no_reports_all = pd.concat([no_fcdrr_df_all, no_fmaps_df_all])
 
-    no_reports=convert_and_sort_datetime(no_reports)
-    no_reports_all=convert_and_sort_datetime(no_reports_all)
+    no_reports = convert_and_sort_datetime(no_reports)
+    no_reports_all = convert_and_sort_datetime(no_reports_all)
 
     try:
         fyj_contribution = round(total / total_all * 100, 1)
@@ -1753,6 +1909,7 @@ def fmaps_reporting_rate(request):
     no_fcdrr = pd.DataFrame()
     no_fcdrr_all = pd.DataFrame()
     other_paeds_bottles_df_file = pd.DataFrame()
+    reporting_errors_df = pd.DataFrame()
     form = FileUploadForm(request.POST or None)
     datasets = ["MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate <strong>and</strong>",
                 "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate on time data <strong>and</strong>",
@@ -1834,7 +1991,7 @@ def fmaps_reporting_rate(request):
                 "final_df": final_df,
                 "dictionary": dictionary,
                 # "filename": filename,
-                "other_adult_df_file": other_adult_df_file,
+                "other_adult_df_file": other_adult_df_file, "reporting_errors_df": reporting_errors_df,
                 "other_paeds_bottles_df_file": other_paeds_bottles_df_file, "report_name": report_name,
                 "form": form, "fcdrr_fig": fcdrr_fig, "kajiado_reporting_rate_fig": kajiado_reporting_rate_fig,
                 "nairobi_reporting_rate_fig": nairobi_reporting_rate_fig, "datasets": datasets, "dqa_type": dqa_type,
@@ -1882,7 +2039,7 @@ def fmaps_reporting_rate(request):
     context = {
         "final_df": final_df,
         "dictionary": dictionary,
-        "other_adult_df_file": other_adult_df_file,
+        "other_adult_df_file": other_adult_df_file, "reporting_errors_df": reporting_errors_df,
         "other_paeds_bottles_df_file": other_paeds_bottles_df_file, "report_name": report_name,
         "form": form, "fcdrr_fig": fcdrr_fig, "kajiado_reporting_rate_fig": kajiado_reporting_rate_fig,
         "nairobi_reporting_rate_fig": nairobi_reporting_rate_fig, "datasets": datasets, "dqa_type": dqa_type,
@@ -2384,10 +2541,11 @@ def calculate_facility_resuppression_rate(resuppression_status):
 
     try:
         facility_resuppression_status["Resuppression rate %"] = round(
-        facility_resuppression_status['re-suppressed'] / facility_resuppression_status['Total repeat VL tests'] * 100,
-        1)
+            facility_resuppression_status['re-suppressed'] / facility_resuppression_status[
+                'Total repeat VL tests'] * 100,
+            1)
     except KeyError:
-        facility_resuppression_status["Resuppression rate %"]=0
+        facility_resuppression_status["Resuppression rate %"] = 0
     facility_resuppression_status = facility_resuppression_status.sort_values("Resuppression rate %", ascending=False)
     facility_resuppression_status.reset_index(inplace=True)
     facility_resuppression_status.reset_index(drop=True)
@@ -2413,10 +2571,11 @@ def calculate_justification_resuppression_rate(resuppression_status):
                                                              facility_resuppression_status.get('re-suppressed', 0)
     try:
         facility_resuppression_status["Resuppression rate %"] = round(
-            facility_resuppression_status['re-suppressed'] / facility_resuppression_status['Total repeat VL tests'] * 100,
+            facility_resuppression_status['re-suppressed'] / facility_resuppression_status[
+                'Total repeat VL tests'] * 100,
             1)
     except KeyError:
-        facility_resuppression_status["Resuppression rate %"]=0
+        facility_resuppression_status["Resuppression rate %"] = 0
     facility_resuppression_status = facility_resuppression_status.sort_values("Resuppression rate %", ascending=False)
 
     return facility_resuppression_status
@@ -2537,7 +2696,7 @@ def viral_load(request):
                                 preprocess_viral_load_data(df)
 
                             newdf_HVL_age_sex, hvl_linelist, hvl_linelist_facility = prepare_age_sex_df(df, newdf_HVL)
-                            hvl_linelist=hvl_linelist.fillna(0)
+                            hvl_linelist = hvl_linelist.fillna(0)
                             newdf_llv_age_sex, llv_linelist, llv_linelist_facility = prepare_age_sex_df(df, newdf_llv)
                             llv_linelist = llv_linelist.fillna(0)
                             newdf_llv_age_sex = newdf_llv_age_sex.rename(columns={"HVL": "LLV"})

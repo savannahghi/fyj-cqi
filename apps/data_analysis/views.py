@@ -111,9 +111,7 @@ def get_key_from_session_names(request):
 
 
 def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
-    df1.to_csv("df_allbefore.csv", index=False)
     df1 = df1[~df1['organisationunitname'].str.contains("adventist centre", case=False)]
-    df1.to_csv("df_allafter.csv", index=False)
     # df1 = pd.read_csv(path1)
     # Add Hope med C MFL CODE
     df1.loc[df1['organisationunitname'] == "Hope Med C", 'organisationunitcode'] = 19278
@@ -146,7 +144,6 @@ def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
     #     if "18535" in i.lower():
     #         print(i)
     #     print("Not found")
-    df1.to_csv("df1_all.csv", index=False)
     df1 = df1[~df1['organisationunitcode'].isnull()]
     df1 = convert_mfl_code_to_int(df1)
     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
@@ -1628,6 +1625,7 @@ def make_charts(nairobi_730b, title):
     overall_df[rates_cols[1]] = round(overall_df[rates_cols[1]], 1)
 
     overall_df.insert(0, "region", f"{nairobi_730b['orgunitlevel2'].unique()[0]}")
+    overall_df.reset_index(drop=True,inplace=True)
     a = pd.melt(overall_df, id_vars=['region', 'month/year', 'date'],
                 value_vars=rates_cols,
                 var_name='report', value_name='%')
@@ -1654,13 +1652,13 @@ def transform_make_charts(all_facilities, cols_730b, name, fyj_facility_mfl_code
     kajiado_program_facilities_730b = program_facilities[program_facilities['orgunitlevel2'] == "Kajiado County"]
     nairobi_program_facilities_730b_fig, fyj_nairobi_730 = make_charts(nairobi_program_facilities_730b, "FYJ Nairobi")
     kajiado_program_facilities_730b_fig, fyj_kajiado_730 = make_charts(kajiado_program_facilities_730b, "FYJ Kajiado")
+    program_facilities_730b_fig, fyj_730b = make_charts(program_facilities, "FYJ")
     return nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, \
-        nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730
+        nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, program_facilities_730b_fig, fyj_730b
 
 
 def prepare_program_facilities_df(df1, fyj_facility_mfl_code):
     df1 = df1[~df1['facility'].str.contains("adventist centre", case=False)]
-    df1.to_csv("df_allafter.csv", index=False)
 
     # Add Hope med C MFL CODE
     df1.loc[df1['facility'] == "Hope Med C", 'organisationunitcode'] = 19278
@@ -1782,15 +1780,15 @@ def analyse_fmaps_fcdrr(df, df1):
     program_facilities = all_data[all_data['MFL Code'].isin(fyj_facility_mfl_code)]
 
     fyj_df = prepare_program_facilities_df(all_facilities, fyj_facility_mfl_code)
-    cols_730b = [col for col in fyj_df.columns if "730b" in col.lower()]
-    cols_729b = [col for col in fyj_df.columns if "729b" in col.lower()]
+    cols_730b = sorted([col for col in fyj_df.columns if "730b" in col.lower()])
+    cols_729b = sorted([col for col in fyj_df.columns if "729b" in col.lower()])
 
     nairobi_730b_fig, kajiado_730b_fig, nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, \
-        nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730 = \
-        transform_make_charts(all_facilities, cols_730b, "730b", fyj_facility_mfl_code)
+        nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, program_facilities_730b_fig, \
+        fyj_730b = transform_make_charts(all_facilities, cols_730b, "730b", fyj_facility_mfl_code)
     nairobi_729b_fig, kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
-        nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b = \
-        transform_make_charts(all_facilities, cols_729b, "729b", fyj_facility_mfl_code)
+        nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, program_facilities_729b_fig, \
+        fyj_729b = transform_make_charts(all_facilities, cols_729b, "729b", fyj_facility_mfl_code)
 
     program_facilities_rate = program_facilities.groupby(['month/year', 'date']).mean(numeric_only=True)[
         'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
@@ -1890,7 +1888,7 @@ def analyse_fmaps_fcdrr(df, df1):
         kajiado_program_facilities_730b_fig, nairobi_729b_fig, kajiado_729b_fig, nairobi_program_facilities_729b_fig, \
         kajiado_program_facilities_729b_fig, nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
         nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, no_fcdrr_fmaps_fig_all, \
-        no_fcdrr_all, no_fmaps_all
+        no_fcdrr_all, no_fmaps_all,program_facilities_730b_fig,fyj_730b,program_facilities_729b_fig,fyj_729b
 
 
 @login_required(login_url='login')
@@ -1922,10 +1920,12 @@ def fmaps_reporting_rate(request):
     kajiado_730b_fig = None
     nairobi_program_facilities_730b_fig = None
     kajiado_program_facilities_730b_fig = None
+    program_facilities_730b_fig = None
     nairobi_729b_fig = None
     kajiado_729b_fig = None
     nairobi_program_facilities_729b_fig = None
     kajiado_program_facilities_729b_fig = None
+    program_facilities_729b_fig = None
     nairobi_730b_overall = pd.DataFrame()
     kajiado_730b_overall = pd.DataFrame()
     fyj_nairobi_730 = pd.DataFrame()
@@ -1934,6 +1934,8 @@ def fmaps_reporting_rate(request):
     kajiado_729b_overall = pd.DataFrame()
     fyj_nairobi_729b = pd.DataFrame()
     fyj_kajiado_729b = pd.DataFrame()
+    fyj_730b = pd.DataFrame()
+    fyj_729b = pd.DataFrame()
 
     if not request.user.first_name:
         return redirect("profile")
@@ -1979,7 +1981,8 @@ def fmaps_reporting_rate(request):
                             kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
                             nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
                             nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, \
-                            no_fcdrr_fmaps_fig_all, no_fcdrr_all, no_fmaps_all = analyse_fmaps_fcdrr(df, df1)
+                            no_fcdrr_fmaps_fig_all, no_fcdrr_all, no_fmaps_all,program_facilities_730b_fig,fyj_730b,\
+                            program_facilities_729b_fig,fyj_729b = analyse_fmaps_fcdrr(df, df1)
                 else:
                     messages.success(request, message)
                     return redirect('fmaps_reporting_rate')
@@ -2002,9 +2005,11 @@ def fmaps_reporting_rate(request):
                 "nairobi_730b_fig": nairobi_730b_fig, "kajiado_730b_fig": kajiado_730b_fig,
                 "nairobi_program_facilities_730b_fig": nairobi_program_facilities_730b_fig,
                 "kajiado_program_facilities_730b_fig": kajiado_program_facilities_730b_fig,
+                "program_facilities_730b_fig": program_facilities_730b_fig,
                 "nairobi_729b_fig": nairobi_729b_fig, "kajiado_729b_fig": kajiado_729b_fig,
                 "nairobi_program_facilities_729b_fig": nairobi_program_facilities_729b_fig,
-                "kajiado_program_facilities_729b_fig": kajiado_program_facilities_729b_fig
+                "kajiado_program_facilities_729b_fig": kajiado_program_facilities_729b_fig,
+                "program_facilities_729b_fig": program_facilities_729b_fig
 
             }
 
@@ -2016,7 +2021,7 @@ def fmaps_reporting_rate(request):
     no_fmaps_all.index = range(1, len(no_fmaps_all) + 1)
     # Drop date from dfs
     dfs = [nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, nairobi_729b_overall,
-           kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b]
+           kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b,fyj_730b,fyj_729b]
     for df in dfs:
         if "date" in df.columns:
             df.drop('date', axis=1, inplace=True)
@@ -2030,10 +2035,12 @@ def fmaps_reporting_rate(request):
     request.session['kajiado_730b_overall'] = kajiado_730b_overall.to_dict()
     request.session['fyj_nairobi_730'] = fyj_nairobi_730.to_dict()
     request.session['fyj_kajiado_730'] = fyj_kajiado_730.to_dict()
+    request.session['fyj_730b'] = fyj_730b.to_dict()
     request.session['nairobi_729b_overall'] = nairobi_729b_overall.to_dict()
     request.session['kajiado_729b_overall'] = kajiado_729b_overall.to_dict()
     request.session['fyj_nairobi_729b'] = fyj_nairobi_729b.to_dict()
     request.session['fyj_kajiado_729b'] = fyj_kajiado_729b.to_dict()
+    request.session['fyj_729b'] = fyj_729b.to_dict()
     # Convert dict_items into a list
     dictionary = get_key_from_session_names(request)
     context = {
@@ -2050,9 +2057,11 @@ def fmaps_reporting_rate(request):
         "nairobi_730b_fig": nairobi_730b_fig, "kajiado_730b_fig": kajiado_730b_fig,
         "nairobi_program_facilities_730b_fig": nairobi_program_facilities_730b_fig,
         "kajiado_program_facilities_730b_fig": kajiado_program_facilities_730b_fig,
+        "program_facilities_730b_fig": program_facilities_730b_fig,
         "nairobi_729b_fig": nairobi_729b_fig, "kajiado_729b_fig": kajiado_729b_fig,
         "nairobi_program_facilities_729b_fig": nairobi_program_facilities_729b_fig,
-        "kajiado_program_facilities_729b_fig": kajiado_program_facilities_729b_fig
+        "kajiado_program_facilities_729b_fig": kajiado_program_facilities_729b_fig,
+        "program_facilities_729b_fig": program_facilities_729b_fig
     }
 
     return render(request, 'data_analysis/upload.html', context)

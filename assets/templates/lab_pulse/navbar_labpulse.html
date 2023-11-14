@@ -4,7 +4,9 @@
 {% url "choose_testing_lab" as choose_testing_lab %}
 {% url "choose_lab" as choose_lab %}
 {% url "choose_testing_lab_manual" as choose_testing_lab_manual %}
-{#{% url "add_pharmacy_records" as add_pharmacy_records %}#}
+{% url "load_biochemistry_results" as load_biochemistry_results %}
+{% url "add_drt_results" as add_drt_results %}
+
 {% url "commodity_summary" as commodity_summary %}
 {% url "load_khis_data" as load_khis_data %}
 {% url "show_work_plan" as show_work_plan %}
@@ -27,20 +29,21 @@
 
 {% block nav %}
     <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-
         <div class="position-sticky pt-3 sidebar-sticky">
-            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
-                <span>Instructions</span>
-            </h6>
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link {% if request.path == instructions_lab %} active{% endif %}"
-                       href="{% url 'instructions_lab' 'introduction' %}">
-                        <span data-feather="info" class="align-text-bottom"></span>
-                        Instructions
-                    </a>
-                </li>
-            </ul>
+            {% if perms.labpulse.view_show_results %}
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                    <span>Instructions</span>
+                </h6>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == instructions_lab %} active{% endif %}"
+                           href="{% url 'instructions_lab' 'introduction' %}">
+                            <span data-feather="info" class="align-text-bottom"></span>
+                            Instructions
+                        </a>
+                    </li>
+                </ul>
+            {% endif %}
             <ul class="nav flex-column">
 
                 {% if request.user|has_group_permission:"laboratory_staffs_labpulse,referring_laboratory_staffs_labpulse" or request.user.is_superuser %}
@@ -56,13 +59,13 @@
                     </li>
 
                 {% endif %}
-{#                <li class="nav-item">#}
-{#                    <a class="nav-link {% if request.path == choose_lab %} active{% endif %}"#}
-{#                       href="{% url 'commodity_summary' %}">#}
-{#                        <span data-feather="flag" class="align-text-bottom"></span>#}
-{#                        Commodity Report#}
-{#                    </a>#}
-{#                </li>#}
+                {#                <li class="nav-item">#}
+                {#                    <a class="nav-link {% if request.path == choose_lab %} active{% endif %}"#}
+                {#                       href="{% url 'commodity_summary' %}">#}
+                {#                        <span data-feather="flag" class="align-text-bottom"></span>#}
+                {#                        Commodity Report#}
+                {#                    </a>#}
+                {#                </li>#}
                 {% if perms.labpulse.view_choose_testing_lab %}
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
                         <span>Data entry</span>
@@ -93,6 +96,25 @@
                            href="{% url 'show_results' %}">
                             <span data-feather="book-open" class="align-text-bottom"></span>
                             CD4 and sCrAg Results
+                        </a>
+                    </li>
+                {% endif %}
+                {% if perms.labpulse.view_show_results or request.user|has_group_permission:"unitid_staffs_labpulse" %}
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                        <span>BIOCHEMISTRY and DRT RESULTS</span>
+                    </h6>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == load_biochemistry_results %} active{% endif %}"
+                           href="{% url 'load_biochemistry_results' %}">
+                            <span data-feather="book-open" class="align-text-bottom"></span>
+                            Upload Biochemistry
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == add_drt_results %} active{% endif %}"
+                           href="{% url 'add_drt_results' %}">
+                            <span data-feather="book-open" class="align-text-bottom"></span>
+                            Upload DRT Results
                         </a>
                     </li>
                 {% endif %}

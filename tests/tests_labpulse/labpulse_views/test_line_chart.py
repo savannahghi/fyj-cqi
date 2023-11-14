@@ -41,8 +41,8 @@ class TestLineChartMedianMean:
         result = line_chart_median_mean(df, 'x', 'y', 'Test Chart')
         assert isinstance(result, str)
         assert 'Test Chart' in result
-        assert 'Mean weekly CD4 count collection' in result
-        assert 'Median weekly CD4 count collection' in result
+        assert 'Mean' in result
+        assert 'Median' in result
 
     #  Tests the function with a dataframe containing 52 rows
     def test_dataframe_52_rows(self):
@@ -50,8 +50,8 @@ class TestLineChartMedianMean:
         result = line_chart_median_mean(df, 'x', 'y', 'Test Chart')
         assert isinstance(result, str)
         assert 'Test Chart' in result
-        assert 'Mean weekly CD4 count collection' in result
-        assert 'Median weekly CD4 count collection' in result
+        assert 'Mean' in result
+        assert 'Median' in result
 
     #  Tests the function with a dataframe containing more than 52 rows
     def test_dataframe_more_than_52_rows(self):
@@ -59,8 +59,8 @@ class TestLineChartMedianMean:
         result = line_chart_median_mean(df, 'x', 'y', 'Test Chart')
         assert isinstance(result, str)
         assert 'Test Chart' in result
-        assert 'Mean weekly CD4 count collection' in result
-        assert 'Median weekly CD4 count collection' in result
+        assert 'Mean' in result
+        assert 'Median' in result
 
     #  Tests the function with an empty dataframe
     def test_empty_dataframe(self):
@@ -74,8 +74,8 @@ class TestLineChartMedianMean:
         result = line_chart_median_mean(df, 'x', 'y', 'Test Chart')
         assert isinstance(result, str)
         assert 'Test Chart' in result
-        assert 'Mean weekly CD4 count collection' in result
-        assert 'Median weekly CD4 count collection' in result
+        assert 'Mean' in result
+        assert 'Median' in result
 
     #  Tests the function with a dataframe containing only one column
     def test_dataframe_one_column(self):

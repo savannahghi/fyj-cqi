@@ -1625,7 +1625,7 @@ def make_charts(nairobi_730b, title):
     overall_df[rates_cols[1]] = round(overall_df[rates_cols[1]], 1)
 
     overall_df.insert(0, "region", f"{nairobi_730b['orgunitlevel2'].unique()[0]}")
-    overall_df.reset_index(drop=True,inplace=True)
+    overall_df.reset_index(drop=True, inplace=True)
     a = pd.melt(overall_df, id_vars=['region', 'month/year', 'date'],
                 value_vars=rates_cols,
                 var_name='report', value_name='%')
@@ -1744,6 +1744,64 @@ def convert_and_sort_datetime(df):
     return df
 
 
+def process_facility_data(data, region, col):
+    """
+    Process facility data for a specific region.
+
+    Args:
+        data (pandas.DataFrame): Facility data including the 'month/year' and 'col' columns.
+        region (str): The region's name.
+        col (str): The name of the column to compute the average.
+
+    Returns:
+        Tuple[float, pandas.DataFrame]: A tuple containing the average reporting rate for the region and the processed data.
+
+    The function processes the facility data for the specified region by calculating the average reporting rate and formatting the data.
+
+    Example:
+        fyj_kajiado_facilities = pd.DataFrame(...)
+        region = "Kajiado"
+        col = "your_column_name"
+        average_rate, processed_data = process_facility_data(fyj_kajiado_facilities, region, col)
+    """
+    data['date'] = pd.to_datetime(data['month/year'])
+    data_rate = data.groupby(['month/year', 'date']).mean(numeric_only=True)[col].reset_index().sort_values('date')
+    data_rate[col] = round(data_rate[col], 1)
+    data_rate.insert(0, "region", region)
+    average_reporting_rate = round(data_rate[col].mean(), 1)
+    return average_reporting_rate, data_rate
+
+
+def create_counties_reporting_rate(fyj_kajiado_facilities, fyj_nairobi_facilities, col):
+    """
+    Create a report with average reporting rates for Kajiado and Nairobi counties.
+
+    Args:
+        fyj_kajiado_facilities (pandas.DataFrame): Facility data for Kajiado county.
+        fyj_nairobi_facilities (pandas.DataFrame): Facility data for Nairobi county.
+        col (str): The name of the column to compute the average reporting rate.
+
+    Returns:
+        Tuple[float, float, pandas.DataFrame, pandas.DataFrame]:
+        A tuple containing the average reporting rates for Nairobi and Kajiado, and the processed data for both counties.
+
+    This function processes facility data for Kajiado and Nairobi counties, calculating the average reporting rates and
+    returning the processed data.
+
+    Example:
+        fyj_kajiado_facilities = pd.DataFrame(...)
+        fyj_nairobi_facilities = pd.DataFrame(...)
+        col = "your_column_name"
+        nairobi_rate, kajiado_rate, nairobi_data, kajiado_data = create_counties_reporting_rate(
+            fyj_kajiado_facilities, fyj_nairobi_facilities, col)
+    """
+    kajiado_average_reporting_rate, fyj_kajiado_facilities_rate = process_facility_data(fyj_kajiado_facilities,
+                                                                                        "Kajiado", col)
+    nairobi_average_reporting_rate, fyj_nairobi_facilities_rate = process_facility_data(fyj_nairobi_facilities,
+                                                                                        "Nairobi", col)
+    return nairobi_average_reporting_rate, kajiado_average_reporting_rate, fyj_nairobi_facilities_rate, fyj_kajiado_facilities_rate
+
+
 def analyse_fmaps_fcdrr(df, df1):
     all_facilities = df.copy()
     all_facilities = all_facilities.rename(columns={"organisationunitname": "facility"})
@@ -1834,27 +1892,26 @@ def analyse_fmaps_fcdrr(df, df1):
     fyj_nairobi_facilities = program_facilities[program_facilities['MFL Code'].isin(nairobi_facitities_mfl_code)]
     # Kajiado vs FYJ
     fyj_kajiado_facilities = program_facilities[program_facilities['MFL Code'].isin(kajiado_facitities_mfl_code)]
-    fyj_kajiado_facilities['date'] = pd.to_datetime(fyj_kajiado_facilities['month/year'])
-
-    fyj_kajiado_facilities_rate = fyj_kajiado_facilities.groupby(['month/year', 'date']).mean(numeric_only=True)[
-        'Facility - CDRR Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
-    fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'] = round(
-        fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'], 1)
-    fyj_kajiado_facilities_rate.insert(0, "region", "Kajiado")
-    kajiado_average_reporting_rate = round(
-        fyj_kajiado_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'].mean(), 1)
-    fyj_nairobi_facilities['date'] = pd.to_datetime(fyj_nairobi_facilities['month/year'])
-
-    fyj_nairobi_facilities_rate = fyj_nairobi_facilities.groupby(['month/year', 'date']).mean(numeric_only=True)[
-        'Facility - CDRR Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
-    fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'] = round(
-        fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'], 1)
-    fyj_nairobi_facilities_rate.insert(0, "region", "Nairobi")
-    nairobi_average_reporting_rate = round(
-        fyj_nairobi_facilities_rate['Facility - CDRR Revision 2019 Reporting rate (%)'].mean(), 1)
+    ################################
+    # FYJ F-CDRR TREND
+    ################################
+    nairobi_average_reporting_rate, kajiado_average_reporting_rate, fyj_nairobi_facilities_rate, \
+        fyj_kajiado_facilities_rate = create_counties_reporting_rate(fyj_kajiado_facilities, fyj_nairobi_facilities,
+                                                                     'Facility - CDRR Revision 2019 Reporting rate (%)')
     reporting_rates = pd.concat([fyj_nairobi_facilities_rate, fyj_kajiado_facilities_rate])
     fcdrr_fig = fmarp_trend(reporting_rates, "month/year", 'Facility - CDRR Revision 2019 Reporting rate (%)',
                             title=f'F-CDRR reporting rate on time trends. FYJ Kajiado mean :  {kajiado_average_reporting_rate}%   '
+                                  f'FYJ Nairobi mean :  {nairobi_average_reporting_rate}%',
+                            color="region")
+    ################################
+    # FYJ F-MAPS TREND
+    ################################
+    nairobi_average_reporting_rate, kajiado_average_reporting_rate, fyj_nairobi_facilities_rate, \
+        fyj_kajiado_facilities_rate = create_counties_reporting_rate(fyj_kajiado_facilities, fyj_nairobi_facilities,
+                                                                     'F-MAPS Revision 2019 Reporting rate (%)')
+    reporting_rates = pd.concat([fyj_nairobi_facilities_rate, fyj_kajiado_facilities_rate])
+    fmaps_fig = fmarp_trend(reporting_rates, "month/year", 'F-MAPS Revision 2019 Reporting rate (%)',
+                            title=f'F-MAPS reporting rate on time trends. FYJ Kajiado mean :  {kajiado_average_reporting_rate}%   '
                                   f'FYJ Nairobi mean :  {nairobi_average_reporting_rate}%',
                             color="region")
 
@@ -1888,7 +1945,7 @@ def analyse_fmaps_fcdrr(df, df1):
         kajiado_program_facilities_730b_fig, nairobi_729b_fig, kajiado_729b_fig, nairobi_program_facilities_729b_fig, \
         kajiado_program_facilities_729b_fig, nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
         nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, no_fcdrr_fmaps_fig_all, \
-        no_fcdrr_all, no_fmaps_all,program_facilities_730b_fig,fyj_730b,program_facilities_729b_fig,fyj_729b
+        no_fcdrr_all, no_fmaps_all, program_facilities_730b_fig, fyj_730b, program_facilities_729b_fig, fyj_729b, fmaps_fig
 
 
 @login_required(login_url='login')
@@ -1899,6 +1956,7 @@ def fmaps_reporting_rate(request):
     kajiado_reporting_rate_fig = None
     overall_fig = None
     fcdrr_fig = None
+    fmaps_fig = None
     no_fcdrr_fmaps_fig = None
     no_fcdrr_fmaps_fig_all = None
     dictionary = None
@@ -1981,8 +2039,8 @@ def fmaps_reporting_rate(request):
                             kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
                             nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
                             nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, \
-                            no_fcdrr_fmaps_fig_all, no_fcdrr_all, no_fmaps_all,program_facilities_730b_fig,fyj_730b,\
-                            program_facilities_729b_fig,fyj_729b = analyse_fmaps_fcdrr(df, df1)
+                            no_fcdrr_fmaps_fig_all, no_fcdrr_all, no_fmaps_all, program_facilities_730b_fig, fyj_730b, \
+                            program_facilities_729b_fig, fyj_729b, fmaps_fig = analyse_fmaps_fcdrr(df, df1)
                 else:
                     messages.success(request, message)
                     return redirect('fmaps_reporting_rate')
@@ -1999,7 +2057,7 @@ def fmaps_reporting_rate(request):
                 "form": form, "fcdrr_fig": fcdrr_fig, "kajiado_reporting_rate_fig": kajiado_reporting_rate_fig,
                 "nairobi_reporting_rate_fig": nairobi_reporting_rate_fig, "datasets": datasets, "dqa_type": dqa_type,
                 # "no_fmaps": no_fmaps, "no_fcdrr": no_fcdrr,
-                "overall_fig": overall_fig,
+                "overall_fig": overall_fig, "fmaps_fig": fmaps_fig,
                 "no_fcdrr_fmaps_fig": no_fcdrr_fmaps_fig,
                 "no_fcdrr_fmaps_fig_all": no_fcdrr_fmaps_fig_all,
                 "nairobi_730b_fig": nairobi_730b_fig, "kajiado_730b_fig": kajiado_730b_fig,
@@ -2021,7 +2079,7 @@ def fmaps_reporting_rate(request):
     no_fmaps_all.index = range(1, len(no_fmaps_all) + 1)
     # Drop date from dfs
     dfs = [nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, nairobi_729b_overall,
-           kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b,fyj_730b,fyj_729b]
+           kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, fyj_730b, fyj_729b]
     for df in dfs:
         if "date" in df.columns:
             df.drop('date', axis=1, inplace=True)
@@ -2051,7 +2109,7 @@ def fmaps_reporting_rate(request):
         "form": form, "fcdrr_fig": fcdrr_fig, "kajiado_reporting_rate_fig": kajiado_reporting_rate_fig,
         "nairobi_reporting_rate_fig": nairobi_reporting_rate_fig, "datasets": datasets, "dqa_type": dqa_type,
         # "no_fmaps": no_fmaps, "no_fcdrr": no_fcdrr,
-        "overall_fig": overall_fig,
+        "overall_fig": overall_fig, "fmaps_fig": fmaps_fig,
         "no_fcdrr_fmaps_fig": no_fcdrr_fmaps_fig,
         "no_fcdrr_fmaps_fig_all": no_fcdrr_fmaps_fig_all,
         "nairobi_730b_fig": nairobi_730b_fig, "kajiado_730b_fig": kajiado_730b_fig,

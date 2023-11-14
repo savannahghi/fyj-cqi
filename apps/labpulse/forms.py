@@ -3,7 +3,8 @@ from django.forms import ModelForm
 from django.utils import timezone
 
 from apps.cqi.models import Facilities
-from apps.labpulse.models import Cd4traker, Cd4TestingLabs, Commodities, LabPulseUpdateButtonSettings, ReagentStock
+from apps.labpulse.models import Cd4traker, Cd4TestingLabs, Commodities, DrtResults, LabPulseUpdateButtonSettings, \
+    ReagentStock
 
 
 class Cd4trakerForm(ModelForm):
@@ -223,3 +224,40 @@ class ReagentStockForm(ModelForm):
             'negative_adjustment': 'Negative Adjustment',
             'positive_adjustment': 'Positive Adjustment',
         }
+
+
+class DrtResultsForm(ModelForm):
+    # facility_name = forms.ChoiceField(
+    #     choices=[],
+    #     required=True,
+    #     widget=forms.Select(attrs={'class': 'form-control select2'}),
+    # )
+    collection_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Collection date",
+        required=False
+    )
+    facility_name = forms.ModelChoiceField(
+        queryset=Facilities.objects.all(),
+        empty_label="Select Facility ...",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    class Meta:
+        model = DrtResults
+        fields = ["patient_id","result","facility_name","collection_date"]
+        labels = {
+            'result': 'DRT Results',
+        }
+
+    # def __init__(self, *args, **kwargs):
+    #     user = kwargs.pop('user', None)  # Pop the 'user' argument from kwargs
+    #     super(DrtResultsForm, self).__init__(*args, **kwargs)
+    #
+    #     # Populate the choices for the facility_name field
+    #     facilities = Facilities.objects.all()  # Fetch all Facilities objects from the database
+    #     # Create a list of choices for the facility_name field
+    #     # Prepend an empty choice for the initial, empty label ("Select facility")
+    #     self.fields['facility_name'].choices = [('', 'Select facility')] + [
+    #         # Generate a tuple for each facility with its primary key as the value
+    #         # and a display string combining name and MFL code
+    #         (str(facility.pk), f"{facility.name} ({facility.mfl_code})") for facility in facilities]

@@ -1,11 +1,13 @@
 from django.urls import include, path
 
 # from apps.data_analysis.views import download_csv
-from apps.labpulse.views import add_commodities, add_facility, choose_lab, choose_testing_lab, add_cd4_count, \
-    download_csv, instructions_lab, \
-    update_cd4_results, show_results, \
+from apps.labpulse.views import GenerateBioChemistryPDF, add_commodities, add_drt_results, add_facility, choose_lab, \
+    choose_testing_lab, \
+    add_cd4_count, \
+    delete_drt_result, download_csv, instructions_lab, \
+    load_biochemistry_results, update_cd4_results, show_results, \
     GeneratePDF, \
-    add_testing_lab, update_reagent_stocks, update_testing_labs, lab_pulse_update_button_settings, \
+    add_testing_lab, update_drt_results, update_reagent_stocks, update_testing_labs, lab_pulse_update_button_settings, \
     choose_testing_lab_manual
 
 urlpatterns = [
@@ -24,7 +26,12 @@ urlpatterns = [
     # path('download/<str:name>/<str:filename>', download_csv, name='download_csv'),
     path('download/<str:filter_type>', download_csv, name='download_csv_lab'),
     path('generate-pdf/', GeneratePDF.as_view(), name='generate_cd4_report_pdf'),
+    path('generate-biochemistry-report/', GenerateBioChemistryPDF.as_view(), name='generate_biochemistry_pdf'),
     path('update-button-settings/', lab_pulse_update_button_settings, name='lab_pulse_update_button_settings'),
+    path('biochemistry-results/', load_biochemistry_results, name='load_biochemistry_results'),
+    path('drt-results/', add_drt_results, name='add_drt_results'),
+    path('update-drt-results/<uuid:pk>/', update_drt_results, name='update_drt_results'),
+    path('delete-drt-results/<uuid:pk>/', delete_drt_result, name='delete_drt_result'),
 
 ]
 # urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]

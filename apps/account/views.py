@@ -82,6 +82,11 @@ def login_page(request):
                                               'facility_staffs_labpulse',
                                               'referring_laboratory_staffs_labpulse']).exists():
                 return redirect("show_results")
+            ##############################
+            # Redirect UNITID lab staffs #
+            ##############################
+            elif user.groups.filter(name='unitid_staffs_labpulse').exists():
+                return redirect("load_biochemistry_results")
             else:
                 # Redirect to CQI app
                 return redirect("facilities_landing_page", project_type="facility")

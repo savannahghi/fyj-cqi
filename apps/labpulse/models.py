@@ -89,7 +89,7 @@ class Cd4traker(models.Model):
         ),
         key=lambda x: x[0]
     )
-    AGE_UNIT_CHOICES=(("", "Select ..."),("years", "Years"), ("months", "Months"), ("days", "Days"))
+    AGE_UNIT_CHOICES = (("", "Select ..."), ("years", "Years"), ("months", "Months"), ("days", "Days"))
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     patient_unique_no = models.CharField(max_length=10)
@@ -99,7 +99,7 @@ class Cd4traker(models.Model):
     sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
     county = models.ForeignKey(Counties, null=True, blank=True, on_delete=models.CASCADE)
     age = models.PositiveIntegerField(validators=[MaxValueValidator(150)])
-    age_unit = models.CharField(max_length=10,choices=AGE_UNIT_CHOICES,
+    age_unit = models.CharField(max_length=10, choices=AGE_UNIT_CHOICES,
                                 default="years",  # Set "years" as the default value
                                 )
     cd4_count_results = models.IntegerField(blank=True, null=True)
@@ -168,7 +168,7 @@ class Cd4traker(models.Model):
             try:
                 # If the instance is being updated and date_dispatched already exists, do not update it
                 obj = Cd4traker.objects.get(pk=self.pk)
-                if self.report_type=="Current":
+                if self.report_type == "Current":
                     self.date_dispatched = obj.date_dispatched
                 else:
                     self.date_dispatched = self.date_dispatched
@@ -214,9 +214,10 @@ class Commodities(BaseModel):
 
     class Meta:
         verbose_name_plural = "Commodities"
-        ordering=['facility_name','date_created']
+        ordering = ['facility_name', 'date_created']
+
     def __str__(self):
-        return str(self.facility_name)+"-"+str(self.type_of_reagent)+"-"+str(self.date_created)
+        return str(self.facility_name) + "-" + str(self.type_of_reagent) + "-" + str(self.date_created)
 
 
 class ReagentStock(BaseModel):
@@ -241,8 +242,8 @@ class ReagentStock(BaseModel):
     date_commodity_received = models.DateTimeField(default=timezone.now)
 
     def calculate_remaining_quantity(self):
-        remaining_quantity = (self.beginning_balance + self.quantity_received + self.positive_adjustments -\
-                                  self.quantity_used - self.negative_adjustment - self.quantity_expired)
+        remaining_quantity = (self.beginning_balance + self.quantity_received + self.positive_adjustments - \
+                              self.quantity_used - self.negative_adjustment - self.quantity_expired)
         return remaining_quantity
 
     def save(self, *args, **kwargs):
@@ -251,17 +252,58 @@ class ReagentStock(BaseModel):
 
     class Meta:
         verbose_name_plural = "Reagent stocks"
-        ordering=['facility_name','date_created','remaining_quantity']
+        ordering = ['facility_name', 'date_created', 'remaining_quantity']
 
     def __str__(self):
-        return str(self.facility_name) + " - " + str(self.reagent_type)+\
-            " Remaining quantity ("+ str(self.remaining_quantity )+")"+'-'+str(self.date_created)
+        return str(self.facility_name) + " - " + str(self.reagent_type) + \
+            " Remaining quantity (" + str(self.remaining_quantity) + ")" + '-' + str(self.date_created)
+
 
 class EnableDisableCommodities(BaseModel):
     use_commodities = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name_plural='Enable Disable Commodities'
+        verbose_name_plural = 'Enable Disable Commodities'
+
     def __str__(self):
         return str(self.use_commodities)
 
+
+class BiochemistryResult(BaseModel):
+    sample_id = models.CharField(max_length=50)
+    patient_id = models.CharField(max_length=10)
+    test = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=255)
+    result = models.FloatField()
+    low_limit = models.FloatField()
+    high_limit = models.FloatField()
+    units = models.CharField(max_length=20)
+    reference_class = models.CharField(max_length=100)
+    collection_date = models.DateField()
+    result_time = models.DateTimeField()
+    mfl_code = models.IntegerField()
+    results_interpretation = models.CharField(max_length=255)
+    number_of_samples = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.mfl_code} - {self.collection_date} - {self.test} - {self.patient_id}"
+
+    class Meta:
+        ordering=['patient_id','collection_date']
+        verbose_name = "Biochemistry Result"
+        verbose_name_plural = "Biochemistry Results"
+        unique_together=(('sample_id', 'patient_id','test','collection_date','result'),)
+
+
+class DrtResults(BaseModel):
+    patient_id = models.IntegerField(validators=[MaxValueValidator(9999999999)])
+    result = models.FileField(upload_to='drt_results')
+    collection_date = models.DateTimeField()
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
+    sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
+    county = models.ForeignKey(Counties, null=True, blank=True, on_delete=models.CASCADE)
+    class Meta:
+        ordering = ['patient_id','date_created']
+
+    def __str__(self):
+        return str(self.patient_id)+ " - "+ str(self.facility_name)+ " - "+ str(self.date_created)

@@ -1,4 +1,5 @@
 import csv
+import io
 import math
 from datetime import date, datetime, timedelta, timezone
 
@@ -9,8 +10,10 @@ import pytz
 import tzlocal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.staticfiles.finders import find
 from django.core import serializers
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db import IntegrityError, transaction
 from django.db.models import ExpressionWrapper, F, IntegerField, Sum
 from django.db.models.functions import Extract
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect
@@ -23,18 +26,79 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
+from reportlab.platypus import Table, TableStyle
 
 from apps.cqi.forms import FacilitiesForm
 from apps.cqi.models import Counties, Facilities, Sub_counties
 from apps.cqi.views import bar_chart
 from apps.data_analysis.views import get_key_from_session_names
-# from apps.dqa.views import disable_update_buttons
 from apps.labpulse.decorators import group_required
-from apps.labpulse.filters import Cd4trakerFilter
+from apps.labpulse.filters import BiochemistryResultFilter, Cd4trakerFilter, DrtResultFilter
 from apps.labpulse.forms import Cd4TestingLabForm, Cd4TestingLabsForm, Cd4trakerForm, Cd4trakerManualDispatchForm, \
-    LabPulseUpdateButtonSettingsForm, ReagentStockForm, facilities_lab_Form
-from apps.labpulse.models import Cd4TestingLabs, Cd4traker, EnableDisableCommodities, LabPulseUpdateButtonSettings, \
-    ReagentStock
+    DrtResultsForm, LabPulseUpdateButtonSettingsForm, ReagentStockForm, facilities_lab_Form
+from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtResults, EnableDisableCommodities, \
+    LabPulseUpdateButtonSettings, ReagentStock
+
+
+def results(df):
+    """
+    Determine the result status based on the given data.
+
+    This function calculates the result status for a given dataset containing 'High Limit' and 'Result' values.
+    It classifies the result into categories such as 'High', 'Normal', 'Low', based on the provided limits.
+
+    Args:
+        df (pandas.DataFrame): A DataFrame containing the columns 'High Limit' and 'Result'.
+
+    Returns:
+        str: A string representing the result status, which can be 'High', 'Normal', 'Low'.
+
+    Examples:
+        Example usage:
+        df = pd.DataFrame({'High Limit': [100, 80, 120], 'Result': [90, 105, 70]})
+        status = results(df)
+        print(status)  # Output could be 'Normal', 'High', or 'Low' based on the data.
+    """
+    if df['High Limit'] < df['Result']:
+        return "High"
+    elif df['High Limit'] > df['Result'] > df['Low Limit']:
+        return "Normal"
+    elif df['Low Limit'] > df['Result']:
+        return "Low"
+    else:
+        return "Normal"
+
+
+def biochemistry_data_prep(df):
+    """
+    Prepare and clean biochemistry data.
+
+    This function prepares and cleans a DataFrame containing biochemistry data.
+    It performs various operations, such as extracting the MFL code from the 'Patient id', filtering out specific codes,
+    converting date columns to datetime objects, and applying a results function to interpret results.
+    It also adds a 'number_of_samples' column with a default value of 1.
+
+    Args:
+        df (pandas.DataFrame): A DataFrame containing biochemistry data with specific columns.
+
+    Returns:
+        pandas.DataFrame: A cleaned and processed DataFrame ready for further analysis.
+
+    Examples:
+        Example usage:
+        df = pd.read_csv('biochemistry_data.csv')
+        cleaned_data = biochem_data_prep(df, results)
+        print(cleaned_data.head())
+    """
+    df['mfl_code'] = df['Patient Id'].str[:5]
+    df = df[df['mfl_code'] != "EQA"]
+    df['Collection'] = pd.to_datetime(df['Collection'])
+    df['Result time'] = pd.to_datetime(df['Result time'])
+    df['mfl_code'] = df['mfl_code'].astype(int)
+    df['Patient Id'] = df['Patient Id'].astype(int)
+    df['results_interpretation'] = df.apply(results, axis=1)
+    df['number_of_samples'] = 1
+    return df
 
 
 def disable_update_buttons(request, audit_team, relevant_date_field):
@@ -934,7 +998,7 @@ def calculate_positivity_rate(df, column_name, title):
     # Calculate the number of tests done
     num_tests_done = len(filtered_df)
 
-    # Calculate the number of samples positive
+    # Calculate the number_of_samples positive
     num_samples_positive = (filtered_df[column_name] == 'Positive').sum()
     num_samples_negative = (filtered_df[column_name] == 'Negative').sum()
 
@@ -947,8 +1011,8 @@ def calculate_positivity_rate(df, column_name, title):
     # Create the new DataFrame
     positivity_df = pd.DataFrame({
         f'Number of {title} Tests Done': [num_tests_done],
-        'Number of Samples Positive': [num_samples_positive],
-        'Number of Samples Negative': [num_samples_negative],
+        'number_of_samples Positive': [num_samples_positive],
+        'number_of_samples Negative': [num_samples_negative],
         f'{title} Positivity (%)': [positivity_rate]
     })
     positivity_df = positivity_df.T.reset_index().fillna(0)
@@ -984,7 +1048,7 @@ def line_chart_median_mean(df, x_axis, y_axis, title, color=None):
                       line=dict(color='red', width=2, dash='dot'))
 
         fig.add_annotation(x=df[x_axis].max(), y=y,
-                           text=f"Mean weekly CD4 count collection {y}",
+                           text=f"Mean {y}",
                            showarrow=True, arrowhead=1,
                            font=dict(size=8, color='red'))
         fig.add_shape(type='line', x0=df[x_axis].min(), y0=x,
@@ -993,7 +1057,7 @@ def line_chart_median_mean(df, x_axis, y_axis, title, color=None):
                       line=dict(color='black', width=2, dash='dot'))
 
         fig.add_annotation(x=df[x_axis].min(), y=x,
-                           text=f"Median weekly CD4 count collection {x}",
+                           text=f"Median {x}",
                            showarrow=True, arrowhead=1,
                            font=dict(size=8, color='black'))
     else:
@@ -1155,7 +1219,7 @@ def generate_results_df(list_of_projects):
     # Convert Timestamp objects to strings
     list_of_projects_fac = list_of_projects_fac.sort_values('Collection Date').reset_index(drop=True)
     # convert to datetime with UTC
-    date_columns=['Testing date','Collection Date','Received date','Date Dispatch']
+    date_columns = ['Testing date', 'Collection Date', 'Received date', 'Date Dispatch']
     list_of_projects_fac[date_columns] = list_of_projects_fac[date_columns].astype("datetime64[ns, UTC]")
     # Convert the dates to user local timezone
     local_timezone = tzlocal.get_localzone()
@@ -1283,6 +1347,7 @@ def generate_results_df(list_of_projects):
     age_sex_df = list_of_projects_fac.groupby(['Age Group', 'Sex']).size().unstack().reset_index()
     return age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
         crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac, show_cd4_testing_workload, show_crag_testing_workload
+
 
 def download_csv(request, filter_type):
     # Get the serialized filtered data from the session
@@ -1449,7 +1514,7 @@ def show_results(request):
         data = my_filters.qs.values(*fields)
 
         age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
-            crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac, show_cd4_testing_workload,\
+            crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac, show_cd4_testing_workload, \
             show_crag_testing_workload = generate_results_df(data)
         ###################################
         # AGE AND SEX CHART
@@ -1556,20 +1621,21 @@ def show_results(request):
     # Convert dict_items into a list
     dictionary = get_key_from_session_names(request)
     context = {
-        "title": "Results", "record_count_options": record_count_options,"record_count": record_count,
-        "rejected_samples_exist": rejected_samples_exist,"tb_lam_pos_samples_exist": tb_lam_pos_samples_exist,
-        "crag_pos_samples_exist": crag_pos_samples_exist,"missing_crag_samples_exist": missing_crag_samples_exist,
-        "missing_tb_lam_samples_exist": missing_tb_lam_samples_exist,"dictionary": dictionary,"my_filters": my_filters,
-        "qi_list": qi_list,"cd4_summary_fig": cd4_summary_fig,"crag_testing_lab_fig": crag_testing_lab_fig,
-        "weekly_trend_fig": weekly_trend_fig,"cd4_testing_lab_fig": cd4_testing_lab_fig,
-        "age_distribution_fig": age_distribution_fig,"rejection_summary_fig": rejection_summary_fig,
-        "justification_summary_fig": justification_summary_fig,"crag_positivity_fig": crag_positivity_fig,
-        "justification_summary_df": justification_summary_df,"facility_crag_positive_fig": facility_crag_positive_fig,
-        "rejection_summary_df": rejection_summary_df,"show_cd4_testing_workload": show_cd4_testing_workload ,
-        "show_crag_testing_workload": show_crag_testing_workload,"crag_positivity_df": crag_positivity_df,
-        "facility_positive_count": facility_positive_count,"tb_lam_positivity_fig": tb_lam_positivity_fig,
+        "title": "Results", "record_count_options": record_count_options, "record_count": record_count,
+        "rejected_samples_exist": rejected_samples_exist, "tb_lam_pos_samples_exist": tb_lam_pos_samples_exist,
+        "crag_pos_samples_exist": crag_pos_samples_exist, "missing_crag_samples_exist": missing_crag_samples_exist,
+        "missing_tb_lam_samples_exist": missing_tb_lam_samples_exist, "dictionary": dictionary,
+        "my_filters": my_filters,
+        "qi_list": qi_list, "cd4_summary_fig": cd4_summary_fig, "crag_testing_lab_fig": crag_testing_lab_fig,
+        "weekly_trend_fig": weekly_trend_fig, "cd4_testing_lab_fig": cd4_testing_lab_fig,
+        "age_distribution_fig": age_distribution_fig, "rejection_summary_fig": rejection_summary_fig,
+        "justification_summary_fig": justification_summary_fig, "crag_positivity_fig": crag_positivity_fig,
+        "justification_summary_df": justification_summary_df, "facility_crag_positive_fig": facility_crag_positive_fig,
+        "rejection_summary_df": rejection_summary_df, "show_cd4_testing_workload": show_cd4_testing_workload,
+        "show_crag_testing_workload": show_crag_testing_workload, "crag_positivity_df": crag_positivity_df,
+        "facility_positive_count": facility_positive_count, "tb_lam_positivity_fig": tb_lam_positivity_fig,
         "tb_lam_positivity_df": tb_lam_positivity_df, "weekly_df": weekly_df,
-        "weekly_tat_trend_fig": weekly_tat_trend_fig,"facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
+        "weekly_tat_trend_fig": weekly_tat_trend_fig, "facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
     }
     return render(request, 'lab_pulse/show results.html', context)
 
@@ -1682,12 +1748,12 @@ def generate_report(request, pdf, name, mfl_code, date_collection, date_testing,
         pdf.setFont("Helvetica", 4)
         pdf.setFillColor(colors.grey)
         pdf.drawString((letter[0] / 3) + 30, y + 0.2 * inch,
-                       f"Report generated by: {request.user}    Time: {datetime.now()}")
+                       f"Report downloaded by: {request.user}    Time: {datetime.now()}")
     else:
         pdf.setFont("Helvetica", 4)
         pdf.setFillColor(colors.grey)
         pdf.drawString((letter[0] / 3) + 30, y + 0.2 * inch,
-                       f"Report generated by: {request.user}    Time: {datetime.now()}")
+                       f"Report downloaded by: {request.user}    Time: {datetime.now()}")
 
     pdf.setFont("Helvetica", 7)
     pdf.setFillColor(colors.black)
@@ -1718,7 +1784,6 @@ class GeneratePDF(View):
 
         # Create a PDF canvas
         pdf.translate(inch, inch)
-        client_timezone = timezone.get_current_timezone()
 
         # Generate reports
         for index, data in list_of_projects_fac.iterrows():
@@ -1878,7 +1943,7 @@ def add_commodities(request, pk_lab):
         # return render(request, template_name,context )
     if request.method == "POST":
         if form.is_valid():
-            reagent_type = form.cleaned_data['reagent_type']
+            # reagent_type = form.cleaned_data['reagent_type']
             # try:
             post = form.save(commit=False)
             if not validate_commodity_form(form):
@@ -1888,7 +1953,7 @@ def add_commodities(request, pk_lab):
 
             facility_name = Facilities.objects.filter(mfl_code=selected_facility).first()
             post.facility_name = facility_name
-            now = datetime.now()
+            # now = datetime.now()
             # existing_facility_record = ReagentStock.objects.filter(reagent_type=reagent_type,
             #                                                        facility_name__mfl_code=selected_facility,
             #                                                        remaining_quantity__gt=0,
@@ -2013,3 +2078,496 @@ def update_reagent_stocks(request, pk):
         "crag_total_remaining": crag_total_remaining,
     }
     return render(request, 'lab_pulse/update results.html', context)
+
+
+def track_records(df_specific):
+    # Convert 'Collection' column to a string
+    df_specific['Collection'] = df_specific['Collection'].astype(str)
+
+    # Split the 'Collection' column on 'T' and keep only the first part (the date)
+    df_specific['Collection'] = df_specific['Collection'].str.split('T').str[0]
+
+    saved_sample = list(df_specific['Sample Id'].unique())[0]
+    return saved_sample
+
+
+@login_required(login_url='login')
+def load_biochemistry_results(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    tests_summary_fig = None
+    summary_fig = None
+    summary_fig_per_text = None
+    weekly_trend_fig = None
+    test_trend_fig = None
+
+    #####################################
+    # Display existing data
+    #####################################
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+        # record_count = int(request.GET.get('record_count', 10))  # Get the selected record count (default: 10)
+        record_count = request.GET.get('record_count', '10')
+    else:
+        record_count = request.GET.get('record_count', '100')
+
+    biochemistry_qs = BiochemistryResult.objects.all()
+    record_count_options = [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50]] + [("all", "All"), ]
+    my_filters = BiochemistryResultFilter(request.GET, queryset=biochemistry_qs)
+    biochemistry_qs = pagination_(request, my_filters.qs, record_count)
+
+    if my_filters.qs:
+        # fields to extract
+        fields = ['sample_id', 'patient_id', 'test',
+                  'full_name', 'result', 'low_limit', 'high_limit', 'units',
+                  'reference_class', 'collection_date', 'result_time', 'mfl_code', 'results_interpretation',
+                  'number_of_samples', 'date_created'
+                  ]
+
+        # Extract the data from the queryset using values()
+        data = my_filters.qs.values(*fields)
+        df = pd.DataFrame(data)
+        df = df.rename(columns={"full_name": "test_name"})
+        bio_chem_df = df.copy()
+
+        try:
+            if "bio_chem_df" in request.session:
+                del request.session['bio_chem_df']
+            bio_chem_df = bio_chem_df.drop(
+                ['test', 'reference_class', 'collection_date', 'mfl_code', 'number_of_samples', 'date_created'], axis=1)
+            bio_chem_df['result_time'] = bio_chem_df['result_time'].astype(str)
+            request.session['bio_chem_df'] = bio_chem_df.to_dict()
+        except KeyError:
+            # Handle the case where the session key doesn't exist
+            pass
+
+        all_df = df.copy()
+        all_df['results_interpretation'] = pd.Categorical(all_df['results_interpretation'],
+                                                          ['Low','Normal','High'])
+        all_df.sort_values(['results_interpretation'], inplace=True)
+        all_df.sort_values(['number_of_samples'], inplace=True)
+
+        b = all_df.groupby(["results_interpretation", "test_name", "reference_class"]).sum(numeric_only=True)[
+            'number_of_samples'].reset_index()
+
+        color_discrete_map = {'Normal': 'green', 'High': 'red', 'Low': 'blue'}
+        fig = px.bar(b, x="test_name", y="number_of_samples", text="number_of_samples", height=500,
+                     title=f"Distribution of Test Results by Interpretation N={b['number_of_samples'].sum()}",
+                     color="results_interpretation",
+                     color_discrete_map=color_discrete_map)
+        fig.update_layout(legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
+        tests_summary_fig = plot(fig, include_plotlyjs=False, output_type="div")
+
+        df['results_interpretation'] = pd.Categorical(df['results_interpretation'],
+                                                      ['Low','Normal','High'])
+        b = df.groupby("results_interpretation").sum(numeric_only=True)['number_of_samples'].reset_index()
+
+        fig = px.bar(b, x="results_interpretation", y="number_of_samples", text="number_of_samples", height=350,
+                     title=f"Overall Results interpretation N={b['number_of_samples'].sum()}")
+        # fig.update_layout({
+        #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+        # })
+        # Set the font size of the x-axis and y-axis labels
+        fig.update_layout(
+            xaxis=dict(
+                tickfont=dict(
+                    size=10
+                ),
+                title_font=dict(
+                    size=10
+                )
+            ),
+            yaxis=dict(
+                title_font=dict(
+                    size=10
+                )
+            ),
+            legend=dict(
+                font=dict(
+                    size=10
+                )
+            ),
+            title=dict(
+                # text="My Line Chart",
+                font=dict(
+                    size=12
+                )
+            )
+        )
+        summary_fig = plot(fig, include_plotlyjs=False, output_type="div")
+
+        b = df.groupby("test_name").sum(numeric_only=True)['number_of_samples'].reset_index().sort_values(
+            "number_of_samples")
+
+        fig = px.bar(b, x="test_name", y="number_of_samples", text="number_of_samples", height=350,
+                     title=f"Distribution of Tests Conducted N={b['number_of_samples'].sum()}")
+        # fig.update_layout({
+        #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+        # })
+        # Set the font size of the x-axis and y-axis labels
+        fig.update_layout(
+            xaxis=dict(
+                tickfont=dict(
+                    size=10
+                ),
+                title_font=dict(
+                    size=10
+                )
+            ),
+            yaxis=dict(
+                title_font=dict(
+                    size=10
+                )
+            ),
+            legend=dict(
+                font=dict(
+                    size=10
+                )
+            ),
+            title=dict(
+                # text="My Line Chart",
+                font=dict(
+                    size=12
+                )
+            )
+        )
+        summary_fig_per_text = plot(fig, include_plotlyjs=False, output_type="div")
+
+        ###################################
+        # Weekly Trend viz
+        ###################################
+        df_weekly = df.copy()
+        df_weekly['date_created'] = pd.to_datetime(df_weekly['date_created'], format='%Y-%m-%d')
+
+        df_weekly['week_start'] = df_weekly['date_created'].dt.to_period('W').dt.start_time
+        weekly_df = df_weekly.groupby('week_start').size().reset_index(name='number_of_samples')
+        weekly_df['Weekly Trend'] = weekly_df["week_start"].astype(str) + "."
+        weekly_trend = weekly_df['number_of_samples'].sum()
+        if weekly_df.shape[0] > 1:
+            weekly_trend_fig = line_chart_median_mean(weekly_df, "Weekly Trend", "number_of_samples",
+                                                      f"Weekly Trend of sample uploaded N={weekly_trend}"
+                                                      f"      Maximum : {max(weekly_df['number_of_samples'])}")
+
+        weekly_df = df_weekly.groupby(['week_start', 'test_name']).size().reset_index(name='number_of_samples')
+        weekly_df['Weekly Trend'] = weekly_df["week_start"].astype(str) + "."
+        test_trend_fig = {}
+        for i in sorted(weekly_df['test_name'].unique()):
+            ind_test_df = weekly_df[weekly_df["test_name"] == i]
+            fig = px.line(ind_test_df, x="Weekly Trend", y="number_of_samples", text="number_of_samples", height=500,
+                          title=f"Weekly trend for samples uploaded ({i}) N={ind_test_df['number_of_samples'].sum()}",
+                          )
+            fig.update_layout(legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ))
+            fig.update_traces(textposition='top center')
+            test_trend_fig[i] = plot(fig, include_plotlyjs=False, output_type="div")
+
+    title = "Results"
+    threshold_of_result_to_display = 500
+    context = {"title": title, "biochemistry_qs": biochemistry_qs, "record_count_options": record_count_options,
+               "my_filters": my_filters, "record_count": record_count, "tests_summary_fig": tests_summary_fig,
+               "threshold_of_result_to_display": threshold_of_result_to_display, "summary_fig": summary_fig,
+               "summary_fig_per_text": summary_fig_per_text, "weekly_trend_fig": weekly_trend_fig,
+               "test_trend_fig": test_trend_fig}
+
+    #####################################
+    # Load new data
+    #####################################
+    if request.method == 'POST' and "file" in request.FILES:
+        file = request.FILES['file']
+        if file:
+            # Create a StringIO object to simulate a file
+            csv_data = io.StringIO(file.read().decode('ISO-8859-1'))
+
+            # Read the CSV with the appropriate settings
+            df = pd.read_csv(csv_data, sep=';', quotechar='"', encoding='ISO-8859-1')
+            if "Low Limit" in df.columns and "High Limit" in df.columns:
+                df = biochemistry_data_prep(df)
+
+                saved = []
+                already_exist = []
+                for sample in df['Patient Id'].unique():
+                    df_copy = df.copy()
+                    df_specific = df_copy[df_copy['Patient Id'] == sample]
+                    try:
+                        with transaction.atomic():
+                            if df_specific.shape[1] == 14:
+                                # Iterate over each row in the DataFrame
+                                for index, row in df_specific.iterrows():
+                                    chemistry_results = BiochemistryResult()
+                                    chemistry_results.sample_id = row[df_specific.columns[0]]
+                                    chemistry_results.patient_id = row[df_specific.columns[1]]
+                                    chemistry_results.test = row[df_specific.columns[2]]
+                                    chemistry_results.full_name = row[df_specific.columns[3]]
+                                    chemistry_results.result = row[df_specific.columns[4]]
+                                    chemistry_results.low_limit = row[df_specific.columns[5]]
+                                    chemistry_results.high_limit = row[df_specific.columns[6]]
+                                    chemistry_results.units = row[df_specific.columns[7]]
+                                    chemistry_results.reference_class = row[df_specific.columns[8]]
+                                    chemistry_results.collection_date = row[df_specific.columns[9]]
+                                    chemistry_results.result_time = row[df_specific.columns[10]]
+                                    chemistry_results.mfl_code = row[df_specific.columns[11]]
+                                    chemistry_results.results_interpretation = row[df_specific.columns[12]]
+                                    chemistry_results.number_of_samples = row[df_specific.columns[13]]
+                                    chemistry_results.save()
+                                saved.append(track_records(df_specific))
+                            else:
+                                # Notify the user that the data is not correct
+                                messages.error(request, f'Kindly confirm if {file} has all data columns.The file has'
+                                                        f'{len(df_specific.columns)} columns')
+                                redirect('load_data')
+                    except IntegrityError:
+                        already_exist.append(track_records(df_specific))
+                        continue
+            else:
+                messages.error(request, "Upload the correct file!")
+                return render(request, 'lab_pulse/upload.html', context)
+            saved_list = ', '.join(str(saved_sample) for saved_sample in sorted(saved))
+            if len(saved_list) > 0:
+                sample_ids_count = len(saved)
+                if sample_ids_count > 1:
+                    messages.error(request,
+                                   f'{sample_ids_count} sample IDs were successfully saved in the database: {saved_list}')
+                else:
+                    messages.error(request, f'One sample ID was successfully saved in the database: {saved_list}')
+            already_lists = ', '.join(str(exist) for exist in sorted(already_exist))
+
+            if len(already_exist) > 0:
+                if len(list(already_exist)) == len(df['Sample Id'].unique()):
+                    error_msg = f"The entire Biochemistry dataset has already been uploaded. Sample IDs: ({already_lists})"
+                else:
+                    error_msg = f"Biochemistry data already exists for the following sample IDs: {already_lists}"
+                messages.error(request, error_msg)
+            return redirect('load_biochemistry_results')
+    return render(request, 'lab_pulse/upload.html', context)
+
+
+# Create a function to add an image to the canvas
+def add_image(pdf, image_path, x, y, width, height):
+    pdf.drawImage(image_path, x, y, width, height)
+
+
+def insert_dataframe_to_pdf(pdf, df, x, y):
+    # Convert the DataFrame to a list of lists
+    data = [df.columns.tolist()] + df.values.tolist()
+
+    # Create a table from the data
+    table = Table(data)
+
+    # Add style to the table
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Header row background color
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Header text color
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),  # Data row background color
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)  # Grid lines
+    ]))
+
+    # Add the table to the PDF
+    table.wrapOn(pdf, 0, 0)
+    table.drawOn(pdf, x, y)  # Adjust the position (x, y) as needed
+
+
+def create_page(request, pdf, y, image_path, ccc_num, sample_id, df1, start_x=80):
+    width = letter[0] - 100
+    # Add the image to the canvas above the "BIOCHEMISTRY REPORT" text and take the full width
+    add_image(pdf, image_path, x=start_x, y=y, width=width, height=100)
+
+    width = letter[0] - 35
+
+    pdf.setFont("Courier-Bold", 18)
+    # Write the facility name in the top left corner of the page
+    pdf.drawString(250, y - 25, "BIOCHEMISTRY REPORT")
+    pdf.setDash(1, 0)  # Reset the line style
+    pdf.line(x1=start_x, y1=y - 10, x2=width, y2=y - 10)
+    pdf.line(x1=start_x, y1=y - 30, x2=width, y2=y - 30)
+    # Facility info
+    pdf.setFont("Helvetica", 12)
+    pdf.drawString(start_x, y - 50, f"Unique CCC No: {ccc_num}")
+    pdf.drawString(start_x + 200, y - 50, f"Sample Id: {sample_id}")
+
+    # Insert dataframe
+    pdf.setFont("Helvetica", 8)
+    insert_dataframe_to_pdf(pdf, df1, start_x - 9, y - 200)
+    pdf.setFont("Helvetica", 4)
+    pdf.setFillColor(colors.grey)
+    formatted_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    pdf.drawString((letter[0] / 3) + 30, y - 210,
+                   f"Report downloaded by: {request.user}    Time: {formatted_time}")
+    pdf.setFont("Helvetica", 12)
+    pdf.setFillColor(colors.black)
+
+    pdf.setDash(1, 2)  # Reset the line style
+    pdf.line(x1=start_x, y1=y - 220, x2=width, y2=y - 220)
+
+
+class GenerateBioChemistryPDF(View):
+    def get(self, request):
+        if request.user.is_authenticated and not request.user.first_name:
+            return redirect("profile")
+
+        # Retrieve the serialized DataFrame from the session
+        df = request.session.get('bio_chem_df', {})
+
+        # Convert the dictionary back to a DataFrame
+        df1 = pd.DataFrame.from_dict(df)
+
+        # Create a new PDF object using ReportLab
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'filename="Biochemistry Report.pdf"'
+        pdf = canvas.Canvas(response, pagesize=letter)
+
+        y = 680
+
+        # Get the image path using the find function from staticfiles.finders
+        image_path = find('images/biochem_image.png')
+
+        # Generate reports
+        for index, i in enumerate(sorted(df1['patient_id'].unique())):
+            if index % 2 == 0 and index != 0:
+                pdf.showPage()
+                y = 680
+            df2 = df1[df1['patient_id'] == i]
+            sample_id = df2['sample_id'].values[0]
+            ccc_num = df2['patient_id'].values[0]
+            df2 = df2.drop(["patient_id", "sample_id"], axis=1)  # drop Patient Id and Sample Id
+            df2 = df2.rename(columns={"Full name": "Test"})  # Rename column
+            create_page(request, pdf, y, image_path, ccc_num, sample_id, df2)
+            y = y - 400  # Adjust the y value for the next result on the same page
+
+        pdf.save()
+        return response
+
+
+@login_required(login_url='login')
+def add_drt_results(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    title = "UPLOAD DRT RESULTS"
+    #####################################
+    # Display existing data
+    #####################################
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+        # record_count = int(request.GET.get('record_count', 10))  # Get the selected record count (default: 10)
+        record_count = request.GET.get('record_count', '10')
+    else:
+        record_count = request.GET.get('record_count', '100')
+
+    results = DrtResults.objects.all()
+    record_count_options = [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50]] + [("all", "All"), ]
+    my_filters = DrtResultFilter(request.GET, queryset=results)
+    results = pagination_(request, my_filters.qs, record_count)
+
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    template_name = "lab_pulse/add_drt.html"
+
+    if request.method == "POST":
+        form = DrtResultsForm(request.POST, request.FILES)
+        if form.is_valid():
+            context = {"form": form, "title": title, "results": results, "my_filters": my_filters}
+            post = form.save(commit=False)
+            #################
+            # Validate date
+            #################
+            date_fields_to_validate = ['collection_date']
+            if not validate_date_fields(form, date_fields_to_validate):
+                # Render the template with the form and errors
+                return render(request, template_name, context)
+
+            facility_name = form.cleaned_data['facility_name']
+            facility_id = Facilities.objects.get(name=facility_name)
+
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    post.county = Counties.objects.get(id=county.counties_id)
+            post.save()
+            return redirect("add_drt_results")
+    else:
+        form = DrtResultsForm()
+    context = {"form": form, "title": title, "results": results, "my_filters": my_filters,
+               "record_count_options": record_count_options}
+    return render(request, "lab_pulse/add_drt.html", context)
+
+
+@login_required(login_url='login')
+def update_drt_results(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    item = DrtResults.objects.get(id=pk)
+    if request.method == "POST":
+        form = DrtResultsForm(request.POST, request.FILES, instance=item)
+        if form.is_valid():
+            post = form.save(commit=False)
+            facility_name = form.cleaned_data['facility_name']
+            facility_id = Facilities.objects.get(name=facility_name)
+
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    post.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    post.county = Counties.objects.get(id=county.counties_id)
+            post.save()
+            return HttpResponseRedirect(request.session['page_from'])
+    else:
+        form = DrtResultsForm(instance=item)
+    context = {
+        "form": form,
+        "title": "Update DRT Results",
+    }
+    return render(request, 'lab_pulse/add_drt.html', context)
+
+
+@login_required(login_url='login')
+def delete_drt_result(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = DrtResults.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+
+    }
+    return render(request, 'project/delete_test_of_change.html', context)

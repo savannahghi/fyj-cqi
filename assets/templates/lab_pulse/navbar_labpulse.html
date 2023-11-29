@@ -6,6 +6,7 @@
 {% url "choose_testing_lab_manual" as choose_testing_lab_manual %}
 {% url "load_biochemistry_results" as load_biochemistry_results %}
 {% url "add_drt_results" as add_drt_results %}
+{% url "generate_drt_results" as generate_drt_results %}
 
 {% url "commodity_summary" as commodity_summary %}
 {% url "load_khis_data" as load_khis_data %}
@@ -107,14 +108,23 @@
                         <a class="nav-link {% if request.path == load_biochemistry_results %} active{% endif %}"
                            href="{% url 'load_biochemistry_results' %}">
                             <span data-feather="book-open" class="align-text-bottom"></span>
-                            Upload Biochemistry
+                            Biochemistry results
                         </a>
                     </li>
+                    {% if request.user|has_group_permission:"unitid_staffs_labpulse" or request.user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == generate_drt_results %} active{% endif %}"
+                               href="{% url 'generate_drt_results' %}">
+                                <span data-feather="book-open" class="align-text-bottom"></span>
+                                Compile Final DRT Report
+                            </a>
+                        </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == add_drt_results %} active{% endif %}"
                            href="{% url 'add_drt_results' %}">
                             <span data-feather="book-open" class="align-text-bottom"></span>
-                            Upload DRT Results
+                            DRT Results
                         </a>
                     </li>
                 {% endif %}

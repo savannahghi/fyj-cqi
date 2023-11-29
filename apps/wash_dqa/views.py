@@ -322,7 +322,7 @@ def add_documentation(request, report_type="documentation"):
         'Reporting forms/tools are  standardized across all district/regions of  project',
         'Data collection and reporting forms include all required program/project indicators',
         'There are clear written instructions for completing the data-collection and reporting forms',
-        'There is a  documented or adopted guidelines on how to handle gender sensitive data for each reporting level',
+        # 'There is a  documented or adopted guidelines on how to handle gender sensitive data for each reporting level',
         'There is no (or minimal) duplication in data collection requirements for staff/partners, i.e. they are not required to report the same activityion more than one tool',
         'All sub grantee use a standard reporting template',
         'The number of data collection tools is sufficient for program needs and not excessive (all data collected are reported)',
@@ -332,7 +332,7 @@ def add_documentation(request, report_type="documentation"):
         'There is a description of the filing system for paper-based data collection and/or reporting (e.g. if supervision visits are filed in physical cabinets and not uploaded in an electronic data capture system or database)',
         'Historical data are properly stored, up to date and readily available (check 12-24 month data, depending on the project year)',
         'Project data (service statistics, training, follow-up, advocacy, sensitization, etc) are disaggregated by sex, age and other criteria (income, location, etc)',
-        'If beneficiary-level personal information is collected then IDs are used to protect the confidentiality of clients, and access is restricted to this information',
+        # 'If beneficiary-level personal information is collected then IDs are used to protect the confidentiality of clients, and access is restricted to this information',
         'Safeguards (such as passwords and ascribing different data management roles to staff) are in place to prevent unauthorized changes to data',
         'There is management support for following up any persistent data gaps with partners', ]
     data_collection_verification_means_list = [
@@ -443,7 +443,7 @@ def add_documentation(request, report_type="documentation"):
         'Did the data collection tool focus on the information needed to answer the question or measure performance? (i.e. the tools and collection procedures are well designed and  limit the potential for systematic or random errors)',
         'Are sound research methods being used to collect the data?',
         'Are the data used in computing the indicator measured from the same data source, with the same data collection tool within the reporting period, in different location (facilities, districts, regions)?',
-        'If data come from different sources for different locations(e.g. regions) within a country, are the instruments are similar enough to make the data collected comparable?',
+        # 'If data come from different sources for different locations(e.g. regions) within a country, are the instruments are similar enough to make the data collected comparable?',
         'If the indicator involve data manipulation such as calculation of rates or proportion,  is the same formulae are applied consistently (and correctly) within the reporting period and in all location?',
         'Are data collection and analysis methods documented in writing and being used to ensure the same procedures are followed each time?',
 
@@ -681,7 +681,7 @@ def get_assessment_list_model_name(report_type):
             'Did the data collection tool focus on the information needed to answer the question or measure performance? (i.e. the tools and collection procedures are well designed and  limit the potential for systematic or random errors)',
             'Are sound research methods being used to collect the data?',
             'Are the data used in computing the indicator measured from the same data source, with the same data collection tool within the reporting period, in different location (facilities, districts, regions)?',
-            'If data come from different sources for different locations(e.g. regions) within a country, are the instruments are similar enough to make the data collected comparable?',
+            # 'If data come from different sources for different locations(e.g. regions) within a country, are the instruments are similar enough to make the data collected comparable?',
             'If the indicator involve data manipulation such as calculation of rates or proportion,  is the same formulae are applied consistently (and correctly) within the reporting period and in all location?',
             'Are data collection and analysis methods documented in writing and being used to ensure the same procedures are followed each time?',
 
@@ -752,7 +752,7 @@ def get_assessment_list_model_name(report_type):
             'Reporting forms/tools are  standardized across all district/regions of  project',
             'Data collection and reporting forms include all required program/project indicators',
             'There are clear written instructions for completing the data-collection and reporting forms',
-            'There is a  documented or adopted guidelines on how to handle gender sensitive data for each reporting level',
+            # 'There is a  documented or adopted guidelines on how to handle gender sensitive data for each reporting level',
             'There is no (or minimal) duplication in data collection requirements for staff/partners, i.e. they are not required to report the same activityion more than one tool',
             'All sub grantee use a standard reporting template',
             'The number of data collection tools is sufficient for program needs and not excessive (all data collected are reported)',
@@ -762,7 +762,7 @@ def get_assessment_list_model_name(report_type):
             'There is a description of the filing system for paper-based data collection and/or reporting (e.g. if supervision visits are filed in physical cabinets and not uploaded in an electronic data capture system or database)',
             'Historical data are properly stored, up to date and readily available (check 12-24 month data, depending on the project year)',
             'Project data (service statistics, training, follow-up, advocacy, sensitization, etc) are disaggregated by sex, age and other criteria (income, location, etc)',
-            'If beneficiary-level personal information is collected then IDs are used to protect the confidentiality of clients, and access is restricted to this information',
+            # 'If beneficiary-level personal information is collected then IDs are used to protect the confidentiality of clients, and access is restricted to this information',
             'Safeguards (such as passwords and ascribing different data management roles to staff) are in place to prevent unauthorized changes to data',
             'There is management support for following up any persistent data gaps with partners', ]
         model_name = DataCollectionReportingManagement

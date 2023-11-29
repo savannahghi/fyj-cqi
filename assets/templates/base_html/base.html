@@ -401,6 +401,87 @@
     serumCragResultsField.addEventListener('change', toggleNoCragReason);
 </script>
 
+<!-- Show uploaded files dynamically -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fileInput = document.querySelector('input[type="file"]');
+        const fileList = document.getElementById('uploaded-files-list');
+        const uploadedFilesLabel = document.querySelector('#uploaded-files-label');
+
+        // Function to update the file list
+        function updateFileList() {
+            let fileNames = '';
+            for (let i = 0; i < fileInput.files.length; i++) {
+                fileNames += '<li>' + fileInput.files[i].name + '</li>';
+            }
+            fileList.innerHTML = fileNames;
+
+            // Show/hide label based on uploaded files
+            uploadedFilesLabel.style.display = fileInput.files.length > 0 ? 'block' : 'none';
+        }
+
+        // Update file list on file selection
+        fileInput.addEventListener('change', function () {
+            updateFileList();
+        });
+    });
+</script>
+<script>
+    // This script is designed to toggle the visibility of the summary section
+    // when the "Show/Hide Summary" button is clicked.
+    $(document).ready(function () {
+        // Attach the click event to the toggle buttons
+        $('#toggleSummaryTop, #toggleSummaryBottom').on('click', function () {
+            // Toggle the visibility of the summary section
+            $('#collapse_summary').toggleClass('show');
+            // Update the label text based on visibility
+            updateLabel();
+        });
+
+        // Function to update the label text
+        function updateLabel() {
+            // Get the label element associated with the toggle buttons
+            var label = $('#toggleSummaryTop, #toggleSummaryBottom').next('.form-check-label');
+            // Check if the summary section is visible
+            var isVisible = $('#collapse_summary').hasClass('show');
+            // Update the label text accordingly
+            label.text(isVisible ? 'Hide Summary' : 'Show Summary');
+        }
+    });
+</script>
+
+
+<script>
+    /// This script is designed to reset the form when the document is fully loaded
+    document.addEventListener("DOMContentLoaded", () => {
+        const filterForm = document.getElementById('filter-form');
+
+        // Array of fields to be reset
+        const fieldsToReset = ['#id_county', '#id_sub_county', '#id_facility_name', '#id_testing_laboratory',
+            '#id_haart_class','#id_sequence_summary'];
+
+        // Function to reset the form
+        const resetForm = () => {
+            // Reset the form fields
+            filterForm.reset();
+
+            // Clear the values in specific fields using select2
+            fieldsToReset.forEach((field) => {
+                $(field).val(null).trigger('change.select2');
+                $(field).select2('destroy').select2();
+            });
+        };
+
+        // Attach the resetForm function to the reset button click event
+        document.getElementById('reset-button').addEventListener('click', (event) => {
+            event.preventDefault(); // Prevent the default form submission
+            resetForm(); // Call the resetForm function
+        });
+    });
+
+</script>
+
+
 
 {% block footer %}{% endblock %}
 </body>

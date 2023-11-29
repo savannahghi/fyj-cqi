@@ -3938,15 +3938,20 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def bar_chart(df, x_axis, y_axis, title, color=None):
-    # df[x_axis]=df[x_axis].str.split(" ").str[0]
-    if x_axis =="Age Group":
-        category_orders = {"Age Group": ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
-                      '50-54', '55-59', '60-64', '65+'],}
-    else:
-        category_orders=None
+def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow=False,xaxis_title=None):
+    category_orders={}
+    if "age" in x_axis.lower():
+        age_categories = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44',
+                          '45-49', '50-54', '55-59', '60-64', '65+']
+        category_orders = {x_axis: age_categories}
 
-    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=300,color=color,
+        # Filter out categories not present in the dataset and maintain sorting
+        available_categories = df[x_axis].unique()
+        filtered_categories = [category for category in age_categories if category in available_categories]
+        category_orders[x_axis] = sorted(filtered_categories, key=age_categories.index)
+
+
+    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=height,color=color,
                  category_orders=category_orders
                  # hover_name=x_axis,  hover_data={
                  #                                        "tested of change":True,
@@ -3956,12 +3961,18 @@ def bar_chart(df, x_axis, y_axis, title, color=None):
     # fig.add_trace(go.Line(x=df[x_axis], y=df[y_axis], mode='markers'))
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
+    fig.update_layout(
+        xaxis_title=f"{xaxis_title}",
+        yaxis_title=f"{y_axis}",
+        legend_title=f"{xaxis_title}",
+    )
     # fig.add_hline(y=90, line_width=1, line_dash="dash", line_color="green")
     # fig.add_hline(y=75, line_width=1, line_dash="dash", line_color="red")
-    fig.update_layout({
-        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
-        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
-    })
+    if not background_shadow:
+        fig.update_layout({
+            'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+            'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+        })
     # Set the font size of the x-axis and y-axis labels
     fig.update_layout(
         xaxis=dict(

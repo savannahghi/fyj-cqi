@@ -1,9 +1,12 @@
 from django import forms
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.forms import ModelForm
 from django.utils import timezone
+from multiupload.fields import MultiFileField
 
 from apps.cqi.models import Facilities
-from apps.labpulse.models import Cd4traker, Cd4TestingLabs, Commodities, DrtResults, LabPulseUpdateButtonSettings, \
+from apps.labpulse.models import Cd4traker, Cd4TestingLabs, Commodities, DrtPdfFile, DrtResults, \
+    LabPulseUpdateButtonSettings, \
     ReagentStock
 
 
@@ -227,37 +230,64 @@ class ReagentStockForm(ModelForm):
 
 
 class DrtResultsForm(ModelForm):
-    # facility_name = forms.ChoiceField(
-    #     choices=[],
-    #     required=True,
-    #     widget=forms.Select(attrs={'class': 'form-control select2'}),
-    # )
-    collection_date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date'}),
-        label="Collection date",
-        required=False
-    )
     facility_name = forms.ModelChoiceField(
         queryset=Facilities.objects.all(),
         empty_label="Select Facility ...",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+    # result = MultiFileField(min_num=1, max_num=12, max_file_size=1024 * 1024 * 5)
     class Meta:
         model = DrtResults
-        fields = ["patient_id","result","facility_name","collection_date"]
+        fields = ["facility_name"]
+class MultipleUploadForm(forms.Form):
+    files = MultiFileField(min_num=1, max_num=12, max_file_size=1024*1024*5)  # Adjust max_num and max_file_size as needed
+
+class DrtForm(MultipleUploadForm):
+    patient_name = forms.CharField(max_length=20)
+    sex = forms.ChoiceField(
+        choices=[
+            ('', 'Select gender'),
+            ("M", "M"),
+            ("F", "F"),
+        ]
+    )
+
+    AGE_UNIT_CHOICES = [("", "Select ..."), ("years", "Years"), ("months", "Months"), ("days", "Days")]
+    age = forms.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(150)]
+    )
+    age_unit = forms.ChoiceField(choices=AGE_UNIT_CHOICES)
+    contact = forms.CharField(max_length=20,required=False)
+    specimen_type = forms.CharField(max_length=20)
+    request_from = forms.CharField(max_length=20)
+    requesting_clinician = forms.CharField(max_length=20)
+    performed_by = forms.CharField(max_length=20)
+    reviewed_by = forms.CharField(max_length=20)
+    date_collected = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Collected"
+    )
+    date_received = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Received"
+    )
+    date_reported = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Reported"
+    )
+    date_tested = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Tested"
+    )
+    date_reviewed = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Reviewed"
+    )
+
+class DrtPdfFileForm(ModelForm):
+    class Meta:
+        model = DrtPdfFile
+        fields = ["result"]
         labels = {
             'result': 'DRT Results',
         }
-
-    # def __init__(self, *args, **kwargs):
-    #     user = kwargs.pop('user', None)  # Pop the 'user' argument from kwargs
-    #     super(DrtResultsForm, self).__init__(*args, **kwargs)
-    #
-    #     # Populate the choices for the facility_name field
-    #     facilities = Facilities.objects.all()  # Fetch all Facilities objects from the database
-    #     # Create a list of choices for the facility_name field
-    #     # Prepend an empty choice for the initial, empty label ("Select facility")
-    #     self.fields['facility_name'].choices = [('', 'Select facility')] + [
-    #         # Generate a tuple for each facility with its primary key as the value
-    #         # and a display string combining name and MFL code
-    #         (str(facility.pk), f"{facility.name} ({facility.mfl_code})") for facility in facilities]

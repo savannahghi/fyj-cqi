@@ -1,8 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.sessions.models import Session
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
+from django.utils import timezone
 
 # Create your views here.
 from apps.account.forms import CustomUserForm, UpdateUserForm
@@ -92,7 +94,23 @@ def login_page(request):
                 return redirect("facilities_landing_page", project_type="facility")
     return render(request, "account/login_page.html", {})
 
+# Identify and delete sessions that are expired
+def delete_expired_sessions():
+    # Get the current time
+    now = timezone.now()
+
+    # Identify expired sessions
+    expired_sessions = Session.objects.filter(expire_date__lt=now)
+
+    # Delete expired sessions
+    expired_sessions.delete()
 
 def logout_page(request):
+    # Clear the session
+    request.session.clear()
+
+    # Call the function to delete expired sessions
+    delete_expired_sessions()
+
     logout(request)
     return redirect("login")

@@ -40,7 +40,8 @@ from apps.cqi.views import bar_chart
 from apps.data_analysis.views import get_key_from_session_names
 from apps.labpulse.decorators import group_required
 from apps.labpulse.filters import BiochemistryResultFilter, Cd4trakerFilter, DrtResultFilter
-from apps.labpulse.forms import Cd4TestingLabForm, Cd4TestingLabsForm, Cd4trakerForm, Cd4trakerManualDispatchForm, \
+from apps.labpulse.forms import BiochemistryForm, Cd4TestingLabForm, Cd4TestingLabsForm, Cd4trakerForm, \
+    Cd4trakerManualDispatchForm, \
     DrtForm, DrtPdfFileForm, DrtResultsForm, LabPulseUpdateButtonSettingsForm, ReagentStockForm, facilities_lab_Form
 from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtPdfFile, DrtResults, \
     EnableDisableCommodities, \
@@ -1590,7 +1591,6 @@ def show_results(request):
     facility_positive_count = pd.DataFrame()
     # Access the page URL
     current_page_url = request.path
-    print(f"current_page_url::{current_page_url}")
 
     cd4traker_qs = Cd4traker.objects.all().order_by('-date_dispatched')
     # Calculate TAT in days and annotate it in the queryset
@@ -2257,7 +2257,7 @@ def load_biochemistry_results(request):
         fields = ['sample_id', 'patient_id', 'test',
                   'full_name', 'result', 'low_limit', 'high_limit', 'units',
                   'reference_class', 'collection_date', 'result_time', 'mfl_code', 'results_interpretation',
-                  'number_of_samples', 'date_created'
+                  'number_of_samples', 'date_created','performed_by'
                   ]
 
         # Extract the data from the queryset using values()
@@ -2412,81 +2412,84 @@ def load_biochemistry_results(request):
 
     title = "Results"
     threshold_of_result_to_display = 500
+    form=BiochemistryForm()
     context = {"title": title, "biochemistry_qs": biochemistry_qs, "record_count_options": record_count_options,
                "my_filters": my_filters, "record_count": record_count, "tests_summary_fig": tests_summary_fig,
                "threshold_of_result_to_display": threshold_of_result_to_display, "summary_fig": summary_fig,
-               "summary_fig_per_text": summary_fig_per_text, "weekly_trend_fig": weekly_trend_fig,
+               "summary_fig_per_text": summary_fig_per_text, "weekly_trend_fig": weekly_trend_fig,"form":form,
                "test_trend_fig": test_trend_fig}
 
     #####################################
     # Load new data
     #####################################
-    if request.method == 'POST' and "file" in request.FILES:
-        file = request.FILES['file']
-        if file:
-            # Create a StringIO object to simulate a file
-            csv_data = io.StringIO(file.read().decode('ISO-8859-1'))
-
-            # Read the CSV with the appropriate settings
-            df = pd.read_csv(csv_data, sep=';', quotechar='"', encoding='ISO-8859-1')
-            if "Low Limit" in df.columns and "High Limit" in df.columns:
-                df = biochemistry_data_prep(df)
-
-                saved = []
-                already_exist = []
-                for sample in df['Patient Id'].unique():
-                    df_copy = df.copy()
-                    df_specific = df_copy[df_copy['Patient Id'] == sample]
-                    try:
-                        with transaction.atomic():
-                            if df_specific.shape[1] == 14:
-                                # Iterate over each row in the DataFrame
-                                for index, row in df_specific.iterrows():
-                                    chemistry_results = BiochemistryResult()
-                                    chemistry_results.sample_id = row[df_specific.columns[0]]
-                                    chemistry_results.patient_id = row[df_specific.columns[1]]
-                                    chemistry_results.test = row[df_specific.columns[2]]
-                                    chemistry_results.full_name = row[df_specific.columns[3]]
-                                    chemistry_results.result = row[df_specific.columns[4]]
-                                    chemistry_results.low_limit = row[df_specific.columns[5]]
-                                    chemistry_results.high_limit = row[df_specific.columns[6]]
-                                    chemistry_results.units = row[df_specific.columns[7]]
-                                    chemistry_results.reference_class = row[df_specific.columns[8]]
-                                    chemistry_results.collection_date = row[df_specific.columns[9]]
-                                    chemistry_results.result_time = row[df_specific.columns[10]]
-                                    chemistry_results.mfl_code = row[df_specific.columns[11]]
-                                    chemistry_results.results_interpretation = row[df_specific.columns[12]]
-                                    chemistry_results.number_of_samples = row[df_specific.columns[13]]
-                                    chemistry_results.save()
-                                saved.append(track_records(df_specific))
-                            else:
-                                # Notify the user that the data is not correct
-                                messages.error(request, f'Kindly confirm if {file} has all data columns.The file has'
-                                                        f'{len(df_specific.columns)} columns')
-                                redirect('load_data')
-                    except IntegrityError:
-                        already_exist.append(track_records(df_specific))
-                        continue
-            else:
-                messages.error(request, "Upload the correct file!")
-                return render(request, 'lab_pulse/upload.html', context)
-            saved_list = ', '.join(str(saved_sample) for saved_sample in sorted(saved))
-            if len(saved_list) > 0:
-                sample_ids_count = len(saved)
-                if sample_ids_count > 1:
-                    messages.error(request,
-                                   f'{sample_ids_count} sample IDs were successfully saved in the database: {saved_list}')
+    if request.method == 'POST':
+        form = BiochemistryForm(request.POST, request.FILES)
+        if form.is_valid():
+            files = request.FILES.getlist('files')
+            if files:
+                performed_by = form.cleaned_data['performed_by']
+                dfs = []
+                for file in files:
+                    csv_data = io.StringIO(file.read().decode('ISO-8859-1'))
+                    dfs.append(pd.read_csv(csv_data, sep=';', quotechar='"', encoding='ISO-8859-1'))
+                df=pd.concat(dfs)
+                if "Low Limit" in df.columns and "High Limit" in df.columns:
+                    df = biochemistry_data_prep(df)
+                    saved = []
+                    already_exist = []
+                    for sample in df['Patient Id'].unique():
+                        df_copy = df.copy()
+                        df_specific = df_copy[df_copy['Patient Id'] == sample]
+                        try:
+                            with transaction.atomic():
+                                if df_specific.shape[1] == 14:
+                                    # Iterate over each row in the DataFrame
+                                    for index, row in df_specific.iterrows():
+                                        chemistry_results = BiochemistryResult()
+                                        chemistry_results.sample_id = row[df_specific.columns[0]]
+                                        chemistry_results.patient_id = row[df_specific.columns[1]]
+                                        chemistry_results.test = row[df_specific.columns[2]]
+                                        chemistry_results.full_name = row[df_specific.columns[3]]
+                                        chemistry_results.result = row[df_specific.columns[4]]
+                                        chemistry_results.low_limit = row[df_specific.columns[5]]
+                                        chemistry_results.high_limit = row[df_specific.columns[6]]
+                                        chemistry_results.units = row[df_specific.columns[7]]
+                                        chemistry_results.reference_class = row[df_specific.columns[8]]
+                                        chemistry_results.collection_date = row[df_specific.columns[9]]
+                                        chemistry_results.result_time = row[df_specific.columns[10]]
+                                        chemistry_results.mfl_code = row[df_specific.columns[11]]
+                                        chemistry_results.results_interpretation = row[df_specific.columns[12]]
+                                        chemistry_results.number_of_samples = row[df_specific.columns[13]]
+                                        chemistry_results.performed_by = performed_by
+                                        chemistry_results.save()
+                                    saved.append(track_records(df_specific))
+                                else:
+                                    # Notify the user that the data is not correct
+                                    messages.error(request, f'Invalid files...Kindly upload the correct file')
+                                    redirect('load_data')
+                        except IntegrityError:
+                            already_exist.append(track_records(df_specific))
+                            continue
                 else:
-                    messages.error(request, f'One sample ID was successfully saved in the database: {saved_list}')
-            already_lists = ', '.join(str(exist) for exist in sorted(already_exist))
+                    messages.error(request, "Upload the correct file!")
+                    return render(request, 'lab_pulse/upload.html', context)
+                saved_list = ', '.join(str(saved_sample) for saved_sample in sorted(saved))
+                if len(saved_list) > 0:
+                    sample_ids_count = len(saved)
+                    if sample_ids_count > 1:
+                        messages.error(request,
+                                       f'{sample_ids_count} sample IDs were successfully saved in the database: {saved_list}')
+                    else:
+                        messages.error(request, f'One sample ID was successfully saved in the database: {saved_list}')
+                already_lists = ', '.join(str(exist) for exist in sorted(already_exist))
 
-            if len(already_exist) > 0:
-                if len(list(already_exist)) == len(df['Sample Id'].unique()):
-                    error_msg = f"The entire Biochemistry dataset has already been uploaded. Sample IDs: ({already_lists})"
-                else:
-                    error_msg = f"Biochemistry data already exists for the following sample IDs: {already_lists}"
-                messages.error(request, error_msg)
-            return redirect('load_biochemistry_results')
+                if len(already_exist) > 0:
+                    if len(list(already_exist)) == len(df['Sample Id'].unique()):
+                        error_msg = f"The entire Biochemistry dataset has already been uploaded. Sample IDs: ({already_lists})"
+                    else:
+                        error_msg = f"Biochemistry data already exists for the following sample IDs: {already_lists}"
+                    messages.error(request, error_msg)
+                return redirect('load_biochemistry_results')
     return render(request, 'lab_pulse/upload.html', context)
 
 
@@ -2535,6 +2538,11 @@ def create_page(request, pdf, y, image_path, ccc_num, sample_id, df1, start_x=80
     pdf.setFont("Helvetica", 12)
     pdf.drawString(start_x, y - 50, f"Unique CCC No: {ccc_num}")
     pdf.drawString(start_x + 200, y - 50, f"Sample Id: {sample_id}")
+    performed_by_values = df1['performed_by'].dropna().unique()  # Drop NA/null values and get unique values
+    if len(performed_by_values) > 0:
+        formatted_value = performed_by_values[0].title()
+        pdf.drawString(start_x + 300, y - 50, f"Test Performed by: {formatted_value}")
+    df1=df1.drop("performed_by",axis=1)
 
     # Insert dataframe
     pdf.setFont("Helvetica", 8)

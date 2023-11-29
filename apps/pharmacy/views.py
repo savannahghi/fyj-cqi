@@ -70,7 +70,7 @@ def get_query_params(request, form, selected_facility, selected_date):
 
     return query_params
 
-
+@login_required(login_url='login')
 def choose_facilities_pharmacy(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -475,10 +475,8 @@ def create_inventory_formset(report_name, request, initial_data):
 
     return formset, inventory_form_set, model_class, form_class
 
-
+@login_required(login_url='login')
 def choose_facilities_inventory(request):
-    if not request.user.first_name:
-        return redirect("profile")
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
@@ -509,10 +507,8 @@ def choose_facilities_inventory(request):
     }
     return render(request, 'pharmacy/add_facilities_data_inventory.html', context)
 
-
+@login_required(login_url='login')
 def add_inventory(request, report_name=None, quarter=None, year=None, pk=None, date=None):
-    if not request.user.first_name:
-        return redirect("profile")
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
@@ -1705,8 +1701,6 @@ def update_workplan(request, pk):
 
 @login_required(login_url='login')
 def add_audit_team_pharmacy(request, pk, quarter_year):
-    if not request.user.first_name:
-        return redirect("profile")
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":

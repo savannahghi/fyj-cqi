@@ -8,7 +8,6 @@
 {% block content %}
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
         <div class="p-5 mb-4 bg-light rounded-3">
-
             {% if messages %}
                 <ul class="messages">
                     {% for message in messages %}
@@ -19,23 +18,18 @@
                 </ul>
             {% endif %}
             <div class="container-fluid py-5">
-                {% if request.user|has_group_permission:"unitid_staffs_labpulse" %}
+                {% if request.user|has_group_permission:"unitid_staffs_labpulse" or user.is_superuser %}
                     <h1 class="display-6 fw-bold text-primary">{{ title }} </h1>
-                    <form class="row " method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
-                        <div class="col-md-3 mt-4">
-                            {{ form.patient_id|as_crispy_field }}
-                        </div>
-                        <div class="col-md-3 mt-4">
-                            {{ form.collection_date|as_crispy_field }}
-                        </div>
                         <div class="col-md-3 mt-4">
                             {{ form.facility_name|as_crispy_field }}
                         </div>
+
                         <div class="col-md-3 mt-4">
-                            {{ form.result|as_crispy_field }}
+                            {{ drt_file_form.result|as_crispy_field }}
                         </div>
-                        <div class="col-md-4 mt-3">
+                        <div class="col-md-4 mt-4">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
                         {% if form.errors %}
@@ -44,6 +38,7 @@
                             </div>
                         {% endif %}
                     </form>
+
                     <hr>
                 {% endif %}
                 <div class="col-md-12 alert alert-primary text-center">
@@ -58,13 +53,35 @@
                             {{ my_filters.form.sub_county|as_crispy_field }}
                         </div>
                         <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.facility_names|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.patient_id|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.sex|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.sequence_summary|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.age_lte|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.age_gte|as_crispy_field }}
                         </div>
                         <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.collection_date_gte|as_crispy_field }}
                         </div>
                         <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.collection_date_lte|as_crispy_field }}
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.resistance_level|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.haart_class|as_crispy_field }}
                         </div>
                         <div class="col-12 col-md-6 col-lg-2 mt-2 pt-1">
                             <label for="record_count" class="form-label mb-0">Records Per Page</label>
@@ -90,33 +107,103 @@
                         <div class="col-12 col-md-6 col-lg-2">
                             <div class="row">
                                 <div class="mt-4">
-                                    <a class="nav-link"
-                                       href="{% url 'add_drt_results' %}">
-                                        <span data-feather="refresh-cw" class="align-text-bottom"></span>
-                                        Reset Filters
-                                    </a>
+                                    <button id="reset-button" class="btn btn-outline-primary btn-sm" type="button">
+                                        <i data-feather="refresh-cw"></i> Reset Filters
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </form>
                 </div>
-                <hr>
-                <h4 class="fw-bold text-primary text-center"> Summary </h4>
-                <hr>
             </div>
+            {% if resistance_level_fig %}
+                <div class="row mb-3">
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                    <a href="{% url 'download_csv_lab' "all" %}"
+                       class="btn btn-secondary btn-block" role="button"> All records
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+            </div>
+                <div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="toggleSummaryTop">
+                        <label class="form-check-label" for="toggleSummaryTop">Show or Hide Summary (Top)</label>
+                    </div>
+                </div>
+                <div id="collapse_summary" class="collapse show">
+                    <hr>
+                    <h3 class="fw-bold text-primary text-center"> Summary </h3>
+                    <hr>
+                    {{ drt_distribution_fig|safe }}
+                    <hr>
+                    {{ drt_tat_fig|safe }}
+                    <hr>
+                    {{ resistance_level_fig|safe }}
+                    <hr>
+                    {{ age_summary_fig|safe }}
+                    <hr>
+                    {{ resistance_level_age_fig|safe }}
+                    <hr>
+                    <h5 class="fw-bold text-primary text-center"> Time-Based Changes in Drug Resistance
+                        Prevalence:
+                        Overall </h5>
+                    <hr>
+                    {{ prevalence_tat_fig|safe }}
+                    <hr>
+                    {{ drt_trend_fig|safe }}
+                    <hr>
+                    <h5 class="fw-bold text-primary text-center"> Time-Based Changes in Drug Resistance
+                        Prevalence:
+                        By Drug </h5>
+                    <hr>
+                    {% for keys, trend_fig in trend_figs.items %}
+                        {{ trend_fig|safe }}
+                        <hr>
+                    {% endfor %}
+                </div>
+                <div class="form-check form-switch mt-3">
+                    <input class="form-check-input" type="checkbox" id="toggleSummaryBottom">
+                    <label class="form-check-label" for="toggleSummaryBottom">Show or Hide Summary (Bottom)</label>
+                </div>
+            {% endif %}
+            <div class="row mt-3">
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                    <a href="{% url 'download_csv_lab' "all" %}"
+                       class="btn btn-secondary btn-block" role="button"> All records
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+            </div>
+
             <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
                 {% for result in results %}
-                    <div class="col-md-11">
+                    <div class="col-md-12">
                         <div class="card h-100">
                             <div class="card-body">
                                 <h6 class="card-title">
                                     <div class="d-flex justify-content-between">
                                         <div>
-                                            <a href="{{ result.result.url }}">
-                                                {{ forloop.counter }}. {{ result.patient_id }}
-                                                : {{ result.facility_name }}
+                                            {{ forloop.counter }}.
+                                            <a href="{{ result.result.url }}"
+                                                    {% for drt_result in result.drt_results.all|slice:":1" %}
+                                               style="color:
+                                                       {% if drt_result.sequence_summary == 'PASSED' %}
+                                                           green
+                                                       {% else %}
+                                                           red
+                                                       {% endif %}; font-size: small">
+                                                        {{ drt_result.patient_id }}
+                                                        (SS: {{ drt_result.sequence_summary }} Sex: {{ drt_result.sex }}
+                                                        Age: {{ drt_result.age }})
+                                                        : {{ drt_result.facility_name }}
+                                                        (Collection date: {{ drt_result.collection_date|date:"M d, Y" }}
+                                                        )
+                                                        TAT: {{ drt_result.tat_days }} days
+                                                    {% endfor %}
                                             </a>
                                         </div>
+
                                         <div>
                                             <a href="{{ result.result.url }}">
                                                 <button type="button" class="btn btn-outline-success btn-floating mr-2"
@@ -133,7 +220,7 @@
                                                     </button>
                                                 </a>
                                             {% endif %}
-                                            {% if user.is_superuser %}
+                                            {% if user.id == result.created_by.id or user.is_superuser %}
                                                 <a href="{% url 'delete_drt_result' result.id %}">
                                                     <button type="button"
                                                             class="btn btn-outline-danger btn-floating mr-2"
@@ -147,7 +234,7 @@
                                 </h6>
                             </div>
                             <div class="card-footer d-flex justify-content-between">
-                                <small class="text-muted">Uploaded on {{ result.date_modified|date:"M d, Y" }}
+                                <small class="text-muted">Last updated on {{ result.date_modified|date:"M d, Y" }}
                                     ({{ result.date_modified|timesince }}) ago
                                 </small>
                                 <small class="text-muted">Uploaded by {{ result.modified_by.first_name|title }}
@@ -158,6 +245,10 @@
                     </div>
                 {% endfor %}
             </div>
+            <!-- Display the pagination links -->
+            {% block pagination %}
+                {% include "partial_html/pagination.html" %}
+            {% endblock %}
         </div>
         </div>
     </main>

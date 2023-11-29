@@ -19,7 +19,7 @@
                     <ul class="messages">
                         {% for message in messages|slice:":1" %}
                             <div class="alert alert-info col-md-12" role="alert">
-                                <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
+                                <h6 class="d-flex justify-content-evenly">{{ message }}</h6>
                             </div>
                         {% endfor %}
                     </ul>
@@ -109,17 +109,27 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-6 col-lg-2">
-                                <div class="row">
-                                    <div class="mt-4">
-                                        <a class="nav-link"
-                                           href="{% url 'load_biochemistry_results' %}">
-                                            <span data-feather="refresh-cw" class="align-text-bottom"></span>
-                                            Reset Filters
-                                        </a>
+{#                            <div class="col-12 col-md-6 col-lg-2">#}
+{#                                <div class="row">#}
+{#                                    <div class="mt-4">#}
+{#                                        <a class="nav-link"#}
+{#                                           href="{% url 'load_biochemistry_results' %}">#}
+{#                                            <span data-feather="refresh-cw" class="align-text-bottom"></span>#}
+{#                                            Reset Filters#}
+{#                                        </a>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+                        <div class="col-12 col-md-6 col-lg-2">
+                                    <div class="row">
+                                        <div class="mt-4">
+                                            <button id="reset-button" class="btn btn-outline-primary btn-sm"
+                                                    type="button">
+                                                <i data-feather="refresh-cw"></i> Reset Filters
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                         </form>
                     </div>
                     <hr>
@@ -281,12 +291,107 @@
                             {% endif %}
                         </div>
                     {% endif %}
+                {% elif title == "UPLOAD STANDFORD PDFS" %}
+                    {% if request.user|has_group_permission:"unitid_staffs_labpulse" or request.user.is_superuser %}
+                        <div class="col-md-12 alert alert-primary text-center">
+                            <h4>Stanford DRT PDF Integration</h4>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-md-6 col-lg-2">
+                                <div class="row">
+                                    <div class="mt-4">
+                                        <button id="reset-button" class="btn btn-outline-primary btn-sm"
+                                                type="button">
+                                            <i data-feather="refresh-cw"></i> Reset Filters
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <form method="post" id="filter-form" class="row g-3" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <!-- Display facility_name input -->
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.patient_name|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.sex|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.age_unit|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.age|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.contact|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.specimen_type|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.request_from|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.requesting_clinician|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.date_collected|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.date_received|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.date_reported|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.performed_by|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.date_tested|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.reviewed_by|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.date_reviewed|as_crispy_field }}
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2 mt-5">
+                                    {{ form.files }}
+                                </div>
+
+                                <!-- Conditionally display uploaded files label -->
+                                <label id="uploaded-files-label" for="{{ form.files.id_for_label }}"
+                                       style="display: none;">Uploaded
+                                    Files:</label>
+                                <!-- Display uploaded file names dynamically -->
+                                <ul id="uploaded-files-list"></ul>
+                                <!-- Hidden input field to store files for server-side processing -->
+                                <input type="hidden" name="uploaded_files" value="">
+                                <div class="col-12 col-md-6 col-lg-2">
+                                    <button type="submit" class="btn btn-primary mt-4">Compile PDF</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col">
+                            {% if show_download_button %}
+                                {% if ccc_num %}
+                                    <p>DRT Report for <strong>{{ ccc_num }}</strong> has been generated. Click the
+                                        link below to download:</p>
+                                {% else %}
+                                    <p>DRT Report has been generated. Click the link below to download:</p>
+                                {% endif %}
+                                <a href="{% url 'generate_drt_pdf' %}"
+                                   class="btn btn-warning btn-block mb-2"
+                                   role="button"> Download DRT REPORT </a>
+                            {% endif %}
+                        </div>
+                        <hr>
+                    {% endif %}
                 {% else %}
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="form-group">
                             <div class="custom-file">
-
                                 <input type="file" class="custom-file-input" id="fileInput" name="file">
                                 <label class="custom-file-label" for="fileInput">Choose file</label>
                             </div>

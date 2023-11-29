@@ -192,7 +192,7 @@ class AuditTeamForm(ModelForm):
 class WashDQAWorkPlanForm(ModelForm):
     due_complete_by = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
-        label="DQA date"
+        label="Action plan due date"
     )
     class Meta:
         model = WashDQAWorkPlan

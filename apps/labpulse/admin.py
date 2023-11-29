@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.labpulse.models import BiochemistryResult, Cd4traker, Cd4TestingLabs, Commodities, DrtResults, \
+from apps.labpulse.models import BiochemistryResult, Cd4traker, Cd4TestingLabs, Commodities, DrtPdfFile, DrtResults, \
     EnableDisableCommodities, \
     LabPulseUpdateButtonSettings, ReagentStock
 from django.contrib.auth.models import Permission
@@ -15,3 +15,4 @@ admin.site.register(ReagentStock)
 admin.site.register(EnableDisableCommodities)
 admin.site.register(BiochemistryResult)
 admin.site.register(DrtResults)
+admin.site.register(DrtPdfFile)

@@ -284,9 +284,10 @@ class BiochemistryResult(BaseModel):
     mfl_code = models.IntegerField()
     results_interpretation = models.CharField(max_length=255)
     number_of_samples = models.IntegerField()
+    performed_by = models.CharField(max_length=100,blank=True,null=True)
 
     def __str__(self):
-        return f"{self.mfl_code} - {self.collection_date} - {self.test} - {self.patient_id}"
+        return f"{self.mfl_code} - {self.date_created} - {self.test} - {self.patient_id}"
 
     class Meta:
         ordering=['patient_id','collection_date']

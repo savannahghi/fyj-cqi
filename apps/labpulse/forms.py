@@ -291,3 +291,5 @@ class DrtPdfFileForm(ModelForm):
         labels = {
             'result': 'DRT Results',
         }
+class BiochemistryForm(MultipleUploadForm):
+    performed_by = forms.CharField(max_length=100,label="Test Performed by")

@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import math
+import os
 import re
 import textwrap
 from datetime import date, datetime, timedelta, timezone
@@ -44,6 +45,7 @@ from apps.labpulse.forms import Cd4TestingLabForm, Cd4TestingLabsForm, Cd4traker
 from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtPdfFile, DrtResults, \
     EnableDisableCommodities, \
     LabPulseUpdateButtonSettings, ReagentStock
+from config.settings.base import BASE_DIR
 
 
 def results(df):
@@ -3834,9 +3836,9 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
 
     y = 660
     start_x = 70
-    # Get the image path using the find function from staticfiles.finders
-    image_path = r'C:\Users\Admin\Documents\drt_image_updated.png'
-    image_path1 = r'C:/Users/Admin/Documents/end_of_report_drt.png'
+    # Add images to the PDF canvas using absolute paths
+    image_path = os.path.join(BASE_DIR, 'assets', 'static', 'images', 'drt_image_updated.png')
+    image_path1 = os.path.join(BASE_DIR, 'assets', 'static', 'images', 'end_of_report_drt.png')
 
     width = letter[0] - 114
     # Add the image to the canvas above the "BIOCHEMISTRY REPORT" text and take the full width

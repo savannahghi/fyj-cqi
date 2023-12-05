@@ -2794,7 +2794,7 @@ def get_month_resistance_order(drug_df, desired_order=None):
     # Define the desired order for resistance_level
     if desired_order is None:
         desired_order = ['Susceptible', 'Potential Low-Level Resistance', 'Low-level resistance',
-                         'High-Level Resistance']
+                         'Intermediate Resistance','High-Level Resistance']
 
     # Get unique resistance levels from the DataFrame
     unique_resistance_levels = drug_df['resistance_level'].unique()
@@ -2921,6 +2921,20 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
             'drt_results__drug_abbreviation': 'drug_abbreviation', 'drt_results__drug': 'drug',
             'drt_results__resistance_level': 'resistance_level', 'drt_results__sequence_summary': 'sequence_summary',
             'drt_results__haart_class': 'haart_class', 'drt_results__test_perfomed_by': 'test_perfomed_by', })
+        # Define the replacement dictionary
+        replacement_dict = {'High-Level ': 'High-Level Resistance','Susceptible': 'Susceptible',
+            'Potential': 'Potential Low-Level Resistance','Intermediate': 'Intermediate Resistance',
+            'Low-Level Resistance': 'Low-level resistance'
+        }
+
+        # Apply the replacements using str.contains and np.select
+        df_resistant_patterns['resistance_level'] = np.select(
+            [df_resistant_patterns['resistance_level'].str.contains(value, case=False) for value in
+             replacement_dict.keys()],
+            [replacement_dict[value] for value in replacement_dict.keys()],
+            default=df_resistant_patterns['resistance_level']
+        )
+
         df_resistant_patterns['sequence_summary'] = df_resistant_patterns['sequence_summary'].astype(str).str.upper()
         df_resistant_patterns['collection_date'] = pd.to_datetime(
             df_resistant_patterns['collection_date']).dt.tz_convert('Africa/Nairobi')
@@ -2949,7 +2963,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         max_date = df_resistant_patterns['collection_date'].max()
 
         resistance_order = ['Susceptible', 'Potential Low-Level Resistance', 'Low-level resistance',
-                            'High-Level Resistance']
+                            'Intermediate Resistance','High-Level Resistance']
         resistance_counts['resistance_level'] = pd.Categorical(resistance_counts['resistance_level'],
                                                                categories=resistance_order, ordered=True)
 
@@ -3114,9 +3128,8 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
             'Number of DRT tests'].reset_index()
 
         # Reorder the resistance levels
-        order = ['Susceptible', 'Potential Low-Level Resistance', 'Low-level resistance', 'High-Level Resistance']
-        resistance_counts['resistance_level'] = pd.Categorical(resistance_counts['resistance_level'], categories=order,
-                                                               ordered=True)
+        resistance_counts['resistance_level'] = pd.Categorical(resistance_counts['resistance_level'],
+                                                               categories=resistance_order,ordered=True)
         trend_figs = {}
         for unique_class in sorted(resistance_counts['haart_class'].unique()):
             class_data = resistance_counts[resistance_counts['haart_class'] == unique_class]
@@ -3460,30 +3473,33 @@ def extract_text(pdf_text, variable_1, variable_2):
 
     # Create a dictionary and DataFrame to store the extracted information
     pi_resistance_profile_dict = {}
-    pi_resistance_profile_dict["col_name"] = pattern_match.group(0)
-    pattern_match_df = pd.DataFrame([pi_resistance_profile_dict])
+    if pattern_match:
+        pi_resistance_profile_dict["col_name"] = pattern_match.group(0)
+        pattern_match_df = pd.DataFrame([pi_resistance_profile_dict])
 
-    # Extract unique values from the DataFrame column
-    generated_list = pattern_match_df["col_name"].unique()
+        # Extract unique values from the DataFrame column
+        generated_list = pattern_match_df["col_name"].unique()
 
-    # Process and clean the extracted text
-    generated_list = generated_list[0].replace(f" {variable_2}", "")
-    generated_list = generated_list.replace(f"{variable_2}", "")
-    generated_list = [s.replace('·', ',').replace(',,', ',') for s in generated_list.split("\n")]
+        # Process and clean the extracted text
+        generated_list = generated_list[0].replace(f" {variable_2}", "")
+        generated_list = generated_list.replace(f"{variable_2}", "")
+        generated_list = [s.replace('·', ',').replace(',,', ',') for s in generated_list.split("\n")]
 
-    # Join lines based on lowercase and uppercase starting letters
-    generated_list = join_lines_starting_lowercase(generated_list)
-    generated_list = join_lines_starting_uppercase(generated_list)
+        # Join lines based on lowercase and uppercase starting letters
+        generated_list = join_lines_starting_lowercase(generated_list)
+        generated_list = join_lines_starting_uppercase(generated_list)
 
-    # Remove unwanted strings
-    filtered_list = [s for s in generated_list if s != '.']
-    filtered_list = [s for s in filtered_list if s != '(CoVDB)']
-    filtered_list = [s for s in filtered_list if s != '']
-    filtered_list = [item for item in filtered_list if '//' not in item]
-    filtered_list = [item for item in filtered_list if 'HIVDB' not in item.upper()]
+        # Remove unwanted strings
+        filtered_list = [s for s in generated_list if s != '.']
+        filtered_list = [s for s in filtered_list if s != '(CoVDB)']
+        filtered_list = [s for s in filtered_list if s != '']
+        filtered_list = [item for item in filtered_list if '//' not in item]
+        filtered_list = [item for item in filtered_list if 'HIVDB' not in item.upper()]
 
-    # Exclude items with date pattern "MM/DD/YY" or "MM/DD/YYYY"
-    filtered_list = [item for item in filtered_list if not re.search(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', item)]
+        # Exclude items with date pattern "MM/DD/YY" or "MM/DD/YYYY"
+        filtered_list = [item for item in filtered_list if not re.search(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', item)]
+    else:
+        filtered_list=[]
 
     return filtered_list
 
@@ -3491,6 +3507,8 @@ def extract_text(pdf_text, variable_1, variable_2):
 def extract_non_intergrase_text(pdf_text):
     pi_resistance_mutation_profile = extract_text(pdf_text, "PI Major Mutations", "\nProtease Inhibitors")
     pi_list = extract_text(pdf_text, "Protease Inhibitors", "\nPR comments")
+    if len(pi_list) == 0:
+        pi_list = extract_text(pdf_text, "Protease Inhibitors", "\nMutation scoring:")
     pi_list = pi_list[1:]
 
     pi_mutation_comments = extract_text(pdf_text, "PR comments", "\nOther")
@@ -3526,9 +3544,12 @@ def extract_non_intergrase_text(pdf_text):
     generated_list = extract_text(pdf_text, "\n1", "\nSequence summary")
     ccc_num = generated_list[0].split('.')[1].strip()
 
+    # Use regular expression to extract only numbers
+    ccc_number_only = re.sub(r'\D', '', ccc_num)
+
     nrtis_list = nrti_abc + nrti_d4t + nrti_azt + nrti_ddi + nrti_ftc + nrti_3tc + nrti_tdf
     return pi_resistance_mutation_profile, pi_list, pi_mutation_comments, other_pi_mutation_comments, \
-        rt_resistance_mutation_profile, nrti_comments, nnrtis_list, nnrti_comments, other_rt_comments, ccc_num, \
+        rt_resistance_mutation_profile, nrti_comments, nnrtis_list, nnrti_comments, other_rt_comments, ccc_number_only, \
         nrtis_list
 
 
@@ -4162,7 +4183,42 @@ def generate_drt_results(request):
                 intergrase_accessory_comments = ""
                 ccc_num_intergrase = ""
 
-            if ccc_num == ccc_num_intergrase:
+            if ccc_num_intergrase =="":
+                drt_values_dict = {
+                    'todays_date': todays_date, 'patient_name': patient_name,
+                    'ccc_num': ccc_num, 'rt_resistance_mutation_profile': rt_resistance_mutation_profile,
+                    'nrtis_list': nrtis_list, 'nrti_comments': nrti_comments, 'other_rt_comments': other_rt_comments,
+                    'pi_resistance_mutation_profile': pi_resistance_mutation_profile, 'nnrtis_list': nnrtis_list,
+                    'nnrti_comments': nnrti_comments, 'pi_list': pi_list, 'pi_mutation_comments': pi_mutation_comments,
+                    'other_pi_mutation_comments': other_pi_mutation_comments,
+
+                    'date_test_perfomed': date_tested,
+                    'date_test_reviewed': date_reviewed,
+
+                    'sex': sex,
+                    'age': age,
+                    'age_unit': age_unit,
+                    'contact': contact,
+                    'specimen_type': specimen_type,
+                    'request_from': request_from,
+                    'requesting_clinician': requesting_clinician,
+                    'performed_by': performed_by,
+                    'reviewed_by': reviewed_by,
+                    'date_collected': date_collected,
+                    'date_received': date_received,
+                    'date_reported': date_reported,
+                }
+                if "drt_values" in request.session:
+                    del request.session['drt_values']
+                    try:
+                        request.session['drt_values'] = json.dumps(drt_values_dict, cls=DateEncoder)
+                        request.session.save()
+                    except Exception as e:
+                        messages.error(request, f"Error updating session: {e}")
+                else:
+                    request.session['drt_values'] = json.dumps(drt_values_dict, cls=DateEncoder)
+                show_download_button = True
+            elif ccc_num == ccc_num_intergrase:
                 drt_values_dict = {
                     'todays_date': todays_date, 'patient_name': patient_name,
                     'ccc_num': ccc_num, 'rt_resistance_mutation_profile': rt_resistance_mutation_profile,
@@ -4233,11 +4289,14 @@ def create_specific_data_frame(pattern, col_name, unique_id, sequence_df, pdf_te
 
     else:
         data_frame = extract_text_make_df(pattern, col_name, unique_id, pdf_text)
-        data_frame = create_specific_dfs(data_frame, col_name)
-        data_frame['sequence summary'] = "PASSED"
-        if haart_class is not None:
-            data_frame['haart_class'] = haart_class
-        data_frame.insert(0, 'patient_id', str(unique_id))
+        if data_frame.shape[1] == 2:
+            data_frame = create_specific_dfs(data_frame, col_name)
+            data_frame['sequence summary'] = "PASSED"
+            if haart_class is not None:
+                data_frame['haart_class'] = haart_class
+            data_frame.insert(0, 'patient_id', str(unique_id))
+        else:
+            data_frame=pd.DataFrame(columns=['patient_id','sequence summary'])
     return data_frame
 
 
@@ -4342,9 +4401,12 @@ def develop_df_from_pdf(pdf_text):
 
     pi_resistance_profile_df = create_specific_data_frame(pi_resistance_profile, "PI Resistance Mutations Profile",
                                                           unique_id, sequence_df, pdf_text)
-    insti_resistance_profile_df = create_specific_data_frame(insti_resistance_profile,
-                                                             "INSTI Resistance Mutations Profile", unique_id,
-                                                             sequence_df, pdf_text)
+    if insti_resistance_profile is not None:
+        insti_resistance_profile_df = create_specific_data_frame(insti_resistance_profile,
+                                                                 "INSTI Resistance Mutations Profile", unique_id,
+                                                                 sequence_df, pdf_text)
+    else:
+        insti_resistance_profile_df=pd.DataFrame(columns=['patient_id','Mutation Type','Mutations','sequence summary'])
     rt_resistance_profile_df = create_specific_data_frame(rt_resistance_pattern, "RT Resistance Mutations Profile",
                                                           unique_id, sequence_df, pdf_text)
 
@@ -4354,8 +4416,11 @@ def develop_df_from_pdf(pdf_text):
                                                      sequence_df, pdf_text, "NNRTIs")
     pi_resistance_df = create_specific_data_frame(pi_resistance_pattern, "PI Resistance Mutations", unique_id,
                                                   sequence_df, pdf_text, "PIs")
-    insti_resistance_df = create_specific_data_frame(insti_resistance_pattern, "INSTI Resistance Mutations", unique_id,
-                                                     sequence_df, pdf_text, "INSTIs")
+    if insti_resistance_pattern is not None:
+        insti_resistance_df = create_specific_data_frame(insti_resistance_pattern, "INSTI Resistance Mutations", unique_id,
+                                                         sequence_df, pdf_text, "INSTIs")
+    else:
+        insti_resistance_df=pd.DataFrame(columns=['patient_id','Mutation Type','Mutations','sequence summary'])
 
     resistance_profiles_df = pd.concat(
         [rt_resistance_profile_df, pi_resistance_profile_df, insti_resistance_profile_df])
@@ -4367,9 +4432,25 @@ def develop_df_from_pdf(pdf_text):
                                                    date_performed, performed_by, age, sex)
     resistance_patterns_df = resistance_patterns_df.dropna()
 
-    if "failed" not in resistance_patterns_df['sequence summary'].unique()[0].lower():
-        resistance_patterns_df = resistance_patterns_df.copy()
-        resistance_profiles_df = resistance_profiles_df.copy()
+
+    # Check if 'sequence summary' column is not empty
+    if resistance_patterns_df['sequence summary'].unique().size > 0:
+        if "failed" not in resistance_patterns_df['sequence summary'].unique()[0].lower():
+            resistance_patterns_df = resistance_patterns_df.copy()
+            resistance_profiles_df = resistance_profiles_df.copy()
+        else:
+            resistance_patterns_df = resistance_patterns_df.head(1)
+            resistance_profiles_df = resistance_profiles_df.head(1)
+            resistance_patterns_df = resistance_patterns_df[
+                ['patient_id', 'sequence summary', 'date_collected', 'date_received',
+                 'date_reported', 'date_test_perfomed', 'test_perfomed_by']]
+            # Columns to add with empty values
+            columns_to_add = ['Drug', 'Drug Abbreviation', 'Resistance Level', 'haart_class', 'age_unit', '']
+
+            # Adding new columns with NaN values to the DataFrame
+            resistance_patterns_df[columns_to_add] = np.nan
+            resistance_patterns_df["age"] = 0
+            resistance_patterns_df["sex"] = sex
     else:
         resistance_patterns_df = resistance_patterns_df.head(1)
         resistance_profiles_df = resistance_profiles_df.head(1)

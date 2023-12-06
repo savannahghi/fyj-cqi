@@ -1538,7 +1538,7 @@ def download_csv(request, filter_type):
 
     # Create a CSV writer and write the header row
     writer = csv.writer(response)
-    if "show_result" in current_page_url:
+    if "show" in current_page_url:
         save_cd4_report(writer,queryset)
     elif "drt" in current_page_url:
         save_drt_report(writer, queryset)

@@ -55,12 +55,12 @@
 {% for comment in all_comments %}
 <div class="card mt-3">
       <div class="card-body">
-        <h6 class="card-title"> {{ forloop.counter }}. {{ comment.qi_project_title.project_title|title }}</h6>
+        <h6 class="card-title"> {{ forloop.counter }}. {{ comment.qi_project_title.project_title|upper }}</h6>
           <ul>
               <li><strong>Comment : {{ comment.comment }}</strong></li>
 {#              <li>Date comment made : {{ comment.comment_date }}</li>#}
               <li>Commented by : <a href="#">{{ comment.commented_by.username|title }}</a></li>
-              <li>Facility :  <a href="#">{{ comment.qi_project_title.facility_name|title }}</a></li>
+              <li>Facility :  <a href="#">{{ comment.qi_project_title.facility_name|upper }}</a></li>
 
               <li>CQI Project created by : <a href="#">{{ comment.qi_project_title.created_by|title }}</a> ({{ comment.commented_by.phone_number }})</li>
               <li>QI Responsible people : {{ comment.qi_project_title.responsible_people }}</li>

@@ -2977,7 +2977,8 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
                                                         f"{max_date.strftime('%Y-%m-%d')}) - {total} Unique Patients",
                                                   text_col="%.",
                                                   color_map=color_map,
-                                                  category_orders={"resistance_level": resistance_order})
+                                                  category_orders={"resistance_level": resistance_order},
+                                                  xaxis_title=resistance_counts['haart_class'].unique())
 
         ##############################################################
         # Distribution of HIV Drugs Across Resistance Levels by Sex

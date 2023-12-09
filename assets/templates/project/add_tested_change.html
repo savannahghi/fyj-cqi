@@ -10,7 +10,7 @@
       <div class="container-fluid py-5">
 {#          {% for facility_name in facility %}#}
           <h4 class="display-6">FACILITY: {{ qi_project.facility_name}}</h4>
-          <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
+          <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title|upper }}</h6>
 {#          {% endfor %}#}
           <div class="row">
               <div class="col d-flex justify-content-between">

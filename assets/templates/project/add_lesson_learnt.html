@@ -22,7 +22,7 @@
               <h6 class="mb-4 mt-4">PROGRAM: {{ qi_project.program}}</h6>
          {% endif %}
 
-          <h6 class="mb-4">CQI PROJECT: {{ qi_project.project_title}}</h6>
+          <h6 class="mb-4">CQI PROJECT: {{ qi_project.project_title|upper }}</h6>
                 <div class="col-md-6">
                        <strong>OBJECTIVE(s): </strong>{{ qi_project.objective|title }}
                   </div>

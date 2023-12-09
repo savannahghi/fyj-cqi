@@ -24,7 +24,7 @@
                 {#          {% endfor %}#}
                 {% if qi_project %}
                     <h4 class="display-6">FACILITY: {{ qi_project.facility_name }}</h4>
-                    <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title }}</h6>
+                    <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title|upper }}</h6>
                     <div class="row mb-4">
                         {#              <div class="col d-flex justify-content-between">#}
                         <div class="col-md-6">

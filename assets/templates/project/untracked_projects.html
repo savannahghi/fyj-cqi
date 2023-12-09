@@ -16,15 +16,15 @@
                               <div class="card mt-3">
                                   <div class="card-body">
                                       {% if "facility" in project_type %}
-                                          <h6 class="card-title"> <a href="{% url 'single_project' project.id %}">{{ project.project_title|title }}</a></h6>
+                                          <h6 class="card-title"> <a href="{% url 'single_project' project.id %}">{{ project.project_title|upper }}</a></h6>
                                    {% elif "program" in project_type %}
-                                          <h6 class="card-title"> <a href="{% url 'single_project_program' project.id %}">{{ project.project_title|title }}</a></h6>
+                                          <h6 class="card-title"> <a href="{% url 'single_project_program' project.id %}">{{ project.project_title|upper }}</a></h6>
                                    {% elif project_type == "county" %}
-                                          <h6 class="card-title"> <a href="{% url 'single_project_county' project.id %}">{{ project.project_title|title }}</a></h6>
+                                          <h6 class="card-title"> <a href="{% url 'single_project_county' project.id %}">{{ project.project_title|upper }}</a></h6>
                                    {% elif project_type == "subcounty" %}
-                                          <h6 class="card-title"> <a href="{% url 'single_project_subcounty' project.id %}">{{ project.project_title|title }}</a></h6>
+                                          <h6 class="card-title"> <a href="{% url 'single_project_subcounty' project.id %}">{{ project.project_title|upper }}</a></h6>
                                    {% elif "hub" in project_type %}
-                                          <h6 class="card-title"> <a href="{% url 'single_project_hub' project.id %}">{{ project.project_title|title }}</a></h6>
+                                          <h6 class="card-title"> <a href="{% url 'single_project_hub' project.id %}">{{ project.project_title|upper }}</a></h6>
                                    {% endif %}
                                           <ul>
                                                {% if "facility" in project_type %}

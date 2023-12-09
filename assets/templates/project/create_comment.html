@@ -61,7 +61,7 @@
 {#    {% for comment in all_comments %}#}
 {#    <div class="card mt-3">#}
 {#          <div class="card-body">#}
-{#            <h6 class="card-title"> {{ forloop.counter }}. <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.qi_project_title.project_title|title }}</a></h6>#}
+{#            <h6 class="card-title"> {{ forloop.counter }}. <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.qi_project_title.project_title|upper }}</a></h6>#}
 {#              <ul>#}
 {#                  <li><strong>Comment : <a href="{% url 'single_project_comments' comment.qi_project_title.id %}">{{ comment.comment }}</a></strong></li>#}
 {#                  <li>Commented by : <a href="{% url 'qi_creators' comment.commented_by.username %}">{{ comment.commented_by.username|title }}</a></li>#}

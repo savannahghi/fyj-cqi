@@ -4523,6 +4523,13 @@ def extract_dates_from_text(pdf_text):
     reviewed_by = reviewed_by_match.group(1) if reviewed_by_match else None
     reviewed_date = reviewed_date_match.group(1) if reviewed_date_match else None
 
+    # Replace "Date" if "performed_by" is present
+    if performed_by:
+        performed_by = performed_by.replace(" Date", "")
+    # Replace "Date" if "reviewed_by" is present
+    if reviewed_by:
+        reviewed_by = reviewed_by.replace(" Date", "")
+
     return {
         'performed_by': performed_by,
         'performed_date': performed_date,

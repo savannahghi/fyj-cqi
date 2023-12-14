@@ -235,15 +235,27 @@ class DrtResultsForm(ModelForm):
         empty_label="Select Facility ...",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
     # result = MultiFileField(min_num=1, max_num=12, max_file_size=1024 * 1024 * 5)
     class Meta:
         model = DrtResults
         fields = ["facility_name"]
+
+
 class MultipleUploadForm(forms.Form):
-    files = MultiFileField(min_num=1, max_num=12, max_file_size=1024*1024*5)  # Adjust max_num and max_file_size as needed
+    files = MultiFileField(min_num=1, max_num=12,
+                           max_file_size=1024 * 1024 * 5)  # Adjust max_num and max_file_size as needed
+
+
+def validate_name(name):
+    # Custom validation logic for ensuring two names
+    names = name.split()
+    if len(names) < 2:
+        raise forms.ValidationError("Please enter both first and last names.")
+
 
 class DrtForm(MultipleUploadForm):
-    patient_name = forms.CharField(max_length=20)
+    patient_name = forms.CharField(max_length=150)
     sex = forms.ChoiceField(
         choices=[
             ('', 'Select gender'),
@@ -257,12 +269,12 @@ class DrtForm(MultipleUploadForm):
         validators=[MinValueValidator(0), MaxValueValidator(150)]
     )
     age_unit = forms.ChoiceField(choices=AGE_UNIT_CHOICES)
-    contact = forms.CharField(max_length=20,required=False)
-    specimen_type = forms.CharField(max_length=20)
-    request_from = forms.CharField(max_length=20)
-    requesting_clinician = forms.CharField(max_length=20)
-    performed_by = forms.CharField(max_length=20)
-    reviewed_by = forms.CharField(max_length=20)
+    contact = forms.CharField(max_length=150, required=False)
+    specimen_type = forms.CharField(max_length=150)
+    request_from = forms.CharField(max_length=150)
+    requesting_clinician = forms.CharField(max_length=150)
+    performed_by = forms.CharField(max_length=150)
+    reviewed_by = forms.CharField(max_length=150)
     date_collected = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
         label="Date Collected"
@@ -284,6 +296,22 @@ class DrtForm(MultipleUploadForm):
         label="Date Reviewed"
     )
 
+    def clean_performed_by(self):
+        performed_by = self.cleaned_data['performed_by']
+        validate_name(performed_by)
+        return performed_by
+
+    def clean_reviewed_by(self):
+        reviewed_by = self.cleaned_data['reviewed_by']
+        validate_name(reviewed_by)
+        return reviewed_by
+
+    def clean_patient_name(self):
+        patient_name = self.cleaned_data['patient_name']
+        validate_name(patient_name)
+        return patient_name
+
+
 class DrtPdfFileForm(ModelForm):
     class Meta:
         model = DrtPdfFile
@@ -291,5 +319,7 @@ class DrtPdfFileForm(ModelForm):
         labels = {
             'result': 'DRT Results',
         }
+
+
 class BiochemistryForm(MultipleUploadForm):
-    performed_by = forms.CharField(max_length=100,label="Test Performed by")
+    performed_by = forms.CharField(max_length=100, label="Test Performed by")

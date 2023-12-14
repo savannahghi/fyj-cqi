@@ -3623,11 +3623,20 @@ def extract_non_intergrase_text(pdf_text):
                                                   "PI Major Mutations",
                                                   "\nProtease Inhibitors")
     pi_resistance_mutation_profile = join_lines_starting_uppercase(pi_resistance_mutation_profile)
-    pi_list = extract_text(pdf_text, "Protease Inhibitors", "\nPR comments")
-    if len(pi_list) == 0:
-        pi_list = extract_text(pdf_text, "Protease Inhibitors",
-                               "\nMutation scoring:")
-    pi_list = pi_list[1:]
+    # pi_list = extract_text(pdf_text, "Protease Inhibitors", "\nPR comments")
+    # if len(pi_list) == 0:
+    #     pi_list = extract_text(pdf_text, "Protease Inhibitors",
+    #                            "\nMutation scoring:")
+    # pi_list = pi_list[1:]
+    pi_atvr = extract_text(pdf_text, "atazanavir/r", "\n")
+    pi_drvr = extract_text(pdf_text, "darunavir/r", "\n")
+    pi_fpvr = extract_text(pdf_text, "fosamprenavir/r", "\n")
+    pi_idvr = extract_text(pdf_text, "indinavir/r", "\n")
+    pi_lpvr = extract_text(pdf_text, "lopinavir/r", "\n")
+    pi_nfv = extract_text(pdf_text, "nelfinavir", "\n")
+    pi_sqvr = extract_text(pdf_text, "saquinavir/r", "\n")
+    pi_tpvr = extract_text(pdf_text, "tipranavir/r", "\n")
+    pi_list = pi_atvr + pi_drvr + pi_fpvr + pi_idvr + pi_lpvr + pi_nfv + pi_sqvr + pi_tpvr
 
     pi_mutation_comments = extract_text(pdf_text, "PR comments", "\nOther")
     pi_mutation_comments = [
@@ -3996,9 +4005,15 @@ def extract_intergrase_text(pdf_text):
     intergrase_resistance_mutation_profile = extract_text(
         pdf_text, "\nDrug resistance interpretation: IN", "Integrase Strand Transfer Inhibitors")
     intergrase_resistance_mutation_profile = join_lines_starting_uppercase(intergrase_resistance_mutation_profile)
-    intergrase_resistance_mutations = extract_text(
-        pdf_text, "Integrase Strand Transfer Inhibitors", "IN comments")
-    intergrase_resistance_mutations = [x for x in intergrase_resistance_mutations if "Strand " not in x]
+    # intergrase_resistance_mutations = extract_text(
+    #     pdf_text, "Integrase Strand Transfer Inhibitors", "IN comments")
+    # intergrase_resistance_mutations = [x for x in intergrase_resistance_mutations if "Strand " not in x]
+    insti_bic = extract_text(pdf_text, "bictegravir", "\n")
+    insti_cab = extract_text(pdf_text, "cabotegravir", "\n")
+    insti_dtg = extract_text(pdf_text, "dolutegravir", "\n")
+    insti_evg = extract_text(pdf_text, "nelvitegravir", "\n")
+    insti_ral = extract_text(pdf_text, "raltegravir", "\n")
+    intergrase_resistance_mutations = insti_bic + insti_cab + insti_dtg + insti_evg + insti_ral
 
     intergrase_comments = extract_text(pdf_text, "IN comments", "Accessory")
     intergrase_comments = [x for x in intergrase_comments if "IN comments" not in x]

@@ -347,6 +347,7 @@ def validate_cd4_count_form(form, report_type):
             return False
     return True
 
+
 def validate_add_drt_form(form):
     date_of_collection = form.cleaned_data['date_collected']
     date_sample_received = form.cleaned_data['date_received']
@@ -387,17 +388,17 @@ def validate_add_drt_form(form):
         form.add_error('date_tested', error_message)
         return False
 
-    if date_of_collection and date_sample_received and  date_of_collection > date_sample_received:
+    if date_of_collection and date_sample_received and date_of_collection > date_sample_received:
         error_message = "Collection date is greater than Received date!"
         form.add_error('date_received', error_message)
         form.add_error('date_collected', error_message)
         return False
-    if date_of_collection and date_reported and  date_of_collection > date_reported:
+    if date_of_collection and date_reported and date_of_collection > date_reported:
         error_message = "Collection date is greater than Reporting date!"
         form.add_error('date_reported', error_message)
         form.add_error('date_collected', error_message)
         return False
-    if date_of_collection and date_of_testing and  date_of_collection > date_of_testing:
+    if date_of_collection and date_of_testing and date_of_collection > date_of_testing:
         error_message = "Collection date is greater than Testing date!"
         form.add_error('date_tested', error_message)
         form.add_error('date_collected', error_message)
@@ -1101,7 +1102,7 @@ def calculate_positivity_rate(df, column_name, title):
     return fig, positivity_df
 
 
-def line_chart_median_mean(df, x_axis, y_axis, title, color=None,xaxis_title=None,yaxis_title=None,time=52,
+def line_chart_median_mean(df, x_axis, y_axis, title, color=None, xaxis_title=None, yaxis_title=None, time=52,
                            background_shadow=False):
     df = df.copy()
     df = df.tail(time)
@@ -1116,9 +1117,9 @@ def line_chart_median_mean(df, x_axis, y_axis, title, color=None,xaxis_title=Non
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
     if yaxis_title is None:
-        yaxis_title=y_axis
+        yaxis_title = y_axis
     else:
-        yaxis_title=yaxis_title
+        yaxis_title = yaxis_title
     fig.update_layout(
         xaxis_title=f"{xaxis_title}",
         yaxis_title=f"{yaxis_title}",
@@ -1438,7 +1439,8 @@ def generate_results_df(list_of_projects):
     return age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
         crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac, show_cd4_testing_workload, show_crag_testing_workload
 
-def save_cd4_report(writer,queryset):
+
+def save_cd4_report(writer, queryset):
     header = ["Patient Unique No.", "Facility Name", "MFL Code", "Age", "Age Unit", "Sex",
               "Date of Collection", "Date of Receipt", "Date of Testing", "Dispatch Date", "CD4 Count",
               "TB LAM Results", "Serum CRAG Results", "Justification", "Received Status", "Reason for Rejection",
@@ -1470,7 +1472,8 @@ def save_cd4_report(writer,queryset):
         ]
         writer.writerow(data_row)
 
-def save_drt_report(writer,queryset):
+
+def save_drt_report(writer, queryset):
     header = ["Patient Unique No.", "Facility Name", "MFL Code", "Age", "Age Unit", "Sex",
               "Date of Collection", "Date of Receipt", "Date of Testing", "Dispatch Date", "Drug",
               "Drug Abbreviation", "Resistance level", "Sequence summary", "HAART class", "TAT",
@@ -1490,7 +1493,8 @@ def save_drt_report(writer,queryset):
                 record.sex if record.sex else '',
                 record.collection_date.astimezone(timezone.utc).strftime('%Y-%m-%d') if record.collection_date else '',
                 record.date_received.astimezone(timezone.utc).strftime('%Y-%m-%d') if record.date_received else '',
-                record.date_test_performed.astimezone(timezone.utc).strftime('%Y-%m-%d') if record.date_test_performed else '',
+                record.date_test_performed.astimezone(timezone.utc).strftime(
+                    '%Y-%m-%d') if record.date_test_performed else '',
                 record.date_created.astimezone(timezone.utc).strftime('%Y-%m-%d') if record.date_created else '',
                 record.drug if record.drug else '',
                 record.drug_abbreviation if record.drug_abbreviation else '',
@@ -1539,7 +1543,7 @@ def download_csv(request, filter_type):
     # Create a CSV writer and write the header row
     writer = csv.writer(response)
     if "show" in current_page_url:
-        save_cd4_report(writer,queryset)
+        save_cd4_report(writer, queryset)
     elif "drt" in current_page_url:
         save_drt_report(writer, queryset)
 
@@ -2257,7 +2261,7 @@ def load_biochemistry_results(request):
         fields = ['sample_id', 'patient_id', 'test',
                   'full_name', 'result', 'low_limit', 'high_limit', 'units',
                   'reference_class', 'collection_date', 'result_time', 'mfl_code', 'results_interpretation',
-                  'number_of_samples', 'date_created','performed_by'
+                  'number_of_samples', 'date_created', 'performed_by'
                   ]
 
         # Extract the data from the queryset using values()
@@ -2412,11 +2416,11 @@ def load_biochemistry_results(request):
 
     title = "Results"
     threshold_of_result_to_display = 500
-    form=BiochemistryForm()
+    form = BiochemistryForm()
     context = {"title": title, "biochemistry_qs": biochemistry_qs, "record_count_options": record_count_options,
                "my_filters": my_filters, "record_count": record_count, "tests_summary_fig": tests_summary_fig,
                "threshold_of_result_to_display": threshold_of_result_to_display, "summary_fig": summary_fig,
-               "summary_fig_per_text": summary_fig_per_text, "weekly_trend_fig": weekly_trend_fig,"form":form,
+               "summary_fig_per_text": summary_fig_per_text, "weekly_trend_fig": weekly_trend_fig, "form": form,
                "test_trend_fig": test_trend_fig}
 
     #####################################
@@ -2432,7 +2436,7 @@ def load_biochemistry_results(request):
                 for file in files:
                     csv_data = io.StringIO(file.read().decode('ISO-8859-1'))
                     dfs.append(pd.read_csv(csv_data, sep=';', quotechar='"', encoding='ISO-8859-1'))
-                df=pd.concat(dfs)
+                df = pd.concat(dfs)
                 if "Low Limit" in df.columns and "High Limit" in df.columns:
                     df = biochemistry_data_prep(df)
                     saved = []
@@ -2542,7 +2546,7 @@ def create_page(request, pdf, y, image_path, ccc_num, sample_id, df1, start_x=80
     if len(performed_by_values) > 0:
         formatted_value = performed_by_values[0].title()
         pdf.drawString(start_x + 300, y - 50, f"Test Performed by: {formatted_value}")
-    df1=df1.drop("performed_by",axis=1)
+    df1 = df1.drop("performed_by", axis=1)
 
     # Insert dataframe
     pdf.setFont("Helvetica", 8)
@@ -2619,7 +2623,8 @@ def convert_np_datetime64_to_datetime(date_np):
     return date_obj
 
 
-def save_drt_data(request,resistance_patterns_df, drt_file_instance, facility_id, all_subcounties, all_counties,drt_file_form):
+def save_drt_data(request, resistance_patterns_df, drt_file_instance, facility_id, all_subcounties, all_counties,
+                  drt_file_form):
     for index, row in resistance_patterns_df.iterrows():
         drt_results = DrtResults()
         drt_results.date_received = row['date_received']
@@ -2652,15 +2657,12 @@ def save_drt_data(request,resistance_patterns_df, drt_file_instance, facility_id
                   f"{drt_results.collection_date.strftime('%Y-%m-%d')} already exists."
             messages.error(request, msg)
 
-
         # Assign facility, subcounty, and county
         drt_results.facility_name = facility_id
         drt_results.sub_county = Sub_counties.objects.get(id=all_subcounties[0].sub_counties_id)
         drt_results.county = Counties.objects.get(id=all_counties[0].counties_id)
 
-
         drt_results.save()
-
 
 
 def group_resistance_patterns(df_resistant_patterns, cols_to_groupby):
@@ -2717,27 +2719,6 @@ def categorize_age(age):
         return '65+'
 
 
-# def prepare_age_resistant_patterns(df_resistant_patterns,groupby_list):
-#     resistance_num = df_resistant_patterns.groupby(groupby_list).count()['patient_id'].reset_index()
-#     resistance_num = resistance_num.rename(columns={"patient_id": "Number of Drugs"})
-#
-#     # Apply the function to create a new 'age_band' column
-#     resistance_num['age_band'] = resistance_num['age'].apply(categorize_age)
-#     if "resistance_level" in groupby_list:
-#         # Group by 'resistance_level' and 'age_band', then sum the 'Number of Drugs'
-#         result = resistance_num.groupby(['resistance_level', 'age_band']).agg({'Number of Drugs': 'sum'}).reset_index()
-#     else:
-#         result = resistance_num.groupby(['age_band']).agg({'Number of Drugs': 'sum'}).reset_index()
-#     # Define the custom sorting order
-#     custom_order = ['<1', '1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
-#                     '50-54', '55-59', '60-64', '65+']
-#
-#     # Convert the 'age_band' column to Categorical with custom ordering
-#     result['age_band'] = pd.Categorical(result['age_band'], categories=custom_order, ordered=True)
-#
-#     # Sort the DataFrame by 'age_band'
-#     result = result.sort_values('age_band')
-#     return result
 def prepare_age_resistant_patterns(df_resistant_patterns, groupby_list):
     if "resistance_level" in groupby_list:
         df_resistant_patterns = df_resistant_patterns.rename(columns={"patient_id": "Number of Drugs"})
@@ -2794,7 +2775,7 @@ def get_month_resistance_order(drug_df, desired_order=None):
     # Define the desired order for resistance_level
     if desired_order is None:
         desired_order = ['Susceptible', 'Potential Low-Level Resistance', 'Low-level resistance',
-                         'Intermediate Resistance','High-Level Resistance']
+                         'Intermediate Resistance', 'High-Level Resistance']
 
     # Get unique resistance levels from the DataFrame
     unique_resistance_levels = drug_df['resistance_level'].unique()
@@ -2863,6 +2844,7 @@ def generate_bar_chart(data, x_col, y_col, color_col, title, text_col, color_map
 
     return plot(fig, include_plotlyjs=False, output_type="div")
 
+
 def filter_last_n_months(df, date_column='formatted_collected_date', n_months=12):
     """
     Filter a DataFrame to include only the last n months of data.
@@ -2891,7 +2873,7 @@ def filter_last_n_months(df, date_column='formatted_collected_date', n_months=12
 
 
 def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_age_fig, resistance_level_fig,
-                        drt_distribution_fig, age_summary_fig, drt_tat_fig,prevalence_tat_fig):
+                        drt_distribution_fig, age_summary_fig, drt_tat_fig, prevalence_tat_fig):
     # fields to extract
     fields = ['drt_results__patient_id', 'drt_results__collection_date', 'drt_results__county__county_name',
               'drt_results__sub_county__sub_counties',
@@ -2922,10 +2904,10 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
             'drt_results__resistance_level': 'resistance_level', 'drt_results__sequence_summary': 'sequence_summary',
             'drt_results__haart_class': 'haart_class', 'drt_results__test_perfomed_by': 'test_perfomed_by', })
         # Define the replacement dictionary
-        replacement_dict = {'High-Level ': 'High-Level Resistance','Susceptible': 'Susceptible',
-            'Potential': 'Potential Low-Level Resistance','Intermediate': 'Intermediate Resistance',
-            'Low-Level Resistance': 'Low-level resistance'
-        }
+        replacement_dict = {'High-Level ': 'High-Level Resistance', 'Susceptible': 'Susceptible',
+                            'Potential': 'Potential Low-Level Resistance', 'Intermediate': 'Intermediate Resistance',
+                            'Low-Level Resistance': 'Low-level resistance'
+                            }
 
         # Apply the replacements using str.contains and np.select
         df_resistant_patterns['resistance_level'] = np.select(
@@ -2963,7 +2945,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         max_date = df_resistant_patterns['collection_date'].max()
 
         resistance_order = ['Susceptible', 'Potential Low-Level Resistance', 'Low-level resistance',
-                            'Intermediate Resistance','High-Level Resistance']
+                            'Intermediate Resistance', 'High-Level Resistance']
         resistance_counts['resistance_level'] = pd.Categorical(resistance_counts['resistance_level'],
                                                                categories=resistance_order, ordered=True)
 
@@ -3023,15 +3005,14 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         # MONTHLY TAT
         ##############################################################
         tat_df = df_resistant_patterns.copy()
-        tat_df= tat_df.drop_duplicates(['patient_id','formatted_collected_date'])
-        tat_df= tat_df.rename(columns={"patient_id": "Number of Drugs"})
+        tat_df = tat_df.drop_duplicates(['patient_id', 'formatted_collected_date'])
+        tat_df = tat_df.rename(columns={"patient_id": "Number of Drugs"})
         tat = tat_df.groupby(['formatted_date', "formatted_collected_date"]).mean()['tat_days'].reset_index()
         tat['tat_days'] = tat['tat_days'].round().astype(int)
         tat = tat.sort_values("formatted_collected_date")
-        drt_tat_fig=line_chart_median_mean(tat, "formatted_date", "tat_days",
-                               f"Monthly Collection to Dispatch TAT",time=24,xaxis_title="Month_Year",
-                                           yaxis_title="Mean TAT",background_shadow=True)
-
+        drt_tat_fig = line_chart_median_mean(tat, "formatted_date", "tat_days",
+                                             f"Monthly Collection to Dispatch TAT", time=24, xaxis_title="Month_Year",
+                                             yaxis_title="Mean TAT", background_shadow=True)
 
         ##############################################################
         # Time-Based Changes in Drug Resistance Prevalence: line chart
@@ -3056,10 +3037,9 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
             dfs.append(month_res)
         resistance_trend_df = pd.concat(dfs)
 
-
         # Plotting with Plotly Express
         fig = px.line(resistance_trend_df, x='formatted_date', y='%', color='resistance_level',
-                      title='Drug Resistance Prevalence Trend', text="count (%)",height=500,
+                      title='Drug Resistance Prevalence Trend', text="count (%)", height=500,
                       labels={'count': 'Number of Drugs', 'formatted_date': 'Date'},
                       color_discrete_map=color_map)
 
@@ -3078,7 +3058,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         ))
 
         # Show the plot
-        prevalence_tat_fig =plot(fig, include_plotlyjs=False, output_type="div")
+        prevalence_tat_fig = plot(fig, include_plotlyjs=False, output_type="div")
 
         ##############################################################
         # Time-Based Changes in Drug Resistance Prevalence: Overall
@@ -3130,7 +3110,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
 
         # Reorder the resistance levels
         resistance_counts['resistance_level'] = pd.Categorical(resistance_counts['resistance_level'],
-                                                               categories=resistance_order,ordered=True)
+                                                               categories=resistance_order, ordered=True)
         trend_figs = {}
         for unique_class in sorted(resistance_counts['haart_class'].unique()):
             class_data = resistance_counts[resistance_counts['haart_class'] == unique_class]
@@ -3152,7 +3132,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
                                                       xaxis_title="Month_Year"
                                                       )
     return trend_figs, drt_trend_fig, resistance_level_age_fig, resistance_level_fig, drt_distribution_fig, \
-        age_summary_fig, drt_tat_fig,prevalence_tat_fig
+        age_summary_fig, drt_tat_fig, prevalence_tat_fig
 
 
 @login_required(login_url='login')
@@ -3212,10 +3192,13 @@ def add_drt_results(request):
 
     if my_filters.qs:
         trend_figs, drt_trend_fig, resistance_level_age_fig, resistance_level_fig, drt_distribution_fig, \
-            age_summary_fig, drt_tat_fig,prevalence_tat_fig = prepare_drt_summary(my_filters, trend_figs, drt_trend_fig,
-                                                               resistance_level_age_fig, resistance_level_fig,
-                                                               drt_distribution_fig, age_summary_fig, drt_tat_fig,
-                                                                                  prevalence_tat_fig)
+            age_summary_fig, drt_tat_fig, prevalence_tat_fig = prepare_drt_summary(my_filters, trend_figs,
+                                                                                   drt_trend_fig,
+                                                                                   resistance_level_age_fig,
+                                                                                   resistance_level_fig,
+                                                                                   drt_distribution_fig,
+                                                                                   age_summary_fig, drt_tat_fig,
+                                                                                   prevalence_tat_fig)
 
     if request.method == "POST":
         drt_file_form = DrtPdfFileForm(request.POST, request.FILES)
@@ -3224,8 +3207,8 @@ def add_drt_results(request):
             context = {"form": form, "drt_file_form": drt_file_form, "title": title, "results": results,
                        "my_filters": my_filters, "qi_list": qi_list, "drt_distribution_fig": drt_distribution_fig,
                        "resistance_level_fig": resistance_level_fig, "drt_trend_fig": drt_trend_fig,
-                       "trend_figs": trend_figs, "age_summary_fig": age_summary_fig,"drt_tat_fig":drt_tat_fig,
-                "resistance_level_age_fig": resistance_level_age_fig,"prevalence_tat_fig":prevalence_tat_fig}
+                       "trend_figs": trend_figs, "age_summary_fig": age_summary_fig, "drt_tat_fig": drt_tat_fig,
+                       "resistance_level_age_fig": resistance_level_age_fig, "prevalence_tat_fig": prevalence_tat_fig}
             #################
             # Validate date
             #################
@@ -3233,7 +3216,6 @@ def add_drt_results(request):
             if not validate_date_fields(form, date_fields_to_validate):
                 # Render the template with the form and errors
                 return render(request, template_name, context)
-
 
             uploaded_file = drt_file_form.cleaned_data['result']
             # Check if the uploaded file is a PDF
@@ -3260,8 +3242,9 @@ def add_drt_results(request):
                             all_counties = Sub_counties.counties.through.objects.filter(
                                 sub_counties_id__in=[sub_county.sub_counties_id for sub_county in all_subcounties])
                             # Iterate over each row in the DataFrame and save data
-                            save_drt_data(request,resistance_patterns_df, drt_file_instance, facility_id, all_subcounties,
-                                          all_counties,drt_file_form)
+                            save_drt_data(request, resistance_patterns_df, drt_file_instance, facility_id,
+                                          all_subcounties,
+                                          all_counties, drt_file_form)
 
                         msg = f"Records successfully saved"
                         messages.error(request, msg)
@@ -3282,9 +3265,9 @@ def add_drt_results(request):
     context = {"form": form, "drt_file_form": drt_file_form, "title": title, "results": results,
                "my_filters": my_filters, "drt_distribution_fig": drt_distribution_fig,
                "resistance_level_fig": resistance_level_fig, "drt_trend_fig": drt_trend_fig, "trend_figs": trend_figs,
-               "record_count_options": record_count_options, "qi_list": qi_list,"drt_tat_fig":drt_tat_fig,
+               "record_count_options": record_count_options, "qi_list": qi_list, "drt_tat_fig": drt_tat_fig,
                "resistance_level_age_fig": resistance_level_age_fig, "age_summary_fig": age_summary_fig,
-               "prevalence_tat_fig":prevalence_tat_fig,}
+               "prevalence_tat_fig": prevalence_tat_fig, }
     return render(request, "lab_pulse/add_drt.html", context)
 
 
@@ -3379,7 +3362,7 @@ def join_lines_starting_lowercase(result_list):
     - result_list (list): List of strings representing lines of text.
 
     Returns:
-    - list: List of strings where lines starting with a lowercase letter are joined with the next line.
+    - list: List of strings where lines starting with a lowercase letter are joined with the previous line.
 
     Example:
     lines = ['This is a line.', 'continuation of the previous line.', 'Another separate line.']
@@ -3390,21 +3373,22 @@ def join_lines_starting_lowercase(result_list):
     joined_list = []
     current_line = ""
 
-    i = 0
-    while i < len(result_list):
-        current_line = result_list[i].strip()
+    for line in result_list:
+        line = line.strip()
 
-        if i < len(result_list) - 1:
-            next_line = result_list[i + 1].strip()
+        # Check if the line starts with a lowercase letter
+        if line and line[0].islower():
+            # Join the line with the previous one
+            current_line += ' ' + line
+        else:
+            # Add the current line to the result
+            if current_line:
+                joined_list.append(current_line.strip())
+            current_line = line
 
-            # Check if the next line starts with a lowercase letter and doesn't contain a three-letter abbreviation in brackets
-            if next_line and next_line[0].islower() and not re.search(r'\([A-Z]{3}(/[a-z])?\)', next_line):
-                # Join the lines
-                current_line += ' ' + next_line
-                i += 1  # Skip the next line
-
-        joined_list.append(current_line)
-        i += 1
+    # Add the last line to the result
+    if current_line:
+        joined_list.append(current_line.strip())
 
     return joined_list
 
@@ -3448,7 +3432,75 @@ def join_lines_starting_uppercase(result_list):
     return joined_list
 
 
-def extract_text(pdf_text, variable_1, variable_2):
+def join_lines_starting_three_lettered_word_uppercase(result_list, have_three_lettered_word=False):
+    """
+    Joins lines in a list where the current line starts with an uppercase letter followed by a digit or ends with an uppercase letter,
+    and the next line continues the thought.
+
+    Parameters:
+    - result_list (list): List of strings representing lines of text.
+
+    Returns:
+    - list: List of strings where lines starting with an uppercase letter are joined with the next line.
+
+    Example:
+    lines = ['Section 1A of the document.', 'Continuation of Section 1A.', 'Section 1B.', 'Introduction to Section 1B.']
+    result = join_lines_starting_uppercase(lines)
+    print(result)
+    ['Section 1A of the document. Continuation of Section 1A.', 'Section 1B. Introduction to Section 1B.']
+    """
+    joined_list = []
+    current_line = ""
+
+    i = 0
+    while i < len(result_list):
+        current_line = result_list[i].strip()
+
+        if i < len(result_list) - 1:
+            next_line = result_list[i + 1].strip()
+            if next_line and re.match(r'[A-Z]{3}', next_line) and have_three_lettered_word:
+                current_line += ' ' + next_line
+                i += 1  # Skip the next line
+
+            # Check if the next line starts with an uppercase letter followed by a digit or ends with an uppercase letter
+            elif next_line and re.match(r'^[A-Z]\d+[A-Z]+$', next_line) and not have_three_lettered_word:
+                # Join the lines
+                current_line += ' ' + next_line
+                i += 1  # Skip the next line
+
+        joined_list.append(current_line)
+        i += 1
+
+    return joined_list
+
+
+def clean_data(pattern_match_df, variable_2=None):
+    # Extract unique values from the DataFrame column
+    generated_list = pattern_match_df["col_name"].unique()
+    # Process and clean the extracted text
+    generated_list = generated_list[0].replace(f" {variable_2}", "")
+    generated_list = generated_list.replace(f"{variable_2}", "")
+    generated_list = [s.replace('·', ',').replace(',,', ',') for s in generated_list.split("\n")]
+
+    # Join lines based on lowercase and uppercase starting letters
+    generated_list = join_lines_starting_lowercase(generated_list)
+    if "NRTI" not in generated_list:
+        generated_list = join_lines_starting_three_lettered_word_uppercase(generated_list)
+    #         generated_list=join_lines_starting_uppercase(generated_list)
+
+    # Remove unwanted strings
+    filtered_list = [s for s in generated_list if s != '.']
+    filtered_list = [s for s in filtered_list if s != '(CoVDB)']
+    filtered_list = [s for s in filtered_list if s != '']
+    filtered_list = [item for item in filtered_list if '//' not in item]
+    filtered_list = [item for item in filtered_list if 'HIVDB' not in item.upper()]
+
+    # Exclude items with date pattern "MM/DD/YY" or "MM/DD/YYYY"
+    filtered_list = [item for item in filtered_list if not re.search(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', item)]
+    return filtered_list
+
+
+def extract_text(pdf_text, variable_1, variable_2, custom_pattern=None):
     """
     Extracts text between two specified variables in a given PDF text.
 
@@ -3461,66 +3513,153 @@ def extract_text(pdf_text, variable_1, variable_2):
     - list: A list of strings containing the extracted text.
 
     Example:
-    pdf_text = "Some text here"
+    pdf_text = "Some text here\nVariable 1\nExtracted Text\nVariable 2\nMore text here"
     result = extract_text(pdf_text, "Variable 1", "Variable 2")
     print(result)
     ['Extracted Text']
     """
-    # Using an f-string to incorporate variables into the regular expression
-    pattern = re.compile(f'{re.escape(variable_1)}([\s\S]*?){re.escape(variable_2)}', re.MULTILINE)
+    if custom_pattern is None:
+        # Using an f-string to incorporate variables into the regular expression
+        pattern = re.compile(f'{re.escape(variable_1)}([\s\S]*?){re.escape(variable_2)}', re.MULTILINE)
 
-    # Find the first match in the PDF text
-    pattern_match = pattern.search(pdf_text)
+        # Find the first match in the PDF text
+        pattern_match = pattern.search(pdf_text)
+    else:
+        # Add the NNRTI specific extraction using the provided pattern
+        nnrti_pattern = r'\nNNRTI\n(.*?)\.\nMutation scoring:'
+        pattern_match = re.findall(custom_pattern, pdf_text, re.DOTALL)
 
     # Create a dictionary and DataFrame to store the extracted information
     pi_resistance_profile_dict = {}
-    if pattern_match:
+    if pattern_match and custom_pattern is None:
         pi_resistance_profile_dict["col_name"] = pattern_match.group(0)
         pattern_match_df = pd.DataFrame([pi_resistance_profile_dict])
-
-        # Extract unique values from the DataFrame column
-        generated_list = pattern_match_df["col_name"].unique()
-
-        # Process and clean the extracted text
-        generated_list = generated_list[0].replace(f" {variable_2}", "")
-        generated_list = generated_list.replace(f"{variable_2}", "")
-        generated_list = [s.replace('·', ',').replace(',,', ',') for s in generated_list.split("\n")]
-
-        # Join lines based on lowercase and uppercase starting letters
-        generated_list = join_lines_starting_lowercase(generated_list)
-        generated_list = join_lines_starting_uppercase(generated_list)
-
-        # Remove unwanted strings
-        filtered_list = [s for s in generated_list if s != '.']
-        filtered_list = [s for s in filtered_list if s != '(CoVDB)']
-        filtered_list = [s for s in filtered_list if s != '']
-        filtered_list = [item for item in filtered_list if '//' not in item]
-        filtered_list = [item for item in filtered_list if 'HIVDB' not in item.upper()]
-
-        # Exclude items with date pattern "MM/DD/YY" or "MM/DD/YYYY"
-        filtered_list = [item for item in filtered_list if not re.search(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', item)]
+        filtered_list = clean_data(pattern_match_df, variable_2)
+    elif pattern_match and custom_pattern is not None:
+        pattern_match_df = pd.DataFrame(pattern_match, columns=['col_name'])
+        filtered_list = clean_data(pattern_match_df, variable_2=None)
     else:
-        filtered_list=[]
+        filtered_list = []
 
     return filtered_list
 
 
+def extract_text_between_markers(text):
+    """
+    Extract text between markers "Other" and "Mutation scoring" and store the results in a dictionary.
+
+    Parameters:
+    - text (str): Input text.
+
+    Returns:
+    - dict: Dictionary where keys are labels and values are the corresponding extracted text.
+
+    Example:
+    input_text = '\nOther\nK20R is a highly polymorphic PI-selected accessory mutation that increases replication fitness in viruses with PI-resistance mutations.\nMutation scoring: PR HIVDB 9.5.1 (2023-11-05)\nNo drug resistance mutations were found for PI.\nDrug resistance interpretation: RT HIVDB 9.5.1 (2023-11-05)\nNRTI Mutations: None\nNNRTI Mutations: None\nRT Other Mutations: E6D·K11Q·V21I·V35T·V60I·T69N·K122E·D123N·,I135T·K173S·Q174K·D177E·I178IM·V179I·T200A·Q207A·\nR211S\nNucleoside Reverse Transcriptase Inhibitors Non-nucleoside Reverse Transcriptase Inhibitors\nabacavir (ABC) Susceptible doravirine (DOR) Susceptible\nzidovudine (AZT) Susceptible efavirenz (EFV) Susceptible\nstavudine (D4T) Susceptible etravirine (ETR) Susceptible\ndidanosine (DDI) Susceptible nevirapine (NVP) Susceptible\nemtricitabine (FTC) Susceptible rilpivirine (RPV) Susceptible\nlamivudine (3TC) Susceptible\ntenofovir (TDF) Susceptible\nRT comments\nOther\nT69N/S/A/I/E are relatively non-polymorphic mutations weakly selected in persons receiving NRTIs. They may minimally contribute reduced AZT susceptibility.\nV179I is a polymorphic mutation that is frequently selected in persons receiving ETR and RPV. However, it has little, if any, direct effect on NNRTI susceptibility.\nMutation scoring: RT HIVDB 9.5.1 (2023-11-05)\nNo drug resistance mutations were found for NRTI.\nNo drug resistance mutations were found for NNRTI.\n© 1998 - 2023. All Rights Reserved. Questions? Contact HIVdb <hivdbteam@lists.stanford.edu>.'
+    result = extract_text_between_markers(input_text)
+    print(result)
+    {'PR': 'K20R is a highly polymorphic PI-selected accessory mutation that increases replication fitness in viruses with PI-resistance mutations.',
+     'RT': 'T69N/S/A/I/E are relatively non-polymorphic mutations weakly selected in persons receiving NRTIs. They may minimally contribute reduced AZT susceptibility.\nV179I is a polymorphic mutation that is frequently selected in persons receiving ETR and RPV. However, it has little, if any, direct effect on NNRTI susceptibility.'}
+    """
+    pattern = r'Other\n(.*?)\nMutation scoring:\s*([A-Z]+)\s+'
+
+    matches = re.findall(pattern, text, re.DOTALL)
+    result_dict = {label: join_lines_starting_lowercase(content.strip().split('\n')) for content, label in matches}
+
+    return result_dict
+
+
+def extract_text_after_keyword(data, keyword1, keyword2):
+    """
+    Extract text occurring after the specified keywords in each sentence.
+
+    Parameters:
+    - data (list): List of strings representing sentences.
+    - keyword1 (str): The first keyword to look for in each sentence.
+    - keyword2 (str): The second keyword to stop appending sentences.
+
+    Returns:
+    - dict: Dictionary with the keywords as keys and lists of text occurring after each keyword in each sentence (including the sentence with the keyword) as the values.
+    """
+    result = {}
+    current_keyword = None
+
+    for sentence in data:
+        match1 = re.search(f'{keyword1}', sentence)
+        match2 = re.search(f'{keyword2}', sentence)
+
+        if match1:
+            current_keyword = re.sub(r'\W+', '', match1.group(0))
+            result[current_keyword] = [sentence]
+        elif match2:
+            current_keyword = re.sub(r'\W+', '', match2.group(0))
+            result[current_keyword] = [sentence]
+        elif current_keyword is not None:
+            if current_keyword in result:
+                result[current_keyword].append(sentence)
+
+    return result
+
+
+def extract_matching_sentences(data, pattern):
+    """
+    Extract sentences from the input data that match the specified regex pattern.
+
+    Parameters:
+    - data (list): List of strings representing sentences.
+    - pattern (str): Regex pattern to match.
+
+    Returns:
+    - list: List of sentences that match the pattern.
+    """
+    matching_sentences = [sentence for sentence in data if re.search(pattern, sentence)]
+    return matching_sentences
+
+
 def extract_non_intergrase_text(pdf_text):
-    pi_resistance_mutation_profile = extract_text(pdf_text, "PI Major Mutations", "\nProtease Inhibitors")
+    other_pi_mutation_comments = []
+    other_rt_comments = []
+    pi_resistance_mutation_profile = extract_text(pdf_text,
+                                                  "PI Major Mutations",
+                                                  "\nProtease Inhibitors")
+    pi_resistance_mutation_profile = join_lines_starting_uppercase(pi_resistance_mutation_profile)
     pi_list = extract_text(pdf_text, "Protease Inhibitors", "\nPR comments")
     if len(pi_list) == 0:
-        pi_list = extract_text(pdf_text, "Protease Inhibitors", "\nMutation scoring:")
+        pi_list = extract_text(pdf_text, "Protease Inhibitors",
+                               "\nMutation scoring:")
     pi_list = pi_list[1:]
 
     pi_mutation_comments = extract_text(pdf_text, "PR comments", "\nOther")
-    pi_mutation_comments = [item for item in pi_mutation_comments if 'PR comments' not in item]
+    pi_mutation_comments = [
+        item for item in pi_mutation_comments if 'PR comments' not in item
+    ]
+    #############################################################################################
+    # Extract text after "Major" and "Accessory"
+    text_after_major = extract_text_after_keyword(pi_mutation_comments,
+                                                  'Major', 'Accessory')
+    if "Major" in text_after_major:
+        pi_mutation_comments_major = text_after_major.get('Major')[1:]
+    else:
+        pi_mutation_comments_major = []
+    if "Accessory" in text_after_major:
+        pi_mutation_comments_accessory = text_after_major.get('Accessory')[1:]
+    else:
+        pi_mutation_comments_accessory = []
 
-    other_pi_mutation_comments = extract_text(pdf_text, "(CoVDB)\nOther", "\nMutation scoring: PR HIVDB")
-    other_pi_mutation_comments = [x for x in other_pi_mutation_comments if "Other" != x]
+    # Extract text between "Other" and "Mutation scoring"
+    other_comments_dict = extract_text_between_markers(pdf_text)
+    if len(other_comments_dict) != 0:
+        for label, content in other_comments_dict.items():
+            if label == "PR":
+                other_pi_mutation_comments = [value for key, value in other_comments_dict.items() if key == "PR"][0]
+            elif label == "RT":
+                other_rt_comments = [value for key, value in other_comments_dict.items() if key == "RT"][0]
 
-    rt_resistance_mutation_profile = extract_text(pdf_text, "Drug resistance interpretation: RT",
-                                                  "\nNucleoside Reverse Transcriptase Inhibitors")
+    rt_resistance_mutation_profile = extract_text(
+        pdf_text, "Drug resistance interpretation: RT",
+        "\nNucleoside Reverse Transcriptase Inhibitors")
     rt_resistance_mutation_profile = rt_resistance_mutation_profile
+    rt_resistance_mutation_profile = join_lines_starting_uppercase(rt_resistance_mutation_profile)
 
     nrti_tdf = extract_text(pdf_text, "tenofovir", "\nRT comments")
     nrti_3tc = extract_text(pdf_text, "lamivudine", "\ntenofovir")
@@ -3530,17 +3669,31 @@ def extract_non_intergrase_text(pdf_text):
     nrti_azt = extract_text(pdf_text, "zidovudine", "efavirenz")
     nrti_abc = extract_text(pdf_text, "abacavir", "doravirine")
     nrti_comments = extract_text(pdf_text, "RT comments\nNRTI", "\nNNRTI")
-    nrti_comments = nrti_comments[2:]
+
+    #######################################################################
+    # Use the function with the provided pattern
+    pattern = r'[A-Z]{3}'
+    nrti_comments = extract_matching_sentences(nrti_comments[1:], pattern)
+    nrti_comments = [x for x in nrti_comments if "NRTI" != x]
+    #######################################################################
     nnrti_dor = extract_text(pdf_text, "doravirine", "zidovudine ")
     nnrti_efv = extract_text(pdf_text, "efavirenz", "stavudine")
     nnrti_etr = extract_text(pdf_text, "etravirine", "didanosine")
     nnrti_nvp = extract_text(pdf_text, "nevirapine", "emtricitabine")
     nnrti_rpv = extract_text(pdf_text, "rilpivirine", "lamivudine")
     nnrtis_list = nnrti_dor + nnrti_efv + nnrti_etr + nnrti_nvp + nnrti_rpv
-    nnrti_comments = extract_text(pdf_text, ".\nNNRTI", "\nOther")
+    #######################################################################
+    # Using custom pattern for NNRTI extraction
+    custom_nnrti_pattern = r'\nNNRTI\n(.*?)\.\nMutation scoring:'
+
+    nnrti_comments = extract_text(pdf_text, ".\nNNRTI", "\nOther", custom_pattern=custom_nnrti_pattern)
+    if len(nnrti_comments) == 0:
+        nnrti_comments = extract_text(pdf_text, ".\nNNRTI",
+                                      ".\nMutation scoring:", custom_pattern=custom_nnrti_pattern)
+
     nnrti_comments = [x for x in nnrti_comments if ". NNRTI" != x]
-    other_rt_comments = extract_text(pdf_text, ".\nOther", "\nMutation scoring: RT")
-    other_rt_comments = [x for x in other_rt_comments if "Other" != x]
+    nnrti_comments = join_lines_starting_three_lettered_word_uppercase(nnrti_comments, have_three_lettered_word=True)
+    #######################################################################
 
     generated_list = extract_text(pdf_text, "\n1", "\nSequence summary")
     ccc_num = generated_list[0].split('.')[1].strip()
@@ -3550,8 +3703,9 @@ def extract_non_intergrase_text(pdf_text):
 
     nrtis_list = nrti_abc + nrti_d4t + nrti_azt + nrti_ddi + nrti_ftc + nrti_3tc + nrti_tdf
     return pi_resistance_mutation_profile, pi_list, pi_mutation_comments, other_pi_mutation_comments, \
-        rt_resistance_mutation_profile, nrti_comments, nnrtis_list, nnrti_comments, other_rt_comments, ccc_number_only, \
-        nrtis_list
+        rt_resistance_mutation_profile, nrti_tdf, nrti_3tc, nrti_ftc, nrti_ddi, nrti_d4t, nrti_azt, nrti_abc, \
+        nrti_comments, nnrti_dor, nnrti_efv, nnrti_etr, nnrti_nvp, nnrti_rpv, nnrtis_list, nnrti_comments, \
+        other_rt_comments, ccc_number_only, nrtis_list, pi_mutation_comments_major, pi_mutation_comments_accessory
 
 
 def split_text(text, max_width, pdf):
@@ -3717,7 +3871,7 @@ def draw_footer(pdf, start_x, patient_name, ccc_num, todays_date, page, width, x
     y = 0
     y += 30
     draw_text(pdf, start_x, y,
-              f"MIDR_Lab HIV_DR Report ******* {patient_name} ******* UID#{ccc_num} ******* {todays_date} ******* Page {page}",
+              f"MIDR_Lab HIV_DR Report ******* {patient_name.title()} ******* UID#{ccc_num} ******* {todays_date} ******* Page {page}",
               "", x_value, bold=True, italic=True, font_size=9)
     pdf.setFillColor(colors.black)
 
@@ -3841,6 +3995,7 @@ def extract_intergrase_text(pdf_text):
 
     intergrase_resistance_mutation_profile = extract_text(
         pdf_text, "\nDrug resistance interpretation: IN", "Integrase Strand Transfer Inhibitors")
+    intergrase_resistance_mutation_profile = join_lines_starting_uppercase(intergrase_resistance_mutation_profile)
     intergrase_resistance_mutations = extract_text(
         pdf_text, "Integrase Strand Transfer Inhibitors", "IN comments")
     intergrase_resistance_mutations = [x for x in intergrase_resistance_mutations if "Strand " not in x]
@@ -3860,7 +4015,7 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
                         intergrase_resistance_mutations, intergrase_comments, intergrase_accessory_comments,
                         date_test_perfomed, date_test_reviewed, sex, age, age_unit, contact, specimen_type,
                         request_from, requesting_clinician, performed_by, reviewed_by, date_collected,
-                        date_received, date_reported):
+                        date_received, date_reported, pi_mutation_comments_major, pi_mutation_comments_accessory):
     # Initialize page_info
     page_info = {'page_count': 0}
 
@@ -3953,11 +4108,19 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
                                    start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
         y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-        y = write_comments(pdf, y, "PI MUTATION COMMENTS:", pi_mutation_comments, start_x, x_value,
+        y = write_comments(pdf, y, "PI MUTATION COMMENTS:", "", start_x, x_value,
                            patient_name, ccc_num, todays_date, page_info, width)
         y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-        y = write_comments(pdf, y, "OTHER PI MUTATION COMMENTS:", other_pi_mutation_comments, start_x, x_value,
+        if len(pi_mutation_comments_major) != 0:
+            y = write_comments(pdf, y, "MAJOR:", pi_mutation_comments_major, start_x, x_value,
+                               patient_name, ccc_num, todays_date, page_info, width)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+        if len(pi_mutation_comments_accessory) != 0:
+            y = write_comments(pdf, y, "ACCESORY:", pi_mutation_comments_accessory, start_x, x_value,
+                               patient_name, ccc_num, todays_date, page_info, width)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+        y = write_comments(pdf, y, "OTHERS:", other_pi_mutation_comments, start_x, x_value,
                            patient_name, ccc_num, todays_date, page_info, width)
         y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
@@ -4077,7 +4240,9 @@ class GenerateDrtPDF(View):
             drt_values.get("reviewed_by", ""),
             drt_values.get("date_collected", ""),
             drt_values.get("date_received", ""),
-            drt_values.get("date_reported", "")
+            drt_values.get("date_reported", ""),
+            drt_values.get("pi_mutation_comments_major", ""),
+            drt_values.get("pi_mutation_comments_accessory", "")
         )
         return response
 
@@ -4152,8 +4317,10 @@ def generate_drt_results(request):
             pdf_text = [i for i in extracted_pdf_text if "Reverse transcriptase (RT)" in i]
             if pdf_text:
                 pi_resistance_mutation_profile, pi_list, pi_mutation_comments, other_pi_mutation_comments, \
-                    rt_resistance_mutation_profile, nrti_comments, nnrtis_list, nnrti_comments, other_rt_comments, ccc_num, \
-                    nrtis_list = extract_non_intergrase_text(pdf_text[0])
+                    rt_resistance_mutation_profile, nrti_tdf, nrti_3tc, nrti_ftc, nrti_ddi, nrti_d4t, nrti_azt, nrti_abc, \
+                    nrti_comments, nnrti_dor, nnrti_efv, nnrti_etr, nnrti_nvp, nnrti_rpv, nnrtis_list, nnrti_comments, \
+                    other_rt_comments, ccc_num, nrtis_list, pi_mutation_comments_major, \
+                    pi_mutation_comments_accessory = extract_non_intergrase_text(pdf_text[0])
 
             else:
                 # Handle the case where pdf_text is empty
@@ -4168,7 +4335,8 @@ def generate_drt_results(request):
                 other_rt_comments = ""
                 ccc_num = ""
                 nrtis_list = ""
-
+                pi_mutation_comments_major = ""
+                pi_mutation_comments_accessory = ""
             ###############################
             # INTERGRASE PDF
             ###############################
@@ -4184,7 +4352,7 @@ def generate_drt_results(request):
                 intergrase_accessory_comments = ""
                 ccc_num_intergrase = ""
 
-            if ccc_num_intergrase =="":
+            if ccc_num_intergrase == "":
                 drt_values_dict = {
                     'todays_date': todays_date, 'patient_name': patient_name,
                     'ccc_num': ccc_num, 'rt_resistance_mutation_profile': rt_resistance_mutation_profile,
@@ -4208,6 +4376,8 @@ def generate_drt_results(request):
                     'date_collected': date_collected,
                     'date_received': date_received,
                     'date_reported': date_reported,
+                    'pi_mutation_comments_major': pi_mutation_comments_major,
+                    'pi_mutation_comments_accessory': pi_mutation_comments_accessory,
                 }
                 if "drt_values" in request.session:
                     del request.session['drt_values']
@@ -4246,6 +4416,8 @@ def generate_drt_results(request):
                     'date_collected': date_collected,
                     'date_received': date_received,
                     'date_reported': date_reported,
+                    'pi_mutation_comments_major': pi_mutation_comments_major,
+                    'pi_mutation_comments_accessory': pi_mutation_comments_accessory,
                 }
 
                 if "drt_values" in request.session:
@@ -4297,7 +4469,7 @@ def create_specific_data_frame(pattern, col_name, unique_id, sequence_df, pdf_te
                 data_frame['haart_class'] = haart_class
             data_frame.insert(0, 'patient_id', str(unique_id))
         else:
-            data_frame=pd.DataFrame(columns=['patient_id','sequence summary'])
+            data_frame = pd.DataFrame(columns=['patient_id', 'sequence summary'])
     return data_frame
 
 
@@ -4407,7 +4579,8 @@ def develop_df_from_pdf(pdf_text):
                                                                  "INSTI Resistance Mutations Profile", unique_id,
                                                                  sequence_df, pdf_text)
     else:
-        insti_resistance_profile_df=pd.DataFrame(columns=['patient_id','Mutation Type','Mutations','sequence summary'])
+        insti_resistance_profile_df = pd.DataFrame(
+            columns=['patient_id', 'Mutation Type', 'Mutations', 'sequence summary'])
     rt_resistance_profile_df = create_specific_data_frame(rt_resistance_pattern, "RT Resistance Mutations Profile",
                                                           unique_id, sequence_df, pdf_text)
 
@@ -4418,10 +4591,11 @@ def develop_df_from_pdf(pdf_text):
     pi_resistance_df = create_specific_data_frame(pi_resistance_pattern, "PI Resistance Mutations", unique_id,
                                                   sequence_df, pdf_text, "PIs")
     if insti_resistance_pattern is not None:
-        insti_resistance_df = create_specific_data_frame(insti_resistance_pattern, "INSTI Resistance Mutations", unique_id,
+        insti_resistance_df = create_specific_data_frame(insti_resistance_pattern, "INSTI Resistance Mutations",
+                                                         unique_id,
                                                          sequence_df, pdf_text, "INSTIs")
     else:
-        insti_resistance_df=pd.DataFrame(columns=['patient_id','Mutation Type','Mutations','sequence summary'])
+        insti_resistance_df = pd.DataFrame(columns=['patient_id', 'Mutation Type', 'Mutations', 'sequence summary'])
 
     resistance_profiles_df = pd.concat(
         [rt_resistance_profile_df, pi_resistance_profile_df, insti_resistance_profile_df])
@@ -4432,7 +4606,6 @@ def develop_df_from_pdf(pdf_text):
     resistance_patterns_df = process_resistance_df(resistance_patterns_df, date_collected, date_received, date_reported,
                                                    date_performed, performed_by, age, sex)
     resistance_patterns_df = resistance_patterns_df.dropna()
-
 
     # Check if 'sequence summary' column is not empty
     if resistance_patterns_df['sequence summary'].unique().size > 0:

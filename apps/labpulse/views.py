@@ -3046,7 +3046,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         fig.update_traces(textposition='top center')
         fig.update_layout(
             xaxis_title=f"Month_Year",
-            yaxis_title=f"Number of drug resistance + (%)",
+            yaxis_title=f"Number of drug resistance plus (%)",
             legend_title=f"Month_Year",
         )
         fig.update_layout(legend=dict(
@@ -4505,11 +4505,23 @@ def process_resistance_df(resistance_df, date_collected, date_received, date_rep
 
 
 def extract_dates_from_text(pdf_text):
-    performed_match = re.search(r'Performed By: (\w+) Date: (\d{4}-\d{2}-\d{2})', pdf_text)
-    reviewed_match = re.search(r'Reviewed By: (\w+) Date: (\d{4}-\d{2}-\d{2})', pdf_text)
+    # Define regular expressions for extracting dates
+    performed_by_regex = r'Performed By: (\w+\s\w+)'
+    performed_date_regex = r'Date: (\d{4}-\d{2}-\d{2})'
+    reviewed_by_regex = r'Reviewed By: (\w+\s\w+)'
+    reviewed_date_regex = r'Date: (\d{4}-\d{2}-\d{2})'
 
-    performed_by, performed_date = performed_match.groups() if performed_match else (None, None)
-    reviewed_by, reviewed_date = reviewed_match.groups() if reviewed_match else (None, None)
+    # Search for matches using regular expressions
+    performed_by_match = re.search(performed_by_regex, pdf_text)
+    performed_date_match = re.search(performed_date_regex, pdf_text)
+    reviewed_by_match = re.search(reviewed_by_regex, pdf_text)
+    reviewed_date_match = re.search(reviewed_date_regex, pdf_text)
+
+    # Extract information if matches are found
+    performed_by = performed_by_match.group(1) if performed_by_match else None
+    performed_date = performed_date_match.group(1) if performed_date_match else None
+    reviewed_by = reviewed_by_match.group(1) if reviewed_by_match else None
+    reviewed_date = reviewed_date_match.group(1) if reviewed_date_match else None
 
     return {
         'performed_by': performed_by,
@@ -4582,7 +4594,6 @@ def develop_df_from_pdf(pdf_text):
 
     age = age_match.group(1).strip() if date_match else "N/A"
 
-    # Add a space before the second uppercase letter
     performed_by = re.sub(r"(\w)([A-Z])", r"\1 \2", performed_by)
 
     sequence_df = extract_text_make_df(sequence_summary_pattern, "sequence summary", unique_id, pdf_text)

@@ -2735,16 +2735,34 @@ def prepare_age_resistant_patterns(df_resistant_patterns, groupby_list):
         resistance_num['age_band'] = resistance_num['age'].apply(categorize_age)
 
         result = resistance_num.groupby(['age_band', 'sex']).count()['Number of DRT results'].reset_index()
+    # # Define the custom sorting order
+    # custom_order = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
+    #                 '50-54', '55-59', '60-64', '65+']
+    #
+    # # Convert the 'age_band' column to Categorical with custom ordering
+    # result['age_band'] = pd.Categorical(result['age_band'], categories=custom_order, ordered=True)
+    #
+    # # Sort the DataFrame by 'age_band'
+    # result = result.sort_values('age_band')
+    result,custom_order=sort_custom_agebands(result, 'age_band')
+    return result
+
+def sort_custom_agebands(df, col):
     # Define the custom sorting order
     custom_order = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
                     '50-54', '55-59', '60-64', '65+']
 
-    # Convert the 'age_band' column to Categorical with custom ordering
-    result['age_band'] = pd.Categorical(result['age_band'], categories=custom_order, ordered=True)
+    # Convert the specified column to Categorical with custom ordering
+    df[col] = pd.Categorical(df[col], categories=custom_order, ordered=True)
 
-    # Sort the DataFrame by 'age_band'
-    result = result.sort_values('age_band')
-    return result
+    # Get the unique values present in the specified column
+    available_age_bands = df[col].unique()
+
+    # Sort the DataFrame by the specified column
+    df = df.sort_values(col)
+
+    # Return the sorted DataFrame and the available custom order
+    return df, available_age_bands
 
 
 def add_percentage(df4, col, main_col):
@@ -2988,13 +3006,16 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         age_resistance_num['resistance_level'] = pd.Categorical(age_resistance_num['resistance_level'],
                                                                 categories=resistance_order, ordered=True)
         age_resistance_num = add_percentage(age_resistance_num, "Number of Drugs", "age_band")
+        age_resistance_num, available_age_bands = sort_custom_agebands(age_resistance_num, 'age_band')
+
         resistance_level_age_fig = generate_bar_chart(data=age_resistance_num, x_col="age_band",
                                                       y_col="Number of Drugs",
                                                       color_col="resistance_level",
                                                       title="Distribution of HIV Drugs Across Resistance Levels by Age",
                                                       text_col="%.",
                                                       color_map=color_map,
-                                                      category_orders={"resistance_level": resistance_order},
+                                                      category_orders={"resistance_level": resistance_order,
+                                                                       "age_band":available_age_bands},
                                                       xaxis_title="Age Bands")
         age_resistance_num = prepare_age_resistant_patterns(df_resistant_patterns, ["age"])
         age_summary_fig = bar_chart(age_resistance_num, "age_band", "Number of DRT results",
@@ -3035,13 +3056,14 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
             month_res['%'] = round(month_res['count'] / month_res_total * 100, )
             month_res['count (%)'] = month_res['count'].astype(str) + " (" + month_res['%'].astype(str) + "%)"
             dfs.append(month_res)
-        resistance_trend_df = pd.concat(dfs)
+        resistance_trend_df = pd.concat(dfs).sort_values("formatted_collected_date")
+        unique_months = resistance_trend_df['formatted_date'].unique()
 
         # Plotting with Plotly Express
         fig = px.line(resistance_trend_df, x='formatted_date', y='%', color='resistance_level',
                       title='Drug Resistance Prevalence Trend', text="count (%)", height=500,
                       labels={'count': 'Number of Drugs', 'formatted_date': 'Date'},
-                      color_discrete_map=color_map)
+                      color_discrete_map=color_map,category_orders={'formatted_date': unique_months})
 
         fig.update_traces(textposition='top center')
         fig.update_layout(

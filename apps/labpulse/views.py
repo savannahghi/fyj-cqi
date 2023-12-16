@@ -2744,8 +2744,9 @@ def prepare_age_resistant_patterns(df_resistant_patterns, groupby_list):
     #
     # # Sort the DataFrame by 'age_band'
     # result = result.sort_values('age_band')
-    result,custom_order=sort_custom_agebands(result, 'age_band')
+    result, custom_order = sort_custom_agebands(result, 'age_band')
     return result
+
 
 def sort_custom_agebands(df, col):
     # Define the custom sorting order
@@ -3015,7 +3016,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
                                                       text_col="%.",
                                                       color_map=color_map,
                                                       category_orders={"resistance_level": resistance_order,
-                                                                       "age_band":available_age_bands},
+                                                                       "age_band": available_age_bands},
                                                       xaxis_title="Age Bands")
         age_resistance_num = prepare_age_resistant_patterns(df_resistant_patterns, ["age"])
         age_summary_fig = bar_chart(age_resistance_num, "age_band", "Number of DRT results",
@@ -3063,7 +3064,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         fig = px.line(resistance_trend_df, x='formatted_date', y='%', color='resistance_level',
                       title='Drug Resistance Prevalence Trend', text="count (%)", height=500,
                       labels={'count': 'Number of Drugs', 'formatted_date': 'Date'},
-                      color_discrete_map=color_map,category_orders={'formatted_date': unique_months})
+                      color_discrete_map=color_map, category_orders={'formatted_date': unique_months})
 
         fig.update_traces(textposition='top center')
         fig.update_layout(
@@ -3496,7 +3497,7 @@ def join_lines_starting_three_lettered_word_uppercase(result_list, have_three_le
     return joined_list
 
 
-def clean_data(pattern_match_df, variable_2=None):
+def preprocess_data(pattern_match_df, variable_2=None):
     # Extract unique values from the DataFrame column
     generated_list = pattern_match_df["col_name"].unique()
     # Process and clean the extracted text
@@ -3507,7 +3508,8 @@ def clean_data(pattern_match_df, variable_2=None):
     # Join lines based on lowercase and uppercase starting letters
     generated_list = join_lines_starting_lowercase(generated_list)
     if "NRTI" not in generated_list:
-        generated_list = join_lines_starting_three_lettered_word_uppercase(generated_list,have_three_lettered_word=True)
+        generated_list = join_lines_starting_three_lettered_word_uppercase(generated_list,
+                                                                           have_three_lettered_word=True)
     #         generated_list=join_lines_starting_uppercase(generated_list)
 
     # Remove unwanted strings
@@ -3556,10 +3558,10 @@ def extract_text(pdf_text, variable_1, variable_2, custom_pattern=None):
     if pattern_match and custom_pattern is None:
         pi_resistance_profile_dict["col_name"] = pattern_match.group(0)
         pattern_match_df = pd.DataFrame([pi_resistance_profile_dict])
-        filtered_list = clean_data(pattern_match_df, variable_2)
+        filtered_list = preprocess_data(pattern_match_df, variable_2)
     elif pattern_match and custom_pattern is not None:
         pattern_match_df = pd.DataFrame(pattern_match, columns=['col_name'])
-        filtered_list = clean_data(pattern_match_df, variable_2=None)
+        filtered_list = preprocess_data(pattern_match_df, variable_2=None)
     else:
         filtered_list = []
 
@@ -3717,7 +3719,7 @@ def extract_non_intergrase_text(pdf_text):
     # Using custom pattern for NNRTI extraction
     custom_nnrti_pattern = r'\nNNRTI\n(.*?)\.\nMutation scoring:'
 
-    nnrti_comments = extract_text(pdf_text, ".\nNNRTI", "\nOther")
+    nnrti_comments = extract_text(pdf_text, "\nNNRTI\n", "\nOther")
     if len(nnrti_comments) == 0:
         nnrti_comments = extract_text(pdf_text, ".\nNNRTI",
                                       ".\nMutation scoring:", custom_pattern=custom_nnrti_pattern)
@@ -3957,7 +3959,7 @@ def write_patient_demographics(pdf, y, x_value, start_x, patient_name, ccc_num, 
     y -= 15
     # Draw patient information
     draw_text(pdf, start_x, y, "Patient Name:", patient_name.title(), x_value, bold=True)
-    draw_text(pdf, start_x + 355, y, "Unique ID:", ccc_num, bold=True)
+    draw_text(pdf, start_x + 355, y, "Unique ID:", f"{ccc_num}", bold=True)
     y -= 15
     draw_text(pdf, start_x, y, "Sex:", f"{sex}", bold=True)
     draw_text(pdf, start_x + x_value, y, "Age:", f"{age} {age_unit.title()}", bold=True)
@@ -4045,14 +4047,15 @@ def extract_intergrase_text(pdf_text):
     return intergrase_resistance_mutation_profile, intergrase_resistance_mutations, intergrase_comments, intergrase_accessory_comments, ccc_num
 
 
-def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_mutation_profile, nrtis_list,
-                        nrti_comments, other_rt_comments, pi_resistance_mutation_profile, nnrtis_list, nnrti_comments,
-                        pi_list, pi_mutation_comments, other_pi_mutation_comments,
-                        intergrase_resistance_mutation_profile,
-                        intergrase_resistance_mutations, intergrase_comments, intergrase_accessory_comments,
-                        date_test_perfomed, date_test_reviewed, sex, age, age_unit, contact, specimen_type,
-                        request_from, requesting_clinician, performed_by, reviewed_by, date_collected,
-                        date_received, date_reported, pi_mutation_comments_major, pi_mutation_comments_accessory):
+def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_mutation_profile=None, nrtis_list=None,
+                        nrti_comments=None, other_rt_comments=None, pi_resistance_mutation_profile=None,
+                        nnrtis_list=None, nnrti_comments=None, pi_list=None, other_pi_mutation_comments=None,
+                        intergrase_resistance_mutation_profile=None, intergrase_resistance_mutations=None,
+                        intergrase_comments=None, intergrase_accessory_comments=None, date_test_perfomed=None,
+                        date_test_reviewed=None, sex=None, age=None, age_unit=None, contact=None, specimen_type=None,
+                        request_from=None, requesting_clinician=None, performed_by=None, reviewed_by=None,
+                        date_collected=None, date_received=None, date_reported=None, pi_mutation_comments_major=None,
+                        pi_mutation_comments_accessory=None, sequence_summary=None):
     # Initialize page_info
     page_info = {'page_count': 0}
 
@@ -4092,97 +4095,109 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
     draw_colored_rectangle(pdf, start_x, y, width - 70, 15, (0.980, 0.827, 0.706), "SEQUENCE SUMMARY")
     y -= 10
     pdf.setFont("Helvetica", 11)
-    draw_text(pdf, start_x, y, "Sequencing Analysis:", "PASSED", x_value, bold=True)
+    draw_text(pdf, start_x, y, "Sequencing Analysis:", f"{sequence_summary}", x_value, bold=True)
 
     y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+    if sequence_summary == "PASSED":
+        if rt_resistance_mutation_profile != "":
+            ######################################
+            # RT RESISTANCE MUTATION PROFILE
+            ######################################
+            y = write_comments_rt_pi(pdf, y, "RT RESISTANCE MUTATION PROFILE", rt_resistance_mutation_profile,
+                                     start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-    if rt_resistance_mutation_profile != "":
-        ######################################
-        # RT RESISTANCE MUTATION PROFILE
-        ######################################
-        y = write_comments_rt_pi(pdf, y, "RT RESISTANCE MUTATION PROFILE", rt_resistance_mutation_profile,
-                                 start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            ######################################
+            # NRTI
+            ######################################
 
-        ######################################
-        # NRTI
-        ######################################
+            y = draw_section_with_list(pdf, y, nrtis_list,
+                                       "NUCLEOSIDE REVERSE TRANSCRIPTASE INHIBITORS (NRTIS) DRUG RESISTANCE INTERPRETATION",
+                                       start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-        y = draw_section_with_list(pdf, y, nrtis_list,
-                                   "NUCLEOSIDE REVERSE TRANSCRIPTASE INHIBITORS (NRTIS) DRUG RESISTANCE INTERPRETATION",
-                                   start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            y = write_comments(pdf, y, "NRTI MUTATION COMMENTS:", nrti_comments, start_x, x_value, patient_name,
+                               ccc_num, todays_date, page_info, width)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-        y = write_comments(pdf, y, "NRTI MUTATION COMMENTS:", nrti_comments, start_x, x_value, patient_name,
-                           ccc_num, todays_date, page_info, width)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            ######################################
+            # NNRTI
+            ######################################
+            y = draw_section_with_list(pdf, y, nnrtis_list,
+                                       "NON-NUCLEOSIDE REVERSE TRANSCRIPTASE INHIBITORS (NNRTIS) DRUG RESISTANCE INTERPRETATION",
+                                       start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-        ######################################
-        # NNRTI
-        ######################################
-        y = draw_section_with_list(pdf, y, nnrtis_list,
-                                   "NON-NUCLEOSIDE REVERSE TRANSCRIPTASE INHIBITORS (NNRTIS) DRUG RESISTANCE INTERPRETATION",
-                                   start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            y = write_comments(pdf, y, "NNRTI MUTATION COMMENTS:", nnrti_comments, start_x, x_value, patient_name,
+                               ccc_num, todays_date, page_info, width)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-        y = write_comments(pdf, y, "NNRTI MUTATION COMMENTS:", nnrti_comments, start_x, x_value, patient_name,
-                           ccc_num, todays_date, page_info, width)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-
-        y = write_comments(pdf, y, "OTHER RT MUTATION COMMENTS:", other_rt_comments, start_x, x_value,
-                           patient_name, ccc_num, todays_date, page_info, width)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-
-        ######################################
-        # Protease Inhibitors
-        ######################################
-        y = write_comments_rt_pi(pdf, y, "PI RESISTANCE MUTATION PROFILE", pi_resistance_mutation_profile,
-                                 start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
-
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-        y = draw_section_with_list(pdf, y, pi_list, "PROTEASE INHIBITORS (PIS) DRUG RESISTANCE INTERPRETATION",
-                                   start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-
-        y = write_comments(pdf, y, "PI MUTATION COMMENTS:", "", start_x, x_value,
-                           patient_name, ccc_num, todays_date, page_info, width)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-
-        if len(pi_mutation_comments_major) != 0:
-            y = write_comments(pdf, y, "MAJOR:", pi_mutation_comments_major, start_x, x_value,
+            y = write_comments(pdf, y, "OTHER RT MUTATION COMMENTS:", other_rt_comments, start_x, x_value,
                                patient_name, ccc_num, todays_date, page_info, width)
             y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-        if len(pi_mutation_comments_accessory) != 0:
-            y = write_comments(pdf, y, "ACCESORY:", pi_mutation_comments_accessory, start_x, x_value,
+
+            ######################################
+            # Protease Inhibitors
+            ######################################
+            y = write_comments_rt_pi(pdf, y, "PI RESISTANCE MUTATION PROFILE", pi_resistance_mutation_profile,
+                                     start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
+
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            y = draw_section_with_list(pdf, y, pi_list, "PROTEASE INHIBITORS (PIS) DRUG RESISTANCE INTERPRETATION",
+                                       start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+
+            y = write_comments(pdf, y, "PI MUTATION COMMENTS:", "", start_x, x_value,
                                patient_name, ccc_num, todays_date, page_info, width)
             y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-        y = write_comments(pdf, y, "OTHERS:", other_pi_mutation_comments, start_x, x_value,
-                           patient_name, ccc_num, todays_date, page_info, width)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-    if intergrase_resistance_mutation_profile != "":
+            if len(pi_mutation_comments_major) != 0:
+                y = write_comments(pdf, y, "MAJOR:", pi_mutation_comments_major, start_x, x_value,
+                                   patient_name, ccc_num, todays_date, page_info, width)
+                y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            if len(pi_mutation_comments_accessory) != 0:
+                y = write_comments(pdf, y, "ACCESORY:", pi_mutation_comments_accessory, start_x, x_value,
+                                   patient_name, ccc_num, todays_date, page_info, width)
+                y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            y = write_comments(pdf, y, "OTHERS:", other_pi_mutation_comments, start_x, x_value,
+                               patient_name, ccc_num, todays_date, page_info, width)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+
+        if intergrase_resistance_mutation_profile != "":
+            ######################################
+            # Intergrase Inhibitors
+            ######################################
+            y = write_comments_rt_pi(pdf, y, "INSTI RESISTANCE MUTATION PROFILE",
+                                     intergrase_resistance_mutation_profile, start_x, x_value, width, patient_name,
+                                     ccc_num, todays_date, page_info)
+
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+
+            y = draw_section_with_list(pdf, y, intergrase_resistance_mutations,
+                                       "INTERGRASE INHIBITORS (INSTIs) DRUG RESISTANCE INTERPRETATION", start_x,
+                                       x_value,
+                                       width, patient_name, ccc_num, todays_date, page_info)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+
+            y = write_comments(pdf, y, "INSTI MUTATION COMMENTS:", intergrase_comments, start_x, x_value,
+                               patient_name, ccc_num, todays_date, page_info, width)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+
+            y = write_comments(pdf, y, "Accesory MUTATION COMMENTS:", intergrase_accessory_comments, start_x,
+                               x_value, patient_name, ccc_num, todays_date, page_info, width)
+            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+    else:
         ######################################
-        # Intergrase Inhibitors
+        # ADVISORY
         ######################################
-        y = write_comments_rt_pi(pdf, y, "INSTI RESISTANCE MUTATION PROFILE",
-                                 intergrase_resistance_mutation_profile, start_x, x_value, width, patient_name,
-                                 ccc_num, todays_date, page_info)
-
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-
-        y = draw_section_with_list(pdf, y, intergrase_resistance_mutations,
-                                   "INTERGRASE INHIBITORS (INSTIs) DRUG RESISTANCE INTERPRETATION", start_x,
-                                   x_value,
-                                   width, patient_name, ccc_num, todays_date, page_info)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-
-        y = write_comments(pdf, y, "INSTI MUTATION COMMENTS:", intergrase_comments, start_x, x_value,
-                           patient_name, ccc_num, todays_date, page_info, width)
-        y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-
-        y = write_comments(pdf, y, "Accesory MUTATION COMMENTS:", intergrase_accessory_comments, start_x,
-                           x_value, patient_name, ccc_num, todays_date, page_info, width)
+        advisory = ["The sample mentioned above failed amplification several times. Monitoring of viral load is "
+                    "advised, ", "and a fresh sample after a month may be collected for HIVDR if VL is >1000cp/ml."]
+        y -= 25
+        draw_text(pdf, start_x, y, f"{advisory[0]}", "", x_value)
+        y -= 15
+        draw_text(pdf, start_x, y, f"{advisory[1]}", "", x_value)
+        y -= 15
         y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
     ######################################
@@ -4257,7 +4272,7 @@ class GenerateDrtPDF(View):
             drt_values.get("nnrtis_list", ""),
             drt_values.get("nnrti_comments", ""),
             drt_values.get("pi_list", ""),
-            drt_values.get("pi_mutation_comments", ""),
+            # drt_values.get("pi_mutation_comments", ""),
             drt_values.get("other_pi_mutation_comments", ""),
             drt_values.get("intergrase_resistance_mutation_profile", ""),
             drt_values.get("intergrase_resistance_mutations", ""),
@@ -4279,7 +4294,8 @@ class GenerateDrtPDF(View):
             drt_values.get("date_received", ""),
             drt_values.get("date_reported", ""),
             drt_values.get("pi_mutation_comments_major", ""),
-            drt_values.get("pi_mutation_comments_accessory", "")
+            drt_values.get("pi_mutation_comments_accessory", ""),
+            drt_values.get("sequence_summary", ""),
         )
         return response
 
@@ -4298,6 +4314,7 @@ def generate_drt_results(request):
     title = "UPLOAD STANDFORD PDFS"
     todays_date = datetime.now().strftime("%d-%b-%Y")
     ccc_num = None
+    sequence_summary = None
     show_download_button = False
     template_name = "lab_pulse/upload.html"
 
@@ -4344,63 +4361,149 @@ def generate_drt_results(request):
             date_reported = form.cleaned_data['date_reported']
             date_tested = form.cleaned_data['date_tested']
             date_reviewed = form.cleaned_data['date_reviewed']
-
-            extracted_pdf_text = []
-            for i in uploaded_files:
-                extracted_pdf_text.append(read_pdf_file(i))
-            ###############################
-            # NON-INTERGRASE PDF
-            ###############################
-            pdf_text = [i for i in extracted_pdf_text if "Reverse transcriptase (RT)" in i]
-            if pdf_text:
-                pi_resistance_mutation_profile, pi_list, pi_mutation_comments, other_pi_mutation_comments, \
-                    rt_resistance_mutation_profile, nrti_tdf, nrti_3tc, nrti_ftc, nrti_ddi, nrti_d4t, nrti_azt, nrti_abc, \
-                    nrti_comments, nnrti_dor, nnrti_efv, nnrti_etr, nnrti_nvp, nnrti_rpv, nnrtis_list, nnrti_comments, \
-                    other_rt_comments, ccc_num, nrtis_list, pi_mutation_comments_major, \
-                    pi_mutation_comments_accessory = extract_non_intergrase_text(pdf_text[0])
-
+            sequence_summary = form.cleaned_data['sequence_summary']
+            if sequence_summary == "PASSED":
+                ccc_num = None
             else:
-                # Handle the case where pdf_text is empty
-                pi_resistance_mutation_profile = ""
-                pi_list = ""
-                pi_mutation_comments = ""
-                other_pi_mutation_comments = ""
-                rt_resistance_mutation_profile = ""
-                nrti_comments = ""
-                nnrtis_list = ""
-                nnrti_comments = ""
-                other_rt_comments = ""
-                ccc_num = ""
-                nrtis_list = ""
-                pi_mutation_comments_major = ""
-                pi_mutation_comments_accessory = ""
-            ###############################
-            # INTERGRASE PDF
-            ###############################
-            # try:
-            pdf_text = [i for i in extracted_pdf_text if "Reverse transcriptase (RT)" not in i]
-            if pdf_text:
-                intergrase_resistance_mutation_profile, intergrase_resistance_mutations, intergrase_comments, \
-                    intergrase_accessory_comments, ccc_num_intergrase = extract_intergrase_text(pdf_text[0])
-            else:
-                intergrase_resistance_mutation_profile = ""
-                intergrase_resistance_mutations = ""
-                intergrase_comments = ""
-                intergrase_accessory_comments = ""
-                ccc_num_intergrase = ""
+                ccc_num = form.cleaned_data['patient_unique_no']
 
-            if ccc_num_intergrase == "":
+            if sequence_summary == "PASSED":
+                extracted_pdf_text = []
+                for i in uploaded_files:
+                    extracted_pdf_text.append(read_pdf_file(i))
+                ###############################
+                # NON-INTERGRASE PDF
+                ###############################
+                pdf_text = [i for i in extracted_pdf_text if "Reverse transcriptase (RT)" in i]
+                if pdf_text:
+                    pi_resistance_mutation_profile, pi_list, pi_mutation_comments, other_pi_mutation_comments, \
+                        rt_resistance_mutation_profile, nrti_tdf, nrti_3tc, nrti_ftc, nrti_ddi, nrti_d4t, nrti_azt, nrti_abc, \
+                        nrti_comments, nnrti_dor, nnrti_efv, nnrti_etr, nnrti_nvp, nnrti_rpv, nnrtis_list, nnrti_comments, \
+                        other_rt_comments, ccc_num, nrtis_list, pi_mutation_comments_major, \
+                        pi_mutation_comments_accessory = extract_non_intergrase_text(pdf_text[0])
+
+                else:
+                    # Handle the case where pdf_text is empty
+                    pi_resistance_mutation_profile = ""
+                    pi_list = ""
+                    pi_mutation_comments = ""
+                    other_pi_mutation_comments = ""
+                    rt_resistance_mutation_profile = ""
+                    nrti_comments = ""
+                    nnrtis_list = ""
+                    nnrti_comments = ""
+                    other_rt_comments = ""
+                    ccc_num = ""
+                    nrtis_list = ""
+                    pi_mutation_comments_major = ""
+                    pi_mutation_comments_accessory = ""
+                ###############################
+                # INTERGRASE PDF
+                ###############################
+                # try:
+                pdf_text = [i for i in extracted_pdf_text if "Reverse transcriptase (RT)" not in i]
+                if pdf_text:
+                    intergrase_resistance_mutation_profile, intergrase_resistance_mutations, intergrase_comments, \
+                        intergrase_accessory_comments, ccc_num_intergrase = extract_intergrase_text(pdf_text[0])
+                else:
+                    intergrase_resistance_mutation_profile = ""
+                    intergrase_resistance_mutations = ""
+                    intergrase_comments = ""
+                    intergrase_accessory_comments = ""
+                    ccc_num_intergrase = ""
+
+                if ccc_num_intergrase == "":
+                    drt_values_dict = {
+                        'todays_date': todays_date, 'patient_name': patient_name, "sequence_summary": sequence_summary,
+                        'ccc_num': ccc_num, 'rt_resistance_mutation_profile': rt_resistance_mutation_profile,
+                        'nrtis_list': nrtis_list, 'nrti_comments': nrti_comments,
+                        'other_rt_comments': other_rt_comments,
+                        'pi_resistance_mutation_profile': pi_resistance_mutation_profile, 'nnrtis_list': nnrtis_list,
+                        'nnrti_comments': nnrti_comments, 'pi_list': pi_list,
+                        'pi_mutation_comments': pi_mutation_comments,
+                        'other_pi_mutation_comments': other_pi_mutation_comments,
+
+                        'date_test_perfomed': date_tested,
+                        'date_test_reviewed': date_reviewed,
+
+                        'sex': sex,
+                        'age': age,
+                        'age_unit': age_unit,
+                        'contact': contact,
+                        'specimen_type': specimen_type,
+                        'request_from': request_from,
+                        'requesting_clinician': requesting_clinician,
+                        'performed_by': performed_by,
+                        'reviewed_by': reviewed_by,
+                        'date_collected': date_collected,
+                        'date_received': date_received,
+                        'date_reported': date_reported,
+                        'pi_mutation_comments_major': pi_mutation_comments_major,
+                        'pi_mutation_comments_accessory': pi_mutation_comments_accessory,
+                    }
+                    if "drt_values" in request.session:
+                        del request.session['drt_values']
+                        try:
+                            request.session['drt_values'] = json.dumps(drt_values_dict, cls=DateEncoder)
+                            request.session.save()
+                        except Exception as e:
+                            messages.error(request, f"Error updating session: {e}")
+                    else:
+                        request.session['drt_values'] = json.dumps(drt_values_dict, cls=DateEncoder)
+                    show_download_button = True
+                elif ccc_num == ccc_num_intergrase:
+                    drt_values_dict = {
+                        'todays_date': todays_date, 'patient_name': patient_name, "sequence_summary": sequence_summary,
+                        'ccc_num': ccc_num, 'rt_resistance_mutation_profile': rt_resistance_mutation_profile,
+                        'nrtis_list': nrtis_list, 'nrti_comments': nrti_comments,
+                        'other_rt_comments': other_rt_comments,
+                        'pi_resistance_mutation_profile': pi_resistance_mutation_profile, 'nnrtis_list': nnrtis_list,
+                        'nnrti_comments': nnrti_comments, 'pi_list': pi_list,
+                        'pi_mutation_comments': pi_mutation_comments,
+                        'other_pi_mutation_comments': other_pi_mutation_comments,
+                        'intergrase_resistance_mutation_profile': intergrase_resistance_mutation_profile,
+                        'intergrase_resistance_mutations': intergrase_resistance_mutations,
+                        'intergrase_comments': intergrase_comments,
+                        'intergrase_accessory_comments': intergrase_accessory_comments,
+                        'ccc_num_intergrase': ccc_num_intergrase, 'date_test_perfomed': date_tested,
+                        'date_test_reviewed': date_reviewed,
+
+                        'sex': sex,
+                        'age': age,
+                        'age_unit': age_unit,
+                        'contact': contact,
+                        'specimen_type': specimen_type,
+                        'request_from': request_from,
+                        'requesting_clinician': requesting_clinician,
+                        'performed_by': performed_by,
+                        'reviewed_by': reviewed_by,
+                        'date_collected': date_collected,
+                        'date_received': date_received,
+                        'date_reported': date_reported,
+                        'pi_mutation_comments_major': pi_mutation_comments_major,
+                        'pi_mutation_comments_accessory': pi_mutation_comments_accessory,
+                    }
+
+                    if "drt_values" in request.session:
+                        del request.session['drt_values']
+                        try:
+                            request.session['drt_values'] = json.dumps(drt_values_dict, cls=DateEncoder)
+                            request.session.save()
+                        except Exception as e:
+                            messages.error(request, f"Error updating session: {e}")
+                    else:
+                        request.session['drt_values'] = json.dumps(drt_values_dict, cls=DateEncoder)
+                    show_download_button = True
+                else:
+                    messages.error(request,
+                                   f"Please upload PDFs for the same patient. The uploaded PDFs belong to different patients. "
+                                   f"({ccc_num} and {ccc_num_intergrase}).")
+                    render(request, template_name, context)
+            else:
                 drt_values_dict = {
-                    'todays_date': todays_date, 'patient_name': patient_name,
-                    'ccc_num': ccc_num, 'rt_resistance_mutation_profile': rt_resistance_mutation_profile,
-                    'nrtis_list': nrtis_list, 'nrti_comments': nrti_comments, 'other_rt_comments': other_rt_comments,
-                    'pi_resistance_mutation_profile': pi_resistance_mutation_profile, 'nnrtis_list': nnrtis_list,
-                    'nnrti_comments': nnrti_comments, 'pi_list': pi_list, 'pi_mutation_comments': pi_mutation_comments,
-                    'other_pi_mutation_comments': other_pi_mutation_comments,
-
-                    'date_test_perfomed': date_tested,
+                    'todays_date': todays_date, 'patient_name': patient_name, "sequence_summary": sequence_summary,
+                    'ccc_num': ccc_num, 'date_test_perfomed': date_tested,
                     'date_test_reviewed': date_reviewed,
-
                     'sex': sex,
                     'age': age,
                     'age_unit': age_unit,
@@ -4413,48 +4516,6 @@ def generate_drt_results(request):
                     'date_collected': date_collected,
                     'date_received': date_received,
                     'date_reported': date_reported,
-                    'pi_mutation_comments_major': pi_mutation_comments_major,
-                    'pi_mutation_comments_accessory': pi_mutation_comments_accessory,
-                }
-                if "drt_values" in request.session:
-                    del request.session['drt_values']
-                    try:
-                        request.session['drt_values'] = json.dumps(drt_values_dict, cls=DateEncoder)
-                        request.session.save()
-                    except Exception as e:
-                        messages.error(request, f"Error updating session: {e}")
-                else:
-                    request.session['drt_values'] = json.dumps(drt_values_dict, cls=DateEncoder)
-                show_download_button = True
-            elif ccc_num == ccc_num_intergrase:
-                drt_values_dict = {
-                    'todays_date': todays_date, 'patient_name': patient_name,
-                    'ccc_num': ccc_num, 'rt_resistance_mutation_profile': rt_resistance_mutation_profile,
-                    'nrtis_list': nrtis_list, 'nrti_comments': nrti_comments, 'other_rt_comments': other_rt_comments,
-                    'pi_resistance_mutation_profile': pi_resistance_mutation_profile, 'nnrtis_list': nnrtis_list,
-                    'nnrti_comments': nnrti_comments, 'pi_list': pi_list, 'pi_mutation_comments': pi_mutation_comments,
-                    'other_pi_mutation_comments': other_pi_mutation_comments,
-                    'intergrase_resistance_mutation_profile': intergrase_resistance_mutation_profile,
-                    'intergrase_resistance_mutations': intergrase_resistance_mutations,
-                    'intergrase_comments': intergrase_comments,
-                    'intergrase_accessory_comments': intergrase_accessory_comments,
-                    'ccc_num_intergrase': ccc_num_intergrase, 'date_test_perfomed': date_tested,
-                    'date_test_reviewed': date_reviewed,
-
-                    'sex': sex,
-                    'age': age,
-                    'age_unit': age_unit,
-                    'contact': contact,
-                    'specimen_type': specimen_type,
-                    'request_from': request_from,
-                    'requesting_clinician': requesting_clinician,
-                    'performed_by': performed_by,
-                    'reviewed_by': reviewed_by,
-                    'date_collected': date_collected,
-                    'date_received': date_received,
-                    'date_reported': date_reported,
-                    'pi_mutation_comments_major': pi_mutation_comments_major,
-                    'pi_mutation_comments_accessory': pi_mutation_comments_accessory,
                 }
 
                 if "drt_values" in request.session:
@@ -4467,14 +4528,10 @@ def generate_drt_results(request):
                 else:
                     request.session['drt_values'] = json.dumps(drt_values_dict, cls=DateEncoder)
                 show_download_button = True
-            else:
-                messages.error(request,
-                               f"Please upload PDFs for the same patient. The uploaded PDFs belong to different patients. "
-                               f"({ccc_num} and {ccc_num_intergrase}).")
-                render(request, template_name, context)
+                pass
 
     context = {
-        "form": form,
+        "form": form, "sequence_summary": sequence_summary,
         "title": title, "show_download_button": show_download_button, "ccc_num": ccc_num,
     }
     return render(request, template_name, context)
@@ -4558,6 +4615,25 @@ def extract_dates_from_text(pdf_text):
         'reviewed_by': reviewed_by,
         'reviewed_date': reviewed_date,
     }
+
+
+def create_failed_df(resistance_patterns_df, resistance_profiles_df, sex):
+    resistance_patterns_df = resistance_patterns_df.head(1)
+    resistance_profiles_df = resistance_profiles_df.head(1)
+    resistance_patterns_df = resistance_patterns_df[['patient_id', 'sequence summary', 'date_collected',
+                                                     'date_received', 'date_reported', 'date_test_perfomed',
+                                                     'test_perfomed_by', 'age', 'age_unit', 'sex']]
+    # Columns to add with empty values
+    columns_to_add = ['Drug', 'Drug Abbreviation', 'Resistance Level', 'haart_class']
+
+    # Adding new columns with NaN values to the DataFrame
+    resistance_patterns_df[columns_to_add] = np.nan
+    resistance_patterns_df["sex"] = sex
+    resistance_patterns_df = resistance_patterns_df[
+        ['patient_id', 'Drug', 'Drug Abbreviation', 'Resistance Level', 'sequence summary', 'haart_class',
+         'date_collected', 'date_received', 'date_reported', 'date_test_perfomed', 'test_perfomed_by', 'age',
+         'age_unit', 'sex']]
+    return resistance_profiles_df, resistance_patterns_df
 
 
 def develop_df_from_pdf(pdf_text):
@@ -4660,39 +4736,20 @@ def develop_df_from_pdf(pdf_text):
     resistance_patterns_df = pd.concat([nrti_resistance_df, nnrti_resistance_df, pi_resistance_df, insti_resistance_df])
     resistance_patterns_df = process_resistance_df(resistance_patterns_df, date_collected, date_received, date_reported,
                                                    date_performed, performed_by, age, sex)
-    resistance_patterns_df = resistance_patterns_df.dropna()
+    #
 
     # Check if 'sequence summary' column is not empty
     if resistance_patterns_df['sequence summary'].unique().size > 0:
         if "failed" not in resistance_patterns_df['sequence summary'].unique()[0].lower():
+            resistance_patterns_df = resistance_patterns_df.dropna()
             resistance_patterns_df = resistance_patterns_df.copy()
             resistance_profiles_df = resistance_profiles_df.copy()
         else:
-            resistance_patterns_df = resistance_patterns_df.head(1)
-            resistance_profiles_df = resistance_profiles_df.head(1)
-            resistance_patterns_df = resistance_patterns_df[
-                ['patient_id', 'sequence summary', 'date_collected', 'date_received',
-                 'date_reported', 'date_test_perfomed', 'test_perfomed_by']]
-            # Columns to add with empty values
-            columns_to_add = ['Drug', 'Drug Abbreviation', 'Resistance Level', 'haart_class', 'age_unit', '']
-
-            # Adding new columns with NaN values to the DataFrame
-            resistance_patterns_df[columns_to_add] = np.nan
-            resistance_patterns_df["age"] = 0
-            resistance_patterns_df["sex"] = sex
+            resistance_profiles_df, resistance_patterns_df = create_failed_df(resistance_patterns_df,
+                                                                              resistance_profiles_df, sex)
     else:
-        resistance_patterns_df = resistance_patterns_df.head(1)
-        resistance_profiles_df = resistance_profiles_df.head(1)
-        resistance_patterns_df = resistance_patterns_df[
-            ['patient_id', 'sequence summary', 'date_collected', 'date_received',
-             'date_reported', 'date_test_perfomed', 'test_perfomed_by']]
-        # Columns to add with empty values
-        columns_to_add = ['Drug', 'Drug Abbreviation', 'Resistance Level', 'haart_class', 'age_unit', '']
-
-        # Adding new columns with NaN values to the DataFrame
-        resistance_patterns_df[columns_to_add] = np.nan
-        resistance_patterns_df["age"] = 0
-        resistance_patterns_df["sex"] = sex
+        resistance_profiles_df, resistance_patterns_df = create_failed_df(resistance_patterns_df,
+                                                                          resistance_profiles_df, sex)
     return resistance_profiles_df, resistance_patterns_df
 
 

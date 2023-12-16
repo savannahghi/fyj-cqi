@@ -441,9 +441,9 @@
         // Function to update the label text
         function updateLabel() {
             // Get the label element associated with the toggle buttons
-            var label = $('#toggleSummaryTop, #toggleSummaryBottom').next('.form-check-label');
+            const label = $('#toggleSummaryTop, #toggleSummaryBottom').next('.form-check-label');
             // Check if the summary section is visible
-            var isVisible = $('#collapse_summary').hasClass('show');
+            const isVisible = $('#collapse_summary').hasClass('show');
             // Update the label text accordingly
             label.text(isVisible ? 'Hide Summary' : 'Show Summary');
         }
@@ -458,7 +458,7 @@
 
         // Array of fields to be reset
         const fieldsToReset = ['#id_county', '#id_sub_county', '#id_facility_name', '#id_testing_laboratory',
-            '#id_haart_class','#id_sequence_summary'];
+            '#id_haart_class', '#id_sequence_summary'];
 
         // Function to reset the form
         const resetForm = () => {
@@ -479,6 +479,42 @@
         });
     });
 
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var sequenceSummaryField = document.getElementById("id_sequence_summary");
+        var fileFields = document.getElementById("id_files");
+        var patientUniqueNoInput = document.getElementById("id_patient_unique_no");
+
+        // Initial check and hide/show based on the initial value
+        checkSequenceSummaryValue();
+
+        // Attach an event listener to sequence_summary field to check and update visibility
+        sequenceSummaryField.addEventListener("change", checkSequenceSummaryValue);
+
+        function checkSequenceSummaryValue() {
+            var sequenceSummaryValue = sequenceSummaryField.value;
+
+            // Check if the value is "FAILED"
+            if (sequenceSummaryValue === "FAILED") {
+                // Hide the files input
+                fileFields.style.display = "block";
+                document.getElementById("files-input").style.display = "none";
+                document.getElementById("patient-unique-input").style.display = "block";
+                // Make the files input not required
+                fileFields.removeAttribute("required");
+                patientUniqueNoInput.setAttribute("required", "required");
+            } else {
+                // Show the files input
+                fileFields.style.display = "block";
+                document.getElementById("files-input").style.display = "block";
+                document.getElementById("patient-unique-input").style.display = "none";
+                // Make the files input required
+                fileFields.setAttribute("required", "required");
+                patientUniqueNoInput.removeAttribute("required");
+            }
+        }
+    });
 </script>
 
 

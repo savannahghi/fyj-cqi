@@ -110,10 +110,11 @@
                                 </div>
                             </div>
                             <div class="mt-4">
-                                <button id="reset-button" class="btn btn-outline-primary btn-sm"
-                                        type="button">
-                                    <i data-feather="refresh-cw"></i> Reset Filters
-                                </button>
+                                <a class="nav-link"
+                                   href="{% url 'show_results' %}">
+                                    <span data-feather="refresh-cw" class="align-text-bottom"></span>
+                                    Reset Filters
+                                </a>
                             </div>
                         </div>
                     </form>

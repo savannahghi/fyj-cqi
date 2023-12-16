@@ -119,24 +119,14 @@
                                     </div>
                                 </div>
                             </div>
-                            {#                            <div class="col-12 col-md-6 col-lg-2">#}
-                            {#                                <div class="row">#}
-                            {#                                    <div class="mt-4">#}
-                            {#                                        <a class="nav-link"#}
-                            {#                                           href="{% url 'load_biochemistry_results' %}">#}
-                            {#                                            <span data-feather="refresh-cw" class="align-text-bottom"></span>#}
-                            {#                                            Reset Filters#}
-                            {#                                        </a>#}
-                            {#                                    </div>#}
-                            {#                                </div>#}
-                            {#                            </div>#}
                             <div class="col-12 col-md-6 col-lg-2">
                                 <div class="row">
                                     <div class="mt-4">
-                                        <button id="reset-button" class="btn btn-outline-primary btn-sm"
-                                                type="button">
-                                            <i data-feather="refresh-cw"></i> Reset Filters
-                                        </button>
+                                        <a class="nav-link"
+                                           href="{% url 'load_biochemistry_results' %}">
+                                            <span data-feather="refresh-cw" class="align-text-bottom"></span>
+                                            Reset Filters
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -313,10 +303,11 @@
                             <div class="col-12 col-md-6 col-lg-2">
                                 <div class="row">
                                     <div class="mt-4">
-                                        <button id="reset-button" class="btn btn-outline-primary btn-sm"
-                                                type="button">
-                                            <i data-feather="refresh-cw"></i> Reset Filters
-                                        </button>
+                                        <a class="nav-link"
+                                           href="{% url 'generate_drt_results' %}">
+                                            <span data-feather="refresh-cw" class="align-text-bottom"></span>
+                                            Reset Filters
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -368,9 +359,18 @@
                                 <div class="col-12 col-md-6 col-lg-2 mt-4">
                                     {{ form.date_reviewed|as_crispy_field }}
                                 </div>
-                                <div class="col-12 col-md-6 col-lg-2 mt-5">
-                                    {{ form.files }}
+                                <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                    {{ form.sequence_summary|as_crispy_field }}
                                 </div>
+                                <div class="col-12 col-md-6 col-lg-2" id="file-fields">
+                                    <div id="files-input" class="mt-4">
+                                        {{ form.files }}
+                                    </div>
+                                    <div id="patient-unique-input" class="mt-2" style="display: none;">
+                                        {{ form.patient_unique_no|as_crispy_field }}
+                                    </div>
+                                </div>
+
 
                                 <!-- Conditionally display uploaded files label -->
                                 <label id="uploaded-files-label" for="{{ form.files.id_for_label }}"
@@ -388,7 +388,8 @@
                         <div class="col">
                             {% if show_download_button %}
                                 {% if ccc_num %}
-                                    <p>DRT Report for <strong>{{ ccc_num }}</strong> has been generated. Click the
+                                    <p><strong>{{ sequence_summary|title }}</strong> DRT Report for
+                                        <strong>{{ ccc_num }}</strong> has been generated. Click the
                                         link below to download:</p>
                                 {% else %}
                                     <p>DRT Report has been generated. Click the link below to download:</p>

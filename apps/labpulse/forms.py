@@ -263,6 +263,15 @@ class DrtForm(MultipleUploadForm):
             ("F", "F"),
         ]
     )
+    sequence_summary = forms.ChoiceField(
+        choices=[
+            ('', 'Select Sequence Summary'),
+            ("PASSED", "PASSED"),
+            ("FAILED", "FAILED"),
+        ]
+    )
+    files = forms.FileField(required=False)
+    patient_unique_no = forms.CharField(max_length=10,required=False)
 
     AGE_UNIT_CHOICES = [("", "Select ..."), ("years", "Years"), ("months", "Months"), ("days", "Days")]
     age = forms.IntegerField(
@@ -310,6 +319,20 @@ class DrtForm(MultipleUploadForm):
         patient_name = self.cleaned_data['patient_name']
         validate_name(patient_name)
         return patient_name
+
+    # Override clean method to conditionally set files field required
+    def clean(self):
+        cleaned_data = super().clean()
+        sequence_summary = cleaned_data.get('sequence_summary')
+        files = cleaned_data.get('files')
+
+        if sequence_summary == 'FAILED' and not files:
+            # No validation error when sequence summary is 'FAILED' and no files
+            return cleaned_data
+
+        # Perform other validations if needed
+
+        return cleaned_data
 
 
 class DrtPdfFileForm(ModelForm):

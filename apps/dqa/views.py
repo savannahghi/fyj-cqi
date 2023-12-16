@@ -1580,8 +1580,8 @@ def delete_data_verification(request, pk):
     return render(request, 'project/delete_test_of_change.html', context)
 
 
-def bar_chart(df, x_axis, y_axis, title=None, description_list=None):
-    if description_list:
+def bar_chart(df, x_axis, y_axis, title=None, has_khis_731_datim=False):
+    if has_khis_731_datim:
         category_orders = {x_axis: ['Source', 'MOH 731', 'KHIS', 'DATIM']}
         color_discrete_map = {'Source': '#5B9BD5', 'MOH 731': '#ED7D31', 'KHIS': '#A5A5A5', 'DATIM': '#FFC000'}
     else:
@@ -1923,7 +1923,7 @@ class GeneratePDF(View):
                 # Create a new key-value pair in the 'dicts' dictionary, where the key is a string containing the 'indy'
                 # value and the 'quarter' value, and the value is a bar chart object created using the 'merged_df_viz'
                 # DataFrame
-                dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
+                dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance",has_khis_731_datim=True)
                 # fig, chart_name = bar_chart_report(merged_df_viz, "data sources", "performance", selected_facility,
                 #                                    indy=indy, quarter=quarter)
                 image = bar_chart_report(merged_df_viz, "data sources", "performance", indy=indy, quarter=quarter)
@@ -2397,7 +2397,7 @@ def compare_data_verification(merged_df, pepfar_col, description_list=None):
         # Create a new key-value pair in the 'dicts' dictionary, where the key is a string containing the 'indy'
         # value and the 'quarter' value, and the value is a bar chart object created using the 'merged_df_viz'
         # DataFrame
-        dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance")
+        dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance",has_khis_731_datim=True)
     return dicts, merged_viz_df
 
 

@@ -3507,7 +3507,7 @@ def clean_data(pattern_match_df, variable_2=None):
     # Join lines based on lowercase and uppercase starting letters
     generated_list = join_lines_starting_lowercase(generated_list)
     if "NRTI" not in generated_list:
-        generated_list = join_lines_starting_three_lettered_word_uppercase(generated_list)
+        generated_list = join_lines_starting_three_lettered_word_uppercase(generated_list,have_three_lettered_word=True)
     #         generated_list=join_lines_starting_uppercase(generated_list)
 
     # Remove unwanted strings
@@ -3717,12 +3717,12 @@ def extract_non_intergrase_text(pdf_text):
     # Using custom pattern for NNRTI extraction
     custom_nnrti_pattern = r'\nNNRTI\n(.*?)\.\nMutation scoring:'
 
-    nnrti_comments = extract_text(pdf_text, ".\nNNRTI", "\nOther", custom_pattern=custom_nnrti_pattern)
+    nnrti_comments = extract_text(pdf_text, ".\nNNRTI", "\nOther")
     if len(nnrti_comments) == 0:
         nnrti_comments = extract_text(pdf_text, ".\nNNRTI",
                                       ".\nMutation scoring:", custom_pattern=custom_nnrti_pattern)
 
-    nnrti_comments = [x for x in nnrti_comments if ". NNRTI" != x]
+    nnrti_comments = [x for x in nnrti_comments if (". NNRTI" not in x) and ("NNRTI" not in x)]
     nnrti_comments = join_lines_starting_three_lettered_word_uppercase(nnrti_comments, have_three_lettered_word=True)
     #######################################################################
 

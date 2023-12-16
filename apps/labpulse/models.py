@@ -310,7 +310,7 @@ class DrtPdfFile(BaseModel):
 
 
 class DrtResults(BaseModel):
-    patient_id = models.IntegerField(validators=[MaxValueValidator(9999999999)])
+    patient_id = models.BigIntegerField(validators=[MaxValueValidator(9999999999)])
     result = models.ForeignKey(DrtPdfFile, on_delete=models.CASCADE,related_name="drt_results")
     collection_date = models.DateTimeField()
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)

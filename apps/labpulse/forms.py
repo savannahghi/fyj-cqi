@@ -271,7 +271,13 @@ class DrtForm(MultipleUploadForm):
         ]
     )
     files = forms.FileField(required=False)
-    patient_unique_no = forms.CharField(max_length=10,required=False)
+    patient_unique_no = forms.IntegerField(
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(9999999999),  # Assuming you want an 10-digit number
+        ],
+        required=False
+    )
 
     AGE_UNIT_CHOICES = [("", "Select ..."), ("years", "Years"), ("months", "Months"), ("days", "Days")]
     age = forms.IntegerField(

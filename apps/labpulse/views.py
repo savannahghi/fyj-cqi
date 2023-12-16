@@ -3959,7 +3959,7 @@ def write_patient_demographics(pdf, y, x_value, start_x, patient_name, ccc_num, 
     y -= 15
     # Draw patient information
     draw_text(pdf, start_x, y, "Patient Name:", patient_name.title(), x_value, bold=True)
-    draw_text(pdf, start_x + 355, y, "Unique ID:", ccc_num, bold=True)
+    draw_text(pdf, start_x + 355, y, "Unique ID:", f"{ccc_num}", bold=True)
     y -= 15
     draw_text(pdf, start_x, y, "Sex:", f"{sex}", bold=True)
     draw_text(pdf, start_x + x_value, y, "Age:", f"{age} {age_unit.title()}", bold=True)

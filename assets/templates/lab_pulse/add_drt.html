@@ -107,9 +107,11 @@
                         <div class="col-12 col-md-6 col-lg-2">
                             <div class="row">
                                 <div class="mt-4">
-                                    <button id="reset-button" class="btn btn-outline-primary btn-sm" type="button">
-                                        <i data-feather="refresh-cw"></i> Reset Filters
-                                    </button>
+                                    <a class="nav-link"
+                                       href="{% url 'add_drt_results' %}">
+                                        <span data-feather="refresh-cw" class="align-text-bottom"></span>
+                                        Reset Filters
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -118,13 +120,13 @@
             </div>
             {% if resistance_level_fig %}
                 <div class="row mb-3">
-                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                    <a href="{% url 'download_csv_lab' "all" %}"
-                       class="btn btn-secondary btn-block" role="button"> All records
-                        <i class="fas fa-download"></i>
-                    </a>
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                        <a href="{% url 'download_csv_lab' "all" %}"
+                           class="btn btn-secondary btn-block" role="button"> All records
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
                 </div>
-            </div>
                 <div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="toggleSummaryTop">

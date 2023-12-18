@@ -84,7 +84,7 @@
                 {% if not dictionary.empty %}
                     <div class="row">
                         <div class="col d-flex justify-content-between">
-                            {% if facility_c_r_filename %}
+                            {% if dictionary.facilities_collect_receipt_tat  and facility_c_r_filename %}
                                 <!--DOWNLOAD BUTTON-->
                                 <div>
                                     <a href="{% url 'download_csv' dictionary.facilities_collect_receipt_tat facility_c_r_filename %}">
@@ -96,7 +96,7 @@
                                 </div>
                             {% endif %}
                             <!--DOWNLOAD BUTTON-->
-                            {% if subcounty_c_r_filename %}
+                            {% if dictionary.sub_counties_collect_receipt_tat and subcounty_c_r_filename %}
                                 <div>
                                     <a href="{% url 'download_csv' dictionary.sub_counties_collect_receipt_tat subcounty_c_r_filename %}">
                                         <button type="button" class="btn btn-success btn-floating mr-2"
@@ -107,7 +107,7 @@
                                 </div>
                             {% endif %}
                             <!--DOWNLOAD BUTTON-->
-                            {% if hub_c_r_filename %}
+                            {% if dictionary.hubs_collect_receipt_tat and hub_c_r_filename %}
                                 <div>
                                     <a href="{% url 'download_csv' dictionary.hubs_collect_receipt_tat hub_c_r_filename %}">
                                         <button type="button" class="btn btn-success btn-floating mr-2"
@@ -118,7 +118,7 @@
                                 </div>
                             {% endif %}
                             <!--DOWNLOAD BUTTON-->
-                            {% if county_c_r_filename %}
+                            {% if dictionary.counties_collect_receipt_tat and county_c_r_filename %}
                                 <div>
                                     <a href="{% url 'download_csv' dictionary.counties_collect_receipt_tat county_c_r_filename %}">
                                         <button type="button" class="btn btn-success btn-floating mr-2"
@@ -129,7 +129,7 @@
                                 </div>
                             {% endif %}
                             <!--DOWNLOAD BUTTON-->
-                            {% if program_c_r_filename %}
+                            {% if dictionary.program_collect_receipt_tat and program_c_r_filename %}
                                 <div>
                                     <a href="{% url 'download_csv' dictionary.program_collect_receipt_tat program_c_r_filename %}">
                                         <button type="button" class="btn btn-success btn-floating mr-2"
@@ -144,7 +144,7 @@
                     <div class="row">
                         <div class="col d-flex justify-content-between">
                             <!--DOWNLOAD BUTTON-->
-                            {% if facility_c_d_filename %}
+                            {% if dictionary.facilities_collect_dispatch_tat and facility_c_d_filename %}
                                 <div class="mt-3">
                                     <a href="{% url 'download_csv' dictionary.facilities_collect_dispatch_tat facility_c_d_filename %}">
                                         <button type="button" class="btn btn-secondary btn-floating mr-2"
@@ -155,7 +155,7 @@
                                 </div>
                             {% endif %}
                             <!--DOWNLOAD BUTTON-->
-                            {% if subcounty_c_d_filename %}
+                            {% if dictionary.sub_counties_collect_dispatch_tat and subcounty_c_d_filename %}
                                 <div class="mt-3">
                                     <a href="{% url 'download_csv' dictionary.sub_counties_collect_dispatch_tat subcounty_c_d_filename %}">
                                         <button type="button" class="btn btn-secondary btn-floating mr-2"
@@ -166,7 +166,7 @@
                                 </div>
                             {% endif %}
                             <!--DOWNLOAD BUTTON-->
-                            {% if hub_c_d_filename %}
+                            {% if dictionary.hubs_collect_dispatch_tat and hub_c_d_filename %}
                                 <div class="mt-3">
                                     <a href="{% url 'download_csv' dictionary.hubs_collect_dispatch_tat hub_c_d_filename %}">
                                         <button type="button" class="btn btn-secondary btn-floating mr-2"
@@ -177,7 +177,7 @@
                                 </div>
                             {% endif %}
                             <!--DOWNLOAD BUTTON-->
-                            {% if county_c_d_filename %}
+                            {% if dictionary.counties_collect_dispatch_tat and county_c_d_filename %}
                                 <div class="mt-3">
                                     <a href="{% url 'download_csv' dictionary.counties_collect_dispatch_tat county_c_d_filename %}">
                                         <button type="button" class="btn btn-secondary btn-floating mr-2"
@@ -188,7 +188,7 @@
                                 </div>
                             {% endif %}
                             <!--DOWNLOAD BUTTON-->
-                            {% if program_c_d_filename %}
+                            {% if dictionary.program_collect_dispatch_tat and program_c_d_filename %}
                                 <div class="mt-3">
                                     <a href="{% url 'download_csv' dictionary.program_collect_dispatch_tat program_c_d_filename %}">
                                         <button type="button" class="btn btn-secondary btn-floating mr-2"

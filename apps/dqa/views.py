@@ -1731,7 +1731,17 @@ class GeneratePDF(View):
             return redirect("profile")
         # Retrieve the selected facility from the session and convert it back to a dictionary
         selected_facility_json = request.session.get('selected_facility')
-        selected_facility_dict = json.loads(selected_facility_json)
+
+        # Check if selected_facility_json is None
+        if selected_facility_json is None:
+            # Handle the case when selected_facility_json is None (perhaps redirect to an error page)
+            return HttpResponse("Selected facility information not found.")
+        # Attempt to load the JSON
+        try:
+            selected_facility_dict = json.loads(selected_facility_json)
+        except json.JSONDecodeError as e:
+            # Handle the case when JSON decoding fails (perhaps log the error)
+            return HttpResponse(f"Error decoding JSON: {str(e)}")
 
         # Create a Facility object from the dictionary
         selected_facility = Facilities.objects.get(id=selected_facility_dict['id'])

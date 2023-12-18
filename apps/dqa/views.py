@@ -4132,8 +4132,10 @@ def generate_missing_indicators_message(data_verification_data, model_name, inte
     else:
         return None  # No missing indicators
 
-
+@login_required(login_url='login')
 def dqa_dashboard(request, dqa_type=None):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 

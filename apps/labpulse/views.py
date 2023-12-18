@@ -1506,7 +1506,7 @@ def save_drt_report(writer, queryset):
             ]
             writer.writerow(data_row)
 
-
+@login_required(login_url='login')
 def download_csv(request, filter_type):
     # Get the serialized filtered data from the session
     filtered_data_json = request.session.get('filtered_queryset')

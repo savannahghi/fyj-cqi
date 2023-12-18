@@ -73,7 +73,7 @@ def load_fyj_censused(request):
             redirect(request.path_info)
     return render(request, 'data_analysis/load_data.html')
 
-
+@login_required(login_url='login')
 def download_csv(request, name, filename):
     session_items = []
     for key, value in request.session.items():

@@ -3481,7 +3481,7 @@ def join_lines_starting_three_lettered_word_uppercase(result_list, have_three_le
 
         if i < len(result_list) - 1:
             next_line = result_list[i + 1].strip()
-            if next_line and re.match(r'[A-Z]{3}', next_line) and have_three_lettered_word:
+            if next_line and re.match(r'[A-Z]{3}(?![A-Z])', next_line) and have_three_lettered_word:
                 current_line += ' ' + next_line
                 i += 1  # Skip the next line
 
@@ -3497,7 +3497,7 @@ def join_lines_starting_three_lettered_word_uppercase(result_list, have_three_le
     return joined_list
 
 
-def preprocess_data(pattern_match_df, variable_2=None):
+def preprocess_data(pattern_match_df,variable_2=None):
     # Extract unique values from the DataFrame column
     generated_list = pattern_match_df["col_name"].unique()
     # Process and clean the extracted text
@@ -3506,12 +3506,11 @@ def preprocess_data(pattern_match_df, variable_2=None):
     generated_list = [s.replace('·', ',').replace(',,', ',') for s in generated_list.split("\n")]
 
     # Join lines based on lowercase and uppercase starting letters
-    generated_list = join_lines_starting_lowercase(generated_list)
+    generated_list=join_lines_starting_lowercase(generated_list)
     if "NRTI" not in generated_list:
-        generated_list = join_lines_starting_three_lettered_word_uppercase(generated_list,
-                                                                           have_three_lettered_word=True)
-    #         generated_list=join_lines_starting_uppercase(generated_list)
-
+        generated_list=join_lines_starting_three_lettered_word_uppercase(generated_list,
+                                                                        have_three_lettered_word=True)
+#         generated_list=join_lines_starting_uppercase(generated_list)
     # Remove unwanted strings
     filtered_list = [s for s in generated_list if s != '.']
     filtered_list = [s for s in filtered_list if s != '(CoVDB)']

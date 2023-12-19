@@ -34,7 +34,7 @@ import plotly.offline as opy
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError, transaction, DatabaseError
+from django.db import IntegrityError, connection, reset_queries, transaction, DatabaseError
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 
@@ -94,6 +94,12 @@ def disable_update_buttons(request, audit_team):
                           "DQA Update Time' button on the left navigation bar to set the time or contact an "
                           "administrator to set it for you.")
     return redirect(request.path_info)
+
+
+def calculate_progress(dqa_workplan_list):
+    today = timezone.now().date()
+    for workplan in dqa_workplan_list:
+        workplan.progress = (workplan.due_complete_by - today).days
 
 
 def export_dqa_work_plan_csv(request, quarter_year, selected_level):
@@ -1933,7 +1939,8 @@ class GeneratePDF(View):
                 # Create a new key-value pair in the 'dicts' dictionary, where the key is a string containing the 'indy'
                 # value and the 'quarter' value, and the value is a bar chart object created using the 'merged_df_viz'
                 # DataFrame
-                dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance",has_khis_731_datim=True)
+                dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance",
+                                                         has_khis_731_datim=True)
                 # fig, chart_name = bar_chart_report(merged_df_viz, "data sources", "performance", selected_facility,
                 #                                    indy=indy, quarter=quarter)
                 image = bar_chart_report(merged_df_viz, "data sources", "performance", indy=indy, quarter=quarter)
@@ -2407,7 +2414,7 @@ def compare_data_verification(merged_df, pepfar_col, description_list=None):
         # Create a new key-value pair in the 'dicts' dictionary, where the key is a string containing the 'indy'
         # value and the 'quarter' value, and the value is a bar chart object created using the 'merged_df_viz'
         # DataFrame
-        dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance",has_khis_731_datim=True)
+        dicts[f"{indy} ({quarter})"] = bar_chart(merged_df_viz, "data sources", "performance", has_khis_731_datim=True)
     return dicts, merged_viz_df
 
 
@@ -2530,6 +2537,7 @@ custom_mapping = {
     5: ("blue", "blues"),
     0: ("not_applicable", "not applicable"),
 }
+
 
 def get_df_from_results(result_dfs):
     if "red" in result_dfs.keys():
@@ -2883,7 +2891,6 @@ def prepare_data_system_assessment(system_assessments_df, custom_mapping, descri
     all_dfs['% of scores'] = all_dfs['% of scores'].astype(str) + '%'
     all_dfs['scores (%)'] = all_dfs['# of scores'].astype(str) + " (" + all_dfs['% of scores'] + ")"
     del all_dfs['% of scores']
-
 
     m_e_structures = m_e_structures.apply(calc_percentage, axis=1)
 
@@ -4132,6 +4139,7 @@ def generate_missing_indicators_message(data_verification_data, model_name, inte
     else:
         return None  # No missing indicators
 
+
 @login_required(login_url='login')
 def dqa_dashboard(request, dqa_type=None):
     if not request.user.first_name:
@@ -4182,6 +4190,7 @@ def dqa_dashboard(request, dqa_type=None):
     work_plan_timeframe_viz = None
     data_verification_viz = None
     facility_charts = None
+    reset_queries()
     description_list = [
         "There is a documented structure/chart that clearly identifies positions that have data management "
         "responsibilities at the Facility.",
@@ -4232,14 +4241,14 @@ def dqa_dashboard(request, dqa_type=None):
             fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
             khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
             audit_team = AuditTeam.objects.filter(quarter_year__quarter_year=quarter_year)
-            dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year).order_by('facility_name')
+            dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year).order_by(
+                'facility_name').prefetch_related('facility_name')
             #####################################
             # DECREMENT REMAINING TIME DAILY    #
             #####################################
             if dqa_workplan:
-                today = timezone.now().date()
-                for workplan in dqa_workplan:
-                    workplan.progress = (workplan.due_complete_by - today).days
+                calculate_progress(dqa_workplan)
+
             # fetch data from the Sub_counties model
             data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
                                                'counties__county_name', 'sub_counties')
@@ -4255,23 +4264,25 @@ def dqa_dashboard(request, dqa_type=None):
             sub_county = Sub_counties.objects.get(sub_counties=selected_subcounty)
             facilities = sub_county.facilities.all()
             data_verification = DataVerification.objects.filter(quarter_year__quarter_year=quarter_year,
-                                                                facility_name__in=facilities)
+                                                                facility_name__in=facilities).prefetch_related(
+                'facility_name')
 
             system_assessment = SystemAssessment.objects.filter(quarter_year__quarter_year=quarter_year,
-                                                                facility_name__in=facilities)
+                                                                facility_name__in=facilities).prefetch_related(
+                'facility_name')
             fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
             khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
             audit_team = AuditTeam.objects.filter(quarter_year__quarter_year=quarter_year,
-                                                  facility_name__in=facilities)
+                                                  facility_name__in=facilities).prefetch_related('facility_name')
             dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year,
-                                                      facility_name__in=facilities).order_by('facility_name')
+                                                      facility_name__in=facilities).order_by(
+                'facility_name').prefetch_related('facility_name')
             #####################################
             # DECREMENT REMAINING TIME DAILY    #
             #####################################
             if dqa_workplan:
-                today = timezone.now().date()
-                for workplan in dqa_workplan:
-                    workplan.progress = (workplan.due_complete_by - today).days
+                calculate_progress(dqa_workplan)
+
             # fetch data from the Sub_counties model
             data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
                                                'counties__county_name', 'sub_counties')
@@ -4288,26 +4299,26 @@ def dqa_dashboard(request, dqa_type=None):
 
             data_verification = DataVerification.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__counties__county_name=selected_county)
+                facility_name__sub_counties__counties__county_name=selected_county).prefetch_related('facility_name')
 
             system_assessment = SystemAssessment.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__counties__county_name=selected_county)
+                facility_name__sub_counties__counties__county_name=selected_county).prefetch_related('facility_name')
             fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
             khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
             audit_team = AuditTeam.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__counties__county_name=selected_county)
+                facility_name__sub_counties__counties__county_name=selected_county).prefetch_related('facility_name')
             dqa_workplan = DQAWorkPlan.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__counties__county_name=selected_county).order_by('facility_name')
+                facility_name__sub_counties__counties__county_name=selected_county).order_by(
+                'facility_name').prefetch_related('facility_name')
             #####################################
             # DECREMENT REMAINING TIME DAILY    #
             #####################################
             if dqa_workplan:
-                today = timezone.now().date()
-                for workplan in dqa_workplan:
-                    workplan.progress = (workplan.due_complete_by - today).days
+                calculate_progress(dqa_workplan)
+
             # fetch data from the Sub_counties model
             data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
                                                'counties__county_name', 'sub_counties')
@@ -4323,26 +4334,26 @@ def dqa_dashboard(request, dqa_type=None):
 
             data_verification = DataVerification.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__hub__hub=selected_hub)
+                facility_name__sub_counties__hub__hub=selected_hub).prefetch_related('facility_name')
 
             system_assessment = SystemAssessment.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__hub__hub=selected_hub)
+                facility_name__sub_counties__hub__hub=selected_hub).prefetch_related('facility_name')
             fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
             khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
             audit_team = AuditTeam.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__hub__hub=selected_hub)
+                facility_name__sub_counties__hub__hub=selected_hub).prefetch_related('facility_name')
             dqa_workplan = DQAWorkPlan.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__hub__hub=selected_hub).order_by('facility_name')
+                facility_name__sub_counties__hub__hub=selected_hub).order_by('facility_name').prefetch_related(
+                'facility_name')
             #####################################
             # DECREMENT REMAINING TIME DAILY    #
             #####################################
             if dqa_workplan:
-                today = timezone.now().date()
-                for workplan in dqa_workplan:
-                    workplan.progress = (workplan.due_complete_by - today).days
+                calculate_progress(dqa_workplan)
+
             # fetch data from the Sub_counties model
             data = Sub_counties.objects.values('facilities__name', 'facilities__mfl_code', 'hub__hub',
                                                'counties__county_name', 'sub_counties')
@@ -4351,7 +4362,7 @@ def dqa_dashboard(request, dqa_type=None):
         if data_verification:
             data_verification_data = data_verification.values('facility_name__name', 'indicator')
             message = generate_missing_indicators_message(data_verification_data, DataVerification,
-                                                          'facility_name__name',quarter_year)
+                                                          'facility_name__name', quarter_year)
             if message:
                 messages.success(request, message)
             facilities = [
@@ -4637,6 +4648,9 @@ def dqa_dashboard(request, dqa_type=None):
                                                           f"{timeframe_df['Number of action points'].sum()}"
                                                           f" ({quarter_year})",
                                                     color=None)
+
+    # Print the number of queries executed
+    print(f"Number of queries: {len(connection.queries)}")
 
     context = {
         "quarter_form": quarter_form,

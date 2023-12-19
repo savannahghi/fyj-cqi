@@ -60,6 +60,7 @@ THIRD_PARTY_APPS = [
     "mathfilters",
     "django_select2",
     'django_extensions',
+    # 'debug_toolbar',
     # 'silk',
 
     # Note: Order of INSTALLED_APPS is important. To ensure that exceptions inside other apps’ signal handlers do not
@@ -95,6 +96,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "crum.CurrentRequestUserMiddleware",
+    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
     # "silk.middleware.SilkyMiddleware",
 ]
 
@@ -223,3 +225,9 @@ STATICFILES_FINDERS = [
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 WHITENOISE_MANIFEST_STRICT = False
 SESSION_COOKIE_AGE = 3600  # Set the session expiration to 1 hour (in seconds)
+###############################
+# DEBUG CONFIG
+###############################
+DEBUG_TOOLBAR_CONFIG = {
+        'SHOW_TOOLBAR_CALLBACK': lambda request: DEBUG,
+    }

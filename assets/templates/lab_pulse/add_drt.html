@@ -137,27 +137,39 @@
                     <hr>
                     <h3 class="fw-bold text-primary text-center"> Summary </h3>
                     <hr>
-                    {{ drt_distribution_fig|safe }}
-                    <hr>
-                    {{ drt_tat_fig|safe }}
-                    <hr>
-                    {{ resistance_level_fig|safe }}
-                    <hr>
-                    {{ age_summary_fig|safe }}
-                    <hr>
-                    {{ resistance_level_age_fig|safe }}
-                    <hr>
+                    {% if drt_distribution_fig %}
+                        {{ drt_distribution_fig|safe }}
+                        <hr>
+                    {% endif %}
+                    {% if drt_tat_fig %}
+                        {{ drt_tat_fig|safe }}
+                        <hr>
+                    {% endif %}
+                    {% if resistance_level_fig %}
+                        {{ resistance_level_fig|safe }}
+                        <hr>
+                    {% endif %}
+                    {% if age_summary_fig %}
+                        {{ age_summary_fig|safe }}
+                        <hr>
+                    {% endif %}
+                    {% if age_pop_summary_fig %}
+                        {{ age_pop_summary_fig|safe }}
+                        <hr>
+                    {% endif %}
+                    {% if resistance_level_age_fig %}
+                        {{ resistance_level_age_fig|safe }}
+                        <hr>
+                    {% endif %}
                     <h5 class="fw-bold text-primary text-center"> Time-Based Changes in Drug Resistance
-                        Prevalence:
-                        Overall </h5>
+                        Prevalence: Overall </h5>
                     <hr>
                     {{ prevalence_tat_fig|safe }}
                     <hr>
                     {{ drt_trend_fig|safe }}
                     <hr>
                     <h5 class="fw-bold text-primary text-center"> Time-Based Changes in Drug Resistance
-                        Prevalence:
-                        By Drug </h5>
+                        Prevalence: By Drug </h5>
                     <hr>
                     {% for keys, trend_fig in trend_figs.items %}
                         {{ trend_fig|safe }}

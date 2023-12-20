@@ -284,56 +284,52 @@ class BiochemistryResult(BaseModel):
     mfl_code = models.IntegerField()
     results_interpretation = models.CharField(max_length=255)
     number_of_samples = models.IntegerField()
-    performed_by = models.CharField(max_length=100,blank=True,null=True)
+    performed_by = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f"{self.mfl_code} - {self.date_created} - {self.test} - {self.patient_id}"
 
     class Meta:
-        ordering=['patient_id','collection_date']
+        ordering = ['patient_id', 'collection_date']
         verbose_name = "Biochemistry Result"
         verbose_name_plural = "Biochemistry Results"
-        unique_together=(('sample_id', 'patient_id','test','collection_date','result'),)
+        unique_together = (('sample_id', 'patient_id', 'test', 'collection_date', 'result'),)
+
 
 class DrtPdfFile(BaseModel):
     result = models.FileField(upload_to='drt_files')
+
     class Meta:
         verbose_name_plural = "DRT PDF Results"
 
     def __str__(self):
         # Fetch the first related result
-        first_result = self.drt_results.order_by('patient_id','date_created').first()
+        first_result = self.drt_results.order_by('patient_id', 'date_created').first()
         if first_result:
             return f"{first_result.patient_id} - {first_result.facility_name} - {first_result.collection_date}"
         # Return a default string if no related result exists
         return f"No related result for {self.id}"
 
 
-class DrtResults(BaseModel):
+class DrtMixin(BaseModel):
     patient_id = models.BigIntegerField(validators=[MaxValueValidator(9999999999)])
-    result = models.ForeignKey(DrtPdfFile, on_delete=models.CASCADE,related_name="drt_results")
     collection_date = models.DateTimeField()
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
     sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
     county = models.ForeignKey(Counties, null=True, blank=True, on_delete=models.CASCADE)
-    drug = models.CharField(max_length=50)
-    drug_abbreviation = models.CharField(max_length=10)
-    resistance_level = models.CharField(max_length=250)
     sequence_summary = models.CharField(max_length=10)
     haart_class = models.CharField(max_length=50)
     date_received = models.DateTimeField()
     date_reported = models.DateTimeField()
     date_test_performed = models.DateTimeField()
     test_perfomed_by = models.CharField(max_length=50)
-    age = models.PositiveIntegerField(validators=[MaxValueValidator(150)],null=True, blank=True,)
-    age_unit = models.CharField(max_length=20,null=True, blank=True,)
-    sex = models.CharField(max_length=10,null=True, blank=True,)
+    age = models.PositiveIntegerField(validators=[MaxValueValidator(150)], null=True, blank=True)
+    age_unit = models.CharField(max_length=20, null=True, blank=True)
+    sex = models.CharField(max_length=10, null=True, blank=True)
     tat_days = models.IntegerField(blank=True, null=True)
 
     class Meta:
-        ordering = ['patient_id','date_created']
-        unique_together=['patient_id','collection_date','drug']
-        verbose_name_plural="DRT Results"
+        abstract = True
 
     def save(self, *args, **kwargs):
         # Make sure collection_date is timezone-aware
@@ -350,4 +346,27 @@ class DrtResults(BaseModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.patient_id)+ " - "+ str(self.facility_name)+ " - "+ str(self.date_created)
+        return str(self.patient_id) + " - " + str(self.facility_name) + " - " + str(self.date_created)
+
+
+class DrtResults(DrtMixin):
+    result = models.ForeignKey(DrtPdfFile, on_delete=models.CASCADE, related_name="drt_results")
+    drug = models.CharField(max_length=50)
+    drug_abbreviation = models.CharField(max_length=10)
+    resistance_level = models.CharField(max_length=250)
+
+    class Meta:
+        ordering = ['patient_id', 'date_created']
+        unique_together = ['patient_id', 'collection_date', 'drug']
+        verbose_name_plural = "DRT Results"
+
+
+class DrtProfile(DrtMixin):
+    result = models.ForeignKey(DrtPdfFile, on_delete=models.CASCADE, related_name="drt_profile")
+    mutation_type = models.CharField(max_length=50)
+    mutations = models.CharField(max_length=250)
+
+    class Meta:
+        ordering = ['patient_id', 'date_created']
+        unique_together = ['patient_id', 'collection_date', 'mutation_type']
+        verbose_name_plural = "DRT Profile"

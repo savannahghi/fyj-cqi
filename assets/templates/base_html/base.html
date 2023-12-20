@@ -516,6 +516,32 @@
         }
     });
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Function to disable haart_class and resistance_level when sequence_summary is "FAILED"
+        function toggleFieldsBasedOnSequenceSummary() {
+            const sequenceSummaryValue = document.getElementById('id_sequence_summary').value;
+            const haartClassField = document.getElementById('id_haart_class');
+            const resistanceLevelField = document.getElementById('id_resistance_level');
+
+            if (sequenceSummaryValue === 'FAILED') {
+                haartClassField.disabled = true;
+                resistanceLevelField.disabled = true;
+            } else {
+                haartClassField.disabled = false;
+                resistanceLevelField.disabled = false;
+            }
+        }
+
+        // Call the function initially to set the initial state
+        toggleFieldsBasedOnSequenceSummary();
+
+        // Bind the function to the change event of sequence_summary field
+        document.getElementById('id_sequence_summary').addEventListener('change', function() {
+            toggleFieldsBasedOnSequenceSummary();
+        });
+    });
+</script>
 
 
 

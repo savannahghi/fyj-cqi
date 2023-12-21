@@ -1113,8 +1113,6 @@ def line_chart_median_mean(df, x_axis, y_axis, title, color=None, xaxis_title=No
     fig = px.line(df, x=x_axis, y=y_axis, text=y_axis, color=color,
                   height=450,
                   title=title)
-    y = int(mean_sample_tested)
-    x = int(median_sample_tested)
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
     if yaxis_title is None:
@@ -2625,88 +2623,6 @@ def convert_np_datetime64_to_datetime(date_np):
     return date_obj
 
 
-# def save_drt_data(request, resistance_patterns_df, facility_id, all_subcounties, all_counties,
-#                   drt_file_form):
-#     for index, row in resistance_patterns_df.iterrows():
-#         drt_results = DrtResults()
-#         drt_results.date_received = row['date_received']
-#         drt_results.date_reported = row['date_reported']
-#         drt_results.date_test_performed = row['date_test_perfomed']
-#         drt_results.collection_date = row['date_collected']
-#
-#         drt_results.patient_id = row['patient_id']
-#         drt_results.drug = row['Drug']
-#         drt_results.drug_abbreviation = row['Drug Abbreviation']
-#         drt_results.resistance_level = row['Resistance Level']
-#         drt_results.sequence_summary = row['sequence summary']
-#         drt_results.haart_class = row['haart_class']
-#         drt_results.test_perfomed_by = row['test_perfomed_by']
-#         drt_results.age = row['age']
-#         drt_results.sex = row['sex']
-#         drt_results.age_unit = row['age_unit']
-#         # Check for uniqueness before saving
-#         if not DrtResults.objects.filter(
-#                 Q(patient_id=drt_results.patient_id) &
-#                 Q(collection_date=drt_results.collection_date) &
-#                 Q(drug=drt_results.drug)
-#         ).exists():
-#             # Save the DrtPdfFile only if no related DrtResults exist
-#             drt_file_instance = drt_file_form.save()
-#             drt_results.result = drt_file_instance
-#         else:
-#             # Handle the case when the record already exists
-#             msg = f"A record for Patient ID {drt_results.patient_id} collected on " \
-#                   f"{drt_results.collection_date.strftime('%Y-%m-%d')} already exists."
-#             messages.error(request, msg)
-#
-#         # Assign facility, subcounty, and county
-#         drt_results.facility_name = facility_id
-#         drt_results.sub_county = Sub_counties.objects.get(id=all_subcounties[0].sub_counties_id)
-#         drt_results.county = Counties.objects.get(id=all_counties[0].counties_id)
-#
-#         drt_results.save()
-#
-#
-# def save_drt_profile_data(request, resistance_patterns_df, facility_id, all_subcounties, all_counties, drt_file_form):
-#     for index, row in resistance_patterns_df.iterrows():
-#         drt_results = DrtProfile()
-#         drt_results.date_received = row['date_received']
-#         drt_results.date_reported = row['date_reported']
-#         drt_results.date_test_performed = row['date_test_perfomed']
-#         drt_results.collection_date = row['date_collected']
-#
-#         drt_results.patient_id = row['patient_id']
-#         drt_results.mutation_type = row['Mutation Type']
-#         drt_results.mutations = row['Mutations']
-#         drt_results.sequence_summary = row['sequence summary']
-#         drt_results.haart_class = row['haart_class']
-#         drt_results.test_perfomed_by = row['test_perfomed_by']
-#         drt_results.age = row['age']
-#         drt_results.sex = row['sex']
-#         drt_results.age_unit = row['age_unit']
-#         # Check for uniqueness before saving
-#         if not DrtResults.objects.filter(
-#                 Q(patient_id=drt_results.patient_id) &
-#                 Q(collection_date=drt_results.collection_date) &
-#                 Q(drug=drt_results.mutation_type)
-#         ).exists():
-#             # Save the DrtPdfFile only if no related DrtResults exist
-#             drt_file_instance = drt_file_form.save()
-#             drt_results.result = drt_file_instance
-#         else:
-#             # Handle the case when the record already exists
-#             msg = f"A record for Patient ID {drt_results.patient_id} collected on " \
-#                   f"{drt_results.collection_date.strftime('%Y-%m-%d')} already exists."
-#             messages.error(request, msg)
-#
-#         # Assign facility, subcounty, and county
-#         drt_results.facility_name = facility_id
-#         drt_results.sub_county = Sub_counties.objects.get(id=all_subcounties[0].sub_counties_id)
-#         drt_results.county = Counties.objects.get(id=all_counties[0].counties_id)
-#
-#         drt_results.save()
-
-
 def save_drt_data(request, resistance_patterns_df, model_class, field_mapping, facility_id, all_subcounties,
                   all_counties, drt_file_form):
     for index, row in resistance_patterns_df.iterrows():
@@ -3059,8 +2975,128 @@ def pop_pyramid_chart(data, male_col, female_col, title, age_col='age_band', cha
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
+def prepare_drt_cascade_df(df_cascade):
+    # Calculate proportions
+    total_tested = len(df_cascade)
+    failed_count = len(df_cascade[df_cascade['sequence_summary'] == 'FAILED'])
+    passed_count = len(df_cascade[df_cascade['sequence_summary'] == 'PASSED'])
+
+    failed_proportion = round(failed_count / total_tested * 100, )
+    passed_proportion = round(passed_count / total_tested * 100, )
+
+    # Create a summary DataFrame with proportions
+    summary_df_cascade = pd.DataFrame({
+        'variables': ['Total Tested', 'Passed', 'Failed'],
+        'counts': [total_tested, passed_count, failed_count],
+        '%': ["1", passed_proportion, failed_proportion]
+    })
+
+    summary_df_cascade['count (%)'] = summary_df_cascade['counts'].astype(str) + " (" + summary_df_cascade['%'].astype(
+        str) + "%)"
+    # Find the index of the 'Total Tested' row
+    total_tested_index = summary_df_cascade[summary_df_cascade['variables'] == 'Total Tested'].index
+
+    # Update the 'count (%)' value for 'Total Tested'
+    summary_df_cascade.loc[total_tested_index, 'count (%)'] = summary_df_cascade.loc[
+        total_tested_index, 'count (%)'].str.replace(r" \(\d+%\)", "", regex=True)
+
+    return summary_df_cascade
+
+
+def add_percentage_and_count_string(haart_class_df):
+    # Calculate percentage and round to the nearest integer
+    haart_class_df['%'] = round(haart_class_df['count'] / haart_class_df['count'].sum() * 100).astype(int)
+
+    # Create a new column with count and percentage string
+    haart_class_df['count (%)'] = haart_class_df['count'].astype(str) + " (" + haart_class_df['%'].astype(str) + "%)"
+
+    return haart_class_df
+
+
+def get_mutation_counts(df_initial, mutation_type, ccc_num):
+    df = df_initial[df_initial['mutation_type'] == mutation_type]
+
+    # Extract unique mutations
+    profile_list = list(df['mutations'].unique())
+
+    # Split each string into a list of values
+    mutations_list = [mutation.split(',') for mutation in profile_list if mutation != ""]
+
+    # Flatten the list of lists
+    flat_mutations_list = [mutation.strip() for sublist in mutations_list for mutation in sublist if
+                           mutation.strip() != '']
+
+    # Create a DataFrame with mutations and count columns
+    df_mutations = pd.DataFrame({'mutations': flat_mutations_list})
+
+    # Count the occurrences of each mutation
+    mutation_counts = df_mutations['mutations'].value_counts().reset_index()
+
+    # Rename the columns
+    mutation_counts.columns = ['mutations', 'count']
+
+    # Add HAART class column
+    mutation_counts.insert(0, "haart_class", df['haart_class'].unique()[0])
+    mutation_counts["haart_class"] = mutation_counts["haart_class"].str.strip()
+
+    mutation_counts.insert(0, "mutation_type", mutation_type)
+    mutation_counts["mutation_type"] = mutation_counts["mutation_type"].str.strip()
+    mutation_counts.insert(0, "age", int(df['age'].unique()[0]))
+    mutation_counts.insert(0, "patient_id", ccc_num)
+
+    return mutation_counts
+
+
+def generate_mutation_profile_figs(df_resistant_profiles):
+    # Clean and filter the input DataFrame
+    df_resistant_profiles['mutation_type'] = df_resistant_profiles['mutation_type'].str.strip()
+    df_resistant_profiles = df_resistant_profiles[
+        (df_resistant_profiles['sequence_summary'].notna()) &
+        (~df_resistant_profiles['sequence_summary'].str.contains("fail", case=False, na=False))
+        ]
+
+    dfs = []
+    # Loop through mutation types and patient IDs to generate mutation counts
+    for mutation_type in df_resistant_profiles['mutation_type'].unique():
+        for ccc_num in df_resistant_profiles['patient_id'].unique():
+            df_specific_pt = df_resistant_profiles[df_resistant_profiles['patient_id'] == ccc_num]
+            result_df = get_mutation_counts(df_specific_pt, mutation_type, ccc_num)
+            dfs.append(result_df)
+
+    # Concatenate mutation counts DataFrames
+    mutations_df = pd.concat(dfs).reset_index(drop=True)
+    df_mutations = mutations_df.groupby(['mutation_type', 'mutations']).sum()['count'].reset_index().sort_values(
+        "count", ascending=False)
+
+    # Set specific order for mutation types
+    df_mutations['mutation_type'] = pd.Categorical(df_mutations['mutation_type'],
+                                                   ['NRTI Mutations', 'NNRTI Mutations', 'RT Other Mutations',
+                                                    'PI Major Mutations', 'PI Accessory Mutations',
+                                                    'PR Other Mutations', 'INSTI Major Mutations',
+                                                    'INSTI Accessory Mutations', 'IN Other Mutations'])
+
+    df_mutations.sort_values(['mutation_type'], inplace=True)
+    mutation_profile_figs = {}
+
+    # Generate bar charts for each mutation type
+    for i in df_mutations['mutation_type'].unique():
+        haart_class_df = df_mutations[df_mutations['mutation_type'] == i]
+        haart_class_df = haart_class_df.copy().sort_values("count", ascending=False)
+        haart_class_df = add_percentage_and_count_string(haart_class_df)
+
+        mutation_profile_figs[i] = bar_chart(haart_class_df, 'mutations', "count",
+                                             f"Prevalent Mutation Types by Class: {i} N={haart_class_df['count'].sum()}",
+                                             text="count (%)",
+                                             background_shadow=True, height=400, title_size=16,
+                                             xaxis_title='Mutations',
+                                             axis_text_size=14)
+
+    return mutation_profile_figs
+
+
 def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_age_fig, resistance_level_fig,
-                        drt_distribution_fig, age_summary_fig, drt_tat_fig, prevalence_tat_fig,age_pop_summary_fig):
+                        drt_distribution_fig, age_summary_fig, drt_tat_fig, prevalence_tat_fig, age_pop_summary_fig,
+                        drt_summary_fig, counties_summary_fig, mutation_profile_figs):
     # fields to extract
     fields = ['drt_results__patient_id', 'drt_results__collection_date', 'drt_results__county__county_name',
               'drt_results__sub_county__sub_counties',
@@ -3075,39 +3111,49 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
     # Extract the data from the queryset using values()
     data = my_filters.qs.values(*fields)
     df_resistant_patterns = pd.DataFrame(data)
+    df_resistant_patterns = df_resistant_patterns.rename(columns={
+        'drt_results__patient_id': 'patient_id', 'drt_results__collection_date': 'collection_date',
+        'drt_results__county__county_name': 'county_name', 'drt_results__sub_county__sub_counties': 'sub_counties',
+        'drt_results__facility_name__name': 'facility_name', 'drt_results__facility_name__mfl_code': 'mfl_code',
+        'drt_results__age': 'age', 'drt_results__age_unit': 'age_unit', 'drt_results__sex': 'sex',
+        'drt_results__date_received': 'date_received', 'drt_results__tat_days': 'tat_days',
+        'drt_results__date_reported': 'date_reported', 'drt_results__date_test_performed': 'date_test_performed',
+        'drt_results__drug_abbreviation': 'drug_abbreviation', 'drt_results__drug': 'drug',
+        'drt_results__resistance_level': 'resistance_level', 'drt_results__sequence_summary': 'sequence_summary',
+        'drt_results__haart_class': 'haart_class', 'drt_results__test_perfomed_by': 'test_perfomed_by', })
+    df_resistant_patterns_copy = df_resistant_patterns.copy()
     df_resistant_patterns = df_resistant_patterns[
-        (df_resistant_patterns['drt_results__sequence_summary'].notna()) &
-        (~df_resistant_patterns['drt_results__sequence_summary'].str.contains("fail", case=False, na=False))
+        (df_resistant_patterns['sequence_summary'].notna()) &
+        (~df_resistant_patterns['sequence_summary'].str.contains("fail", case=False, na=False))
         ]
 
     # fields to extract
     profile_fields = ['drt_profile__patient_id', 'drt_profile__collection_date', 'drt_profile__county__county_name',
-                      'drt_profile__sub_county__sub_counties','drt_profile__facility_name__name',
-                      'drt_profile__facility_name__mfl_code', 'drt_profile__age','drt_profile__age_unit',
-                      'drt_profile__sex','drt_profile__date_received', 'drt_profile__date_reported',
-                      'drt_profile__date_test_performed','drt_profile__mutation_type','drt_profile__mutations',
+                      'drt_profile__sub_county__sub_counties', 'drt_profile__facility_name__name',
+                      'drt_profile__facility_name__mfl_code', 'drt_profile__age', 'drt_profile__age_unit',
+                      'drt_profile__sex', 'drt_profile__date_received', 'drt_profile__date_reported',
+                      'drt_profile__date_test_performed', 'drt_profile__mutation_type', 'drt_profile__mutations',
                       'drt_profile__sequence_summary', 'drt_profile__haart_class', 'drt_profile__test_perfomed_by',
                       'drt_profile__tat_days', 'drt_profile__age_unit']
 
     # Extract the data from the queryset using values()
     data = my_filters.qs.values(*profile_fields)
     df_resistant_profiles = pd.DataFrame(data)
-    df_resistant_profiles = df_resistant_profiles[
-        (df_resistant_profiles['drt_profile__sequence_summary'].notna()) &
-        (~df_resistant_profiles['drt_profile__sequence_summary'].str.contains("fail", case=False, na=False))
-        ]
+    df_resistant_profiles = df_resistant_profiles.rename(columns={
+        'drt_profile__patient_id': 'patient_id', 'drt_profile__collection_date': 'collection_date',
+        'drt_profile__county__county_name': 'county_name', 'drt_profile__sub_county__sub_counties': 'sub_counties',
+        'drt_profile__facility_name__name': 'facility_name', 'drt_profile__facility_name__mfl_code': 'mfl_code',
+        'drt_profile__age': 'age', 'drt_profile__age_unit': 'age_unit', 'drt_profile__sex': 'sex',
+        'drt_profile__date_received': 'date_received',
+        'drt_profile__date_reported': 'date_reported', 'drt_profile__date_test_performed': 'date_test_performed',
+        'drt_profile__mutations': 'mutations', 'drt_profile__mutation_type': 'mutation_type',
+        'drt_profile__resistance_level': 'resistance_level', 'drt_profile__sequence_summary': 'sequence_summary',
+        'drt_profile__haart_class': 'haart_class', 'drt_profile__test_perfomed_by': 'test_perfomed_by',
+        'drt_profile__tat_days': 'tat_days'})
+    if df_resistant_patterns.shape[0] > 0:
+        mutation_profile_figs = generate_mutation_profile_figs(df_resistant_profiles)
 
     if df_resistant_patterns.shape[0] > 0:
-        df_resistant_patterns = df_resistant_patterns.rename(columns={
-            'drt_results__patient_id': 'patient_id', 'drt_results__collection_date': 'collection_date',
-            'drt_results__county__county_name': 'county_name', 'drt_results__sub_county__sub_counties': 'sub_counties',
-            'drt_results__facility_name__name': 'facility_name', 'drt_results__facility_name__mfl_code': 'mfl_code',
-            'drt_results__age': 'age', 'drt_results__age_unit': 'age_unit', 'drt_results__sex': 'sex',
-            'drt_results__date_received': 'date_received', 'drt_results__tat_days': 'tat_days',
-            'drt_results__date_reported': 'date_reported', 'drt_results__date_test_performed': 'date_test_performed',
-            'drt_results__drug_abbreviation': 'drug_abbreviation', 'drt_results__drug': 'drug',
-            'drt_results__resistance_level': 'resistance_level', 'drt_results__sequence_summary': 'sequence_summary',
-            'drt_results__haart_class': 'haart_class', 'drt_results__test_perfomed_by': 'test_perfomed_by', })
         # Define the replacement dictionary
         replacement_dict = {'High-Level ': 'High-Level Resistance', 'Susceptible': 'Susceptible',
                             'Potential': 'Potential Low-Level Resistance', 'Intermediate': 'Intermediate Resistance',
@@ -3133,6 +3179,28 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
             ['patient_id', 'drug_abbreviation', 'collection_date'])
         df_resistant_patterns = df_resistant_patterns[~df_resistant_patterns['drug'].str.contains("INHIBITORS")]
         df_resistant_patterns = df_resistant_patterns[df_resistant_patterns['drug'] != "nan"]
+        ###############################################
+        # DRT CASCADE
+        ###############################################
+        df_cascade = df_resistant_patterns_copy.drop_duplicates("patient_id", keep="first")
+        summary_df_cascade = prepare_drt_cascade_df(df_cascade)
+        drt_summary_fig = bar_chart(summary_df_cascade, "variables", "counts", f"DRT Summary", text="count (%)",
+                                    background_shadow=True, height=400, title_size=16,
+                                    xaxis_title='DRT Summary Cascade',
+                                    axis_text_size=14)
+        ###############################################
+        # COUNTY PICTURE
+        ###############################################
+        county_summary = df_cascade.groupby("county_name").count()['patient_id'].reset_index()
+        county_summary.columns = ["county", "counts"]
+        if county_summary.shape[0] > 1:
+            xaxis_title = "Counties"
+        else:
+            xaxis_title = "County"
+        counties_summary_fig = bar_chart(county_summary, "county", "counts", f"DRT Summary by County", text="counts",
+                                         background_shadow=True, height=400, title_size=16,
+                                         xaxis_title=xaxis_title,
+                                         axis_text_size=14)
 
         ##############################################################
         # Distribution of Drug Resistance Levels Across HAART Regimens
@@ -3204,12 +3272,12 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
                                                       category_orders={"resistance_level": resistance_order,
                                                                        "age_band": available_age_bands},
                                                       xaxis_title="Age Bands")
-        age_resistance_num = prepare_age_resistant_patterns(df_resistant_patterns, ["age"])
+        age_resistance_num = prepare_age_resistant_patterns(df_resistant_patterns_copy, ["age"])
         df_pivoted = dynamic_pivot(age_resistance_num, index_col='age_band', columns_col='sex',
                                    values_col='Number of DRT results')
         df_pivoted = df_pivoted[(df_pivoted['F'] != 0) | (df_pivoted['M'] != 0)]
         age_pop_summary_fig = pop_pyramid_chart(df_pivoted, male_col='M', female_col='F',
-                                                title='Distribution of HIV Drugs Across Resistance Levels by Age')
+                                                title='DRT Tests by Age and Sex')
 
         # age_summary_fig = bar_chart(age_resistance_num, "age_band", "Number of DRT results",
         #                             f"DRT Result Distribution by Sex and Age", color="sex", background_shadow=True,
@@ -3347,7 +3415,8 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
                                                       xaxis_title="Month_Year"
                                                       )
     return trend_figs, drt_trend_fig, resistance_level_age_fig, resistance_level_fig, drt_distribution_fig, \
-        age_summary_fig, drt_tat_fig, prevalence_tat_fig, age_pop_summary_fig
+        age_summary_fig, drt_tat_fig, prevalence_tat_fig, age_pop_summary_fig, drt_summary_fig, counties_summary_fig, \
+        mutation_profile_figs
 
 
 @login_required(login_url='login')
@@ -3364,7 +3433,9 @@ def add_drt_results(request):
     age_pop_summary_fig = None
     drt_tat_fig = None
     prevalence_tat_fig = None
-    drt_file_instance = None
+    drt_summary_fig = None
+    counties_summary_fig = None
+    mutation_profile_figs = None
 
     #####################################
     # Display existing data
@@ -3397,8 +3468,12 @@ def add_drt_results(request):
     filtered_qs = my_filters.qs.distinct('drt_results__patient_id', 'drt_results__collection_date',
                                          'drt_results__facility_name', 'date_created')
 
-    results = pagination_(request, filtered_qs, record_count)
-    qi_list = results
+    results_list = pagination_(request, filtered_qs, record_count)
+    qi_list = results_list
+
+    # Control number of DRT results to display
+    if len(results_list) > 500:
+        results_list = []
 
     # check the page user is from
     if request.method == "GET":
@@ -3408,21 +3483,28 @@ def add_drt_results(request):
 
     if my_filters.qs:
         trend_figs, drt_trend_fig, resistance_level_age_fig, resistance_level_fig, drt_distribution_fig, \
-            age_summary_fig, drt_tat_fig, prevalence_tat_fig, \
-            age_pop_summary_fig = prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_age_fig,
-                                                      resistance_level_fig, drt_distribution_fig, age_summary_fig,
-                                                      drt_tat_fig, prevalence_tat_fig,age_pop_summary_fig)
+            age_summary_fig, drt_tat_fig, prevalence_tat_fig, age_pop_summary_fig, drt_summary_fig, \
+            counties_summary_fig, mutation_profile_figs = prepare_drt_summary(my_filters, trend_figs, drt_trend_fig,
+                                                                              resistance_level_age_fig,
+                                                                              resistance_level_fig,
+                                                                              drt_distribution_fig,
+                                                                              age_summary_fig, drt_tat_fig,
+                                                                              prevalence_tat_fig, age_pop_summary_fig,
+                                                                              drt_summary_fig, counties_summary_fig,
+                                                                              mutation_profile_figs)
 
     if request.method == "POST":
         drt_file_form = DrtPdfFileForm(request.POST, request.FILES)
         form = DrtResultsForm(request.POST)
         if form.is_valid() and drt_file_form.is_valid():
-            context = {"form": form, "drt_file_form": drt_file_form, "title": title, "results": results,
+            context = {"form": form, "drt_file_form": drt_file_form, "title": title, "results": results_list,
                        "my_filters": my_filters, "qi_list": qi_list, "drt_distribution_fig": drt_distribution_fig,
                        "resistance_level_fig": resistance_level_fig, "drt_trend_fig": drt_trend_fig,
                        "trend_figs": trend_figs, "age_summary_fig": age_summary_fig, "drt_tat_fig": drt_tat_fig,
                        "resistance_level_age_fig": resistance_level_age_fig, "prevalence_tat_fig": prevalence_tat_fig,
-                       "age_pop_summary_fig": age_pop_summary_fig}
+                       "age_pop_summary_fig": age_pop_summary_fig, "drt_summary_fig": drt_summary_fig,
+                       "counties_summary_fig": counties_summary_fig, "mutation_profile_figs": mutation_profile_figs,
+                       "record_count": record_count}
             #################
             # Validate date
             #################
@@ -3484,12 +3566,14 @@ def add_drt_results(request):
     else:
         form = DrtResultsForm()
         drt_file_form = DrtPdfFileForm()
-    context = {"form": form, "drt_file_form": drt_file_form, "title": title, "results": results,
+    context = {"form": form, "drt_file_form": drt_file_form, "title": title, "results": results_list,
                "my_filters": my_filters, "drt_distribution_fig": drt_distribution_fig,
                "resistance_level_fig": resistance_level_fig, "drt_trend_fig": drt_trend_fig, "trend_figs": trend_figs,
                "record_count_options": record_count_options, "qi_list": qi_list, "drt_tat_fig": drt_tat_fig,
                "resistance_level_age_fig": resistance_level_age_fig, "age_summary_fig": age_summary_fig,
-               "prevalence_tat_fig": prevalence_tat_fig, "age_pop_summary_fig": age_pop_summary_fig}
+               "prevalence_tat_fig": prevalence_tat_fig, "age_pop_summary_fig": age_pop_summary_fig,
+               "drt_summary_fig": drt_summary_fig, "counties_summary_fig": counties_summary_fig,
+               "mutation_profile_figs": mutation_profile_figs}
     return render(request, "lab_pulse/add_drt.html", context)
 
 
@@ -3633,7 +3717,6 @@ def join_lines_starting_uppercase(result_list):
     ['Section 1A of the document. Continuation of Section 1A.', 'Section 1B. Introduction to Section 1B.']
     """
     joined_list = []
-    current_line = ""
 
     i = 0
     while i < len(result_list):
@@ -3672,7 +3755,6 @@ def join_lines_starting_three_lettered_word_uppercase(result_list, have_three_le
     ['Section 1A of the document. Continuation of Section 1A.', 'Section 1B. Introduction to Section 1B.']
     """
     joined_list = []
-    current_line = ""
 
     i = 0
     while i < len(result_list):
@@ -3748,7 +3830,6 @@ def extract_text(pdf_text, variable_1, variable_2, custom_pattern=None):
         pattern_match = pattern.search(pdf_text)
     else:
         # Add the NNRTI specific extraction using the provided pattern
-        nnrti_pattern = r'\nNNRTI\n(.*?)\.\nMutation scoring:'
         pattern_match = re.findall(custom_pattern, pdf_text, re.DOTALL)
 
     # Create a dictionary and DataFrame to store the extracted information
@@ -4819,6 +4900,7 @@ def add_empty_columns(df, columns_to_add, fill_value=np.nan):
     for column in columns_to_add:
         df[column] = fill_value
     return df
+
 
 def create_failed_df(resistance_patterns_df, resistance_profiles_df, sex):
     # Selecting the first row

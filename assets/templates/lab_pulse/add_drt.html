@@ -137,6 +137,23 @@
                     <hr>
                     <h3 class="fw-bold text-primary text-center"> Summary </h3>
                     <hr>
+                    <div class="row">
+                        {% if drt_summary_fig %}
+                            <div class="col-12 col-md-6">
+                                {{ drt_summary_fig|safe }}
+                            </div>
+                        {% endif %}
+                        {% if counties_summary_fig %}
+                            <div class="col-12 col-md-6">
+                                {{ counties_summary_fig|safe }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <hr>
+                    {% if age_pop_summary_fig %}
+                        {{ age_pop_summary_fig|safe }}
+                        <hr>
+                    {% endif %}
                     {% if drt_distribution_fig %}
                         {{ drt_distribution_fig|safe }}
                         <hr>
@@ -153,10 +170,7 @@
                         {{ age_summary_fig|safe }}
                         <hr>
                     {% endif %}
-                    {% if age_pop_summary_fig %}
-                        {{ age_pop_summary_fig|safe }}
-                        <hr>
-                    {% endif %}
+
                     {% if resistance_level_age_fig %}
                         {{ resistance_level_age_fig|safe }}
                         <hr>
@@ -168,14 +182,29 @@
                     <hr>
                     {{ drt_trend_fig|safe }}
                     <hr>
-                    <h5 class="fw-bold text-primary text-center"> Time-Based Changes in Drug Resistance
-                        Prevalence: By Drug </h5>
+                    {#                    <h5 class="fw-bold text-primary text-center"> Time-Based Changes in Drug Resistance#}
+                    {#                        Prevalence: By Drug </h5>#}
+                    {#                    <hr>#}
+                    {#                    {% for keys, trend_fig in trend_figs.items %}#}
+                    {#                        {{ trend_fig|safe }}#}
+                    {#                        <hr>#}
+                    {#                    {% endfor %}#}
+                    <h5 class="fw-bold text-primary text-center"> Mutation Prevalence: By Class </h5>
                     <hr>
-                    {% for keys, trend_fig in trend_figs.items %}
+                    {% for keys, trend_fig in mutation_profile_figs.items %}
                         {{ trend_fig|safe }}
-                        <hr>
                     {% endfor %}
                 </div>
+                <hr>
+                <div class="col-12 mb-2">
+                    {% if qi_list|length <= 500 %}
+                        <h4 class="fw-bold text-primary text-center"> DRT Reports </h4>
+                    {% else %}
+                        <h6 class="text-primary text-center"> > 500 records. Use the filters above to narrow down your
+                            search </h6>
+                    {% endif %}
+                </div>
+                <hr>
                 <div class="form-check form-switch mt-3">
                     <input class="form-check-input" type="checkbox" id="toggleSummaryBottom">
                     <label class="form-check-label" for="toggleSummaryBottom">Show or Hide Summary (Bottom)</label>

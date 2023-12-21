@@ -3938,7 +3938,8 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow=False,xaxis_title=None):
+def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow=False,xaxis_title=None,text=None,
+              title_size=12,axis_text_size=10):
     category_orders={}
     if "age" in x_axis.lower():
         age_categories = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44',
@@ -3949,9 +3950,12 @@ def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow
         available_categories = df[x_axis].unique()
         filtered_categories = [category for category in age_categories if category in available_categories]
         category_orders[x_axis] = sorted(filtered_categories, key=age_categories.index)
+    if text is not None:
+        text=text
+    else:
+        text=y_axis
 
-
-    fig = px.bar(df, x=x_axis, y=y_axis, text=y_axis, title=title, height=height,color=color,
+    fig = px.bar(df, x=x_axis, y=y_axis, text=text, title=title, height=height,color=color,
                  category_orders=category_orders
                  # hover_name=x_axis,  hover_data={
                  #                                        "tested of change":True,
@@ -3977,26 +3981,26 @@ def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow
     fig.update_layout(
         xaxis=dict(
             tickfont=dict(
-                size=10
+                size=axis_text_size
             ),
             title_font=dict(
-                size=10
+                size=axis_text_size
             )
         ),
         yaxis=dict(
             title_font=dict(
-                size=10
+                size=axis_text_size
             )
         ),
         legend=dict(
             font=dict(
-                size=10
+                size=axis_text_size
             )
         ),
         title=dict(
             # text="My Line Chart",
             font=dict(
-                size=12
+                size=title_size
             )
         )
     )

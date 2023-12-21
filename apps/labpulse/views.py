@@ -2919,13 +2919,15 @@ def dynamic_pivot(df, index_col, columns_col, values_col, agg_func='sum', fill_v
     return pivoted_df
 
 
-def pop_pyramid_chart(data, male_col, female_col, title, age_col='age_band', chart_height=600):
+def pop_pyramid_chart(data, male_col=None, female_col=None, title=None, age_col='age_band', chart_height=600, ):
     y = data[age_col]
-    x1 = data[male_col]
-    x2 = data[female_col] * -1
+
+    # Convert to pandas Series if male_col or female_col is not None
+    x1 = data[male_col] if male_col is not None else pd.Series()
+    x2 = data[female_col] * -1 if female_col is not None else pd.Series()
 
     # Calculate tick values and text dynamically based on data range
-    max_value = max(max(x1), max(x2))
+    max_value = max(max(x1, default=0), max(x2, default=0))
 
     # tickvals = list(range(-max_value, max_value + tick_interval, tick_interval))
     # ticktext = [f'{abs(val)}K' if val != 0 else '0' for val in tickvals]
@@ -2945,20 +2947,26 @@ def pop_pyramid_chart(data, male_col, female_col, title, age_col='age_band', cha
 
     # Create instance of the figure
     fig = go.Figure()
-
-    # Add Trace to Figure
-    fig.add_trace(go.Bar(y=y, x=x1, name='Male', orientation='h', text=x1,
-                         textposition='inside'  # Set text position to 'inside'
-                         ))
-
-    # Add Trace to figure
-    fig.add_trace(go.Bar(y=y, x=x2, name='Female', orientation='h', text=x2 * -1,
-                         textposition='inside'  # Set text position to 'inside'
-                         ))
+    if male_col is not None:
+        # Add Trace to Figure
+        fig.add_trace(go.Bar(y=y, x=x1, name='Male', orientation='h', text=x1,
+                             textposition='inside'  # Set text position to 'inside'
+                             ))
+    if female_col is not None:
+        # Add Trace to figure
+        fig.add_trace(go.Bar(y=y, x=x2, name='Female', orientation='h', text=x2 * -1,
+                             textposition='inside'  # Set text position to 'inside'
+                             ))
+    if male_col and female_col:
+        title = f'{female_col}/{male_col}'
+    elif male_col:
+        title = f'{male_col}'
+    elif female_col:
+        title = f'{female_col}'
 
     # Update Figure Layout
     fig.update_layout(title=f'{title}', title_font_size=16, barmode='relative', bargap=0.0, bargroupgap=0,
-                      xaxis=dict(tickvals=tickvals, ticktext=ticktext, title=f'{male_col}/{female_col}',
+                      xaxis=dict(tickvals=tickvals, ticktext=ticktext, title=title,
                                  title_font_size=14
                                  ),
                       height=chart_height,  # Set the height of the chart
@@ -3150,7 +3158,14 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         'drt_profile__resistance_level': 'resistance_level', 'drt_profile__sequence_summary': 'sequence_summary',
         'drt_profile__haart_class': 'haart_class', 'drt_profile__test_perfomed_by': 'test_perfomed_by',
         'drt_profile__tat_days': 'tat_days'})
-    if df_resistant_patterns.shape[0] > 0:
+    df_resistant_profiles = df_resistant_profiles.dropna(subset=['patient_id', 'collection_date'], how='all')
+    df_resistant_profiles = df_resistant_profiles[
+        (df_resistant_profiles['sequence_summary'].notna()) &
+        (~df_resistant_profiles['sequence_summary'].str.contains("fail", case=False, na=False))
+        ]
+
+    if df_resistant_profiles.shape[0] > 0:
+
         mutation_profile_figs = generate_mutation_profile_figs(df_resistant_profiles)
 
     if df_resistant_patterns.shape[0] > 0:
@@ -3275,13 +3290,17 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         age_resistance_num = prepare_age_resistant_patterns(df_resistant_patterns_copy, ["age"])
         df_pivoted = dynamic_pivot(age_resistance_num, index_col='age_band', columns_col='sex',
                                    values_col='Number of DRT results')
-        df_pivoted = df_pivoted[(df_pivoted['F'] != 0) | (df_pivoted['M'] != 0)]
-        age_pop_summary_fig = pop_pyramid_chart(df_pivoted, male_col='M', female_col='F',
-                                                title='DRT Tests by Age and Sex')
 
-        # age_summary_fig = bar_chart(age_resistance_num, "age_band", "Number of DRT results",
-        #                             f"DRT Result Distribution by Sex and Age", color="sex", background_shadow=True,
-        #                             height=400, xaxis_title="Age Bands")
+        # Filter the DataFrame to include rows where any column (except 'patient_id') has a non-zero value
+        df_pivoted = df_pivoted[(df_pivoted.iloc[:, 1:] != 0).any(axis=1)]
+
+        if "M" in df_pivoted.columns and "F" in df_pivoted.columns:
+            age_pop_summary_fig = pop_pyramid_chart(df_pivoted, male_col='M', female_col='F',
+                                                    title='DRT Tests by Age and Sex')
+        elif "M" in df_pivoted.columns:
+            age_pop_summary_fig = pop_pyramid_chart(df_pivoted, male_col='M', title='DRT Tests by Age and Sex')
+        elif "F" in df_pivoted.columns:
+            age_pop_summary_fig = pop_pyramid_chart(df_pivoted, female_col='F', title='DRT Tests by Age and Sex')
 
         ##############################################################
         # MONTHLY TAT
@@ -3973,7 +3992,7 @@ def extract_non_intergrase_text(pdf_text):
     rt_resistance_mutation_profile = rt_resistance_mutation_profile
     rt_resistance_mutation_profile = join_lines_starting_uppercase(rt_resistance_mutation_profile)
 
-    nrti_tdf = extract_text(pdf_text, "tenofovir", "\nRT comments")
+    nrti_tdf = extract_text(pdf_text, "tenofovir", "\n")
     nrti_3tc = extract_text(pdf_text, "lamivudine", "\ntenofovir")
     nrti_ftc = extract_text(pdf_text, "emtricitabine", "rilpivirine")
     nrti_ddi = extract_text(pdf_text, "didanosine", "nevirapine")

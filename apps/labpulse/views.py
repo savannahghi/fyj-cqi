@@ -2958,15 +2958,15 @@ def pop_pyramid_chart(data, male_col=None, female_col=None, title=None, age_col=
                              textposition='inside'  # Set text position to 'inside'
                              ))
     if male_col and female_col:
-        title = f'{female_col}/{male_col}'
+        xaxis_text = f'Gender: [{female_col}/{male_col}]'
     elif male_col:
-        title = f'{male_col}'
-    elif female_col:
-        title = f'{female_col}'
+        xaxis_text = f'Gender: [{male_col}]'
+    else:
+        xaxis_text = f'Gender: [{female_col}]'
 
     # Update Figure Layout
     fig.update_layout(title=f'{title}', title_font_size=16, barmode='relative', bargap=0.0, bargroupgap=0,
-                      xaxis=dict(tickvals=tickvals, ticktext=ticktext, title=title,
+                      xaxis=dict(tickvals=tickvals, ticktext=ticktext, title=xaxis_text,
                                  title_font_size=14
                                  ),
                       height=chart_height,  # Set the height of the chart
@@ -3466,7 +3466,7 @@ def add_drt_results(request):
     else:
         record_count = request.GET.get('record_count', '100')
 
-    results_qs = DrtPdfFile.objects.all().order_by('-date_created')
+    results_qs = DrtPdfFile.objects.all().prefetch_related('drt_results', 'drt_profile').order_by('-date_created')
     record_count_options = [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50]] + [("all", "All"), ]
     my_filters = DrtResultFilter(request.GET, queryset=results_qs)
     try:

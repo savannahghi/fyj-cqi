@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import include, path
 
 # from apps.data_analysis.views import download_csv
@@ -38,3 +39,10 @@ urlpatterns = [
 
 ]
 # urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]
+
+# # Include debug toolbar URLs only in DEBUG mode
+# if settings.DEBUG:
+#     import debug_toolbar
+#     urlpatterns += [
+#         path('__debug__/', include(debug_toolbar.urls)),
+#     ]

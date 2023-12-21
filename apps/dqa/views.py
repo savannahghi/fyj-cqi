@@ -4236,13 +4236,17 @@ def dqa_dashboard(request, dqa_type=None):
             year_suffix = selected_year[-2:]
             quarter_year = f"{selected_quarter}-{year_suffix}"
 
-            data_verification = DataVerification.objects.filter(quarter_year__quarter_year=quarter_year)
-            system_assessment = SystemAssessment.objects.filter(quarter_year__quarter_year=quarter_year)
+            data_verification = DataVerification.objects.filter(quarter_year__quarter_year=quarter_year).select_related(
+                'quarter_year', 'facility_name')
+            system_assessment = SystemAssessment.objects.filter(quarter_year__quarter_year=quarter_year).select_related(
+                'quarter_year', 'facility_name')
             fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
             khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
-            audit_team = AuditTeam.objects.filter(quarter_year__quarter_year=quarter_year)
-            dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year).order_by(
-                'facility_name').prefetch_related('facility_name')
+            audit_team = AuditTeam.objects.filter(quarter_year__quarter_year=quarter_year).select_related(
+                'quarter_year', 'facility_name')
+            dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year).select_related(
+                'quarter_year', 'facility_name').order_by(
+                'facility_name')
             #####################################
             # DECREMENT REMAINING TIME DAILY    #
             #####################################
@@ -4264,19 +4268,21 @@ def dqa_dashboard(request, dqa_type=None):
             sub_county = Sub_counties.objects.get(sub_counties=selected_subcounty)
             facilities = sub_county.facilities.all()
             data_verification = DataVerification.objects.filter(quarter_year__quarter_year=quarter_year,
-                                                                facility_name__in=facilities).prefetch_related(
-                'facility_name')
+                                                                facility_name__in=facilities).select_related(
+                'facility_name', 'quarter_year')
 
             system_assessment = SystemAssessment.objects.filter(quarter_year__quarter_year=quarter_year,
-                                                                facility_name__in=facilities).prefetch_related(
-                'facility_name')
+                                                                facility_name__in=facilities).select_related(
+                'facility_name', 'quarter_year')
             fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
             khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
             audit_team = AuditTeam.objects.filter(quarter_year__quarter_year=quarter_year,
-                                                  facility_name__in=facilities).prefetch_related('facility_name')
+                                                  facility_name__in=facilities).select_related('facility_name',
+                                                                                               'quarter_year')
             dqa_workplan = DQAWorkPlan.objects.filter(quarter_year__quarter_year=quarter_year,
-                                                      facility_name__in=facilities).order_by(
-                'facility_name').prefetch_related('facility_name')
+                                                      facility_name__in=facilities).select_related('facility_name',
+                                                                                                   'quarter_year').order_by(
+                'facility_name')
             #####################################
             # DECREMENT REMAINING TIME DAILY    #
             #####################################
@@ -4299,20 +4305,24 @@ def dqa_dashboard(request, dqa_type=None):
 
             data_verification = DataVerification.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__counties__county_name=selected_county).prefetch_related('facility_name')
+                facility_name__sub_counties__counties__county_name=selected_county).select_related('facility_name',
+                                                                                                   'quarter_year')
 
             system_assessment = SystemAssessment.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__counties__county_name=selected_county).prefetch_related('facility_name')
+                facility_name__sub_counties__counties__county_name=selected_county).select_related('facility_name',
+                                                                                                   'quarter_year')
             fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
             khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
             audit_team = AuditTeam.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__counties__county_name=selected_county).prefetch_related('facility_name')
+                facility_name__sub_counties__counties__county_name=selected_county).select_related('facility_name',
+                                                                                                   'quarter_year')
             dqa_workplan = DQAWorkPlan.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__counties__county_name=selected_county).order_by(
-                'facility_name').prefetch_related('facility_name')
+                facility_name__sub_counties__counties__county_name=selected_county).select_related('facility_name',
+                                                                                                   'quarter_year').order_by(
+                'facility_name')
             #####################################
             # DECREMENT REMAINING TIME DAILY    #
             #####################################
@@ -4334,20 +4344,20 @@ def dqa_dashboard(request, dqa_type=None):
 
             data_verification = DataVerification.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__hub__hub=selected_hub).prefetch_related('facility_name')
+                facility_name__sub_counties__hub__hub=selected_hub).select_related('facility_name', 'quarter_year')
 
             system_assessment = SystemAssessment.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__hub__hub=selected_hub).prefetch_related('facility_name')
+                facility_name__sub_counties__hub__hub=selected_hub).select_related('facility_name', 'quarter_year')
             fyj_performance = FyjPerformance.objects.filter(quarter_year=quarter_year).values()
             khis_performance = KhisPerformance.objects.filter(quarter_year=quarter_year).values()
             audit_team = AuditTeam.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__hub__hub=selected_hub).prefetch_related('facility_name')
+                facility_name__sub_counties__hub__hub=selected_hub).select_related('facility_name', 'quarter_year')
             dqa_workplan = DQAWorkPlan.objects.filter(
                 quarter_year__quarter_year=quarter_year,
-                facility_name__sub_counties__hub__hub=selected_hub).order_by('facility_name').prefetch_related(
-                'facility_name')
+                facility_name__sub_counties__hub__hub=selected_hub).select_related(
+                'facility_name', 'quarter_year').order_by('facility_name')
             #####################################
             # DECREMENT REMAINING TIME DAILY    #
             #####################################

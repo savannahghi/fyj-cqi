@@ -181,7 +181,7 @@
                     {{ prevalence_tat_fig|safe }}
                     <hr>
                     {{ drt_trend_fig|safe }}
-                    <hr>
+
                     {#                    <h5 class="fw-bold text-primary text-center"> Time-Based Changes in Drug Resistance#}
                     {#                        Prevalence: By Drug </h5>#}
                     {#                    <hr>#}
@@ -189,11 +189,14 @@
                     {#                        {{ trend_fig|safe }}#}
                     {#                        <hr>#}
                     {#                    {% endfor %}#}
-                    <h5 class="fw-bold text-primary text-center"> Mutation Prevalence: By Class </h5>
-                    <hr>
-                    {% for keys, trend_fig in mutation_profile_figs.items %}
-                        {{ trend_fig|safe }}
-                    {% endfor %}
+                    {% if mutation_profile_figs %}
+                        <hr>
+                        <h5 class="fw-bold text-primary text-center"> Mutation Prevalence: By Class </h5>
+                        <hr>
+                        {% for keys, trend_fig in mutation_profile_figs.items %}
+                            {{ trend_fig|safe }}
+                        {% endfor %}
+                    {% endif %}
                 </div>
                 <hr>
                 <div class="col-12 mb-2">

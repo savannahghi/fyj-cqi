@@ -3939,7 +3939,7 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
 
 
 def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow=False,xaxis_title=None,text=None,
-              title_size=12,axis_text_size=10):
+              title_size=12,axis_text_size=10,yaxis_title=None):
     category_orders={}
     if "age" in x_axis.lower():
         age_categories = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44',
@@ -3965,9 +3965,13 @@ def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow
     # fig.add_trace(go.Line(x=df[x_axis], y=df[y_axis], mode='markers'))
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
+    if yaxis_title is None:
+        yaxis_title=y_axis
+    else:
+        yaxis_title=yaxis_title
     fig.update_layout(
         xaxis_title=f"{xaxis_title}",
-        yaxis_title=f"{y_axis}",
+        yaxis_title=f"{yaxis_title}",
         legend_title=f"{xaxis_title}",
     )
     # fig.add_hline(y=90, line_width=1, line_dash="dash", line_color="green")

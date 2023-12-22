@@ -150,10 +150,19 @@
                         {% endif %}
                     </div>
                     <hr>
-                    {% if age_pop_summary_fig %}
-                        {{ age_pop_summary_fig|safe }}
-                        <hr>
-                    {% endif %}
+                    <div class="row">
+                        {% if age_pop_summary_fig %}
+                            <div class="col-12 col-md-6">
+                                {{ age_pop_summary_fig|safe }}
+                            </div>
+                        {% endif %}
+                        {% if counties_summary_fig %}
+                            <div class="col-12 col-md-6">
+                                {{ resistance_type_count_fig|safe }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <hr>
                     {% if drt_distribution_fig %}
                         {{ drt_distribution_fig|safe }}
                         <hr>

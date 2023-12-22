@@ -3152,7 +3152,7 @@ def count_resistance_types(df, patient_id="patient_id", resistance_type="resista
         DataFrame containing counts of each resistance type per patient ID.
     """
     dfs = []
-    df=df[~df['sequence_summary'].str.contains("fail",case=False)]
+    df = df[~df['sequence_summary'].str.contains("fail", case=False)]
     for pt_id in df[patient_id].unique():
         pt_level_df = df[df[patient_id] == pt_id]
         result_df = classify_resistance_type(pt_level_df)
@@ -3282,12 +3282,12 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         # Patient-wise Distribution of Resistance Types
         ##############################################################
         resistance_type_count = count_resistance_types(df_resistant_patterns_copy)
-        resistance_type_count=add_percentage_and_count_string(resistance_type_count)
-        total_p=resistance_type_count['count'].sum()
+        resistance_type_count = add_percentage_and_count_string(resistance_type_count)
+        total_p = resistance_type_count['count'].sum()
         resistance_type_count_fig = bar_chart(resistance_type_count, "resistance_type", "count",
-                                              F"Patient-wise Distribution of Resistance Types N ={total_p}",
-                                              text="count (%)",background_shadow=True, height=500, title_size=16,
-                                              xaxis_title="resistance_type",yaxis_title="Counts",
+                                              F"Patient-wise Distribution of Resistance Types N ={total_p}  (Passed)",
+                                              text="count (%)", background_shadow=True, height=500, title_size=16,
+                                              xaxis_title="resistance_type", yaxis_title="Number of DRT test",
                                               axis_text_size=14)
         ###############################################################
         # Distribution of Drug Resistance Levels Across HAART Regimens
@@ -3365,10 +3365,17 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
 
         # Filter the DataFrame to include rows where any column (except 'patient_id') has a non-zero value
         df_pivoted = df_pivoted[(df_pivoted.iloc[:, 1:] != 0).any(axis=1)]
+        total_males = df_pivoted['M'].sum()
+        total_females = df_pivoted['F'].sum()
+        total_all = total_females + total_males
+        per_male = int(round(total_males / total_all * 100, ))
+        per_female = int(round(total_females / total_all * 100, ))
 
         if "M" in df_pivoted.columns and "F" in df_pivoted.columns:
             age_pop_summary_fig = pop_pyramid_chart(df_pivoted, male_col='M', female_col='F',
-                                                    title='DRT Tests by Age and Sex')
+                                                    title=f"DRT Tests by Age and Sex N = "
+                                                          f"{total_all}     M: {total_males} ({per_male} %) "
+                                                          f"  F: {total_females} ({per_female} %)")
         elif "M" in df_pivoted.columns:
             age_pop_summary_fig = pop_pyramid_chart(df_pivoted, male_col='M', title='DRT Tests by Age and Sex')
         elif "F" in df_pivoted.columns:
@@ -3576,20 +3583,10 @@ def add_drt_results(request):
     if my_filters.qs:
         trend_figs, drt_trend_fig, resistance_level_age_fig, resistance_level_fig, drt_distribution_fig, \
             age_summary_fig, drt_tat_fig, prevalence_tat_fig, age_pop_summary_fig, drt_summary_fig, \
-            counties_summary_fig, mutation_profile_figs, resistance_type_count_fig = prepare_drt_summary(my_filters,
-                                                                                                         trend_figs,
-                                                                                                         drt_trend_fig,
-                                                                                                         resistance_level_age_fig,
-                                                                                                         resistance_level_fig,
-                                                                                                         drt_distribution_fig,
-                                                                                                         age_summary_fig,
-                                                                                                         drt_tat_fig,
-                                                                                                         prevalence_tat_fig,
-                                                                                                         age_pop_summary_fig,
-                                                                                                         drt_summary_fig,
-                                                                                                         counties_summary_fig,
-                                                                                                         mutation_profile_figs,
-                                                                                                         resistance_type_count_fig)
+            counties_summary_fig, mutation_profile_figs, resistance_type_count_fig = \
+            prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_age_fig, resistance_level_fig,
+                                drt_distribution_fig,age_summary_fig, drt_tat_fig,prevalence_tat_fig,age_pop_summary_fig,
+                                drt_summary_fig,counties_summary_fig, mutation_profile_figs,resistance_type_count_fig)
 
     if request.method == "POST":
         drt_file_form = DrtPdfFileForm(request.POST, request.FILES)

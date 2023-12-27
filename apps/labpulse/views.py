@@ -3365,21 +3365,25 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
 
         # Filter the DataFrame to include rows where any column (except 'patient_id') has a non-zero value
         df_pivoted = df_pivoted[(df_pivoted.iloc[:, 1:] != 0).any(axis=1)]
-        total_males = df_pivoted['M'].sum()
-        total_females = df_pivoted['F'].sum()
-        total_all = total_females + total_males
-        per_male = int(round(total_males / total_all * 100, ))
-        per_female = int(round(total_females / total_all * 100, ))
 
         if "M" in df_pivoted.columns and "F" in df_pivoted.columns:
+            total_males = df_pivoted['M'].sum()
+            total_females = df_pivoted['F'].sum()
+            total_all = total_females + total_males
+            per_male = int(round(total_males / total_all * 100, ))
+            per_female = int(round(total_females / total_all * 100, ))
             age_pop_summary_fig = pop_pyramid_chart(df_pivoted, male_col='M', female_col='F',
                                                     title=f"DRT Tests by Age and Sex N = "
                                                           f"{total_all}     M: {total_males} ({per_male} %) "
                                                           f"  F: {total_females} ({per_female} %)")
         elif "M" in df_pivoted.columns:
-            age_pop_summary_fig = pop_pyramid_chart(df_pivoted, male_col='M', title='DRT Tests by Age and Sex')
+            total_males = df_pivoted['M'].sum()
+            age_pop_summary_fig = pop_pyramid_chart(df_pivoted, male_col='M',
+                                                    title=f"DRT Tests by Age and Sex N = {total_males}")
         elif "F" in df_pivoted.columns:
-            age_pop_summary_fig = pop_pyramid_chart(df_pivoted, female_col='F', title='DRT Tests by Age and Sex')
+            total_females = df_pivoted['F'].sum()
+            age_pop_summary_fig = pop_pyramid_chart(df_pivoted, female_col='F',
+                                                    title=f'DRT Tests by Age and Sex N = {total_females}')
 
         ##############################################################
         # MONTHLY TAT
@@ -3585,8 +3589,9 @@ def add_drt_results(request):
             age_summary_fig, drt_tat_fig, prevalence_tat_fig, age_pop_summary_fig, drt_summary_fig, \
             counties_summary_fig, mutation_profile_figs, resistance_type_count_fig = \
             prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_age_fig, resistance_level_fig,
-                                drt_distribution_fig,age_summary_fig, drt_tat_fig,prevalence_tat_fig,age_pop_summary_fig,
-                                drt_summary_fig,counties_summary_fig, mutation_profile_figs,resistance_type_count_fig)
+                                drt_distribution_fig, age_summary_fig, drt_tat_fig, prevalence_tat_fig,
+                                age_pop_summary_fig,
+                                drt_summary_fig, counties_summary_fig, mutation_profile_figs, resistance_type_count_fig)
 
     if request.method == "POST":
         drt_file_form = DrtPdfFileForm(request.POST, request.FILES)

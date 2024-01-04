@@ -25,7 +25,7 @@ def image_resize(image, width, height):
             # Find the file name of the image
             img_filename = Path(image.file.name).name
             # Spilt the filename on “.” to get the file extension only
-            img_suffix = Path(image.file.name).name.split(".")[-1]
+            img_suffix = Path(image.file.name).name.split(".")[-1].lower()
             # Use the file extension to determine the file type from the image_types dictionary
             img_format = image_types[img_suffix]
             # Save the resized image into the buffer, noting the correct file type

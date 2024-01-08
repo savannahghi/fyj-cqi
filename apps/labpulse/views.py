@@ -1596,7 +1596,10 @@ def show_results(request):
     # Access the page URL
     current_page_url = request.path
 
-    cd4traker_qs = Cd4traker.objects.all().order_by('-date_dispatched')
+    # Handle N+1 Query /lab-pulse/download/{filter_type}
+    cd4traker_qs = Cd4traker.objects.all().prefetch_related('facility_name', 'sub_county', 'county',
+                                                            'testing_laboratory', 'created_by', 'modified_by'
+                                                            ).order_by('-date_dispatched')
     # Calculate TAT in days and annotate it in the queryset
     queryset = cd4traker_qs.annotate(
         tat_days=ExpressionWrapper(

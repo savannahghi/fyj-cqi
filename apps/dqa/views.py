@@ -34,7 +34,7 @@ import plotly.offline as opy
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError, connection, reset_queries, transaction, DatabaseError
+from django.db import IntegrityError, connection, models, reset_queries, transaction, DatabaseError
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 
@@ -1061,150 +1061,12 @@ def show_data_verification(request):
             year_suffix = str(selected_year)[-2:]
         else:
             year_suffix = str(selected_year)[-2:]
-    # Get the Indicator choices in the order specified in the list
-    indicator_choices = [choice[0] for choice in Indicators.INDICATOR_CHOICES]
-    available_indicators = [i.indicator for i in data_verification]
 
-    prevention = ['PrEP_New', 'Starting_TPT', 'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
-                  'Cervical Cancer Screening (Women on ART)']
-    hts = ['Total tested ', 'Number tested Positive aged <15 years', 'Number tested Positive aged 15+ years',
-           'Number tested Positive _Total']
-    pmtct = ['Known Positive at 1st ANC', 'Positive Results_ANC', 'On HAART at 1st ANC', 'Start HAART ANC',
-             'Infant ARV Prophyl_ANC', 'Positive Results_L&D', 'Start HAART_L&D', 'Infant ARV Prophyl_L&D',
-             'Positive Results_PNC<=6 weeks', 'Start HAART_PNC<= 6 weeks', 'Infant ARV Prophyl_PNC<= 6 weeks',
-             'Total Positive (PMTCT)', 'Maternal HAART Total ', 'Total Infant prophylaxis']
-    care_rx = ['Under 15yrs Starting on ART', 'Above 15yrs Starting on ART ',
-               'Number of adults and children starting ART', 'New & Relapse TB_Cases', 'Currently on ART <15Years',
-               'Currently on ART 15+ years', 'Number of adults and children Currently on ART', 'TB_PREV_N', 'TX_ML',
-               'RTT']
-
-    program_accessed = []
-    for indy in available_indicators:
-        if indy in prevention:
-            if "Prevention" not in program_accessed:
-                program_accessed.append("Prevention")
-        elif indy in hts:
-            if "HTS" not in program_accessed:
-                program_accessed.append("HTS")
-        elif indy in pmtct:
-            if "PMTCT" not in program_accessed:
-                program_accessed.append("PMTCT")
-        elif indy in care_rx:
-            if "CARE & RX" not in program_accessed:
-                program_accessed.append("CARE & RX")
-    # Sort the data_verification objects based on the order of the indicator choices
-    sorted_data_verification = sorted(data_verification, key=lambda x: indicator_choices.index(x.indicator))
-    if data_verification:
-        disable_update_buttons(request, data_verification)
-        remaining_indicators = [choice for choice in indicator_choices if
-                                choice not in [obj.indicator for obj in sorted_data_verification]]
-        if data_verification.count() < 33:
-            messages.error(request, f"Only {data_verification.count()} DQA indicators for {selected_facility} "
-                                    f"({quarter_year}) have been recorded so far. To ensure proper data visualization,"
-                                    f" it is important to capture all indicators.")
-            if remaining_indicators:
-                messages.error(request,
-                               f"{len(remaining_indicators)} remaining indicators: {', '.join(remaining_indicators)}")
-            else:
-                messages.info(request, "All indicators have been recorded.")
-
-    if not data_verification:
-        if selected_facility:
-            messages.error(request,
-                           f"No data verification found for {selected_facility} {selected_quarter}-FY{year_suffix}.")
-
-    try:
-        fyj_performance = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
-                                                        quarter_year=quarter_year
-                                                        )
-        if not fyj_performance:
-            messages.info(request, f"No DATIM data for {selected_facility} {quarter_year}!")
-    except:
-        fyj_performance = None
-    try:
-        # ensure queryset is ordered chronologically by month
-        khis_performance = KhisPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
-                                                          quarter_year=quarter_year
-                                                          ).annotate(
-            month_as_date=Cast(
-                ExpressionWrapper(
-                    Concat(Value('1'), Value(' '), 'month'),
-                    output_field=CharField()
-                ),
-                output_field=DateField()
-            )
-        ).order_by('month_as_date')
-        if khis_performance.exists():
-            total = khis_performance.aggregate(
-                prep_new_total=Sum('prep_new'),
-                ipt_total=Sum('ipt'),
-                tst_t_total=Sum('tst_t'),
-                gbv_sexual_total=Sum('gbv_sexual'),
-                cx_ca_total=Sum('cx_ca'),
-                tst_pos_p_total=Sum('tst_pos_p'),
-                tst_pos_a_total=Sum('tst_pos_a'),
-                kp_anc_total=Sum('kp_anc'),
-                new_pos_anc_total=Sum('new_pos_anc'),
-                on_haart_anc_total=Sum('on_haart_anc'),
-                new_on_haart_anc_total=Sum('new_on_haart_anc'),
-                tx_new_p_total=Sum('tx_new_p'),
-                tx_new_a_total=Sum('tx_new_a'),
-                tb_stat_d_total=Sum('tb_stat_d'),
-                tx_curr_p_total=Sum('tx_curr_p'),
-                tx_curr_a_total=Sum('tx_curr_a'),
-            )
-        else:
-            total = {
-                'prep_new_total': 0,
-                'ipt_total': 0,
-                'tst_t_total': 0,
-                'gbv_sexual_total': 0,
-                'cx_ca_total': 0,
-                'tst_pos_p_total': 0,
-                'tst_pos_a_total': 0,
-                'kp_anc_total': 0,
-                'new_pos_anc_total': 0,
-                'on_haart_anc_total': 0,
-                'new_on_haart_anc_total': 0,
-                'tx_new_p_total': 0,
-                'tx_new_a_total': 0,
-                'tb_stat_d_total': 0,
-                'tx_curr_p_total': 0,
-                'tx_curr_a_total': 0,
-            }
-            messages.info(request, f"No KHIS data for {selected_facility} {quarter_year}!")
-    except:
-        khis_performance = None
-        total = {
-            'prep_new_total': 0,
-            'ipt_total': 0,
-            'tst_t_total': 0,
-            'gbv_sexual_total': 0,
-            'cx_ca_total': 0,
-            'tst_pos_p_total': 0,
-            'tst_pos_a_total': 0,
-            'kp_anc_total': 0,
-            'new_pos_anc_total': 0,
-            'on_haart_anc_total': 0,
-            'new_on_haart_anc_total': 0,
-            'tx_new_p_total': 0,
-            'tx_new_a_total': 0,
-            'tb_stat_d_total': 0,
-            'tx_curr_p_total': 0,
-            'tx_curr_a_total': 0,
-        }
-    context = {
-        'form': form,
-        "year_form": year_form,
-        "facility_form": facility_form,
-        "quarters": quarters,
-        "selected_year": year_suffix,
-        'data_verification': sorted_data_verification,
-        "program_accessed": program_accessed,
-        "fyj_performance": fyj_performance,
-        "khis_performance": khis_performance,
-        "total": total,
-    }
+    # Display data verification
+    display_dicts = display_data_verification(request, data_verification, selected_facility, quarter_year, year_suffix,
+                                              quarters)
+    context = {"form": form, "year_form": year_form, "facility_form": facility_form,
+               } | display_dicts
     return render(request, 'dqa/show data verification.html', context)
 
 
@@ -3245,10 +3107,158 @@ def dqa_summary(request):
     return render(request, 'dqa/dqa_summary.html', context)
 
 
+def display_data_verification(request, data_verification, selected_facility, selected_quarter, year_suffix, quarters):
+    quarter_year = selected_quarter
+    # Get the Indicator choices in the order specified in the list
+    indicator_choices = [choice[0] for choice in Indicators.INDICATOR_CHOICES]
+    available_indicators = [i.indicator for i in data_verification]
+
+    prevention = ['PrEP_New', 'Starting_TPT', 'GBV_Sexual violence', 'GBV_Emotional and /Physical Violence',
+                  'Cervical Cancer Screening (Women on ART)']
+    hts = ['Total tested ', 'Number tested Positive aged <15 years', 'Number tested Positive aged 15+ years',
+           'Number tested Positive _Total']
+    pmtct = ['Known Positive at 1st ANC', 'Positive Results_ANC', 'On HAART at 1st ANC', 'Start HAART ANC',
+             'Infant ARV Prophyl_ANC', 'Positive Results_L&D', 'Start HAART_L&D', 'Infant ARV Prophyl_L&D',
+             'Positive Results_PNC<=6 weeks', 'Start HAART_PNC<= 6 weeks', 'Infant ARV Prophyl_PNC<= 6 weeks',
+             'Total Positive (PMTCT)', 'Maternal HAART Total ', 'Total Infant prophylaxis']
+    care_rx = ['Under 15yrs Starting on ART', 'Above 15yrs Starting on ART ',
+               'Number of adults and children starting ART', 'New & Relapse TB_Cases', 'Currently on ART <15Years',
+               'Currently on ART 15+ years', 'Number of adults and children Currently on ART', 'TB_PREV_N', 'TX_ML',
+               'RTT']
+
+    program_accessed = []
+    for indy in available_indicators:
+        if indy in prevention:
+            if "Prevention" not in program_accessed:
+                program_accessed.append("Prevention")
+        elif indy in hts:
+            if "HTS" not in program_accessed:
+                program_accessed.append("HTS")
+        elif indy in pmtct:
+            if "PMTCT" not in program_accessed:
+                program_accessed.append("PMTCT")
+        elif indy in care_rx:
+            if "CARE & RX" not in program_accessed:
+                program_accessed.append("CARE & RX")
+    # Sort the data_verification objects based on the order of the indicator choices
+    sorted_data_verification = sorted(data_verification, key=lambda x: indicator_choices.index(x.indicator))
+    if data_verification:
+        disable_update_buttons(request, data_verification)
+        remaining_indicators = [choice for choice in indicator_choices if
+                                choice not in [obj.indicator for obj in sorted_data_verification]]
+        if data_verification.count() < 33:
+            messages.error(request, f"Only {data_verification.count()} DQA indicators for {selected_facility} "
+                                    f"({quarter_year}) have been recorded so far. To ensure proper data visualization,"
+                                    f" it is important to capture all indicators.")
+            if remaining_indicators:
+                messages.error(request,
+                               f"{len(remaining_indicators)} remaining indicators: {', '.join(remaining_indicators)}")
+            else:
+                messages.info(request, "All indicators have been recorded.")
+
+    if not data_verification:
+        if selected_facility:
+            messages.error(request,
+                           f"No data verification found for {selected_facility} {selected_quarter}-FY{year_suffix}.")
+
+    try:
+        fyj_performance = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
+                                                        quarter_year=quarter_year
+                                                        )
+        if not fyj_performance:
+            messages.info(request, f"No DATIM data for {selected_facility} {quarter_year}!")
+    except:
+        fyj_performance = None
+    try:
+        # ensure queryset is ordered chronologically by month
+        khis_performance = KhisPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
+                                                          quarter_year=quarter_year
+                                                          ).annotate(
+            month_as_date=Cast(
+                ExpressionWrapper(
+                    Concat(Value('1'), Value(' '), 'month'),
+                    output_field=CharField()
+                ),
+                output_field=DateField()
+            )
+        ).order_by('month_as_date')
+        if khis_performance.exists():
+            total = khis_performance.aggregate(
+                prep_new_total=Sum('prep_new'),
+                ipt_total=Sum('ipt'),
+                tst_t_total=Sum('tst_t'),
+                gbv_sexual_total=Sum('gbv_sexual'),
+                cx_ca_total=Sum('cx_ca'),
+                tst_pos_p_total=Sum('tst_pos_p'),
+                tst_pos_a_total=Sum('tst_pos_a'),
+                kp_anc_total=Sum('kp_anc'),
+                new_pos_anc_total=Sum('new_pos_anc'),
+                on_haart_anc_total=Sum('on_haart_anc'),
+                new_on_haart_anc_total=Sum('new_on_haart_anc'),
+                tx_new_p_total=Sum('tx_new_p'),
+                tx_new_a_total=Sum('tx_new_a'),
+                tb_stat_d_total=Sum('tb_stat_d'),
+                tx_curr_p_total=Sum('tx_curr_p'),
+                tx_curr_a_total=Sum('tx_curr_a'),
+            )
+        else:
+            total = {
+                'prep_new_total': 0,
+                'ipt_total': 0,
+                'tst_t_total': 0,
+                'gbv_sexual_total': 0,
+                'cx_ca_total': 0,
+                'tst_pos_p_total': 0,
+                'tst_pos_a_total': 0,
+                'kp_anc_total': 0,
+                'new_pos_anc_total': 0,
+                'on_haart_anc_total': 0,
+                'new_on_haart_anc_total': 0,
+                'tx_new_p_total': 0,
+                'tx_new_a_total': 0,
+                'tb_stat_d_total': 0,
+                'tx_curr_p_total': 0,
+                'tx_curr_a_total': 0,
+            }
+            messages.info(request, f"No KHIS data for {selected_facility} {quarter_year}!")
+    except:
+        khis_performance = None
+        total = {
+            'prep_new_total': 0,
+            'ipt_total': 0,
+            'tst_t_total': 0,
+            'gbv_sexual_total': 0,
+            'cx_ca_total': 0,
+            'tst_pos_p_total': 0,
+            'tst_pos_a_total': 0,
+            'kp_anc_total': 0,
+            'new_pos_anc_total': 0,
+            'on_haart_anc_total': 0,
+            'new_on_haart_anc_total': 0,
+            'tx_new_p_total': 0,
+            'tx_new_a_total': 0,
+            'tb_stat_d_total': 0,
+            'tx_curr_p_total': 0,
+            'tx_curr_a_total': 0,
+        }
+
+    display_dicts = {
+        "quarters": quarters,
+        "selected_year": year_suffix,
+        'data_verification': sorted_data_verification,
+        "program_accessed": program_accessed,
+        "fyj_performance": fyj_performance,
+        "khis_performance": khis_performance,
+        "total": total,
+    }
+    return display_dicts
+
+
 @login_required(login_url='login')
 def dqa_work_plan_create(request, pk, quarter_year):
     if not request.user.first_name:
         return redirect("profile")
+    year_suffix = quarter_year[-2:]
     facility = DataVerification.objects.filter(facility_name_id=pk,
                                                quarter_year__quarter_year=quarter_year
                                                ).order_by('-date_modified').first()
@@ -3257,6 +3267,25 @@ def dqa_work_plan_create(request, pk, quarter_year):
     system_assessment_partly = system_assessment_qs.filter(calculations=2)
     system_assessment_no = system_assessment_qs.filter(calculations=1)
     today = timezone.now().date()
+
+    selected_facility = Facilities.objects.get(id=pk)
+    data_verification = DataVerification.objects.filter(quarter_year__quarter_year=quarter_year,
+                                                        facility_name_id=pk,
+                                                        )
+    quarters = {
+        quarter_year.split("-")[0]: [
+            f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}', 'Total'
+        ] if 'Qtr1' in quarter_year else [
+            f'Jan-{year_suffix}', f'Feb-{year_suffix}', f'Mar-{year_suffix}', 'Total'
+        ] if 'Qtr2' in quarter_year else [
+            f'Apr-{year_suffix}', f'May-{year_suffix}', f'Jun-{year_suffix}', 'Total'
+        ] if 'Qtr3' in quarter_year else [
+            f'Jul-{year_suffix}', f'Aug-{year_suffix}', f'Sep-{year_suffix}', 'Total'
+        ]
+    }
+    # Display data verification
+    display_dicts = display_data_verification(request, data_verification, selected_facility, quarter_year, year_suffix,
+                                              quarters)
 
     if request.method == 'POST':
         form = DQAWorkPlanForm(request.POST)
@@ -3273,15 +3302,11 @@ def dqa_work_plan_create(request, pk, quarter_year):
     else:
         form = DQAWorkPlanForm()
 
-    context = {
-        'form': form,
-        'title': 'Add DQA Work Plan',
-        'facility': facility.facility_name.name,
-        'mfl_code': facility.facility_name.mfl_code,
-        'date_modified': facility.date_modified,
-        'system_assessment_partly': system_assessment_partly,
-        'system_assessment_no': system_assessment_no,
-    }
+    context = {'form': form, 'title': 'Add DQA Work Plan', 'facility': facility.facility_name.name,
+               'mfl_code': facility.facility_name.mfl_code, 'date_modified': facility.date_modified,
+               'system_assessment_partly': system_assessment_partly, 'system_assessment_no': system_assessment_no,
+               "quarter_year": quarter_year,
+               } | display_dicts
 
     return render(request, 'dqa/add_qi_manager.html', context)
 
@@ -3295,8 +3320,8 @@ def show_dqa_work_plan(request):
     facility_form = FacilitySelectionForm(request.POST or None)
     selected_facility = None
     work_plan = None
+    work_plan_qs = None
     quarter_year = None
-    today = datetime.now(timezone.utc).date()
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
@@ -3306,22 +3331,22 @@ def show_dqa_work_plan(request):
         quarter_year = f"{selected_quarter}-{year_suffix}"
 
     if "submit_data" in request.POST:
-        work_plan = DQAWorkPlan.objects.filter(facility_name_id=selected_facility.id,
-                                               quarter_year__quarter_year=quarter_year
-                                               )
+        work_plan_qs = DQAWorkPlan.objects.filter(facility_name_id=selected_facility.id).order_by("quarter_year")
+        work_plan = work_plan_qs.filter(quarter_year__quarter_year=quarter_year)
+
+        # Exclude work_plan from work_plan_qs
+        work_plan_qs = work_plan_qs.exclude(quarter_year__quarter_year=quarter_year)
         #####################################
         # DECREMENT REMAINING TIME DAILY    #
         #####################################
-        for plan in work_plan:
-            plan.progress = (plan.due_complete_by - today).days
+        calculate_progress(work_plan)
+        calculate_progress(work_plan_qs)
 
         if not work_plan:
             messages.error(request, f"No work plan for {selected_facility} ({quarter_year}) found.")
     context = {
-        "work_plan": work_plan,
-        'form': form,
-        "year_form": year_form,
-        "facility_form": facility_form,
+        "work_plan": work_plan, "work_plan_qs": work_plan_qs, "form": form, "quarter_year": quarter_year,
+        "year_form": year_form, "facility_form": facility_form,
     }
     return render(request, 'dqa/dqa_work_plan_list.html', context)
 

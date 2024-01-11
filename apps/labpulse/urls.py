@@ -40,9 +40,9 @@ urlpatterns = [
 ]
 # urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]
 
-# # Include debug toolbar URLs only in DEBUG mode
-# if settings.DEBUG:
-#     import debug_toolbar
-#     urlpatterns += [
-#         path('__debug__/', include(debug_toolbar.urls)),
-#     ]
+# Include debug toolbar URLs only in DEBUG mode
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns += [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ]

@@ -130,6 +130,8 @@ class Cd4traker(models.Model):
     cd4_reagent_used = models.BooleanField(default=False)
     tb_lam_reagent_used = models.BooleanField(default=False)
     serum_crag_reagent_used = models.BooleanField(default=False)
+    # New field to store the calculated turnaround time in days instead of annotating queryset in the view
+    tat_days = models.IntegerField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         """
@@ -145,6 +147,9 @@ class Cd4traker(models.Model):
             - If self.tb_lam_results is set and date_tb_lam_results_entered is not set, set the current time as date_tb_lam_results_entered.
             - If self.serum_crag_results is set and date_serum_crag_results_entered is not set, set the current time as date_serum_crag_results_entered.
             - Call the parent class's save method to finalize the saving process.
+
+        Note: The `tat_days` field is automatically updated through a data migration that calculates
+            the turnaround time based on the difference between `date_dispatched` and `date_of_collection`.
 
         Returns:
             None
@@ -175,7 +180,17 @@ class Cd4traker(models.Model):
             except Cd4traker.DoesNotExist:
                 pass  # Handle the case where the object doesn't exist
 
+        # Calculate tat_days for new records or if date_dispatched or date_of_collection is updated
+        if not self.pk or self.date_dispatched is not None or self.date_of_collection is not None:
+            self.tat_days = self.calculate_tat_days()
+
         super().save(*args, **kwargs)  # Call parent class's save method
+
+    def calculate_tat_days(self):
+        # Calculate tat_days based on date_dispatched and date_of_collection
+        if self.date_dispatched and self.date_of_collection:
+            return (self.date_dispatched - self.date_of_collection).days
+        return None
 
     class Meta:
         verbose_name_plural = "CD4 count tracker"

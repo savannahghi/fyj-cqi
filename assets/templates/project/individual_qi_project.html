@@ -64,7 +64,7 @@
 
                     {% if facility_project.measurement_status != "Completed-or-Closed" %}
                         {% if user.is_authenticated %}
-                            {% if user.id == facility_project.created_by.id %}
+                            {% if user.id == facility_project.created_by.id or request.user.is_superuser %}
                                 {% if facility_name %}
                                     <a href="{% url 'update_project_facility' facility_project.id facility_project.facility_name.name %}"
                                        class="btn btn-warning">Update project</a>
@@ -167,7 +167,8 @@
                                         : </strong>{{ facility_project.date_updated|date:"jS M Y" }}</p>
                                 </div>
                                 <div class="col-md-3">
-                                    <p class="card-text"><strong>Phone Number : </strong>{{ facility_project.created_by.phone_number }}</p>
+                                    <p class="card-text"><strong>Phone Number
+                                        : </strong>{{ facility_project.created_by.phone_number }}</p>
                                 </div>
                                 <div class="col-md-3">
                                     <p class="card-text"><strong>Department
@@ -289,7 +290,7 @@
                 {#user logged in :{{ user.id }}#}
                 {#project creator:{{ facility_project.created_by.id }}#}
                 {% if facility_project.measurement_status != "Completed-or-Closed" %}
-                    {% if user.id == facility_project.created_by.id %}
+                    {% if user.id == facility_project.created_by.id or request.user.is_superuser %}
                         {% if baseline.baseline_status.url %}
                             {#         <a href="{% url 'update_baseline' facility_project.id %}" class="btn btn-warning mb-3">Update Baseline status</a>#}
                             {% if facility_name %}
@@ -543,39 +544,39 @@
                     </div>
                 </div>
             </div>
-        {% if facility_project.process_analysis %}
-            {% if project_images < 4 %}
+            {% if facility_project.process_analysis %}
+                {% if project_images < 4 %}
 
-                <div class="mt-2">
-                    {% if facility_project.measurement_status != "Completed-or-Closed" %}
-                        <p style="font-size:x-small;">Please note that you can upload a maximum of 4 additional root
-                            cause analysis images. You currently have
-                            {{ project_images|sub:"4"|abs }} images remaining to upload. Click the 'Add More Images'
-                            button to upload additional
-                            images.
-                        </p>
+                    <div class="mt-2">
+                        {% if facility_project.measurement_status != "Completed-or-Closed" %}
+                            <p style="font-size:x-small;">Please note that you can upload a maximum of 4 additional root
+                                cause analysis images. You currently have
+                                {{ project_images|sub:"4"|abs }} images remaining to upload. Click the 'Add More Images'
+                                button to upload additional
+                                images.
+                            </p>
 
-                        {% if facility_name %}
-                            <a href="{% url 'add_image_facility' facility_project.id facility_project.facility_name.name %}"
-                               class="btn btn-success mb-3">Add More Images</a>
-                        {% elif program_name %}
-                            <a href="{% url 'add_image_program' facility_project.id facility_project.program.program %}"
-                               class="btn btn-success mb-3">Add More Images</a>
-                        {% elif subcounty_name %}
-                            <a href="{% url 'add_image_subcounty' facility_project.id facility_project.sub_county %}"
-                               class="btn btn-success mb-3">Add More Images</a>
-                        {% elif county_name %}
-                            <a href="{% url 'add_image_county' facility_project.id facility_project.county.county_name %}"
-                               class="btn btn-success mb-3">Add More Images</a>
-                        {% elif hub_name %}
-                            <a href="{% url 'add_image_hub' facility_project.id facility_project.hub %}"
-                               class="btn btn-success mb-3">Add More Images</a>
+                            {% if facility_name %}
+                                <a href="{% url 'add_image_facility' facility_project.id facility_project.facility_name.name %}"
+                                   class="btn btn-success mb-3">Add More Images</a>
+                            {% elif program_name %}
+                                <a href="{% url 'add_image_program' facility_project.id facility_project.program.program %}"
+                                   class="btn btn-success mb-3">Add More Images</a>
+                            {% elif subcounty_name %}
+                                <a href="{% url 'add_image_subcounty' facility_project.id facility_project.sub_county %}"
+                                   class="btn btn-success mb-3">Add More Images</a>
+                            {% elif county_name %}
+                                <a href="{% url 'add_image_county' facility_project.id facility_project.county.county_name %}"
+                                   class="btn btn-success mb-3">Add More Images</a>
+                            {% elif hub_name %}
+                                <a href="{% url 'add_image_hub' facility_project.id facility_project.hub %}"
+                                   class="btn btn-success mb-3">Add More Images</a>
 
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
 
-                </div>
-            {% endif %}
+                    </div>
+                {% endif %}
             {% endif %}
 
             <div class="row">
@@ -804,9 +805,11 @@
                                 {% endif %}
                             </td>
                             {% if user.is_authenticated %}
-                                {% if user.id == field.created_by.id %}
+                                {#                                {% if user.id == field.created_by.id %}#}
+                                {% if request.user.is_superuser %}
                                     <td>
-                                        {#                              <a href="{% url 'delete_qi_team_member' field.id %}" class="btn btn-danger" role="button">Delete</a>#}
+                                        <a href="{% url 'delete_qi_team_member' field.id %}" class="btn btn-danger"
+                                           role="button">Delete</a>
                                     </td>
                                 {% endif %}
                             {% endif %}
@@ -995,9 +998,10 @@
                                     {% endif %}
                                 </td>
                                 {% if user.is_authenticated %}
-                                    {% if user.id == action_plan.created_by.id %}
+                                    {% if user.id == action_plan.created_by.id or request.user.is_superuser %}
                                         <td>
-                                            {#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-danger" role="button">Delete</a>#}
+                                            <a href="{% url 'delete_action_plan' action_plan.id %}"
+                                               class="btn btn-danger" role="button">Delete</a>
                                         </td>
                                     {% endif %}
                                 {% endif %}
@@ -1149,9 +1153,10 @@
                                 {% endif %}
                             </td>
                             {% if user.is_authenticated %}
-                                {% if user.id == field.created_by.id %}
+                                {% if request.user.is_superuser %}
                                     <td>
-                                        {#                              <a href="{% url 'delete_milestone' field.id %}" class="btn btn-danger" role="button">Delete</a>#}
+                                        <a href="{% url 'delete_milestone' field.id %}" class="btn btn-danger"
+                                           role="button">Delete</a>
                                     </td>
                                 {% endif %}
                             {% endif %}
@@ -1313,7 +1318,7 @@
             <div class="d-flex justify-content-between">
                 <div>
                     {% if user.is_authenticated %}
-                        {% if user.id == facility_project.created_by.id %}
+                        {% if user.id == facility_project.created_by.id or request.user.is_superuser %}
                             {% if facility_project.measurement_status != "Completed-or-Closed" %}
                                 {% if facility_name %}
                                     <a href="{% url 'tested_change_facility' facility_project.id facility_project.facility_name.name %}"
@@ -1439,7 +1444,10 @@
                             <td>
                                 {% if facility_project.measurement_status != "Completed-or-Closed" %}
                                     <a class="btn btn-info btn-sm" href="{% url 'update_test_of_change' change.id %}">Edit</a>
-                                    {#                            <a class="btn btn-danger btn-sm" href="{% url 'delete_test_of_change' change.id %}">Delete</a>#}
+                                    {% if request.user.is_superuser %}
+                                        <a class="btn btn-danger btn-sm"
+                                           href="{% url 'delete_test_of_change' change.id %}">Delete</a>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                         </tr>

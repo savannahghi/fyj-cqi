@@ -6,6 +6,7 @@ import os
 import re
 import textwrap
 from datetime import date, datetime, timedelta, timezone
+from functools import reduce
 
 import numpy as np
 import pandas as pd
@@ -1215,13 +1216,13 @@ def calculate_weekly_tat(df):
         DataFrame: Reshaped DataFrame with weekly mean TAT values.
     """
     # Convert date columns to datetime
-    df['Date Dispatch'] = pd.to_datetime(df['Date Dispatch'])
-    df['Collection Date'] = pd.to_datetime(df['Collection Date'])
-    df['Received date'] = pd.to_datetime(df['Received date'])
+    date_cols = ['Date Dispatch', 'Collection Date', 'Received date']
+    df[date_cols] = df[date_cols].transform(pd.to_datetime)
 
     # Calculate TAT values in days
     df['sample TAT (c-d)'] = (df['Date Dispatch'] - df['Collection Date']).dt.days
     df['sample TAT (c-r)'] = (df['Received date'] - df['Collection Date']).dt.days
+
 
     # Group by week_start and calculate mean TAT
     df['week_start'] = df['Collection Date'].dt.to_period('W').dt.start_time
@@ -1237,6 +1238,7 @@ def calculate_weekly_tat(df):
     # Drop unnecessary columns
     weekly_tat_df.drop(columns=['sample TAT (c-d)', 'sample TAT (c-r)'], inplace=True)
     weekly_tat_df = weekly_tat_df.sort_values("week_start").fillna(0)
+    weekly_tat_df = weekly_tat_df.tail(104)
     weekly_tat_df['Weekly Trend'] = weekly_tat_df["week_start"].astype(str) + "."
 
     # Reshape the DataFrame using melt
@@ -1247,12 +1249,18 @@ def calculate_weekly_tat(df):
         var_name="TAT type",
         value_name="Weekly mean TAT"
     )
-
     weekly_tat.reset_index(drop=True, inplace=True)
 
+    # Convert the "Weekly Trend" column to datetime objects
+    weekly_tat.loc[:, 'Weekly Trend'] = pd.to_datetime(weekly_tat['Weekly Trend'], format='%Y-%m-%d.')
+
+    # Sort the DataFrame by the "Weekly Trend" column
+    weekly_tat.sort_values(by='Weekly Trend', inplace=True)
+
+    # Convert the "Weekly Trend" column back to string for plotting (if needed)
+    weekly_tat['Weekly Trend'] = weekly_tat['Weekly Trend'].dt.strftime('%Y-%m-%d.')
+
     return weekly_tat, mean_c_r, mean_c_d
-
-
 def visualize_facility_results_positivity(df, test_type, title):
     if df.shape[0] > 50:
         df_copy = df.head(50)
@@ -1600,14 +1608,7 @@ def show_results(request):
     cd4traker_qs = Cd4traker.objects.all().prefetch_related('facility_name', 'sub_county', 'county',
                                                             'testing_laboratory', 'created_by', 'modified_by'
                                                             ).order_by('-date_dispatched')
-    # Calculate TAT in days and annotate it in the queryset
-    queryset = cd4traker_qs.annotate(
-        tat_days=ExpressionWrapper(
-            Extract(F('date_dispatched') - F('date_of_collection'), 'day'),
-            output_field=IntegerField()
-        )
-    )
-    my_filters = Cd4trakerFilter(request.GET, queryset=queryset)
+    my_filters = Cd4trakerFilter(request.GET, queryset=cd4traker_qs)
     try:
         if "filtered_queryset" in request.session:
             del request.session['filtered_queryset']
@@ -1730,11 +1731,10 @@ def show_results(request):
         ###################################
         melted_tat_df, mean_c_r, mean_c_d = calculate_weekly_tat(list_of_projects_fac.copy())
         if melted_tat_df.shape[0] > 1:
-            melted_tat_df = melted_tat_df.head(52)
             weekly_tat_trend_fig = line_chart_median_mean(melted_tat_df, "Weekly Trend", "Weekly mean TAT",
                                                           f"Weekly Collection to Dispatch vs Collection to Receipt Mean "
                                                           f"TAT Trend  (C-D TAT = {mean_c_d}, C-R TAT = {mean_c_r})",
-                                                          color="TAT type"
+                                                          color="TAT type",time=104
                                                           )
     try:
         if "list_of_projects_fac" in request.session:

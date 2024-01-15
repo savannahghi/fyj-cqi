@@ -203,6 +203,15 @@ class Cd4traker(models.Model):
             ("view_add_retrospective_cd4_count", "Can view add retrospective CD4 count"),
             ("view_update_cd4_results", "Can view update CD4 results"),
         ]
+        indexes = [
+            models.Index(fields=['facility_name']),
+            models.Index(fields=['sub_county']),
+            models.Index(fields=['county']),
+            models.Index(fields=['testing_laboratory']),
+            models.Index(fields=['created_by']),
+            models.Index(fields=['modified_by']),
+            models.Index(fields=['date_dispatched']),
+        ]
 
     def __str__(self):
         return str(self.facility_name) + "_" + str(self.patient_unique_no) + "_" + str(self.date_of_collection)

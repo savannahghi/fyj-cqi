@@ -123,14 +123,14 @@
                 {% if qi_list %}
                     <div class="row">
                         <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                            <a href="{% url 'download_csv_lab' "all" %}"
+                            <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"
                                class="btn btn-secondary btn-block" role="button"> All records
                                 <i class="fas fa-download"></i>
                             </a>
                         </div>
                         {% if rejected_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' "rejected" %}"
+                                <a href="{% url 'download_csv_lab' "rejected" %}?{{ request.GET.urlencode }}"
                                    class="btn btn-secondary btn-block" role="button"> Rejected samples
                                     <i class="fas fa-download"></i>
                                 </a>
@@ -138,7 +138,7 @@
                         {% endif %}
                         {% if tb_lam_pos_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' "positive_tb_lam" %}"
+                                <a href="{% url 'download_csv_lab' "positive_tb_lam" %}?{{ request.GET.urlencode }}"
                                    class="btn btn-secondary btn-block" role="button"> Positive TB LAM
                                     <i class="fas fa-download"></i>
                                 </a>
@@ -146,7 +146,7 @@
                         {% endif %}
                         {% if crag_pos_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' "positive_crag" %}"
+                                <a href="{% url 'download_csv_lab' "positive_crag" %}?{{ request.GET.urlencode }}"
                                    class="btn btn-secondary btn-block" role="button"> Positive CrAg
                                     <i class="fas fa-download"></i>
                                 </a>
@@ -154,7 +154,7 @@
                         {% endif %}
                         {% if missing_crag_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' "missing_crag" %}"
+                                <a href="{% url 'download_csv_lab' filter_type='missing_crag' %}?{{ request.GET.urlencode }}"
                                    class="btn btn-secondary btn-block" role="button"> Missing CrAg
                                     <i class="fas fa-download"></i>
                                 </a>
@@ -162,7 +162,7 @@
                         {% endif %}
                         {% if missing_tb_lam_samples_exist %}
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' "missing_tb_lam" %}"
+                                <a href="{% url 'download_csv_lab' "missing_tb_lam" %}?{{ request.GET.urlencode }}"
                                    class="btn btn-secondary btn-block" role="button"> Missing TB LAM
                                     <i class="fas fa-download"></i>
                                 </a>
@@ -366,7 +366,7 @@
                                             {% elif result.serum_crag_results is None %}
 
                                             {% elif result.serum_crag_results == "Positive" %}
-                                                {#                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>#}
+                                                                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>
                                                 <span style="font-size: 9px"
                                                       class="badge alert-danger">Serum CrAg: {{ result.serum_crag_results }}</span>
                                                 <span style="font-size: 8px"
@@ -388,7 +388,7 @@
                                                           class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
                                                 {% endif %}
                                             {% else %}
-                                                {#                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>#}
+                                                                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>
                                                 <span style="font-size: 9px"
                                                       class="badge alert-success">Serum CrAg: {{ result.serum_crag_results }}</span>
                                                 <span style="font-size: 8px"

@@ -121,7 +121,7 @@
             {% if resistance_level_fig %}
                 <div class="row mb-3">
                     <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                        <a href="{% url 'download_csv_lab' "all" %}"
+                        <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"
                            class="btn btn-secondary btn-block" role="button"> All records
                             <i class="fas fa-download"></i>
                         </a>
@@ -224,7 +224,7 @@
             {% endif %}
             <div class="row mt-3">
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                    <a href="{% url 'download_csv_lab' "all" %}"
+                    <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"
                        class="btn btn-secondary btn-block" role="button"> All records
                         <i class="fas fa-download"></i>
                     </a>

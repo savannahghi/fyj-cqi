@@ -231,3 +231,6 @@ SESSION_COOKIE_AGE = 3600  # Set the session expiration to 1 hour (in seconds)
 DEBUG_TOOLBAR_CONFIG = {
         'SHOW_TOOLBAR_CALLBACK': lambda request: DEBUG,
     }
+# SILKY_META = True
+# SILKY_PYTHON_PROFILER = True
+# SILKY_PYTHON_PROFILER_BINARY = True

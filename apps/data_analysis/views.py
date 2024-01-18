@@ -110,35 +110,110 @@ def get_key_from_session_names(request):
     return dictionary
 
 
-def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
+# def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
+#     df1 = df1[~df1['organisationunitname'].str.contains("adventist centre", case=False)]
+#     # df1 = pd.read_csv(path1)
+#     # Add Hope med C MFL CODE
+#     df1.loc[df1['organisationunitname'] == "Hope Med C", 'organisationunitcode'] = 19278
+#     # st francis
+#     # df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
+#     df1.loc[df1['organisationunitname'].str.contains("st francis comm", case=False), 'organisationunitcode'] = 17943
+#
+#     # adventist
+#     # df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
+#     df1.loc[df1['organisationunitname'].str.contains("better living", case=False), 'organisationunitcode'] = 18535
+#     df1.loc[df1['organisationunitname'].str.contains("better living",
+#                                                      case=False),
+#     'organisationunitname'] = "Adventist Centre for Care and Support"
+#
+#     # illasit
+#     # df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
+#     df1.loc[df1['organisationunitname'].str.contains("illasit h", case=False), 'organisationunitcode'] = 14567
+#     # imara
+#     # df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
+#     df1.loc[df1['organisationunitname'].str.contains("imara health", case=False), 'organisationunitcode'] = 12981
+#     # mary immaculate
+#     df1.loc[
+#         df1['organisationunitname'].str.contains("mary immaculate sister", case=False), 'organisationunitcode'] = 13062
+#
+#     # biafra lion
+#     df1.loc[
+#         df1['organisationunitname'].str.contains("biafra lion", case=False), 'organisationunitcode'] = 12883
+#
+#     # for i in df1['organisationunitcode'].unique():
+#     #     if "18535" in i.lower():
+#     #         print(i)
+#     #     print("Not found")
+#     df1 = df1[~df1['organisationunitcode'].isnull()]
+#     df1 = convert_mfl_code_to_int(df1)
+#     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
+#
+#     # df1["organisationunitcode"] = df1["organisationunitcode"].astype(int)
+#     dispensed_cols = [col for col in df1.columns if "Total Quantity issued this month" in col]
+#     end_of_months_cols = [col for col in df1.columns if "End of Month Physical Stock Count" in col]
+#
+#     if len(dispensed_cols) > 0:
+#         # get the last 6 months data
+#         # divide the period into 2
+#         first_3_months = sorted(list(df1['periodid'].unique()))[:3]
+#         last_3_months = sorted(list(df1['periodid'].unique()))[3:]
+#
+#         ###########################################################
+#         # UNCOMMENT BELOW TO GET DATA FOR THE FIRST THREE MONTHS  #
+#         ###########################################################
+#         #         print(f"FIRST THREE MONTHS: {first_3_months}")
+#         #         df1=df1[df1['periodid'].isin(first_3_months)]
+#
+#         ###########################################################
+#         # UNCOMMENT BELOW TO GET DATA FOR THE LAST THREE MONTHS  #
+#         ###########################################################
+#
+#         #         print(f"LAST THREE MONTHS: {last_3_months}")
+#         #         df1=df1[df1['periodid'].isin(last_3_months)]
+#         ###################################################################
+#         # TO GET DATA FOR THE LAST 2 QUARTERS, COMMENT ABOVE TWO FILTERS  #
+#         ###################################################################
+#         dispensed_df = df1[default_cols + dispensed_cols]
+#         filename = "sc_arvdisp"
+#     else:
+#         # get the last month data
+#         last_month = df1['periodid'].unique().max()
+#         df1 = df1[df1['periodid'] == last_month]
+#
+#         dispensed_df = df1[default_cols + end_of_months_cols]
+#         filename = "sc_curr"
+#     return dispensed_df, df1, dispensed_cols, end_of_months_cols, filename
+
+
+def rename_khis_col(df1,fyj_facility_mfl_code):
     df1 = df1[~df1['organisationunitname'].str.contains("adventist centre", case=False)]
     # df1 = pd.read_csv(path1)
     # Add Hope med C MFL CODE
     df1.loc[df1['organisationunitname'] == "Hope Med C", 'organisationunitcode'] = 19278
     # st francis
     # df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
-    df1.loc[df1['organisationunitname'].str.contains("st francis comm", case=False), 'organisationunitcode'] = 17943
+    # df1.loc[df1['organisationunitname'].str.contains("st francis comm", case=False), 'organisationunitcode'] = 17943
 
     # adventist
     # df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
-    df1.loc[df1['organisationunitname'].str.contains("better living", case=False), 'organisationunitcode'] = 18535
-    df1.loc[df1['organisationunitname'].str.contains("better living",
-                                                     case=False),
-    'organisationunitname'] = "Adventist Centre for Care and Support"
+    # df1.loc[df1['organisationunitname'].str.contains("better living", case=False), 'organisationunitcode'] = 18535
+    # df1.loc[df1['organisationunitname'].str.contains("better living",
+    #                                                  case=False),
+    # 'organisationunitname'] = "Adventist Centre for Care and Support"
 
     # illasit
     # df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
-    df1.loc[df1['organisationunitname'].str.contains("illasit h", case=False), 'organisationunitcode'] = 14567
+    # df1.loc[df1['organisationunitname'].str.contains("illasit h", case=False), 'organisationunitcode'] = 14567
     # imara
     # df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
-    df1.loc[df1['organisationunitname'].str.contains("imara health", case=False), 'organisationunitcode'] = 12981
+    # df1.loc[df1['organisationunitname'].str.contains("imara health", case=False), 'organisationunitcode'] = 12981
     # mary immaculate
-    df1.loc[
-        df1['organisationunitname'].str.contains("mary immaculate sister", case=False), 'organisationunitcode'] = 13062
+    # df1.loc[
+    #     df1['organisationunitname'].str.contains("mary immaculate sister", case=False), 'organisationunitcode'] = 13072
 
     # biafra lion
-    df1.loc[
-        df1['organisationunitname'].str.contains("biafra lion", case=False), 'organisationunitcode'] = 12883
+    # df1.loc[
+    #     df1['organisationunitname'].str.contains("biafra lion", case=False), 'organisationunitcode'] = 12883
 
     # for i in df1['organisationunitcode'].unique():
     #     if "18535" in i.lower():
@@ -147,6 +222,9 @@ def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
     df1 = df1[~df1['organisationunitcode'].isnull()]
     df1 = convert_mfl_code_to_int(df1)
     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
+    return df1
+def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
+    df1=rename_khis_col(df1, fyj_facility_mfl_code)
 
     # df1["organisationunitcode"] = df1["organisationunitcode"].astype(int)
     dispensed_cols = [col for col in df1.columns if "Total Quantity issued this month" in col]
@@ -1808,6 +1886,7 @@ def analyse_fmaps_fcdrr(df, df1):
     all_facilities = all_facilities.rename(columns={"periodname": "month/year"})
 
     df1['MFL Code'] = df1['MFL Code'].astype(int)
+    df1 = df1[df1['Care & Treatment(Yes/No)'] == "Yes"]
     nairobi_facitities_df = df1[df1['County'] == "Nairobi"]
 
     kajiado_facitities_df = df1[df1['County'] == 'Kajiado']

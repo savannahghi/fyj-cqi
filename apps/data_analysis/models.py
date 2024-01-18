@@ -26,6 +26,7 @@ class FYJHealthFacility(models.Model):
 
     class Meta:
         unique_together = (('mfl_code', 'facility'),)
+        ordering=["facility"]
 
     def __str__(self):
         return str(self.facility) + "-" + str(self.mfl_code)

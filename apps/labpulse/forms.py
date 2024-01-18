@@ -270,7 +270,7 @@ class DrtForm(MultipleUploadForm):
             ("FAILED", "FAILED"),
         ]
     )
-    files = forms.FileField(required=False)
+    # files = forms.FileField(required=False)
     patient_unique_no = forms.IntegerField(
         validators=[
             MinValueValidator(0),

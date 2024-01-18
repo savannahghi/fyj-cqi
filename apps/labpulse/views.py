@@ -5409,7 +5409,8 @@ def generate_drt_results(request):
                     show_download_button = True
                 else:
                     messages.error(request,
-                                   f"Please upload PDFs for the same patient. The uploaded PDFs belong to different patients. "
+                                   f"Please upload two PDFs (one with RT/PR and other with INSTIs) for the same patient."
+                                   f" The uploaded PDFs belong to different patients. "
                                    f"({ccc_num} and {ccc_num_intergrase}).")
                     render(request, template_name, context)
             else:

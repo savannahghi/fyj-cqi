@@ -4552,6 +4552,25 @@ def extract_matching_sentences(data, pattern):
     matching_sentences = [sentence for sentence in data if re.search(pattern, sentence)]
     return matching_sentences
 
+def extract_comments(pdf_text, start_pattern, end_pattern):
+    """
+    Extracts comments from a PDF text based on specified start and end patterns.
+
+    Parameters:
+    - pdf_text (str): The text extracted from the PDF document.
+    - start_pattern (str): The starting pattern of the comments.
+    - end_pattern (str): The ending pattern of the comments.
+
+    Returns:
+    - str: Extracted comments if found, or fallback comments if the initial extraction is empty.
+
+    Example:
+    pdf_text = "RT comments\nNRTI Some comments here NNRTI"
+    extract_comments(pdf_text, "RT comments\nNRTI", "\nNNRTI")
+    ' Some comments here '
+    """
+    comments = extract_text(pdf_text, start_pattern, end_pattern)
+    return comments if comments else extract_text(pdf_text, start_pattern, "\nOther") or extract_text(pdf_text, start_pattern, "\nMutation scoring")
 
 def extract_non_intergrase_text(pdf_text):
     other_pi_mutation_comments = []
@@ -4576,6 +4595,11 @@ def extract_non_intergrase_text(pdf_text):
     pi_list = pi_atvr + pi_drvr + pi_fpvr + pi_idvr + pi_lpvr + pi_nfv + pi_sqvr + pi_tpvr
 
     pi_mutation_comments = extract_text(pdf_text, "PR comments", "\nOther")
+    pi_scores_found = [comment for comment in pi_mutation_comments if
+                       "Drug resistance mutation scores of PI" in comment]
+
+    if pi_scores_found:
+        pi_mutation_comments = extract_text(pdf_text, "PR comments", "\nMutation scoring: PR")
     pi_mutation_comments = [
         item for item in pi_mutation_comments if 'PR comments' not in item
     ]
@@ -4614,13 +4638,17 @@ def extract_non_intergrase_text(pdf_text):
     nrti_d4t = extract_text(pdf_text, "stavudine", "etravirine")
     nrti_azt = extract_text(pdf_text, "zidovudine", "efavirenz")
     nrti_abc = extract_text(pdf_text, "abacavir", "doravirine")
-    nrti_comments = extract_text(pdf_text, "RT comments\nNRTI", "\nNNRTI")
+    nrti_comments = extract_comments(pdf_text, "RT comments\nNRTI", "\nNNRTI")
 
     #######################################################################
     # Use the function with the provided pattern
     pattern = r'[A-Z]{3}'
-    nrti_comments = extract_matching_sentences(nrti_comments[1:], pattern)
-    nrti_comments = [x for x in nrti_comments if "NRTI" != x]
+    nrti_comments_ = extract_matching_sentences(nrti_comments[1:], pattern)
+    nrti_comments_ = [x for x in nrti_comments_ if "NRTI" != x]
+    if len(nrti_comments_) == 0:
+        nrti_comments = [x for x in nrti_comments if ("NRTI" != x) and ("RT comments" != x)]
+    else:
+        nrti_comments = nrti_comments_
     #######################################################################
     nnrti_dor = extract_text(pdf_text, "doravirine", "zidovudine ")
     nnrti_efv = extract_text(pdf_text, "efavirenz", "stavudine")
@@ -4632,13 +4660,14 @@ def extract_non_intergrase_text(pdf_text):
     # Using custom pattern for NNRTI extraction
     custom_nnrti_pattern = r'\nNNRTI\n(.*?)\.\nMutation scoring:'
 
-    nnrti_comments = extract_text(pdf_text, "\nNNRTI\n", "\nOther")
-    if len(nnrti_comments) == 0:
-        nnrti_comments = extract_text(pdf_text, ".\nNNRTI",
-                                      ".\nMutation scoring:", custom_pattern=custom_nnrti_pattern)
+    nnrti_comments_ = extract_text(pdf_text, "\nNNRTI\n", "\nOther")
+    if len(nnrti_comments_) == 0:
+        nnrti_comments_ = extract_text(pdf_text, "\nNNRTI\n",
+                                       ".\nMutation scoring:", custom_pattern=custom_nnrti_pattern)
 
-    nnrti_comments = [x for x in nnrti_comments if (". NNRTI" not in x) and ("NNRTI" not in x)]
-    nnrti_comments = join_lines_starting_three_lettered_word_uppercase(nnrti_comments, have_three_lettered_word=True)
+    if len(nnrti_comments_)>0 and "NNRTI" in nnrti_comments_[0]:
+        nnrti_comments_ = [x for x in nnrti_comments_ if (". NNRTI" != x) and ("NNRTI" != x)]
+    nnrti_comments = join_lines_starting_three_lettered_word_uppercase(nnrti_comments_, have_three_lettered_word=True)
     #######################################################################
 
     generated_list = extract_text(pdf_text, "\n1", "\nSequence summary")
@@ -4855,7 +4884,7 @@ def write_comments(pdf, y, comment_title, comments, start_x, x_value, patient_na
 
 def draw_section_with_list(pdf, y, list_content, section_title, start_x, x_value, width, patient_name, ccc_num,
                            todays_date, page_info):
-    y -= 25
+    y -= 35
     # Call the function to draw a colored rectangle with text inside
     draw_colored_rectangle(pdf, start_x, y, width - 70, 15, (0.980, 0.827, 0.706), section_title)
     y -= 10

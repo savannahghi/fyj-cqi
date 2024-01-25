@@ -366,7 +366,6 @@
                                             {% elif result.serum_crag_results is None %}
 
                                             {% elif result.serum_crag_results == "Positive" %}
-                                                                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>
                                                 <span style="font-size: 9px"
                                                       class="badge alert-danger">Serum CrAg: {{ result.serum_crag_results }}</span>
                                                 <span style="font-size: 8px"
@@ -388,7 +387,6 @@
                                                           class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
                                                 {% endif %}
                                             {% else %}
-                                                                                            <p class="fw-bold text-danger">{{ result.serum_crag_results }}</p>
                                                 <span style="font-size: 9px"
                                                       class="badge alert-success">Serum CrAg: {{ result.serum_crag_results }}</span>
                                                 <span style="font-size: 8px"

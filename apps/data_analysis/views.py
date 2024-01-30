@@ -73,6 +73,7 @@ def load_fyj_censused(request):
             redirect(request.path_info)
     return render(request, 'data_analysis/load_data.html')
 
+
 @login_required(login_url='login')
 def download_csv(request, name, filename):
     session_items = []
@@ -185,7 +186,7 @@ def get_key_from_session_names(request):
 #     return dispensed_df, df1, dispensed_cols, end_of_months_cols, filename
 
 
-def rename_khis_col(df1,fyj_facility_mfl_code):
+def rename_khis_col(df1, fyj_facility_mfl_code):
     df1 = df1[~df1['organisationunitname'].str.contains("adventist centre", case=False)]
     # df1 = pd.read_csv(path1)
     # Add Hope med C MFL CODE
@@ -223,8 +224,10 @@ def rename_khis_col(df1,fyj_facility_mfl_code):
     df1 = convert_mfl_code_to_int(df1)
     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
     return df1
+
+
 def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
-    df1=rename_khis_col(df1, fyj_facility_mfl_code)
+    df1 = rename_khis_col(df1, fyj_facility_mfl_code)
 
     # df1["organisationunitcode"] = df1["organisationunitcode"].astype(int)
     dispensed_cols = [col for col in df1.columns if "Total Quantity issued this month" in col]
@@ -339,6 +342,13 @@ def process_reporting_errors(dispensed_df, tld_180s_df, default_cols, dispensed_
     reporting_errors_df.iloc[:, 3:] = reporting_errors_df.iloc[:, 3:].astype(int)
 
     return reporting_errors_df
+
+
+def merge_dfs(df, other_adult_df, other_adult_df_columns):
+    other_adult_df = other_adult_df.merge(df, left_on="organisationunitcode", right_on="MFL Code", how="left")
+    county_subcounty_cols = ['County', 'Subcounty']
+    other_adult_df = other_adult_df[county_subcounty_cols + other_adult_df_columns]
+    return other_adult_df, county_subcounty_cols
 
 
 def analyse_pharmacy_data(request, df, df1):
@@ -510,14 +520,16 @@ def analyse_pharmacy_data(request, df, df1):
     othercolumns = [col for col in othercolumns if "(AZT)" not in col]
 
     other_paeds_bottles_df = other_paeds_bottles_df[default_cols + othercolumns]
-
+    other_paeds_bottles_df_columns = list(other_paeds_bottles_df.columns)
+    other_paeds_bottles_df, county_subcounty_cols = merge_dfs(df, other_paeds_bottles_df,
+                                                              other_paeds_bottles_df_columns)
     other_paeds_bottles_df['Other (Pediatric) bottles'] = other_paeds_bottles_df[othercolumns].sum(
         axis=1)
     paeds_others_filename = f"{filename}_other_paediatric"
     request.session['paediatric_report'] = other_paeds_bottles_df.to_dict()
     other_paeds_bottles_df_file = other_paeds_bottles_df.copy()
 
-    other_paeds_bottles_df = other_paeds_bottles_df.drop(othercolumns, axis=1)
+    other_paeds_bottles_df = other_paeds_bottles_df.drop(othercolumns + county_subcounty_cols, axis=1)
 
     set1 = set(adult_bottles)
     set2 = set(list(tld_tle_lpv_dtg10_nvp_df.columns))
@@ -561,12 +573,14 @@ def analyse_pharmacy_data(request, df, df1):
         othercolumns = list(other_adult_df.columns[3:])
 
     other_adult_df = other_adult_df[default_cols + othercolumns]
+    other_adult_df_columns = list(other_adult_df.columns)
+    other_adult_df, county_subcounty_cols = merge_dfs(df, other_adult_df, other_adult_df_columns)
     other_adult_df['Other (Adult) bottles'] = other_adult_df[othercolumns].sum(axis=1)
     adult_others_filename = f"{filename}_other_adult"
     request.session['adult_report'] = other_adult_df.to_dict()
     other_adult_df_file = other_adult_df.copy()
 
-    other_adult_df = other_adult_df.drop(othercolumns, axis=1)
+    other_adult_df = other_adult_df.drop(othercolumns + county_subcounty_cols, axis=1)
 
     if "periodname" in default_cols:
         tld_tle_lpv_dtg10_nvp_adultothers_df = tld_tle_lpv_dtg10_nvp_df.merge(other_adult_df,

@@ -122,6 +122,7 @@ class BaseBooleanModel(BaseModel):
         ("", "-"),
         ("Yes", "Yes"),
         ("No", "No"),
+        ("N/A", "N/A"),
     ]
     description = models.TextField()
     adult_arv_tdf_3tc_dtg = models.CharField(max_length=4, choices=CHOICES)

@@ -70,6 +70,7 @@ def get_query_params(request, form, selected_facility, selected_date):
 
     return query_params
 
+
 @login_required(login_url='login')
 def choose_facilities_pharmacy(request):
     if not request.user.first_name:
@@ -475,6 +476,7 @@ def create_inventory_formset(report_name, request, initial_data):
 
     return formset, inventory_form_set, model_class, form_class
 
+
 @login_required(login_url='login')
 def choose_facilities_inventory(request):
     if not request.user.first_name:
@@ -506,6 +508,7 @@ def choose_facilities_inventory(request):
         "title": "Supply Chain Spot Check Dashboard (Inventory)"
     }
     return render(request, 'pharmacy/add_facilities_data_inventory.html', context)
+
 
 @login_required(login_url='login')
 def add_inventory(request, report_name=None, quarter=None, year=None, pk=None, date=None):
@@ -998,7 +1001,7 @@ def divide_rows(a, num_index, deno_index):
 
 def calculate_supply_chain_kpis(df, expected_description_order):
     # Replace values in the DataFrame
-    df = df.replace({"No": 0, "Yes": 100})
+    df = df.replace({"No": 0, "Yes": 100, "N/A": 9999})
 
     # Convert columns to integer type
     df[df.columns[1:]] = df[df.columns[1:]].astype(int)
@@ -1022,8 +1025,8 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     a = add_new_row(a, division_row, "Delivery Captured on Stock Card")
 
     # Create DataFrames df4, df5
-    df4 = create_df(df, 'physical count', 25)
-    df5 = create_df(df, 'stock card balance', 26)
+    df4 = create_df(df, 'physical count', 24)
+    df5 = create_df(df, 'stock card balance', 25)
 
     # Concatenate a, df4, df5 into a single DataFrame 'a'
     a = pd.concat([a, df4, df5])
@@ -1033,20 +1036,21 @@ def calculate_supply_chain_kpis(df, expected_description_order):
 
     # Create DataFrames df6, df7, df8, df9, df10, df11
     df6 = create_df(df, 'begining bal', 4)
-    df7 = create_df(df, 'kemsa supply', 5)
-    df8 = create_df(df, 'received from other facilities', 6)
-    df9 = create_df(df, 'units issued to SDPs', 8)
-    df10 = create_df(df, 'units issued to other facilities', 11)
-    df11 = create_df(df, 'units expired', 13)
+    df7 = create_df(df, 'kemsa supply', 2)
+    df8 = create_df(df, 'received from other facilities', 5)
+    df9 = create_df(df, 'units issued to SDPs', 7)
+    df10 = create_df(df, 'units issued to other facilities', 8)
+    df11 = create_df(df, 'units expired', 12)
+    df_end_bal = create_df(df, 'ending balance on bin card', 23)
 
     # Concatenate a, df6, df7, df8, df9, df10, df11 into a single DataFrame 'a'
-    a = pd.concat([a, df6, df7, df8, df9, df10, df11])
+    a = pd.concat([a, df6, df7, df8, df9, df10, df11, df_end_bal])
 
     division_row = pd.Series(index=a.columns)
 
     # Iterate over the columns
     for col in a.columns:
-        numerator = a.iloc[4, col]
+        numerator = a.iloc[13, col]
         denominator = (a.iloc[7, col] + a.iloc[8, col] + a.iloc[9, col]) - (
                 a.iloc[10, col] + a.iloc[11, col] + a.iloc[12, col])
 
@@ -1064,9 +1068,44 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     a = pd.concat([a, df13, df12])
 
     # Create a new row for the division 'Delivered in full'
-    division_row = divide_rows(a, 15, 14)
+    # division_row = divide_rows(a, 15, 14)
+    division_row = pd.Series(index=a.columns)
 
-    a = add_new_row(a, division_row, "Delivered in full")
+    # Iterate over the columns
+    for col in a.columns:
+        numerator = a.iloc[5, col] - a.iloc[4, col]
+        # print(numerator)
+        denominator = a.iloc[4, col]
+
+        # Check if the denominator is non-zero
+        if denominator != 0:
+            division_row[col] = round((numerator / denominator) * 100, 1)
+        else:
+            division_row[col] = 0
+    a = add_new_row(a, division_row, "Inventory variation")
+
+    # a = add_new_row(a, division_row, "Delivered in full")
+    df_cdrr = create_df(df, 'CDRR', 27)
+    df_dar = create_df(df, 'DAR', 26)
+    a = pd.concat([a, df_dar, df_cdrr])
+
+    division_row = pd.Series(index=a.columns)
+    print("a::::::::::::::::::::::::::::::::::::::::::::::::::")
+    print(a)
+
+    # Iterate over the columns
+    for col in a.columns:
+        numerator = a.iloc[19, col] - a.iloc[18, col]
+
+        denominator = a.iloc[7, col] + a.iloc[8, col] + a.iloc[9, col]
+
+        # Check if the denominator is non-zero
+        if denominator != 0:
+            division_row[col] = round((numerator / denominator) * 100, 2)
+        else:
+            division_row[col] = 0
+
+    a = add_new_row(a, division_row, "DAR vs CDRR Quantity Dispensed")
 
     # Reset index, rename columns, and filter unwanted rows
     a = a.reset_index()
@@ -1074,7 +1113,8 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     a = a[~a['description'].str.contains('in bin cards|supp kemsa|physical count|stock card balance|'
                                          'begining bal|kemsa supply|received from other facilities|'
                                          'units issued to SDPs|units issued to other facilities|units expired|'
-                                         'quantity supplied|captured in the bin card')]
+                                         'quantity supplied|captured in the bin card|ending balance on bin card')]
+    a = a[(a['description'] != "DAR") & (a['description'] != "CDRR")]
 
     # Get the count of values equal to 100 in each row
     count_100 = (a.iloc[:, 1:] == 100).sum(axis=1)
@@ -1088,14 +1128,14 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     # Multiply all values in the "Facility score" column
     product = a['Facility score'].prod()
 
-    # Create a new row with the product value
-    new_row = ['Stock Record Validity'] + [0] * (a.shape[1] - 2) + [product]
-    new_row = pd.DataFrame(new_row).T.reset_index(drop=True)
-    # Replace values in the DataFrame
-    new_row.columns = list(df.columns) + ['Facility score']
-
-    # Concatenate new_row to the DataFrame 'a'
-    a = pd.concat([a, new_row])
+    # # Create a new row with the product value
+    # new_row = ['Stock Record Validity'] + [0] * (a.shape[1] - 2) + [product]
+    # new_row = pd.DataFrame(new_row).T.reset_index(drop=True)
+    # # Replace values in the DataFrame
+    # new_row.columns = list(df.columns) + ['Facility score']
+    #
+    # # Concatenate new_row to the DataFrame 'a'
+    # a = pd.concat([a, new_row])
 
     # Rename the 'description' column to 'Focus area'
     a = a.rename(
@@ -1110,13 +1150,17 @@ def calculate_supply_chain_kpis(df, expected_description_order):
                        'Delivery Captured on Stock Card',
                        'Stock balance accuracy',
                        'Transaction recording accuracy',
-                       'Stock Record Validity']
+                       'Stock Record Validity', 'Inventory variation',
+                       'DAR vs CDRR Quantity Dispensed'
+                       ]
+
     # Set 'description' column as categorical
     a['Focus area'] = pd.Categorical(a['Focus area'], categories=sort_focus_area, ordered=True)
 
     # Sort the DataFrame by 'description'
     a.sort_values('Focus area', inplace=True)
     a.index = np.arange(1, len(a) + 1)
+    a = a.replace({"No": 0, "Yes": 100, 9999: ""})
 
     # Final DataFrame 'a'
     return a, sort_focus_area

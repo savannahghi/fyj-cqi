@@ -12,7 +12,7 @@ from django.shortcuts import redirect, render
 from django.utils.datastructures import MultiValueDictKeyError
 from plotly.offline import plot
 
-from apps.data_analysis.forms import DataFilterForm, DateFilterForm, FileUploadForm
+from apps.data_analysis.forms import DataFilterForm, DateFilterForm, FileUploadForm, MultipleUploadForm
 from apps.data_analysis.models import FYJHealthFacility
 
 
@@ -1370,46 +1370,33 @@ def transform_data(df, df1, from_date, to_date):
 
 @login_required(login_url='login')
 def tat(request):
-    facilities_collect_receipt_tat = pd.DataFrame()
-    facilities_collect_dispatch_tat = pd.DataFrame()
-    sub_counties_collect_receipt_tat = pd.DataFrame()
-    sub_counties_collect_dispatch_tat = pd.DataFrame()
-    hubs_collect_receipt_tat = pd.DataFrame()
-    hubs_collect_dispatch_tat = pd.DataFrame()
-    counties_collect_receipt_tat = pd.DataFrame()
-    counties_collect_dispatch_tat = pd.DataFrame()
-    program_collect_dispatch_tat = pd.DataFrame()
-    program_collect_receipt_tat = pd.DataFrame()
-    facility_c_r_filename = None
-    facility_c_d_filename = None
-    subcounty_c_r_filename = None
-    subcounty_c_d_filename = None
-    dictionary = None
-    target_text = None
-    hub_c_r_filename = None
-    hub_c_d_filename = None
-    county_c_r_filename = None
-    county_c_d_filename = None
-    program_c_d_filename = None
-    program_c_r_filename = None
+    facilities_collect_receipt_tat = facilities_collect_dispatch_tat = sub_counties_collect_receipt_tat = \
+        sub_counties_collect_dispatch_tat = hubs_collect_receipt_tat = hubs_collect_dispatch_tat = \
+        counties_collect_receipt_tat = counties_collect_dispatch_tat = program_collect_dispatch_tat = \
+        program_collect_receipt_tat = pd.DataFrame()
+    facility_c_r_filename = facility_c_d_filename = subcounty_c_r_filename = subcounty_c_d_filename = dictionary = \
+        target_text = hub_c_r_filename = hub_c_d_filename = county_c_r_filename = county_c_d_filename = \
+        program_c_d_filename = program_c_r_filename = hub_viz = fyj_viz = county_viz = sub_county_viz = None
     date_picker_form = DateFilterForm(request.POST or None)
-    form = FileUploadForm(request.POST or None)
-    hub_viz = None
-    fyj_viz = None
-    county_viz = None
-    sub_county_viz = None
+    form = MultipleUploadForm(request.POST or None)
+
     if not request.user.first_name:
         return redirect("profile")
-    if request.method == 'POST' and "file" in request.FILES:
+    # if request.method == 'POST' and "file" in request.FILES:
+    if request.method == 'POST':
         try:
             if request.method == 'POST':
-                form = FileUploadForm(request.POST, request.FILES)
+                form = MultipleUploadForm(request.POST, request.FILES)
                 url = 'https://eiddash.nascop.org/reports/EID'
                 if form.is_valid():
-                    # try:
-                    file = request.FILES['file']
-                    if "csv" in file.name:
-                        df = pd.read_csv(file)
+                    uploaded_files = request.FILES.getlist('files')
+                    # Check if all uploaded files are CSV files
+                    all_csv_files = all(file.name.endswith('.csv') for file in uploaded_files)
+                    if all_csv_files:
+                        dfs = []
+                        for i in uploaded_files:
+                            dfs.append(pd.read_csv(i))
+                        df = pd.concat(dfs)
                     else:
                         message = f"Please generate overall 'All Outcomes (+/-) for EID' or 'Detailed for VL' and " \
                                   f"upload the CSV from <a href='{url}'>NASCOP's website</a>."
@@ -2233,11 +2220,11 @@ def age_buckets2(x):
     if x == 1:
         return '<1'
     elif x == 4:
-        return '1-4.'
+        return '1-4..'
     elif x == 9:
-        return '5-9.'
+        return '5-9..'
     elif x == 14:
-        return '10-14.'
+        return '10-14..'
     elif x == 19:
         return '15-19'
     elif x == 24:
@@ -2249,7 +2236,7 @@ def age_buckets2(x):
 def make_crosstab_facility_age(df):
     """This function makes a crosstab"""
     # create a list with age bands, in the required order
-    age = ['1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59',
+    age = ['1-4.', '5-9.', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54', '55-59',
            '60-64', '65+', 'All']
     # Generate crosstab
     try:
@@ -2275,11 +2262,11 @@ def age_buckets(x):
     if x == 1:
         return '< 1'
     elif x == 4:
-        return '1-4'
+        return '1-4.'
     elif x == 9:
-        return '5-9'
+        return '5-9.'
     elif x == 14:
-        return '10-14'
+        return '10-14.'
     elif x == 19:
         return '15-19'
     elif x == 24:
@@ -2319,7 +2306,8 @@ def age_buckets1(x):
 
 
 def use_availble_columns(df):
-    age = ["Missing age", '1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49', '50-54',
+    age = ["Missing age", '1-4.', '5-9.', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
+           '50-54',
            '55-59',
            '60-64', '65+', 'All']
 
@@ -2648,7 +2636,7 @@ def prepare_age_sex_df(df, newdf_HVL):
                                  newdf_HVL_age_sex[
                                      '%'].astype(str) + "%)"
     newdf_HVL_age_sex["Age"] = pd.Categorical(newdf_HVL_age_sex["Age"],
-                                              categories=['1-4', '5-9', '10-14', '15-19',
+                                              categories=['1-4.', '5-9.', '10-14.', '15-19',
                                                           '20-24',
                                                           '25-29', '30-34', '35-39',
                                                           '40-44',
@@ -2752,48 +2740,66 @@ def prepare_to_send_via_sessions(llv_linelist):
     return llv_linelist
 
 
+def box_plot_chart(df, y_values_list, title, labels=None):
+    fig = px.box(df, y=y_values_list,
+                 labels=labels,
+                 title=title, height=450)
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def show_period_hvl(df):
+    df = df.copy()
+    date_columns = [x for x in df.columns if "Date" in x]
+    # Loop through each date column and convert to datetime format
+    for column in date_columns:
+        df[column] = pd.to_datetime(df[column], errors='coerce')
+
+    # Replace this with the actual way you get the current date, e.g., pd.to_datetime('today') or pd.Timestamp.today()
+    current_date = pd.to_datetime('today')
+    string_date = current_date.strftime('%d-%b-%Y')
+    # Calculate the difference in days between 'Date Collected' and the current date
+    df[f'period with HVL (Collection - {string_date})'] = (current_date - df['Date Collected']).dt.days
+    df[f'period with HVL (Dispatch - {string_date})'] = (current_date - df['Date Dispatched']).dt.days
+    period_hvl_box_plot_fig = box_plot_chart(df, [f'period with HVL (Collection - {string_date})',
+                                                  f'period with HVL (Dispatch - {string_date})'],
+                                             title=f'Box Plot of Period with HVL N={df.shape[0]} ',
+                                             labels={'value': 'Period with HVL (days)',
+                                                     'variable': 'Category'})
+    return period_hvl_box_plot_fig
+
+
 @login_required(login_url='login')
 def viral_load(request):
-    all_results_df = pd.DataFrame()
-    subcounty_ = pd.DataFrame()
-    facility_less_1000_df = pd.DataFrame()
-    vl_done_df = pd.DataFrame()
-    subcounty_vl = pd.DataFrame()
-    facility_vl = pd.DataFrame()
-    hvl_linelist = pd.DataFrame()
-    llv_linelist = pd.DataFrame()
-    hvl_linelist_facility = pd.DataFrame()
-    llv_linelist_facility = pd.DataFrame()
-    facility_resuppression_status = pd.DataFrame()
-    confirm_rx_failure = pd.DataFrame()
-    vs_text = None
-    facility_analyzed_text = None
-    subcounty_fig = None
-    monthly_trend_fig = None
-    weekly_trend_fig = None
-    monthly_hvl_trend_fig = None
-    hvl_sex_age_fig = None
-    llv_sex_age_fig = None
-    monthly_llv_trend_fig = None
-    justification_fig = None
+    all_results_df = subcounty_ = facility_less_1000_df = vl_done_df = subcounty_vl = facility_vl = hvl_linelist = \
+        llv_linelist = hvl_linelist_facility = llv_linelist_facility = facility_resuppression_status = \
+        confirm_rx_failure = pd.DataFrame()
+    vs_text = facility_analyzed_text = subcounty_fig = monthly_trend_fig = weekly_trend_fig = monthly_hvl_trend_fig = \
+        hvl_sex_age_fig = llv_sex_age_fig = monthly_llv_trend_fig = justification_fig = period_hvl_box_plot_fig = None
     filter_text = "All"
 
-    form = FileUploadForm(request.POST or None)
+    # form = FileUploadForm(request.POST or None)
+    form = MultipleUploadForm(request.POST or None)
     date_picker_form = DateFilterForm(request.POST or None)
     data_filter_form = DataFilterForm(request.POST or None)
     if not request.user.first_name:
         return redirect("profile")
     if request.method == 'POST':
         try:
-            form = FileUploadForm(request.POST, request.FILES)
+            form = MultipleUploadForm(request.POST, request.FILES)
             message = "It seems that the dataset you uploaded is incorrect. To proceed with the analysis, " \
                       "kindly upload detailed Viral load CSV file. Please generate this file from the website link " \
                       "below and ensure it is in CSV format before uploading it. You can find detailed " \
                       "instructions on how to upload the file below. Thank you."
             if form.is_valid():
-                file = request.FILES['file']
-                if "csv" in file.name:
-                    df = pd.read_csv(file)
+                # file = request.FILES['file']
+                uploaded_files = request.FILES.getlist('files')
+                # Check if all uploaded files are CSV files
+                all_csv_files = all(file.name.endswith('.csv') for file in uploaded_files)
+                if all_csv_files:
+                    dfs = []
+                    for i in uploaded_files:
+                        dfs.append(pd.read_csv(i))
+                    df = pd.concat(dfs)
                 else:
                     messages.success(request, message)
                     return redirect('viral_load')
@@ -2937,6 +2943,10 @@ def viral_load(request):
                                                                                   "Suspected Treatment Failure (STF)  "
                                                                                   "N = ", "# with Suspected Treatment "
                                                                                           "Failure (STF)")
+                            #####################
+                            # PERIOD ON HVL
+                            ####################
+                            period_hvl_box_plot_fig = show_period_hvl(hvl_linelist)
                             #################
                             # LLV
                             #################
@@ -3060,7 +3070,7 @@ def viral_load(request):
                 "llv_linelist_facility": llv_linelist_facility,
                 "llv_linelist_facility_shape": llv_linelist_facility.shape[0],
                 "facility_resuppression_status": facility_resuppression_status,
-                "justification_fig": justification_fig,
+                "justification_fig": justification_fig, "period_hvl_box_plot_fig": period_hvl_box_plot_fig,
             }
 
             return render(request, 'data_analysis/tat.html', context)
@@ -3145,7 +3155,7 @@ def viral_load(request):
         "llv_linelist_facility": llv_linelist_facility,
         "llv_linelist_facility_shape": llv_linelist_facility.shape[0],
         "re_supp_dict": re_supp_dict,
-        "justification_fig": justification_fig,
+        "justification_fig": justification_fig, "period_hvl_box_plot_fig": period_hvl_box_plot_fig,
     }
 
     return render(request, 'data_analysis/vl.html', context)

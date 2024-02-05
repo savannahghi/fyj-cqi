@@ -29,7 +29,7 @@
                         <a href="{% url 'viral_load' %}" class="btn btn-outline-success">VL Analyzer</a>
                     {% endif %}
                 </div>
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" id="filter-form" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="row d-flex">
                         <div class="col-md-3">
@@ -53,12 +53,22 @@
                                     range (Date collected) for which you would like to view data. This will allow you to
                                     narrow down
                                     the dataset and focus on the relevant information that you need.</p>
-                                <div class="form-group col-md-12">
-                                    {{ form.as_p }}
-                                    {% if form.is_bound %}
-                                        <p>Uploaded file: {{ form.cleaned_data.file.name }}</p>
-                                    {% endif %}
-                                </div>
+{#                                <div class="form-group col-md-12">#}
+{#                                     {{ form.files }}#}
+{#                                    {{ form.as_p }}#}
+{#                                    {% if form.is_bound %}#}
+{#                                        <p>Uploaded file: {{ form.cleaned_data.file.name }}</p>#}
+{#                                    {% endif %}#}
+                                     <!-- Conditionally display uploaded files label -->
+                                <div id="files-input" class="mt-4">
+                                        {{ form.files }}
+                                    </div>
+                                <label id="uploaded-files-label" for="{{ form.files.id_for_label }}"
+                                       style="display: none;">Uploaded
+                                    Files:</label>
+                                <!-- Display uploaded file names dynamically -->
+                                <ul id="uploaded-files-list"></ul>
+{#                                </div>#}
                                 <div class="col-md-4">
                                     {{ date_picker_form.from_date|as_crispy_field }}
                                 </div>

@@ -1005,8 +1005,8 @@ def calculate_facility_score(a,ideal_target=100):
 
     # Calculate the division result
     division_result = round(count_100 / (a.shape[1] - 1-count_nas), 2)
-    # Add the new column 'Facility score' to the DataFrame
-    a['Facility score'] = division_result
+    # Add the new column 'Facility mean score' to the DataFrame
+    a['Facility mean score'] = division_result
     return a
 def calculate_supply_chain_kpis(df, expected_description_order):
     # Replace values in the DataFrame
@@ -1128,8 +1128,8 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     a = calculate_facility_score(a)
     last_two_rows = calculate_facility_score(last_two_rows, ideal_target=0)
     a = pd.concat([a, last_two_rows])
-    # Multiply all values in the "Facility score" column
-    product = a['Facility score'].prod()
+    # Multiply all values in the "Facility mean score" column
+    facility_mean = a['Facility mean score'].mean()
 
 
     # # Get the count of values equal to 100 in each row
@@ -1140,17 +1140,17 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     # # Calculate the division result and remove the NAs values
     # division_result = round(count_100 / (a.shape[1] - 1-count_nas), 2)
     #
-    # # Add the new column 'Facility score' to the DataFrame
-    # a['Facility score'] = division_result
+    # # Add the new column 'Facility mean score' to the DataFrame
+    # a['Facility mean score'] = division_result
     #
-    # # Multiply all values in the "Facility score" column
-    # product = a['Facility score'].prod()
+    # # Multiply all values in the "Facility mean score" column
+    # product = a['Facility mean score'].prod()
 
     # # Create a new row with the product value
     # new_row = ['Stock Record Validity'] + [0] * (a.shape[1] - 2) + [product]
     # new_row = pd.DataFrame(new_row).T.reset_index(drop=True)
     # # Replace values in the DataFrame
-    # new_row.columns = list(df.columns) + ['Facility score']
+    # new_row.columns = list(df.columns) + ['Facility mean score']
     #
     # # Concatenate new_row to the DataFrame 'a'
     # a = pd.concat([a, new_row])
@@ -1160,9 +1160,9 @@ def calculate_supply_chain_kpis(df, expected_description_order):
         columns={"description": "Focus area", "tld_90": "TLD 90s", "dtg_10": "DTG 10", "abc_3tc": "ABC/3TC 120/60",
                  "3hp": "3HP", "fp": "IMPLANT 1 ROD", "al": "AL 24"})
 
-    # Convert 'Facility score' column to numeric and round to 2 decimal places
-    a[f'Facility score'] = pd.to_numeric(a['Facility score'], errors='coerce').round(2)
-    a=a.rename(columns={"Facility score":f"Facility score: ({round(product,2)*100}%)"})
+    # Convert 'Facility mean score' column to numeric and round to 2 decimal places
+    a[f'Facility mean score'] = pd.to_numeric(a['Facility mean score'], errors='coerce')
+    a=a.rename(columns={"Facility mean score":f"Facility mean score: {round(facility_mean,2)*100} %"})
     a = a.reset_index(drop=True)
 
     sort_focus_area = ['Delivered in full', 'Stock card available',
@@ -1182,7 +1182,7 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     a = a.replace({"No": 0, "Yes": 100, 9999: ""})
 
     # Final DataFrame 'a'
-    return a, sort_focus_area
+    return a, sort_focus_area,facility_mean
 
 
 @login_required(login_url='login')
@@ -1312,7 +1312,7 @@ def show_inventory(request):
                                       'What quantity was dispensed, based the CDRR, at this facility during the review period?',
                                       'What is the average monthly consumption?']
 
-        supply_chain_target_100, sort_focus_area = calculate_supply_chain_kpis(df, expected_description_order)
+        supply_chain_target_100, sort_focus_area,facility_mean = calculate_supply_chain_kpis(df, expected_description_order)
     context = {
         # 'form': form,
         'title': 'Inventory Management',
@@ -1322,7 +1322,7 @@ def show_inventory(request):
         "facility_form": facility_form,
         "models_to_check": models_to_check,
         "field_values": field_values,
-        "supply_chain_target_100": supply_chain_target_100,
+        "supply_chain_target_100": supply_chain_target_100,"facility_mean":facility_mean,
         "sort_focus_areas": sort_focus_area,
     }
 

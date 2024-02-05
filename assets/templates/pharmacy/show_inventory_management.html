@@ -130,12 +130,69 @@
                             <hr>
                             <h6 class=" fw-bold text-primary text-center">Supply chain KPIs with a target of 100% </h6>
                             <hr>
+                            <div class="col mt-3">
+                    <table class="table table-striped table-hover" style="font-size: x-small;">
+                        <thead class="thead-dark text-center">
+                        <tr>
+                            <th colspan="2">COLOUR CODE KEY</th>
+                        </tr>
+                        <tr>
+                            <th>Color code</th>
+                            <th>Range</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+
+                        <tr>
+                            <td class="text-center text-black"
+                                style="background-color: green; border: 1px solid black;">
+                                <strong>Green <span class="text-info"> (Meets standard)</span></strong>
+                            </td>
+                            <td class="text-primary text-center">
+                                <strong> >= 90 %</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-center text-black"
+                                style="background-color: yellow; border: 1px solid black;">
+                                <strong>Yellow <span class="text-info"> (Needs improvement)</span></strong>
+                            </td>
+                            <td class="text-primary text-center">
+                                <strong> >= 80 % and < 90 %</strong>
+                            </td>
+
+                        <tr>
+                            <td class="text-center text-black" style="background-color: red; border: 1px solid black;">
+                                <strong>Red <span class="text-info"> (Needs urgent remediation)</span></strong>
+                            </td>
+                            <td class="text-primary text-center">
+                                <strong> < 80%</strong>
+                            </td>
+                        </tr>
+                        </tr>
+                        </tbody>
+                    </table>
+                    {{ system_assessment_viz|safe }}
+                </div>
                             <!--SUPPLY CHAIN KPIs WITH A TARGET OF 100-->
                             <table class="table table-striped table-hover">
                                 <thead class="thead-dark">
                                 <th scope="col"></th>
                                 {% for col in supply_chain_target_100.columns %}
-                                    <th class="text-center" scope="col">{{ col }}</th>
+                                    {% if "Facility mean score" in col %}
+                                        {% if facility_mean >= 90 %}
+                                            <th class="text-center" scope="col"
+                                                style="background-color: green">{{ col }}</th>
+                                        {% elif facility_mean < 90  and facility_mean >= 80 %}
+                                            <th class="text-center" scope="col"
+                                                style="background-color: yellow">{{ col }}</th>
+                                        {% else %}
+                                            <th class="text-center" scope="col"
+                                                style="background-color: red">{{ col }}</th>
+                                        {% endif %}
+                                    {% else %}
+                                        <th class="text-center" scope="col">{{ col }}</th>
+                                    {% endif %}
                                 {% endfor %}
                                 </thead>
                                 <tbody>
@@ -143,33 +200,19 @@
                                     <tr>
                                         <th scope="row">{{ index }}</th>
                                         {% for cell in row %}
-                                            <!--Format last column (Facility score) -->
+                                            <!--Format last column (Facility mean score) -->
                                             {% if forloop.last %}
-                                                <!--Remove background color format to the last two in table -->
-{#                                                {% if forloop.parentloop.revcounter <= 2 %}#}
-{#                                                    <td class="text-center">#}
-{#                                                        {{ cell }}#}
-{#                                                    </td>#}
-{#                                                    {% if cell == 0  and cell not in sort_focus_areas %}#}
-{#                                                        <td class="text-center fw-bold" style="background-color: green">#}
-{#                                                            {{ cell }}#}
-{#                                                        </td>#}
-{#                                                    {% elif cell > 0 and cell not in sort_focus_areas %}#}
-{#                                                        <td class="text-center fw-bold" style="background-color: red">#}
-{#                                                            {{ cell }}#}
-{#                                                        </td>#}
-{#                                                    {% endif %}#}
-{#                                                {% else %}#}
-                                                    {% if cell == 1  and cell not in sort_focus_areas %}
-                                                        <td class="text-center fw-bold text-light" style="background-color: green">
-                                                            {{ cell }}
-                                                        </td>
-                                                    {% elif cell < 1 and cell not in sort_focus_areas %}
-                                                        <td class="text-center fw-bold text-light" style="background-color: red">
-                                                            {{ cell }}
-                                                        </td>
-                                                    {% endif %}
-{#                                                {% endif %}#}
+                                                {% if cell == 1  and cell not in sort_focus_areas %}
+                                                    <td class="text-center fw-bold text-light"
+                                                        style="background-color: green">
+                                                        {{ cell }}
+                                                    </td>
+                                                {% elif cell < 1 and cell not in sort_focus_areas %}
+                                                    <td class="text-center fw-bold text-light"
+                                                        style="background-color: red">
+                                                        {{ cell }}
+                                                    </td>
+                                                {% endif %}
                                                 <!--Format first column (Focus area) -->
                                             {% elif forloop.first %}
                                                 <td class="text-center fw-bold">
@@ -180,21 +223,25 @@
                                                 <!--Remove background color format to the last two in table -->
                                                 {% if forloop.parentloop.revcounter <= 2 %}
                                                     {% if cell == 0  and cell not in sort_focus_areas %}
-                                                        <td class="text-center text-light" style="background-color: green">
+                                                        <td class="text-center text-light"
+                                                            style="background-color: green">
                                                             {{ cell }}
                                                         </td>
                                                     {% elif cell > 0 and cell not in sort_focus_areas %}
-                                                        <td class="text-center text-light" style="background-color: red">
+                                                        <td class="text-center text-light"
+                                                            style="background-color: red">
                                                             {{ cell }}
                                                         </td>
                                                     {% endif %}
                                                 {% else %}
                                                     {% if cell == 100  and cell not in sort_focus_areas %}
-                                                        <td class="text-center text-light" style="background-color: green">
+                                                        <td class="text-center text-light"
+                                                            style="background-color: green">
                                                             {{ cell }}
                                                         </td>
                                                     {% elif cell < 100 and cell not in sort_focus_areas %}
-                                                        <td class="text-center text-light" style="background-color: red">
+                                                        <td class="text-center text-light"
+                                                            style="background-color: red">
                                                             {{ cell }}
                                                         </td>
                                                     {% else %}

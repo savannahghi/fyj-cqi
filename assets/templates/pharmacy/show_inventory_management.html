@@ -130,7 +130,7 @@
                             <hr>
                             <h6 class=" fw-bold text-primary text-center">Supply chain KPIs with a target of 100% </h6>
                             <hr>
-                             <!--SUPPLY CHAIN PERFORMANCE KEY-->
+                            <!--SUPPLY CHAIN PERFORMANCE KEY-->
                             <div class="col mt-3">
                                 <table class="table table-striped table-hover" style="font-size: x-small;">
                                     <thead class="thead-dark text-center">
@@ -182,14 +182,15 @@
                                     {% if "Facility mean score" in col %}
                                         {% if facility_mean >= 90 %}
                                             <th class="text-center" scope="col"
-                                                style="background-color: green">{{ col }}</th>
+                                                style="background-color: green; border: 3px solid black">{{ col }}</th>
                                         {% elif facility_mean < 90  and facility_mean >= 80 %}
+                                            <th class="text-center text-primary" scope="col"
+                                                style="background-color: yellow; border: 3px solid black">{{ col }}</th>
+                                        {% elif facility_mean < 80 %}
                                             <th class="text-center" scope="col"
-                                                style="background-color: yellow">{{ col }}</th>
-                                        {% else %}
-                                            <th class="text-center" scope="col"
-                                                style="background-color: red">{{ col }}</th>
+                                                style="background-color: red; border: 3px solid black">{{ col }}</th>
                                         {% endif %}
+
                                     {% else %}
                                         <th class="text-center" scope="col">{{ col }}</th>
                                     {% endif %}

@@ -1129,7 +1129,7 @@ def calculate_supply_chain_kpis(df, expected_description_order,facility_mean):
     last_two_rows = calculate_facility_score(last_two_rows, ideal_target=0)
     a = pd.concat([a, last_two_rows])
     # Multiply all values in the "Facility mean score" column
-    facility_mean = a['Facility mean score'].mean()
+    facility_mean = a['Facility mean score'].mean().astype(float)
 
 
     # # Get the count of values equal to 100 in each row
@@ -1210,7 +1210,7 @@ def show_inventory(request):
     sort_focus_area = None
     selected_facility = None
     quarter_year = None
-    facility_mean = None
+    facility_mean = 0
 
     if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = quarter_form.cleaned_data['quarter']

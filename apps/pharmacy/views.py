@@ -998,7 +998,16 @@ def divide_rows(a, num_index, deno_index):
             division_row[col] = 0
     return division_row
 
+def calculate_facility_score(a,ideal_target=100):
+    # Get the count of values equal to 100 in each row
+    count_100 = (a.iloc[:, 1:] == ideal_target).sum(axis=1)
+    count_nas = (a.iloc[:, 1:] == 9999).sum(axis=1)
 
+    # Calculate the division result
+    division_result = round(count_100 / (a.shape[1] - 1-count_nas), 2)
+    # Add the new column 'Facility score' to the DataFrame
+    a['Facility score'] = division_result
+    return a
 def calculate_supply_chain_kpis(df, expected_description_order):
     # Replace values in the DataFrame
     df = df.replace({"No": 0, "Yes": 100, "N/A": 9999})
@@ -1090,8 +1099,6 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     a = pd.concat([a, df_dar, df_cdrr])
 
     division_row = pd.Series(index=a.columns)
-    print("a::::::::::::::::::::::::::::::::::::::::::::::::::")
-    print(a)
 
     # Iterate over the columns
     for col in a.columns:
@@ -1115,18 +1122,29 @@ def calculate_supply_chain_kpis(df, expected_description_order):
                                          'units issued to SDPs|units issued to other facilities|units expired|'
                                          'quantity supplied|captured in the bin card|ending balance on bin card')]
     a = a[(a['description'] != "DAR") & (a['description'] != "CDRR")]
-
-    # Get the count of values equal to 100 in each row
-    count_100 = (a.iloc[:, 1:] == 100).sum(axis=1)
-
-    # Calculate the division result
-    division_result = round(count_100 / (a.shape[1] - 1), 2)
-
-    # Add the new column 'Facility score' to the DataFrame
-    a['Facility score'] = division_result
-
+    # a.to_csv("supply_chain.csv",index=False)
+    last_two_rows = a[a["description"].str.contains("Inventory variation|DAR vs CDRR Quantity Dispensed")]
+    a = a[~a["description"].str.contains("Inventory variation|DAR vs CDRR Quantity Dispensed")]
+    a = calculate_facility_score(a)
+    last_two_rows = calculate_facility_score(last_two_rows, ideal_target=0)
+    a = pd.concat([a, last_two_rows])
     # Multiply all values in the "Facility score" column
     product = a['Facility score'].prod()
+
+
+    # # Get the count of values equal to 100 in each row
+    # count_100 = (a.iloc[:, 1:] == 100).sum(axis=1)
+    # # handle cell values containing NAs
+    # count_nas = (a.iloc[:, 1:] == 9999).sum(axis=1)
+    #
+    # # Calculate the division result and remove the NAs values
+    # division_result = round(count_100 / (a.shape[1] - 1-count_nas), 2)
+    #
+    # # Add the new column 'Facility score' to the DataFrame
+    # a['Facility score'] = division_result
+    #
+    # # Multiply all values in the "Facility score" column
+    # product = a['Facility score'].prod()
 
     # # Create a new row with the product value
     # new_row = ['Stock Record Validity'] + [0] * (a.shape[1] - 2) + [product]
@@ -1143,7 +1161,8 @@ def calculate_supply_chain_kpis(df, expected_description_order):
                  "3hp": "3HP", "fp": "IMPLANT 1 ROD", "al": "AL 24"})
 
     # Convert 'Facility score' column to numeric and round to 2 decimal places
-    a['Facility score'] = pd.to_numeric(a['Facility score'], errors='coerce').round(2)
+    a[f'Facility score'] = pd.to_numeric(a['Facility score'], errors='coerce').round(2)
+    a=a.rename(columns={"Facility score":f"Facility score: ({round(product,2)*100}%)"})
     a = a.reset_index(drop=True)
 
     sort_focus_area = ['Delivered in full', 'Stock card available',

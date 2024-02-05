@@ -143,33 +143,65 @@
                                     <tr>
                                         <th scope="row">{{ index }}</th>
                                         {% for cell in row %}
+                                            <!--Format last column (Facility score) -->
                                             {% if forloop.last %}
-                                                {% if cell == 1  and cell not in sort_focus_areas %}
-                                                    <td class="text-center fw-bold" style="background-color: green">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% elif cell < 1 and cell not in sort_focus_areas %}
-                                                    <td class="text-center fw-bold" style="background-color: red">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% endif %}
+                                                <!--Remove background color format to the last two in table -->
+{#                                                {% if forloop.parentloop.revcounter <= 2 %}#}
+{#                                                    <td class="text-center">#}
+{#                                                        {{ cell }}#}
+{#                                                    </td>#}
+{#                                                    {% if cell == 0  and cell not in sort_focus_areas %}#}
+{#                                                        <td class="text-center fw-bold" style="background-color: green">#}
+{#                                                            {{ cell }}#}
+{#                                                        </td>#}
+{#                                                    {% elif cell > 0 and cell not in sort_focus_areas %}#}
+{#                                                        <td class="text-center fw-bold" style="background-color: red">#}
+{#                                                            {{ cell }}#}
+{#                                                        </td>#}
+{#                                                    {% endif %}#}
+{#                                                {% else %}#}
+                                                    {% if cell == 1  and cell not in sort_focus_areas %}
+                                                        <td class="text-center fw-bold text-light" style="background-color: green">
+                                                            {{ cell }}
+                                                        </td>
+                                                    {% elif cell < 1 and cell not in sort_focus_areas %}
+                                                        <td class="text-center fw-bold text-light" style="background-color: red">
+                                                            {{ cell }}
+                                                        </td>
+                                                    {% endif %}
+{#                                                {% endif %}#}
+                                                <!--Format first column (Focus area) -->
                                             {% elif forloop.first %}
                                                 <td class="text-center fw-bold">
                                                     {{ cell }}
                                                 </td>
+                                                <!--Format other columns in between -->
                                             {% else %}
-                                                {% if cell == 100  and cell not in sort_focus_areas %}
-                                                    <td class="text-center" style="background-color: green">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% elif cell < 100 and cell not in sort_focus_areas %}
-                                                    <td class="text-center" style="background-color: red">
-                                                        {{ cell }}
-                                                    </td>
+                                                <!--Remove background color format to the last two in table -->
+                                                {% if forloop.parentloop.revcounter <= 2 %}
+                                                    {% if cell == 0  and cell not in sort_focus_areas %}
+                                                        <td class="text-center text-light" style="background-color: green">
+                                                            {{ cell }}
+                                                        </td>
+                                                    {% elif cell > 0 and cell not in sort_focus_areas %}
+                                                        <td class="text-center text-light" style="background-color: red">
+                                                            {{ cell }}
+                                                        </td>
+                                                    {% endif %}
                                                 {% else %}
-                                                    <td class="text-center">
-                                                        {{ cell }}
-                                                    </td>
+                                                    {% if cell == 100  and cell not in sort_focus_areas %}
+                                                        <td class="text-center text-light" style="background-color: green">
+                                                            {{ cell }}
+                                                        </td>
+                                                    {% elif cell < 100 and cell not in sort_focus_areas %}
+                                                        <td class="text-center text-light" style="background-color: red">
+                                                            {{ cell }}
+                                                        </td>
+                                                    {% else %}
+                                                        <td class="text-center text-light">
+                                                            {{ cell }}
+                                                        </td>
+                                                    {% endif %}
                                                 {% endif %}
                                             {% endif %}
                                         {% endfor %}

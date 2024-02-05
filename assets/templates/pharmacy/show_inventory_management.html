@@ -203,15 +203,20 @@
                                         {% for cell in row %}
                                             <!--Format last column (Facility mean score) -->
                                             {% if forloop.last %}
-                                                {% if cell == 1  and cell not in sort_focus_areas %}
+                                                {% if cell >= 90  and cell not in sort_focus_areas %}
                                                     <td class="text-center fw-bold text-light"
                                                         style="background-color: green">
-                                                        {{ cell }}
+                                                        {{ cell }} %
                                                     </td>
-                                                {% elif cell < 1 and cell not in sort_focus_areas %}
+                                                {% elif cell < 90  and cell >= 80 and cell not in sort_focus_areas %}
+                                                    <td class="text-center fw-bold text-primary"
+                                                        style="background-color: yellow">
+                                                        {{ cell }} %
+                                                    </td>
+                                                {% elif cell < 80 and cell not in sort_focus_areas %}
                                                     <td class="text-center fw-bold text-light"
                                                         style="background-color: red">
-                                                        {{ cell }}
+                                                        {{ cell }} %
                                                     </td>
                                                 {% endif %}
                                                 <!--Format first column (Focus area) -->
@@ -228,7 +233,12 @@
                                                             style="background-color: green">
                                                             {{ cell }}
                                                         </td>
-                                                    {% elif cell > 0 and cell not in sort_focus_areas %}
+                                                    {% elif cell > 0 and cell < 9999.9 and cell not in sort_focus_areas %}
+                                                        <td class="text-center text-light"
+                                                            style="background-color: red">
+                                                            {{ cell }}
+                                                        </td>
+                                                    {% elif cell < 0 and cell not in sort_focus_areas %}
                                                         <td class="text-center text-light"
                                                             style="background-color: red">
                                                             {{ cell }}

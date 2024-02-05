@@ -1006,9 +1006,9 @@ def calculate_facility_score(a,ideal_target=100):
     # Calculate the division result
     division_result = round(count_100 / (a.shape[1] - 1-count_nas), 2)
     # Add the new column 'Facility mean score' to the DataFrame
-    a['Facility mean score'] = division_result
+    a['Facility mean score'] = division_result*100
     return a
-def calculate_supply_chain_kpis(df, expected_description_order,facility_mean):
+def calculate_supply_chain_kpis(df, expected_description_order):
     # Replace values in the DataFrame
     df = df.replace({"No": 0, "Yes": 100, "N/A": 9999})
 
@@ -1130,7 +1130,7 @@ def calculate_supply_chain_kpis(df, expected_description_order,facility_mean):
     a = pd.concat([a, last_two_rows])
     # Multiply all values in the "Facility mean score" column
     facility_mean = a['Facility mean score'].mean().astype(float)
-
+    facility_mean=round(facility_mean, 2)
 
     # # Get the count of values equal to 100 in each row
     # count_100 = (a.iloc[:, 1:] == 100).sum(axis=1)
@@ -1162,7 +1162,7 @@ def calculate_supply_chain_kpis(df, expected_description_order,facility_mean):
 
     # Convert 'Facility mean score' column to numeric and round to 2 decimal places
     a[f'Facility mean score'] = pd.to_numeric(a['Facility mean score'], errors='coerce')
-    a=a.rename(columns={"Facility mean score":f"Facility mean score: {round(facility_mean,2)*100} %"})
+    a=a.rename(columns={"Facility mean score":f"Facility mean score: {facility_mean} %"})
     a = a.reset_index(drop=True)
 
     sort_focus_area = ['Delivered in full', 'Stock card available',
@@ -1313,9 +1313,7 @@ def show_inventory(request):
                                       'What quantity was dispensed, based the CDRR, at this facility during the review period?',
                                       'What is the average monthly consumption?']
 
-        supply_chain_target_100, sort_focus_area,facility_mean = calculate_supply_chain_kpis(df,
-                                                                                             expected_description_order,
-                                                                                             facility_mean)
+        supply_chain_target_100, sort_focus_area,facility_mean = calculate_supply_chain_kpis(df,expected_description_order)
     context = {
         # 'form': form,
         'title': 'Inventory Management',

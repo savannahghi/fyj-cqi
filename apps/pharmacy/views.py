@@ -1008,7 +1008,7 @@ def calculate_facility_score(a,ideal_target=100):
     # Add the new column 'Facility mean score' to the DataFrame
     a['Facility mean score'] = division_result
     return a
-def calculate_supply_chain_kpis(df, expected_description_order):
+def calculate_supply_chain_kpis(df, expected_description_order,facility_mean):
     # Replace values in the DataFrame
     df = df.replace({"No": 0, "Yes": 100, "N/A": 9999})
 
@@ -1210,6 +1210,7 @@ def show_inventory(request):
     sort_focus_area = None
     selected_facility = None
     quarter_year = None
+    facility_mean = None
 
     if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = quarter_form.cleaned_data['quarter']
@@ -1312,7 +1313,9 @@ def show_inventory(request):
                                       'What quantity was dispensed, based the CDRR, at this facility during the review period?',
                                       'What is the average monthly consumption?']
 
-        supply_chain_target_100, sort_focus_area,facility_mean = calculate_supply_chain_kpis(df, expected_description_order)
+        supply_chain_target_100, sort_focus_area,facility_mean = calculate_supply_chain_kpis(df,
+                                                                                             expected_description_order,
+                                                                                             facility_mean)
     context = {
         # 'form': form,
         'title': 'Inventory Management',

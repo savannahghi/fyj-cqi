@@ -1,8 +1,11 @@
 from functools import wraps
+
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.shortcuts import redirect
 
 from functools import wraps
 from django.shortcuts import redirect
+from django.urls import reverse_lazy
 
 
 def group_required(group_names):
@@ -33,3 +36,12 @@ def group_required(group_names):
         return wrapper
 
     return decorator
+
+class GroupRequiredMixin(UserPassesTestMixin):
+    required_groups = []  # Define the required groups for your view class
+    def test_func(self):
+        user = self.request.user
+        return user.is_authenticated and (user.is_superuser or user.groups.filter(name__in=self.required_groups).exists())
+
+    def handle_no_permission(self):
+        return redirect(reverse_lazy('login'))

@@ -60,6 +60,7 @@ THIRD_PARTY_APPS = [
     "mathfilters",
     "django_select2",
     'django_extensions',
+    'ckeditor',
     # 'debug_toolbar',
     # 'silk',
 
@@ -78,6 +79,7 @@ LOCAL_APPS = [
     "apps.labpulse",
     "apps.fyj_mentorship",
     "apps.wash_dqa",
+    "apps.repo",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -229,8 +231,10 @@ SESSION_COOKIE_AGE = 3600  # Set the session expiration to 1 hour (in seconds)
 # DEBUG CONFIG
 ###############################
 DEBUG_TOOLBAR_CONFIG = {
-        'SHOW_TOOLBAR_CALLBACK': lambda request: DEBUG,
-    }
+    'SHOW_TOOLBAR_CALLBACK': lambda request: DEBUG,
+}
 # SILKY_META = True
 # SILKY_PYTHON_PROFILER = True
 # SILKY_PYTHON_PROFILER_BINARY = True
+
+CKEDITOR_BASEPATH = "/static/ckeditor/ckeditor/"

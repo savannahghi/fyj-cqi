@@ -35,6 +35,7 @@ urlpatterns = [
     path('lab-pulse/', include('apps.labpulse.urls')),
     path('fyj-mentorship/', include('apps.fyj_mentorship.urls')),
     path('wash-dqa/', include('apps.wash_dqa.urls')),
+    path('repo/', include('apps.repo.urls')),
     path('select2/', include(django_select2_urls)),
 ]
 

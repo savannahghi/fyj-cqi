@@ -1,0 +1,125 @@
+{% extends 'repo/index.html' %}
+{% load crispy_forms_filters %}
+{% load remove_underscores %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
+        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+            <div class="col-md-12 text-sm-right">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <div class="row">
+                                <div class="row">
+                                    <span style="font-size: 17px"
+                                          class="badge alert-warning col-md-2">Title </span>
+                                    <small class="col-md-10 mt-2">{{ manuscript.title|safe }}</small>
+                                </div>
+                                <div class="row small">
+                                    {% if manuscript.keywords %}
+                                        <span style="font-size: 17px"
+                                              class="badge alert-warning col-md-2 mt-2">Keywords </span>
+                                        <small class="text-muted col-md-10 mt-2">{{ manuscript.keywords }}</small>
+                                    {% endif %}
+                                    <span style="font-size: 17px"
+                                          class="badge alert-warning col-md-2  mt-2">Authors</span>
+                                    <small class="text-muted col-md-10 mt-2">
+                                        {% for author in manuscript.authors.all %}
+                                            {{ author }}
+                                        {% endfor %}
+                                    </small>
+                                    {% if manuscript.journal %}
+                                        <span style="font-size: 17px"
+                                              class="badge alert-warning col-md-2 mt-2">Journal</span>
+                                        <div class="col-md-10 mt-2">
+                                            <small class="text-muted mt-1">{{ manuscript.journal|title }}</small>
+                                        </div>
+                                    {% endif %}
+                                    {% if manuscript.conference %}
+                                        <span style="font-size: 17px"
+                                              class="badge alert-warning col-md-2 mt-2">Conference</span>
+                                        <div class="col-md-10 mt-2">
+                                            <small class="text-muted mt-1">{{ manuscript.conference|title }} :</small>
+                                            <small class="text-muted mt-1">{{ manuscript.venue|title }}</small>
+                                        </div>
+                                    {% endif %}
+                                    {% if manuscript.categories %}
+                                        <span style="font-size: 17px"
+                                              class="badge alert-warning col-md-2 mt-2">Category type</span>
+                                        <div class="col-md-3 mt-2">
+                                            <small class="text-muted mt-1">{{ manuscript.categories|title }}</small>
+                                        </div>
+                                    {% endif %}
+                                    <div class="col-md-5 mt-2">
+                                        {% if manuscript.pdf_file %}
+                                            <a href="{{ manuscript.pdf_file.url }}">
+                                                <button type="button"
+                                                        class="btn btn-outline-success btn-floating"
+                                                        data-mdb-ripple-color="dark">
+                                                    Download ({{ manuscript.number_of_pages }} pages File
+                                                    Size: {{ manuscript.file_size|format_file_size }})<i
+                                                        class="fas fa-download"></i>
+                                                </button>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-1">
+                                        <a href="{% url 'manuscript_update' manuscript.id %}">
+                                            <button type="button"
+                                                    class="btn btn-outline-warning btn-floating mr-2 mt-2"
+                                                    data-mdb-ripple-color="dark">
+                                                EDIT
+                                            </button>
+                                        </a>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <a href="{% url 'manuscript_delete' manuscript.id %}">
+                                            {% if user.is_superuser or resource.date_modified > time_to_hide_button %}
+                                                <button type="button"
+                                                        class="btn btn-outline-danger btn-floating mr-2 mt-2"
+                                                        data-mdb-ripple-color="dark">
+                                                    DELETE
+                                                </button>
+                                            {% endif %}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </h6>
+                        <hr>
+                        <div class="col-md-12 alert alert-primary text-center">
+                            <h4>ABSTRACT</h4>
+                        </div>
+                        {{ manuscript.abstract|safe }}
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <small class="text-muted">Uploaded on {{ manuscript.date_modified|date:"M d, Y" }}
+                            ({{ manuscript.date_modified|timesince }}) ago
+                        </small>
+
+                        {% if manuscript.citations %}
+                            <small class="text-muted">Citations so far : {{ manuscript.citations }}</small>
+                        {% endif %}
+                        {% if manuscript.data_started %}
+                            <small class="text-muted">Date Writing Commenced
+                                : {{ manuscript.data_started|date:"M d, Y" }}</small>
+                        {% endif %}
+                        {% if manuscript.data_submitted %}
+                            <small class="text-muted">Date Submitted
+                                : {{ manuscript.data_submitted|date:"M d, Y" }}</small>
+                        {% endif %}
+                        {% if manuscript.publication_date %}
+                            <small class="text-muted">Publication Date
+                                : {{ manuscript.publication_date|date:"M d, Y" }}
+                            </small>
+                        {% endif %}
+                        <small class="text-muted">Uploaded by : {{ manuscript.created_by.first_name|title }}
+                            {{ manuscript.created_by.last_name|title }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}

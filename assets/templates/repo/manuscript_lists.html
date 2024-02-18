@@ -1,0 +1,207 @@
+{% extends 'repo/index.html' %}
+{% load crispy_forms_filters %}
+{% load remove_underscores %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mt-2">
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h6>UON FYJ Research & Evaluation Hub</h6>
+                {% if perms.repo.add_manuscript %}
+                    <a href="{% url 'create_manuscript' %}" class="btn btn-success" role="button">ADD RESOURCES</a>
+                {% endif %}
+            </div>
+            <div>
+                <p>Welcome to our research and monitoring & evaluation (M&E) resources hub!</p>
+                <p>Explore a curated collection of resources encompassing research papers, evaluation reports, and case
+                    studies. Our platform is dedicated to providing valuable insights into the realms of research and
+                    M&E, offering a diverse range of materials to aid your understanding and implementation of effective
+                    methodologies.</p>
+                <p>Research is the foundation of knowledge, driving innovation and progress. Our repository features
+                    thought-provoking research papers that delve into various domains, contributing to the broader
+                    academic discourse. Additionally, our M&E reports showcase valuable insights derived from systematic
+                    evaluations, aiding in evidence-based decision-making.</p>
+                <p>At the intersection of research and M&E lies the opportunity to enhance organizational effectiveness.
+                    Whether you are an academic, researcher, or practitioner in the field, we aim to provide resources
+                    that empower you to make informed decisions, contribute to best practices, and drive positive
+                    change.</p>
+                <p>Thank you for joining us on this intellectual journey. We hope you find our platform a valuable
+                    resource for staying abreast of the latest research trends and gaining insights into effective
+                    monitoring and evaluation practices.</p>
+            </div>
+        </div>
+        <div class="container-fluid py-3 bg-light">
+            <div class="col-md-12 alert alert-primary text-center">
+                <h4>Customize your search or filter below</h4>
+            </div>
+            <form class="row g-3" id="form_filter" autocomplete="off">
+                <div class="col-md-4">
+                    {{ filter_form.form.title_contains|as_crispy_field }}
+                </div>
+                <div class="col-md-4">
+                    {{ filter_form.form.abstract_contains|as_crispy_field }}
+                </div>
+                <div class="col-md-4">
+                    {{ filter_form.form.keywords_contains|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.status_choice|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.acceptance_status_choice|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.start_date|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.end_date|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.categories_choice|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.journal_choice|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.venue_choice|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.conference_choice|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.citations_lte|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.citations_gte|as_crispy_field }}
+                </div>
+
+                <div class="col-md-2">
+                    {{ filter_form.form.data_submitted_from|as_crispy_field }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.form.data_submitted_to|as_crispy_field }}
+                </div>
+                <div>
+                    <p>Choose the Author / Co-Authors:</p>
+                    <div class="row">
+                        {% for author in filter_form.form.authors %}
+                            <div class="col-md-2 form-check mt-1">
+                                {{ author }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-1 mt-4 pt-2">
+                    <button class="btn btn-outline-primary" type="submit">search</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
+            {% for resource in all_manuscripts %}
+                <div class="col-md-12 text-sm-right">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <div class="row d-flex justify-content-between">
+                                    <div>
+                                        <a href="{% url 'manuscript_detail' resource.id %}">
+                                            {{ forloop.counter }}. {{ resource.title }}
+                                        </a>
+                                    </div>
+                                    <div class="row">
+                                        {% if resource.keywords %}
+                                            <div class="small mt-2">
+                                                <small class="text-muted">Keywords
+                                                    : {{ resource.keywords }}</small>
+                                            </div>
+                                        {% endif %}
+                                        <div class="small mt-2">
+                                            <small class="text-muted">Authors : </small>
+                                            {% for author in resource.authors.all %}
+                                                <small class="text-muted">{{ author }}</small>
+                                            {% endfor %}
+                                        </div>
+                                        {% if resource.journal %}
+                                            <div class="row justify-content-md-between small">
+                                                <div class="col-md-6 mt-1">
+                                                    <small class="text-muted">Journal
+                                                        : {{ resource.journal }}</small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <small class="text-muted">Category type
+                                                        : {{ resource.categories }}</small>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    {% if resource.pdf_file %}
+                                        <a href="{{ resource.pdf_file.url }}">
+                                            <button type="button" class="btn btn-outline-success btn-floating ml-2"
+                                                    data-mdb-ripple-color="dark">
+                                                Download ({{ resource.number_of_pages }} pages File
+                                                Size: {{ resource.file_size|format_file_size }})<i
+                                                    class="fas fa-download"></i>
+                                            </button>
+                                        </a>
+                                    {% endif %}
+                                    {% if user.id == resource.uploaded_by.id or user.is_superuser %}
+                                        <a href="{% url 'manuscript_update' resource.id %}">
+                                            <button type="button" class="btn btn-outline-warning btn-floating mr-2"
+                                                    data-mdb-ripple-color="dark">
+                                                EDIT
+                                            </button>
+                                        </a>
+                                        <a href="{% url 'manuscript_delete' resource.id %}">
+                                            {% if user.is_superuser or resource.date_modified > time_to_hide_button %}
+                                                <button type="button"
+                                                        class="btn btn-outline-danger btn-floating mr-2"
+                                                        data-mdb-ripple-color="dark">
+                                                    DELETE
+                                                </button>
+                                            {% endif %}
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </h6>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between">
+                            <small class="text-muted">Uploaded on {{ resource.date_modified|date:"M d, Y" }}
+                                ({{ resource.date_modified|timesince }}) ago
+                            </small>
+
+                            {% if resource.citations %}
+                                <small class="text-muted">Citations so far : {{ resource.citations }}</small>
+                            {% endif %}
+                            {% if resource.data_started %}
+                                <small class="text-muted">Date Writing Commenced
+                                    : {{ resource.data_started|date:"M d, Y" }}</small>
+                            {% endif %}
+                            {% if resource.data_submitted %}
+                                <small class="text-muted">Date Submitted
+                                    : {{ resource.data_submitted|date:"M d, Y" }}</small>
+                            {% endif %}
+                            {% if resource.publication_date %}
+                                <small class="text-muted">Publication Date
+                                    : {{ resource.publication_date|date:"M d, Y" }}
+                                </small>
+                            {% endif %}
+                            <small class="text-muted">Uploaded by : {{ resource.created_by.first_name|title }}
+                                {{ resource.created_by.last_name|title }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <!-- Display the pagination links -->
+        {% block pagination %}
+            {% include "partial_html/pagination.html" %}
+        {% endblock %}
+
+    </main>
+{% endblock %}

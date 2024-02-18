@@ -262,6 +262,8 @@
         $("#id_due_complete_by").datepicker();
         $("#id_collection_date_gte").datepicker();
         $("#id_collection_date_lte").datepicker();
+        $("#id_data_submitted_from").datepicker();
+        $("#id_data_submitted_to").datepicker();
 
     });
 </script>
@@ -541,6 +543,288 @@
             toggleFieldsBasedOnSequenceSummary();
         });
     });
+</script>
+
+
+<script>
+    // Initialize CKEditor on the textarea with id "id_abstract"
+    CKEDITOR.replace('id_abstract');
+</script>
+
+<script>
+    $(window).on('load', function() {
+    updateFormFields();
+});
+  $(document).ready(function () {
+
+    // Function to enable or disable fields based on author selection, status, and acceptance status
+    function updateFormFields() {
+        // List of fields to disable or enable for author selection
+        var authorFieldsToDisable = ["#id_data_submitted", "#id_acceptance_status", "#id_publication_date",
+            "#id_journal", "#id_citations", "#id_data_started", "#id_status", "#id_categories", "#id_title",
+            {#"#id_abstract",#}
+            {#"#cke_id_abstract",#}
+            "#id_keywords","#id_submission_type","#id_conference","#id_venue"];
+
+        // Check if any author checkbox is checked
+        var anyAuthorSelected = $('input[name="authors"]:checked').length > 0;
+
+        var statusAndDatesFieldsToDisable = ["#id_data_submitted",
+        ];
+
+        var selectedStatus = $("#id_status").val();
+        var publicationDate = $("#id_publication_date"); // Fix: use the jQuery object
+        var acceptanceStatus = $("#id_acceptance_status").val();
+        var submittedDate = $("#id_data_submitted").val();
+        var submissionType = $("#id_submission_type").val();
+
+        // Enable or disable fields based on author selection
+        $(authorFieldsToDisable.join(", ")).prop("disabled", !anyAuthorSelected);
+
+        // Enable all fields first
+        $(statusAndDatesFieldsToDisable.join(", ")).prop("disabled", false);
+
+        // Disable specific fields based on the selected status
+        if (selectedStatus === "draft" || !anyAuthorSelected) {
+            $(statusAndDatesFieldsToDisable.join(", ")).prop("disabled", true);
+         }
+
+        // Disable citations if there is no publication date
+        if (!publicationDate.val()) {
+            $("#id_citations").prop("disabled", true);
+        }
+
+        // Disable acceptance status, publication date, and journal if there is no submitted date
+        if (!submittedDate) {
+            $("#id_submission_type").prop("disabled", true);
+        }
+
+        if (submissionType === "journal" || !anyAuthorSelected) {
+            $("#id_conference").prop("disabled", true);
+            $("#id_venue").prop("disabled", true);
+            // Optionally, clear the value in the conference field
+            $("#id_conference").val('');
+            $("#id_venue").val('');
+        } else if (submissionType === "conference" || !anyAuthorSelected) {
+            $("#id_journal").prop("disabled", true);
+            // Optionally, clear the value in the journal field
+            $("#id_journal").val('').trigger('change');
+        } else {
+            // Enable both fields if submissionType is not selected and clear values
+            $("#id_conference, #id_journal,#id_venue").prop("disabled", true).val('');
+            $("#id_journal").val('').trigger('change');
+            $("#id_conference").val('');
+        }
+
+        // Enable or disable publication date based on acceptance status
+        publicationDate.prop("disabled", acceptanceStatus !== "yes");
+    }
+
+    // Initial update based on author selection, status, and acceptance status
+    updateFormFields();
+
+    // Update fields whenever author selection, status, acceptance status, publication date, or submitted date changes
+    $('input[name="authors"], #id_status, #id_acceptance_status, #id_publication_date, #id_data_submitted,#id_submission_type,#id_conference').change(function () {
+        updateFormFields();
+    });
+});
+
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Retrieve the stored authors from local storage
+    var storedAuthors = localStorage.getItem("selectedAuthors");
+    var selectedAuthors = storedAuthors ? JSON.parse(storedAuthors) : [];
+
+    // Check if the form is for updating
+    var isUpdating = document.getElementById("myForm_update") !== null;
+    // Check if the form has ID "form_filter"
+    var isFilterForm = document.getElementById("form_filter") !== null;
+
+    if (!isUpdating && !isFilterForm ) {
+      // Query the checkboxes once and store the result for reuse
+      var authorCheckboxes = document.querySelectorAll('input[name="authors"]');
+
+      // Loop through the checkboxes and set the 'checked' attribute based on the stored data
+      authorCheckboxes.forEach(function(checkbox) {
+        var authorId = checkbox.value;
+        checkbox.checked = selectedAuthors.includes(authorId);
+      });
+
+      // Add event listener for change event on checkboxes
+      authorCheckboxes.forEach(function(checkbox) {
+        checkbox.addEventListener("change", function() {
+          // Update the selectedAuthors array based on the checkbox state
+          var authorId = checkbox.value;
+          if (checkbox.checked) {
+            selectedAuthors.push(authorId);
+          } else {
+            selectedAuthors = selectedAuthors.filter(function(id) {
+              return id !== authorId;
+            });
+          }
+
+          // Save the updated selectedAuthors array to local storage
+          localStorage.setItem("selectedAuthors", JSON.stringify(selectedAuthors));
+        });
+      });
+    } // end if not update form or filtering form
+  });
+</script>
+
+<script>
+    $(document).ready(function () {
+        // Function to save form data in localStorage
+        function saveFormData() {
+            var formData = {
+                title: $("#id_title").val(),
+                authors: $("#id_authors").val(),
+                publication_date: $("#id_publication_date").val(),
+                keywords: $("#id_keywords").val(),
+                pdf_file: $("#id_pdf_file").val(),
+                status: $("#id_status").val(),
+                acceptance_status: $("#id_acceptance_status").val(),
+                citations: $("#id_citations").val(),
+                data_started: $("#id_data_started").val(),
+                data_submitted: $("#id_data_submitted").val(),
+                {#abstract: $("#id_abstract").val(),#}
+                abstract: CKEDITOR.instances.id_abstract.getData()
+            };
+
+            // Convert the formData object to JSON and store it in localStorage
+            localStorage.setItem("formData", JSON.stringify(formData));
+        }
+
+        // Function to load form data from localStorage
+        function loadFormData() {
+            // Get the stored formData from localStorage
+            var storedData = localStorage.getItem("formData");
+
+            // If storedData exists, parse it from JSON and populate the form fields
+            if (storedData) {
+                var formData = JSON.parse(storedData);
+                $("#id_title").val(formData.title);
+                $("#id_authors").val(formData.authors);
+                $("#id_publication_date").val(formData.publication_date);
+                $("#id_keywords").val(formData.keywords);
+                $("#id_pdf_file").val(formData.pdf_file);
+                $("#id_status").val(formData.status);
+                $("#id_acceptance_status").val(formData.acceptance_status);
+                $("#id_citations").val(formData.citations);
+                $("#id_data_started").val(formData.data_started);
+                $("#id_data_submitted").val(formData.data_submitted);
+                $("#id_abstract").val(formData.abstract);
+            }
+        }
+        // Check if the form is for updating
+        var isUpdateForm = document.getElementById("myForm_update") !== null;
+
+        if (!isUpdateForm) {
+            // Initial loading of form data
+            loadFormData();
+
+            // Save form data whenever there's a change in form fields
+            $("form :input").on("change", function () {
+                saveFormData();
+            });
+
+            // Initialize Select2 for both fields
+            $('#id_journal, #id_categories').select2();
+
+            // Retrieve the values from local storage on page load for each field
+            var selectedJournal = localStorage.getItem('selectedJournal');
+            if (selectedJournal) {
+                $('#id_journal').val(selectedJournal).trigger('change');
+            }
+
+            var selectedCategory = localStorage.getItem('selectedCategory');
+            if (selectedCategory) {
+                $('#id_categories').val(selectedCategory).trigger('change');
+            }
+
+            // Add event listener for change event for the journal field
+            $('#id_journal').on('change', function () {
+                var selectedValue = $(this).val();
+                localStorage.setItem('selectedJournal', selectedValue);
+            });
+
+            // Add event listener for change event for the categories field
+            $('#id_categories').on('change', function () {
+                var selectedValue = $(this).val();
+                localStorage.setItem('selectedCategory', selectedValue);
+            });
+              }
+            // Function to check if a redirection occurred
+            function checkRedirection() {
+            var currentUrl = window.location.href;
+            var previousUrl = localStorage.getItem("previousUrl");
+
+            if (previousUrl && previousUrl !== currentUrl) {
+                // Clear localStorage if a redirection occurred
+                localStorage.clear();
+            }
+
+            // Update the previousUrl in localStorage
+            localStorage.setItem("previousUrl", currentUrl);
+        }
+    });
+</script>
+
+
+<script>
+    function resetForm() {
+        // Ask the user for confirmation
+        var confirmReset = confirm("Are you sure you want to reset the form? Any unsaved changes will be lost.");
+
+        if (confirmReset) {
+            // Remove specific items from local storage
+            localStorage.removeItem("formData");
+            localStorage.removeItem("selectedJournal");
+            localStorage.removeItem("selectedCategory");
+            localStorage.removeItem("selectedAuthors");
+
+            // Optionally, you can reset the form fields to their initial state
+            document.getElementById("myForm").reset();
+
+            // Reload the form
+            location.reload();
+        }
+    }
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var statusField = document.querySelector('#id_status');
+    var journalField = document.querySelector('#id_journal');
+    var submitButton = document.querySelector('#submit-button');
+    var journalError = document.querySelector('#journal-error');
+
+    // Function to toggle the 'required' attribute of the journal field based on the status field value
+    function toggleJournalRequired() {
+        if (statusField.value !== 'draft') {
+            journalField.required = true;
+        } else {
+            journalField.required = false;
+            journalError.style.display = 'none';  // Hide error message if not required
+        }
+    }
+
+    // Initial call to set 'required' attribute based on initial status field value
+    toggleJournalRequired();
+
+    // Event listener to toggle 'required' attribute when status field value changes
+    statusField.addEventListener('change', toggleJournalRequired);
+
+    // Event listener to check validation on form submission
+    submitButton.addEventListener('click', function (event) {
+        if (journalField.required && !journalField.value.trim()) {
+            journalError.style.display = 'block';
+            event.preventDefault();  // Prevent form submission
+        }
+    });
+});
 </script>
 
 

@@ -1,0 +1,274 @@
+{% extends 'repo/index.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info col-12" role="alert">
+                            <h5 class="d-flex justify-content-evenly">{{ message }}</h5>
+                        </div>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <div class="container-fluid py-5">
+                <h1 class="display-6 fw-bold text-primary">{{ title }} </h1>
+                <form method="POST" class="mt-5" enctype='multipart/form-data'>
+                    {% csrf_token %}
+                    <div class="row">
+                        {% for field in form %}
+                            <div class="col-md-6 mt-4 pt-2">
+                                {{ field|as_crispy_field }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <input class="btn btn-success mt-3" type="submit" value="Submit">
+                </form>
+                <div>
+                    {% if title == "Add Author" %}
+                        <table class="table table-striped table-hover" style="font-size: small;">
+                            <thead class="thead-dark">
+                            <tr>
+                                <th></th>
+                                <th style="font-size: x-small"> First Name</th>
+                                <th style="font-size: x-small"> Last Name</th>
+                                {% for testing_lab in all_authors %}
+                                    {% if user.is_authenticated %}
+                                        {% if forloop.counter == 1 %}
+                                            {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                                {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                    <th style="font-size: x-small"></th>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for author in all_authors %}
+                                <tr>
+                                    <td> {{ forloop.counter }} </td>
+                                    <td>
+                                        {{ author.first_name|upper }}
+                                    </td>
+                                    <td>
+                                        {{ author.last_name }}
+                                    </td>
+                                    {% if user.is_authenticated %}
+                                        {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                            {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                <td>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <a href="{% url 'update-author' author.id %}"
+                                                               class="btn btn-info glow-button" role="button"><i
+                                                                    class="fas fa-edit"> Edit </i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif title == "Add Category" %}
+                        <table class="table table-striped table-hover" style="font-size: small;">
+                            <thead class="thead-dark">
+                            <tr>
+                                <th></th>
+                                <th style="font-size: x-small"> Category Name</th>
+                                <th style="font-size: x-small"></th>
+                                {% for testing_lab in all_authors %}
+                                    {% if user.is_authenticated %}
+                                        {% if forloop.counter == 1 %}
+                                            {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                                {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                    <th style="font-size: x-small"></th>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for category in all_categories %}
+                                <tr>
+                                    <td> {{ forloop.counter }} </td>
+                                    <td>
+                                        {{ category.name|upper }}
+                                    </td>
+                                    {% if user.is_authenticated %}
+                                        {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                            {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                <td>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <a href="{% url "update-category" category.id %}"
+                                                               class="btn btn-info glow-button" role="button"><i
+                                                                    class="fas fa-edit"> Edit </i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif title == "Add Journal" %}
+                        <table class="table table-striped table-hover" style="font-size: small;">
+                            <thead class="thead-dark">
+                            <tr>
+                                <th></th>
+                                <th style="font-size: x-small"> Journal Name</th>
+                                {#                                <th style="font-size: x-small"> Last Name</th>#}
+                                {% for testing_lab in all_journals %}
+                                    {% if user.is_authenticated %}
+                                        {% if forloop.counter == 1 %}
+                                            {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                                {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                    <th style="font-size: x-small"></th>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for journal in all_journals %}
+                                <tr>
+                                    <td> {{ forloop.counter }} </td>
+                                    <td>
+                                        {{ journal.name|upper }}
+                                    </td>
+                                    {% if user.is_authenticated %}
+                                        {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                            {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                <td>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <a href="{% url "update-journal" journal.id %}"
+                                                               class="btn btn-info glow-button" role="button"><i
+                                                                    class="fas fa-edit"> Edit </i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif title == "Add Conference" %}
+                        <table class="table table-striped table-hover" style="font-size: small;">
+                            <thead class="thead-dark">
+                            <tr>
+                                <th></th>
+                                <th style="font-size: x-small"> Conference Name</th>
+                                {% for testing_lab in all_journals %}
+                                    {% if user.is_authenticated %}
+                                        {% if forloop.counter == 1 %}
+                                            {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                                {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                    <th style="font-size: x-small"></th>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for journal in all_journals %}
+                                <tr>
+                                    <td> {{ forloop.counter }} </td>
+                                    <td>
+                                        {{ journal.name|upper }}
+                                    </td>
+                                    {% if user.is_authenticated %}
+                                        {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                            {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                <td>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <a href="{% url "update-conference" journal.id %}"
+                                                               class="btn btn-info glow-button" role="button"><i
+                                                                    class="fas fa-edit"> Edit </i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif title == "Add Venue" %}
+                        <table class="table table-striped table-hover" style="font-size: small;">
+                            <thead class="thead-dark">
+                            <tr>
+                                <th></th>
+                                <th style="font-size: x-small"> Venue Name</th>
+                                {% for testing_lab in all_journals %}
+                                    {% if user.is_authenticated %}
+                                        {% if forloop.counter == 1 %}
+                                            {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                                {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                    <th style="font-size: x-small"></th>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for journal in all_journals %}
+                                <tr>
+                                    <td> {{ forloop.counter }} </td>
+                                    <td>
+                                        {{ journal.name|upper }}
+                                    </td>
+                                    {% if user.is_authenticated %}
+                                        {% if user.id == testing_lab.created_by.id or request.user.is_superuser %}
+                                            {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                <td>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <a href="{% url "update-venue" journal.id %}"
+                                                               class="btn btn-info glow-button" role="button"><i
+                                                                    class="fas fa-edit"> Edit </i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}

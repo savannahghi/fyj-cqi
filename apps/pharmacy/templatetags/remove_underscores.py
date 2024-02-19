@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django import template
 from django.utils import timezone
 
@@ -24,3 +26,17 @@ def days_since(value):
 def within_current_month(value):
     now = timezone.now()
     return value.year == now.year and value.month == now.month
+
+@register.filter
+def format_file_size(value):
+    try:
+        size = int(value)
+    except (TypeError, ValueError):
+        return value
+
+    if size < 1024:
+        return f"{size} B"
+    elif 1024 <= size < 1024 * 1024:
+        return f"{size / 1024:.2f} KB"
+    else:
+        return f"{size / (1024 * 1024):.2f} MB"

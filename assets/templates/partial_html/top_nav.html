@@ -42,6 +42,11 @@
         <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'load_data_pharmacy' %}">Data Analysis Center</a>
         </div>
+        <div class="navbar-nav">
+            {% if perms.repo.view_manuscript %}
+                <a class="nav-link px-3" href="{% url 'manuscript_list' %}">Research Repo</a>
+            {% endif %}
+        </div>
     {% endif %}
     <div class="navbar-nav">
         {% if perms.labpulse.view_add_cd4_count %}

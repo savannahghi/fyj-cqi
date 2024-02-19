@@ -20,6 +20,10 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/css/select2.min.css" rel="stylesheet"/>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/smoothness/jquery-ui.css">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Fetch CKEditor config.js from static files -->
+    <script src="{% static 'ckeditor/ckeditor/config.js' %}" type="text/javascript"></script>
+    <script type="text/javascript" src="{% static "ckeditor/ckeditor-init.js" %}"></script>
+    <script type="text/javascript" src="{% static "ckeditor/ckeditor/ckeditor.js" %}"></script>
     <style>
         .bd-placeholder-img {
             font-size: 1.125rem;

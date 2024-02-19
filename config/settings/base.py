@@ -61,6 +61,7 @@ THIRD_PARTY_APPS = [
     "django_select2",
     'django_extensions',
     'ckeditor',
+    'ckeditor_uploader',
     # 'debug_toolbar',
     # 'silk',
 
@@ -238,3 +239,10 @@ DEBUG_TOOLBAR_CONFIG = {
 # SILKY_PYTHON_PROFILER_BINARY = True
 
 CKEDITOR_BASEPATH = "/static/ckeditor/ckeditor/"
+CKEDITOR_UPLOAD_PATH = "uploads/"
+CKEDITOR_CONFIGS={
+    'default':{
+        'toolbar': 'full',
+        'removePlugins':'exportpdf',
+    },
+}

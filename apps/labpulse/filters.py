@@ -89,7 +89,7 @@ class BiochemistryResultFilter(django_filters.FilterSet):
     sample_id = CharFilter(field_name="sample_id", lookup_expr="icontains", label='Sample Id.')
 
     full_name = django_filters.ChoiceFilter(choices=[], label='Test')
-    results_interpretation = django_filters.ChoiceFilter(choices=[], label='Test Interpretation (Limit range)')
+    results_interpretation = django_filters.ChoiceFilter(choices=[], label='Test Interpretation')
 
     result_gte = NumberFilter(field_name="result", lookup_expr="gte", label='Test result >=')
     result_lte = NumberFilter(field_name="result", lookup_expr="lte", label='Test result <=')

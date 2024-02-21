@@ -74,9 +74,9 @@
                             <div class="col-12 col-md-6 col-lg-2">
                                 {{ my_filters.form.patient_id|as_crispy_field }}
                             </div>
-                            <div class="col-12 col-md-6 col-lg-2">
-                                {{ my_filters.form.sample_id|as_crispy_field }}
-                            </div>
+{#                            <div class="col-12 col-md-6 col-lg-2">#}
+{#                                {{ my_filters.form.sample_id|as_crispy_field }}#}
+{#                            </div>#}
                             <div class="col-12 col-md-6 col-lg-2">
                                 {{ my_filters.form.mfl_code|as_crispy_field }}
                             </div>
@@ -155,6 +155,20 @@
                                     </div>
                                     <hr class="mt-3">
                                 {% endif %}
+                            {% if tests_summary_fig is not None %}
+                                    <div class="col">
+                                        {{ age_distribution_fig|safe }}
+                                    </div>
+                                    <hr class="mt-3">
+                                {% endif %}
+                            {% if sex_fig is not None %}
+                            {% for key, trend_fig in sex_fig.items %}
+                                <div class="col">
+                                    {{ trend_fig|safe }}
+                                </div>
+                                <hr class="mt-3">
+                            {% endfor %}
+                        {% endif %}
                             </div>
                         </div>
                         {% if weekly_trend_fig is not None %}
@@ -190,15 +204,16 @@
                             <table class="table table-striped table-hover" style="font-size: small;">
                                 <thead class="thead-dark">
                                 <tr>
-                                    <th style="font-size: x-small"> Sample Id.</th>
+{#                                    <th style="font-size: x-small"> Sample Id.</th>#}
                                     <th style="font-size: x-small"> Patient Unique No.</th>
+                                    <th style="font-size: x-small"> Age.</th>
+                                    <th style="font-size: x-small"> Sex </th>
                                     <th style="font-size: x-small"> Test</th>
                                     <th style="font-size: x-small"> Test Full Name</th>
                                     <th style="font-size: x-small"> Results</th>
                                     <th class="text-center" style="font-size: x-small">Low Limit</th>
                                     <th style="font-size: x-small"> High Limit</th>
                                     <th style="font-size: x-small"> Units</th>
-                                    <th style="font-size: x-small"> Reference Class</th>
                                     <th style="font-size: x-small"> Collection date</th>
                                     <th style="font-size: x-small"> Result time</th>
                                     <th style="font-size: x-small"> Upload date</th>
@@ -207,13 +222,18 @@
                                 <tbody>
                                 {% for result in biochemistry_qs %}
                                     <tr>
-                                        <td> {{ result.sample_id }} </td>
                                         {% if result.result >= result.high_limit %}
                                             <td class="fw-bold text-danger"> {{ result.patient_id }} </td>
+                                            <td class="fw-bold text-danger"> {{ result.age }} </td>
+                                            <td class="fw-bold text-danger"> {{ result.reference_class }} </td>
                                         {% elif result.result <= result.low_limit %}
                                             <td class="fw-bold text-warning"> {{ result.patient_id }} </td>
+                                            <td class="fw-bold text-warning"> {{ result.age }} </td>
+                                            <td class="fw-bold text-warning"> {{ result.reference_class }} </td>
                                         {% else %}
                                             <td class="fw-bold"> {{ result.patient_id }} </td>
+                                            <td class="fw-bold"> {{ result.age }} </td>
+                                            <td class="fw-bold"> {{ result.reference_class }} </td>
                                         {% endif %}
                                         <td> {{ result.test }} </td>
                                         <td> {{ result.full_name }} </td>
@@ -227,7 +247,7 @@
                                         <td> {{ result.low_limit }} </td>
                                         <td> {{ result.high_limit }} </td>
                                         <td> {{ result.units }} </td>
-                                        <td> {{ result.reference_class }} </td>
+
                                         <td> {{ result.collection_date|date:"Y-m-d" }} </td>
                                         <td> {{ result.result_time|date:"Y-m-d" }} </td>
                                         <td> {{ result.date_created|date:"Y-m-d" }} </td>

@@ -75,14 +75,14 @@ def results(df):
         status = results(df)
         print(status)  # Output could be 'Normal', 'High', or 'Low' based on the data.
     """
-    if df['High Limit'] < df['Result']:
+    if df['Result'] > df['High Limit']:
         return "High"
-    elif df['High Limit'] > df['Result'] > df['Low Limit']:
-        return "Normal"
-    elif df['Low Limit'] > df['Result']:
+    elif df['Result'] < df['Low Limit']:
         return "Low"
     else:
         return "Normal"
+def map_values(df, column_name, mapping_dict):
+    df[column_name] = df[column_name].str.lower().replace(mapping_dict)
 
 
 def biochemistry_data_prep(df):
@@ -106,14 +106,40 @@ def biochemistry_data_prep(df):
         cleaned_data = biochem_data_prep(df, results)
         print(cleaned_data.head())
     """
-    df['mfl_code'] = df['Patient Id'].str[:5]
+    df = df.rename(columns={"High": "High Limit", "Low": "Low Limit"})
+    collection_date_col=[col for col in df.columns if "collect" in col.lower()]
+    mfl_col=[col for col in df.columns if "mfl" in col.lower()]
+    if len(collection_date_col)>0:
+        df = df.rename(columns={collection_date_col[0]: "Collection"})
+    if len(collection_date_col)>0:
+        df = df.rename(columns={mfl_col[0]: "mfl_code"})
+    df['High Limit'] = df['High Limit'].astype(float)
+    df['Low Limit'] = df['Low Limit'].astype(float)
+    df['Result'] = df['Result'].astype(float)
     df = df[df['mfl_code'] != "EQA"]
     df['Collection'] = pd.to_datetime(df['Collection'])
-    df['Result time'] = pd.to_datetime(df['Result time'])
-    df['mfl_code'] = df['mfl_code'].astype(int)
+    # Mapping dictionary
+    test_mapping = {'Chol': 'Cholesterol',
+                    'Crea': 'Creatinine',
+                    'GPT': 'ALAT/GPT',
+                    'LDL': 'LDL-Cholesterol',
+                    'UreaUV': 'Urea'}
+    # Create a new column 'Full name' by mapping 'Test' column using the mapping dictionary
+    df['Full name'] = df['Test'].map(test_mapping)
+    if "Sex" in df.columns:
+        df['Reference class']=df['Sex']
+        # Mapping dictionary for gender
+        gender_mapping = {'male': 'M', 'males': 'M', 'female': 'F', 'females': 'F', 'f': 'F', 'm': 'M'}
+        # Apply the map_values function to replace values in the 'Gender' column
+        map_values(df, 'Reference class', gender_mapping)
+    df['Collection'] = pd.to_datetime(df['Collection'])
+    df['mfl_code'] = df['mfl_code'].astype(str).astype(int)
     df['Patient Id'] = df['Patient Id'].astype(int)
     df['results_interpretation'] = df.apply(results, axis=1)
     df['number_of_samples'] = 1
+    df=df[['Patient Id', 'Test', 'Full name', 'Result', 'Low Limit',
+       'High Limit', 'Units', 'Reference class', 'Collection', 'Result time',
+       'mfl_code', 'results_interpretation', 'number_of_samples','Age']]
     return df
 
 
@@ -1454,7 +1480,30 @@ def filter_result_type(list_of_projects_fac, column_name):
 #     return age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
 #         crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac, show_cd4_testing_workload, show_crag_testing_workload
 
+def create_age_sex_df(dataframe, age_bins, age_labels):
+    if 'age_unit' in dataframe.columns:
+        # Separate data based on 'age_unit'
+        above_1_age_sex = dataframe[dataframe['age_unit'] == "years"]
+        below_1_age_sex = dataframe[dataframe['age_unit'] != "years"]
 
+        # Create 'Age Group' based on age bins
+        below_1_age_sex['Age Group'] = "<1"
+        above_1_age_sex['Age Group'] = pd.cut(above_1_age_sex['Age'], bins=age_bins, labels=age_labels)
+
+        # Combine the DataFrames
+        result_df = pd.concat([above_1_age_sex, below_1_age_sex])
+    else:
+        dataframe['age'] = pd.to_numeric(dataframe['age'])
+        dataframe = dataframe.groupby('patient_id').first().reset_index()
+        dataframe['Age Group'] = pd.cut(dataframe['age'], bins=age_bins, labels=age_labels)
+        dataframe = dataframe.rename(columns={"reference_class": "Sex"})
+        result_df = pd.concat([dataframe])
+
+    # Group by 'Age Group' and 'Sex'
+    age_sex_df = result_df.groupby(['Age Group', 'Sex']).size().unstack().reset_index()
+
+
+    return age_sex_df
 # @silk_profile(name='generate_results_df')
 def generate_results_df(list_of_projects):
     # @silk_profile(name='prepare_df_cd4')
@@ -1640,22 +1689,7 @@ def generate_results_df(list_of_projects):
     age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
     age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
                   '50-54', '55-59', '60-64', '65+']
-    def create_age_sex_df(dataframe, age_bins, age_labels):
-        # Separate data based on 'age_unit'
-        above_1_age_sex = dataframe[dataframe['age_unit'] == "years"]
-        below_1_age_sex = dataframe[dataframe['age_unit'] != "years"]
 
-        # Create 'Age Group' based on age bins
-        below_1_age_sex['Age Group'] = "<1"
-        above_1_age_sex['Age Group'] = pd.cut(above_1_age_sex['Age'], bins=age_bins, labels=age_labels)
-
-        # Combine the DataFrames
-        result_df = pd.concat([above_1_age_sex, below_1_age_sex])
-
-        # Group by 'Age Group' and 'Sex'
-        age_sex_df = result_df.groupby(['Age Group', 'Sex']).size().unstack().reset_index()
-
-        return age_sex_df
 
     age_sex_df = create_age_sex_df(list_of_projects_fac, age_bins, age_labels)
     return age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
@@ -2206,7 +2240,8 @@ def show_results(request):
                              var_name="Sex", value_name='# of sample processed')
 
         age_distribution_fig = bar_chart(age_sex_df, "Age Group", "# of sample processed",
-                                         "CD4 Count Distribution By Age Band and Sex", color="Sex")
+                                         "CD4 Count Distribution By Age Band and Sex", color="Sex",
+                                         xaxis_title="Age bands",legend_title="Sex")
         if "Age Group" in list_of_projects_fac.columns:
             del list_of_projects_fac['Age Group']
 
@@ -2771,7 +2806,7 @@ def track_records(df_specific):
     # Split the 'Collection' column on 'T' and keep only the first part (the date)
     df_specific['Collection'] = df_specific['Collection'].str.split('T').str[0]
 
-    saved_sample = list(df_specific['Sample Id'].unique())[0]
+    saved_sample = list(df_specific['Patient Id'].unique())[0]
     return saved_sample
 
 
@@ -2779,11 +2814,8 @@ def track_records(df_specific):
 def load_biochemistry_results(request):
     if not request.user.first_name:
         return redirect("profile")
-    tests_summary_fig = None
-    summary_fig = None
-    summary_fig_per_text = None
-    weekly_trend_fig = None
-    test_trend_fig = None
+    tests_summary_fig = summary_fig = summary_fig_per_text = weekly_trend_fig = test_trend_fig = \
+        age_distribution_fig = sex_fig = None
 
     #####################################
     # Display existing data
@@ -2802,10 +2834,10 @@ def load_biochemistry_results(request):
 
     if my_filters.qs:
         # fields to extract
-        fields = ['sample_id', 'patient_id', 'test',
+        fields = [ 'patient_id', 'test',
                   'full_name', 'result', 'low_limit', 'high_limit', 'units',
                   'reference_class', 'collection_date', 'result_time', 'mfl_code', 'results_interpretation',
-                  'number_of_samples', 'date_created', 'performed_by'
+                  'number_of_samples', 'date_created', 'performed_by','age',
                   ]
 
         # Extract the data from the queryset using values()
@@ -2831,23 +2863,46 @@ def load_biochemistry_results(request):
         all_df.sort_values(['results_interpretation'], inplace=True)
         all_df.sort_values(['number_of_samples'], inplace=True)
 
-        b = all_df.groupby(["results_interpretation", "test_name", "reference_class"]).sum(numeric_only=True)[
+        b = all_df.groupby(["results_interpretation", "test_name"]).sum(numeric_only=True)[
             'number_of_samples'].reset_index()
 
         color_discrete_map = {'Normal': 'green', 'High': 'red', 'Low': 'blue'}
-        fig = px.bar(b, x="test_name", y="number_of_samples", text="number_of_samples", height=500,
-                     title=f"Distribution of Test Results by Interpretation N={b['number_of_samples'].sum()}",
-                     color="results_interpretation",
-                     color_discrete_map=color_discrete_map)
-        fig.update_layout(legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ))
-        tests_summary_fig = plot(fig, include_plotlyjs=False, output_type="div")
+        def interpretation_bar_chart(df,title):
+            fig = px.bar(df, x="test_name", y="number_of_samples", text="number_of_samples", height=400,
+                         title=f"{title}  N={b['number_of_samples'].sum()}",
+                         color="results_interpretation",
+                         color_discrete_map=color_discrete_map)
+            fig.update_layout(legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ))
+            return plot(fig, include_plotlyjs=False, output_type="div")
 
+        tests_summary_fig=interpretation_bar_chart(b,"Distribution of Test Results by Interpretation")
+
+        sex_group=all_df.groupby(["results_interpretation", "test_name","reference_class"]).sum(numeric_only=True)[
+            'number_of_samples'].reset_index()
+        sex_fig={}
+        for sex in sex_group['reference_class'].unique():
+            unique_sex=sex_group[sex_group['reference_class'] == sex]
+            sex_fig[sex]=interpretation_bar_chart(unique_sex, f"Distribution of Test Results by Interpretation Sex: {sex}")
+        age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
+        age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
+                      '50-54', '55-59', '60-64', '65+']
+
+        age_sex_df = create_age_sex_df(df, age_bins, age_labels)
+
+        age_sex_df = pd.melt(age_sex_df, id_vars="Age Group",
+                             value_vars=list(age_sex_df.columns[1:]),
+                             var_name="Sex", value_name='# of sample processed')
+        total_females=age_sex_df[age_sex_df['Sex']=="F"]["# of sample processed"].sum()
+        total_males=age_sex_df[age_sex_df['Sex']=="M"]["# of sample processed"].sum()
+        age_distribution_fig = bar_chart(age_sex_df, "Age Group", "# of sample processed",
+                                         f"Biochemistry Results Distribution By Age Band and Sex M={total_males} F={total_females}", color="Sex",
+                                         xaxis_title="Age bands", legend_title="Sex",background_shadow=True)
         df['results_interpretation'] = pd.Categorical(df['results_interpretation'],
                                                       ['Low', 'Normal', 'High'])
         b = df.groupby("results_interpretation").sum(numeric_only=True)['number_of_samples'].reset_index()
@@ -2929,16 +2984,17 @@ def load_biochemistry_results(request):
         # Weekly Trend viz
         ###################################
         df_weekly = df.copy()
-        df_weekly['date_created'] = pd.to_datetime(df_weekly['date_created'], format='%Y-%m-%d')
+        df_weekly['collection_date'] = pd.to_datetime(df_weekly['collection_date'], format='%Y-%m-%d')
 
-        df_weekly['week_start'] = df_weekly['date_created'].dt.to_period('W').dt.start_time
+        df_weekly['week_start'] = df_weekly['collection_date'].dt.to_period('W').dt.start_time
         weekly_df = df_weekly.groupby('week_start').size().reset_index(name='number_of_samples')
         weekly_df['Weekly Trend'] = weekly_df["week_start"].astype(str) + "."
         weekly_trend = weekly_df['number_of_samples'].sum()
         if weekly_df.shape[0] > 1:
             weekly_trend_fig = line_chart_median_mean(weekly_df, "Weekly Trend", "number_of_samples",
                                                       f"Weekly Trend of sample uploaded N={weekly_trend}"
-                                                      f"      Maximum : {max(weekly_df['number_of_samples'])}")
+                                                      f"      Maximum : {max(weekly_df['number_of_samples'])}",
+                                                      background_shadow=True)
 
         weekly_df = df_weekly.groupby(['week_start', 'test_name']).size().reset_index(name='number_of_samples')
         weekly_df['Weekly Trend'] = weekly_df["week_start"].astype(str) + "."
@@ -2965,7 +3021,7 @@ def load_biochemistry_results(request):
                "my_filters": my_filters, "record_count": record_count, "tests_summary_fig": tests_summary_fig,
                "threshold_of_result_to_display": threshold_of_result_to_display, "summary_fig": summary_fig,
                "summary_fig_per_text": summary_fig_per_text, "weekly_trend_fig": weekly_trend_fig, "form": form,
-               "test_trend_fig": test_trend_fig}
+               "test_trend_fig": test_trend_fig,"sex_fig":sex_fig,"age_distribution_fig":age_distribution_fig}
 
     #####################################
     # Load new data
@@ -2978,10 +3034,22 @@ def load_biochemistry_results(request):
                 performed_by = form.cleaned_data['performed_by']
                 dfs = []
                 for file in files:
-                    csv_data = io.StringIO(file.read().decode('ISO-8859-1'))
-                    dfs.append(pd.read_csv(csv_data, sep=';', quotechar='"', encoding='ISO-8859-1'))
+                    # csv_data = io.StringIO(file.read().decode('ISO-8859-1'))
+                    # dfs.append(pd.read_csv(csv_data, sep=';', quotechar='"', encoding='ISO-8859-1'))
+
+                    def find_header_row(excel_path, search_string):
+                        # Read the first few rows to find the header containing the search string
+                        for i in range(20):  # Check search string within the number of rows
+                            df_temp = pd.read_excel(excel_path, skiprows=i)
+                            if search_string in df_temp.columns:
+                                return i
+                        return 0  # If the search string is not found, default to 0 rows skipped
+
+                    header_row = find_header_row(file, "Patient Id")
+                    # Read the Excel file with dynamically determined header row
+                    dfs.append(pd.read_excel(file, skiprows=header_row))
                 df = pd.concat(dfs)
-                if "Low Limit" in df.columns and "High Limit" in df.columns:
+                if "Low" in df.columns and "High" in df.columns:
                     df = biochemistry_data_prep(df)
                     saved = []
                     already_exist = []
@@ -2994,20 +3062,21 @@ def load_biochemistry_results(request):
                                     # Iterate over each row in the DataFrame
                                     for index, row in df_specific.iterrows():
                                         chemistry_results = BiochemistryResult()
-                                        chemistry_results.sample_id = row[df_specific.columns[0]]
-                                        chemistry_results.patient_id = row[df_specific.columns[1]]
-                                        chemistry_results.test = row[df_specific.columns[2]]
-                                        chemistry_results.full_name = row[df_specific.columns[3]]
-                                        chemistry_results.result = row[df_specific.columns[4]]
-                                        chemistry_results.low_limit = row[df_specific.columns[5]]
-                                        chemistry_results.high_limit = row[df_specific.columns[6]]
-                                        chemistry_results.units = row[df_specific.columns[7]]
-                                        chemistry_results.reference_class = row[df_specific.columns[8]]
-                                        chemistry_results.collection_date = row[df_specific.columns[9]]
-                                        chemistry_results.result_time = row[df_specific.columns[10]]
-                                        chemistry_results.mfl_code = row[df_specific.columns[11]]
-                                        chemistry_results.results_interpretation = row[df_specific.columns[12]]
-                                        chemistry_results.number_of_samples = row[df_specific.columns[13]]
+                                        # chemistry_results.sample_id = row[df_specific.columns[0]]
+                                        chemistry_results.patient_id = row[df_specific.columns[0]]
+                                        chemistry_results.test = row[df_specific.columns[1]]
+                                        chemistry_results.full_name = row[df_specific.columns[2]]
+                                        chemistry_results.result = row[df_specific.columns[3]]
+                                        chemistry_results.low_limit = row[df_specific.columns[4]]
+                                        chemistry_results.high_limit = row[df_specific.columns[5]]
+                                        chemistry_results.units = row[df_specific.columns[6]]
+                                        chemistry_results.reference_class = row[df_specific.columns[7]]
+                                        chemistry_results.collection_date = row[df_specific.columns[8]]
+                                        chemistry_results.result_time = row[df_specific.columns[9]]
+                                        chemistry_results.mfl_code = row[df_specific.columns[10]]
+                                        chemistry_results.results_interpretation = row[df_specific.columns[11]]
+                                        chemistry_results.number_of_samples = row[df_specific.columns[12]]
+                                        chemistry_results.age = row[df_specific.columns[13]]
                                         chemistry_results.performed_by = performed_by
                                         chemistry_results.save()
                                     saved.append(track_records(df_specific))
@@ -3032,7 +3101,7 @@ def load_biochemistry_results(request):
                 already_lists = ', '.join(str(exist) for exist in sorted(already_exist))
 
                 if len(already_exist) > 0:
-                    if len(list(already_exist)) == len(df['Sample Id'].unique()):
+                    if len(list(already_exist)) == len(df['Patient Id'].unique()):
                         error_msg = f"The entire Biochemistry dataset has already been uploaded. Sample IDs: ({already_lists})"
                     else:
                         error_msg = f"Biochemistry data already exists for the following sample IDs: {already_lists}"
@@ -3069,7 +3138,7 @@ def insert_dataframe_to_pdf(pdf, df, x, y):
     table.drawOn(pdf, x, y)  # Adjust the position (x, y) as needed
 
 
-def create_page(request, pdf, y, image_path, ccc_num, sample_id, df1, start_x=80):
+def create_page(request, pdf, y, image_path, ccc_num,age, df1, start_x=80):
     width = letter[0] - 100
     # Add the image to the canvas above the "BIOCHEMISTRY REPORT" text and take the full width
     add_image(pdf, image_path, x=start_x, y=y, width=width, height=100)
@@ -3085,13 +3154,12 @@ def create_page(request, pdf, y, image_path, ccc_num, sample_id, df1, start_x=80
     # Facility info
     pdf.setFont("Helvetica", 12)
     pdf.drawString(start_x, y - 50, f"Unique CCC No: {ccc_num}")
-    pdf.drawString(start_x + 200, y - 50, f"Sample Id: {sample_id}")
+    pdf.drawString(start_x + 200, y - 50, f"Age: {age}")
     performed_by_values = df1['performed_by'].dropna().unique()  # Drop NA/null values and get unique values
     if len(performed_by_values) > 0:
         formatted_value = performed_by_values[0].title()
         pdf.drawString(start_x + 300, y - 50, f"Test Performed by: {formatted_value}")
-    df1 = df1.drop("performed_by", axis=1)
-
+    df1 = df1.drop(["performed_by","age"], axis=1)
     # Insert dataframe
     pdf.setFont("Helvetica", 8)
     insert_dataframe_to_pdf(pdf, df1, start_x - 9, y - 200)
@@ -3134,11 +3202,11 @@ class GenerateBioChemistryPDF(View):
                 pdf.showPage()
                 y = 680
             df2 = df1[df1['patient_id'] == i]
-            sample_id = df2['sample_id'].values[0]
+            age = df2['age'].values[0]
             ccc_num = df2['patient_id'].values[0]
-            df2 = df2.drop(["patient_id", "sample_id"], axis=1)  # drop Patient Id and Sample Id
-            df2 = df2.rename(columns={"Full name": "Test"})  # Rename column
-            create_page(request, pdf, y, image_path, ccc_num, sample_id, df2)
+            df2 = df2.drop(["patient_id"], axis=1)  # drop Patient Id and Sample Id
+            df2 = df2.rename(columns={"Full name": "Test","results_interpretation":"interpretation"})  # Rename column
+            create_page(request, pdf, y, image_path, ccc_num,age, df2)
             y = y - 400  # Adjust the y value for the next result on the same page
 
         pdf.save()

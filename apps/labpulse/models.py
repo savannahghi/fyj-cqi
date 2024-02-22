@@ -294,11 +294,12 @@ class EnableDisableCommodities(BaseModel):
 
 
 class BiochemistryResult(BaseModel):
-    sample_id = models.CharField(max_length=50)
+    # sample_id = models.CharField(max_length=50)
     patient_id = models.CharField(max_length=10)
     test = models.CharField(max_length=100)
     full_name = models.CharField(max_length=255)
     result = models.FloatField()
+    age = models.FloatField(default=0)
     low_limit = models.FloatField()
     high_limit = models.FloatField()
     units = models.CharField(max_length=20)
@@ -317,7 +318,7 @@ class BiochemistryResult(BaseModel):
         ordering = ['patient_id', 'collection_date']
         verbose_name = "Biochemistry Result"
         verbose_name_plural = "Biochemistry Results"
-        unique_together = (('sample_id', 'patient_id', 'test', 'collection_date', 'result'),)
+        unique_together = (('patient_id', 'test', 'collection_date', 'result'),)
 
 
 class DrtPdfFile(BaseModel):

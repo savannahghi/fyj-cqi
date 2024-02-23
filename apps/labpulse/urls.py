@@ -36,6 +36,7 @@ urlpatterns = [
     path('delete-drt-results/<uuid:pk>/', delete_drt_result, name='delete_drt_result'),
     path('generate-drt-results/', generate_drt_results, name='generate_drt_results'),
     path('generate-drt-report/', GenerateDrtPDF.as_view(), name='generate_drt_pdf'),
+    path('download/<str:filter_type>', download_csv, name='download_biochem_lab'),
 
 ]
 # urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]

@@ -2868,8 +2868,8 @@ def load_biochemistry_results(request):
 
         color_discrete_map = {'Normal': 'green', 'High': 'red', 'Low': 'blue'}
         def interpretation_bar_chart(df,title):
-            fig = px.bar(df, x="test_name", y="number_of_samples", text="number_of_samples", height=400,
-                         title=f"{title}  N={b['number_of_samples'].sum()}",
+            fig = px.bar(df, x="test_name", y="number_of_samples", text="number_of_samples", height=480,
+                         title=f"{title}    N={df['number_of_samples'].sum()}",
                          color="results_interpretation",
                          color_discrete_map=color_discrete_map)
             fig.update_layout(legend=dict(
@@ -2881,14 +2881,14 @@ def load_biochemistry_results(request):
             ))
             return plot(fig, include_plotlyjs=False, output_type="div")
 
-        tests_summary_fig=interpretation_bar_chart(b,"Distribution of Test Results by Interpretation")
+        tests_summary_fig=interpretation_bar_chart(b,"Distribution of Test Results")
 
         sex_group=all_df.groupby(["results_interpretation", "test_name","reference_class"]).sum(numeric_only=True)[
             'number_of_samples'].reset_index()
         sex_fig={}
         for sex in sex_group['reference_class'].unique():
             unique_sex=sex_group[sex_group['reference_class'] == sex]
-            sex_fig[sex]=interpretation_bar_chart(unique_sex, f"Distribution of Test Results by Interpretation Sex: {sex}")
+            sex_fig[sex]=interpretation_bar_chart(unique_sex, f"Distribution of Test Results        Sex: {sex}")
         age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
         age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
                       '50-54', '55-59', '60-64', '65+']
@@ -2900,9 +2900,13 @@ def load_biochemistry_results(request):
                              var_name="Sex", value_name='# of sample processed')
         total_females=age_sex_df[age_sex_df['Sex']=="F"]["# of sample processed"].sum()
         total_males=age_sex_df[age_sex_df['Sex']=="M"]["# of sample processed"].sum()
+        all_samples=total_females+total_males
+        per_males=round(total_males/all_samples*100,)
+        per_females=round(total_females/all_samples*100,)
         age_distribution_fig = bar_chart(age_sex_df, "Age Group", "# of sample processed",
-                                         f"Biochemistry Results Distribution By Age Band and Sex M={total_males} F={total_females}", color="Sex",
-                                         xaxis_title="Age bands", legend_title="Sex",background_shadow=True)
+                                         f"Biochemistry Results Distribution By Age Band and Sex  N={all_samples} "
+                                         f"  M={total_males} ({per_males}%)   F={total_females} ({per_females}%)", color="Sex",
+                                         xaxis_title="Age bands", legend_title="Sex",background_shadow=True,height=350)
         df['results_interpretation'] = pd.Categorical(df['results_interpretation'],
                                                       ['Low', 'Normal', 'High'])
         b = df.groupby("results_interpretation").sum(numeric_only=True)['number_of_samples'].reset_index()
@@ -2994,7 +2998,7 @@ def load_biochemistry_results(request):
             weekly_trend_fig = line_chart_median_mean(weekly_df, "Weekly Trend", "number_of_samples",
                                                       f"Weekly Trend of sample uploaded N={weekly_trend}"
                                                       f"      Maximum : {max(weekly_df['number_of_samples'])}",
-                                                      background_shadow=True)
+                                                      background_shadow=True,xaxis_title="Weekly Sample Collection")
 
         weekly_df = df_weekly.groupby(['week_start', 'test_name']).size().reset_index(name='number_of_samples')
         weekly_df['Weekly Trend'] = weekly_df["week_start"].astype(str) + "."

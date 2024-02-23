@@ -2889,7 +2889,7 @@ def load_biochemistry_results(request):
     if not request.user.first_name:
         return redirect("profile")
     tests_summary_fig = summary_fig = summary_fig_per_text = weekly_trend_fig = test_trend_fig = \
-        age_distribution_fig = sex_fig = county_fig = None
+        age_distribution_fig = sex_fig = county_fig = sub_county_fig=None
 
     #####################################
     # Display existing data

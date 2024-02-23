@@ -1935,7 +1935,7 @@ def download_csv(request, filter_type):
         queryset = queryset.none()
 
     # Create a CSV response
-    response = HttpResponse(content_type='text/csv')
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
     response['Content-Disposition'] = f'attachment; filename="{filter_type}_records.csv"'
 
     # Create a CSV writer and write the header row
@@ -2889,7 +2889,7 @@ def load_biochemistry_results(request):
     if not request.user.first_name:
         return redirect("profile")
     tests_summary_fig = summary_fig = summary_fig_per_text = weekly_trend_fig = test_trend_fig = \
-        age_distribution_fig = sex_fig = None
+        age_distribution_fig = sex_fig = county_fig = None
 
     #####################################
     # Display existing data
@@ -2917,11 +2917,23 @@ def load_biochemistry_results(request):
                   'reference_class', 'collection_date', 'result_time', 'mfl_code', 'results_interpretation',
                   'number_of_samples', 'date_created', 'performed_by', 'age',
                   ]
+        # Use select_related to fetch related objects in a single query
+        queryset = my_filters.qs.select_related('facility', 'sub_county',
+                                                'county').order_by('-collection_date')
+        # Retrieve data as a list of dictionaries
+        data = list(queryset.values(
+            'county__county_name', 'sub_county__sub_counties',
+            'facility__name', 'mfl_code', 'patient_id', 'test',
+                  'full_name', 'result', 'low_limit', 'high_limit', 'units',
+                  'reference_class', 'collection_date', 'result_time', 'mfl_code', 'results_interpretation',
+                  'number_of_samples', 'date_created', 'performed_by', 'age',
+        ))
 
         # Extract the data from the queryset using values()
-        data = my_filters.qs.values(*fields)
+        # data = my_filters.qs.values(*fields)
         df = pd.DataFrame(data)
-        df = df.rename(columns={"full_name": "test_name"})
+        df = df.rename(columns={"full_name": "test_name",'county__county_name':'county',
+                                'sub_county__sub_counties':'sub_county', 'facility__name':'facility_name'})
         bio_chem_df = df.copy()
 
         try:
@@ -2991,8 +3003,9 @@ def load_biochemistry_results(request):
         df['results_interpretation'] = pd.Categorical(df['results_interpretation'],
                                                       ['Low', 'Normal', 'High'])
         b = df.groupby("results_interpretation").sum(numeric_only=True)['number_of_samples'].reset_index()
+        b=add_percentage_and_count_string(b, col="number_of_samples")
 
-        fig = px.bar(b, x="results_interpretation", y="number_of_samples", text="number_of_samples", height=350,
+        fig = px.bar(b, x="results_interpretation", y="number_of_samples", text="number_of_samples (%)", height=350,
                      title=f"Overall Results interpretation N={b['number_of_samples'].sum()}")
         # fig.update_layout({
         #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
@@ -3026,6 +3039,79 @@ def load_biochemistry_results(request):
             )
         )
         summary_fig = plot(fig, include_plotlyjs=False, output_type="div")
+
+        b = df.groupby("county").sum(numeric_only=True)['number_of_samples'].reset_index()
+        b = add_percentage_and_count_string(b, col="number_of_samples")
+        fig = px.bar(b, x="county", y="number_of_samples", text="number_of_samples (%)", height=350,
+                     title=f"Results by County N={b['number_of_samples'].sum()}")
+        # fig.update_layout({
+        #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+        # })
+        # Set the font size of the x-axis and y-axis labels
+        fig.update_layout(
+            xaxis=dict(
+                tickfont=dict(
+                    size=10
+                ),
+                title_font=dict(
+                    size=10
+                )
+            ),
+            yaxis=dict(
+                title_font=dict(
+                    size=10
+                )
+            ),
+            legend=dict(
+                font=dict(
+                    size=10
+                )
+            ),
+            title=dict(
+                # text="My Line Chart",
+                font=dict(
+                    size=12
+                )
+            )
+        )
+        county_fig = plot(fig, include_plotlyjs=False, output_type="div")
+        b = df.groupby("sub_county").sum(numeric_only=True)['number_of_samples'].reset_index()
+        b = add_percentage_and_count_string(b, col="number_of_samples").sort_values("number_of_samples")
+        fig = px.bar(b, x="sub_county", y="number_of_samples", text="number_of_samples (%)", height=350,
+                     title=f"Results by County N={b['number_of_samples'].sum()}")
+        # fig.update_layout({
+        #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+        # })
+        # Set the font size of the x-axis and y-axis labels
+        fig.update_layout(
+            xaxis=dict(
+                tickfont=dict(
+                    size=10
+                ),
+                title_font=dict(
+                    size=10
+                )
+            ),
+            yaxis=dict(
+                title_font=dict(
+                    size=10
+                )
+            ),
+            legend=dict(
+                font=dict(
+                    size=10
+                )
+            ),
+            title=dict(
+                # text="My Line Chart",
+                font=dict(
+                    size=12
+                )
+            )
+        )
+        sub_county_fig = plot(fig, include_plotlyjs=False, output_type="div")
 
         b = df.groupby("test_name").sum(numeric_only=True)['number_of_samples'].reset_index().sort_values(
             "number_of_samples")
@@ -3106,7 +3192,8 @@ def load_biochemistry_results(request):
                "my_filters": my_filters, "record_count": record_count, "tests_summary_fig": tests_summary_fig,
                "threshold_of_result_to_display": threshold_of_result_to_display, "summary_fig": summary_fig,
                "summary_fig_per_text": summary_fig_per_text, "weekly_trend_fig": weekly_trend_fig, "form": form,
-               "test_trend_fig": test_trend_fig, "sex_fig": sex_fig, "age_distribution_fig": age_distribution_fig}
+               "test_trend_fig": test_trend_fig, "sex_fig": sex_fig, "age_distribution_fig": age_distribution_fig,
+               "county_fig":county_fig,"sub_county_fig":sub_county_fig}
 
     #####################################
     # Load new data
@@ -3717,12 +3804,12 @@ def prepare_drt_cascade_df(df_cascade):
     return summary_df_cascade
 
 
-def add_percentage_and_count_string(haart_class_df):
+def add_percentage_and_count_string(haart_class_df,col="count"):
     # Calculate percentage and round to the nearest integer
-    haart_class_df['%'] = round(haart_class_df['count'] / haart_class_df['count'].sum() * 100).astype(int)
+    haart_class_df['%'] = round(haart_class_df[col] / haart_class_df[col].sum() * 100).astype(int)
 
     # Create a new column with count and percentage string
-    haart_class_df['count (%)'] = haart_class_df['count'].astype(str) + " (" + haart_class_df['%'].astype(str) + "%)"
+    haart_class_df[f'{col} (%)'] = haart_class_df[col].astype(str) + " (" + haart_class_df['%'].astype(str) + "%)"
 
     return haart_class_df
 

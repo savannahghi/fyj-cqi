@@ -311,6 +311,11 @@ class BiochemistryResult(BaseModel):
     number_of_samples = models.IntegerField()
     performed_by = models.CharField(max_length=100, blank=True, null=True)
 
+    # Foreign keys to related models
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE,related_name="facilities",default="")
+    sub_county = models.ForeignKey(Sub_counties, on_delete=models.CASCADE,related_name="subcounties",default="")
+    county = models.ForeignKey(Counties, on_delete=models.CASCADE,related_name="counties",default="")
+
     def __str__(self):
         return f"{self.mfl_code} - {self.date_created} - {self.test} - {self.patient_id}"
 

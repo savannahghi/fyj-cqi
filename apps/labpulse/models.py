@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from crum import get_current_request, get_current_user
 from django.core.validators import MaxValueValidator
@@ -312,9 +313,10 @@ class BiochemistryResult(BaseModel):
     performed_by = models.CharField(max_length=100, blank=True, null=True)
 
     # Foreign keys to related models
-    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE,related_name="facilities",default="")
-    sub_county = models.ForeignKey(Sub_counties, on_delete=models.CASCADE,related_name="subcounties",default="")
-    county = models.ForeignKey(Counties, on_delete=models.CASCADE,related_name="counties",default="")
+    facility = models.ForeignKey(Facilities, on_delete=models.CASCADE, related_name="facilities", default="")
+    sub_county = models.ForeignKey(Sub_counties, on_delete=models.CASCADE, related_name="subcounties", default="")
+    county = models.ForeignKey(Counties, on_delete=models.CASCADE, related_name="counties", default="")
+    tat_days = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.mfl_code} - {self.date_created} - {self.test} - {self.patient_id}"
@@ -324,6 +326,21 @@ class BiochemistryResult(BaseModel):
         verbose_name = "Biochemistry Result"
         verbose_name_plural = "Biochemistry Results"
         unique_together = (('patient_id', 'test', 'collection_date', 'result'),)
+
+    def save(self, *args, **kwargs):
+        # Ensure collection_date is a datetime.date object
+        if isinstance(self.collection_date, datetime):
+            self.collection_date = self.collection_date.date()
+
+        # Calculate tat_days if collection_date is available
+        if self.collection_date:
+            today = datetime.now().date()
+            self.tat_days = (today - self.collection_date).days
+        else:
+            # Handle cases where collection_date is None
+            self.tat_days = None
+
+        super().save(*args, **kwargs)  # Call parent class's save method
 
 
 class DrtPdfFile(BaseModel):

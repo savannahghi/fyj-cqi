@@ -1,10 +1,9 @@
 import django_filters
 from django import forms
-from django.db.models import DurationField, ExpressionWrapper, F
 from django_filters import CharFilter, ChoiceFilter, DateFilter, NumberFilter
 
-from apps.cqi.models import Facilities, Counties, Sub_counties
-from apps.labpulse.models import BiochemistryResult, Cd4traker, Cd4TestingLabs, DrtPdfFile, DrtResults
+from apps.cqi.models import Counties, Facilities, Sub_counties
+from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtPdfFile, DrtResults
 
 
 class Cd4trakerFilter(django_filters.FilterSet):
@@ -90,24 +89,26 @@ class BiochemistryResultFilter(django_filters.FilterSet):
 
     full_name = django_filters.ChoiceFilter(choices=[], label='Test')
     results_interpretation = django_filters.ChoiceFilter(choices=[], label='Test Interpretation')
-    facility = django_filters.ModelChoiceFilter(
-        queryset=Facilities.objects.all(),
-        field_name='facility_name__name',
-        label='Facility Name',
-        widget=forms.Select(attrs={'class': 'form-control select2'}),
-    )
-    county = django_filters.ModelChoiceFilter(
-        queryset=Counties.objects.all(),
-        field_name='county__county_name',
-        label='County',
-        widget=forms.Select(attrs={'class': 'form-control select2'}),
-    )
-    sub_county = django_filters.ModelChoiceFilter(
-        queryset=Sub_counties.objects.all(),
-        field_name='sub_county__sub_counties',
-        label='Sub-County',
-        widget=forms.Select(attrs={'class': 'form-control select2'}),
-    )
+    facility = django_filters.ChoiceFilter(choices=[], label='Facility Name',
+                                           widget=forms.Select(attrs={'class': 'form-control select2'}))
+
+    sub_county = django_filters.ChoiceFilter(choices=[], label='Sub-County',
+                                           widget=forms.Select(attrs={'class': 'form-control select2'}))
+    county = django_filters.ChoiceFilter(choices=[], label='County',
+                                           widget=forms.Select(attrs={'class': 'form-control select2'}))
+
+    # county = django_filters.ModelChoiceFilter(
+    #     queryset=Counties.objects.all(),
+    #     field_name='county__county_name',
+    #     label='County',
+    #     widget=forms.Select(attrs={'class': 'form-control select2'}),
+    # )
+    # sub_county = django_filters.ModelChoiceFilter(
+    #     queryset=Sub_counties.objects.all(),
+    #     field_name='sub_county__sub_counties',
+    #     label='Sub-County',
+    #     widget=forms.Select(attrs={'class': 'form-control select2'}),
+    # )
 
     result_gte = NumberFilter(field_name="result", lookup_expr="gte", label='Test result >=')
     result_lte = NumberFilter(field_name="result", lookup_expr="lte", label='Test result <=')
@@ -143,6 +144,49 @@ class BiochemistryResultFilter(django_filters.FilterSet):
         # Create the choices for the 'test' field
         interpretation_choices = set([(test, test) for test in unique_test_interpretation])
         self.filters['results_interpretation'].extra['choices'] = sorted(interpretation_choices)
+
+        # Get unique 'facility' values from the database, considering only those with related BiochemistryResult entries
+        unique_facilities = BiochemistryResult.objects.exclude(facility__isnull=True).values_list('facility__id',
+                                                                                                  'facility__name').distinct()
+
+        # Create the choices for the 'facility' field
+        facility_choices = [(str(uuid), name) for uuid, name in unique_facilities]
+
+        # Remove duplicates by converting to a set and back to a list
+        unique_facility_choices = list(set(facility_choices))
+
+        # Sort the choices and set them in the filter
+        self.filters['facility'].extra['choices'] = sorted(unique_facility_choices, key=lambda x: x[1] if x[1] else '')
+
+        ##########################
+        # Get unique 'facility' values from the database, considering only those with related BiochemistryResult entries
+        unique_sub_county = BiochemistryResult.objects.exclude(sub_county__isnull=True).values_list('sub_county__id',
+                                                                                                  'sub_county__sub_counties').distinct()
+
+        # Create the choices for the 'facility' field
+        unique_sub_county_choices = [(str(uuid), name) for uuid, name in unique_sub_county]
+
+        # Remove duplicates by converting to a set and back to a list
+        unique_sub_county_choices = list(set(unique_sub_county_choices))
+
+        # Sort the choices and set them in the filter
+        self.filters['sub_county'].extra['choices'] = sorted(unique_sub_county_choices, key=lambda x: x[1] if x[1] else '')
+
+        ##########################
+        # Get unique 'facility' values from the database, considering only those with related BiochemistryResult entries
+        unique_county = BiochemistryResult.objects.exclude(sub_county__isnull=True).values_list('county__id',
+                                                                                                    'county__county_name').distinct()
+
+        # Create the choices for the 'facility' field
+        unique_county_choices = [(str(uuid), name) for uuid, name in unique_county]
+
+        # Remove duplicates by converting to a set and back to a list
+        unique_county_choices = list(set(unique_county_choices))
+
+        # Sort the choices and set them in the filter
+        self.filters['county'].extra['choices'] = sorted(unique_county_choices,
+                                                             key=lambda x: x[1] if x[1] else '')
+
 
     class Meta:
         model = BiochemistryResult

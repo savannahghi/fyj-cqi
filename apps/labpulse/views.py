@@ -3079,7 +3079,7 @@ def load_biochemistry_results(request):
         b = df.groupby("sub_county").sum(numeric_only=True)['number_of_samples'].reset_index()
         b = add_percentage_and_count_string(b, col="number_of_samples").sort_values("number_of_samples")
         fig = px.bar(b, x="sub_county", y="number_of_samples", text="number_of_samples (%)", height=350,
-                     title=f"Results by County N={b['number_of_samples'].sum()}")
+                     title=f"Results by Sub-County N={b['number_of_samples'].sum()}")
         # fig.update_layout({
         #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
         #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',

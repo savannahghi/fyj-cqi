@@ -18,6 +18,7 @@ import pytz
 import tzlocal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.staticfiles.finders import find
 from django.core import serializers
 from django.core.cache import cache
@@ -1132,7 +1133,8 @@ def calculate_positivity_rate(df, column_name, title):
     positivity_df = positivity_df.T.reset_index().fillna(0)
     positivity_df.columns = ['variables', 'values']
     positivity_df = positivity_df[positivity_df['values'] != 0]
-    fig = bar_chart(positivity_df, "variables", "values", f"{title} Testing Results", color='variables')
+    fig = bar_chart(positivity_df, "variables", "values", f"{title} Testing Results", color='variables',
+                    )
 
     return fig, positivity_df
 
@@ -1224,7 +1226,7 @@ def line_chart_median_mean(df, x_axis, y_axis, title, color=None, xaxis_title=No
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def create_summary_chart(data, column_name, title):
+def create_summary_chart(data, column_name, title,xaxis_title=None):
     unique_values = data[column_name].unique()
     unique_values = unique_values[~pd.isnull(unique_values)]
 
@@ -1234,7 +1236,7 @@ def create_summary_chart(data, column_name, title):
     }).sort_values('Count')
 
     total = summary_df['Count'].sum()
-    fig = bar_chart(summary_df, column_name, 'Count', f"{title} N={total}")
+    fig = bar_chart(summary_df, column_name, 'Count', f"{title} N={total}",xaxis_title=xaxis_title)
 
     return fig, summary_df
 
@@ -1636,7 +1638,8 @@ def generate_results_df(list_of_projects):
     # CD4 SUMMARY CHART
     ###################################
     cd4_summary_fig = bar_chart(summary_df, "variables", "values",
-                                f"Summary of CD4 Records and Serum CrAg Results Between {min_date} and {max_date} ")
+                                f"Summary of CD4 Records and Serum CrAg Results Between {min_date} and {max_date} ",
+                                xaxis_title="CD4 Testing Cascade")
 
     # @silk_profile(name='generate_workload_summary_df')
     def generate_workload_summary_df(list_of_projects_fac):
@@ -1682,12 +1685,14 @@ def generate_results_df(list_of_projects):
     # CRAG TESTING SUMMARY CHART
     ###################################
     crag_testing_lab_fig = bar_chart(crag_df, "Testing Laboratory", "values",
-                                     f"Number of sCrAg Reports Processed per Testing Laboratory ({crag_df.shape[0]}).")
+                                     f"Number of sCrAg Reports Processed per Testing Laboratory ({crag_df.shape[0]}).",
+                                     xaxis_title="Facilities")
     ###################################
     # CD4 TESTING SUMMARY CHART
     ###################################
     cd4_testing_lab_fig = bar_chart(cd4_df, "Testing Laboratory", "values",
-                                    f"Number of CD4 Reports Processed per Testing Laboratory ({cd4_df.shape[0]})")
+                                    f"Number of CD4 Reports Processed per Testing Laboratory ({cd4_df.shape[0]})",
+                                    xaxis_title="Facilities")
 
     age_bins = [0, 1, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 150]
     age_labels = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
@@ -2323,13 +2328,14 @@ def show_results(request):
         # REJECTED SAMPLES
         ###################################
         rejection_summary_fig, rejection_summary_df = create_summary_chart(list_of_projects_fac, 'Rejection reason',
-                                                                           'Reasons for Sample Rejection')
+                                                                           'Reasons for Sample Rejection',
+                                                                           xaxis_title="Reasons for sample Rejection")
 
         ###################################
         # Justification
         ###################################
         justification_summary_fig, justification_summary_df = create_summary_chart(
-            list_of_projects_fac, 'Justification', 'Justification Summary')
+            list_of_projects_fac, 'Justification', 'Justification Summary',xaxis_title="Justification")
 
         ###########################
         # SERUM CRAG POSITIVITY
@@ -2368,7 +2374,7 @@ def show_results(request):
             weekly_trend_fig = line_chart_median_mean(weekly_df, "Weekly Trend", "# of samples processed",
                                                       f"Weekly Trend CD4 Samples Processing N={weekly_trend}"
                                                       f"      Maximum # CD4 counts : {max(weekly_df['# of samples processed'])}",
-                                                      use_one_year_data=use_one_year_data)
+                                                      use_one_year_data=use_one_year_data,xaxis_title="Date (Start of Week)")
 
         weekly_df['week_start'] = pd.to_datetime(weekly_df['week_start']).dt.date.replace(np.datetime64('NaT'),
                                                                                           '').astype(str)
@@ -2382,7 +2388,7 @@ def show_results(request):
                                                           f"Weekly Collection to Dispatch vs Collection to Receipt Mean "
                                                           f"TAT Trend  (C-D TAT = {mean_c_d}, C-R TAT = {mean_c_r})",
                                                           color="TAT type", time=104,
-                                                          use_one_year_data=use_one_year_data
+                                                          use_one_year_data=use_one_year_data,xaxis_title="Date (Start of the week)"
                                                           )
     try:
         if "list_of_projects_fac" in request.session:
@@ -2557,7 +2563,8 @@ def generate_report(request, pdf, name, mfl_code, date_collection, date_testing,
     return y
 
 
-class GeneratePDF(View):
+class GeneratePDF(LoginRequiredMixin,View):
+    login_url = 'login'  # Specify the login URL
     def get(self, request):
         if request.user.is_authenticated and not request.user.first_name:
             return redirect("profile")
@@ -3319,7 +3326,7 @@ def insert_dataframe_to_pdf(pdf, df, x, y):
     table.drawOn(pdf, x, y)  # Adjust the position (x, y) as needed
 
 
-def create_page(request, pdf, y, image_path, ccc_num, age, df1, start_x=80):
+def create_page(request, pdf, y, image_path, ccc_num, age,facility_name, df1, start_x=80):
     width = letter[0] - 100
     # Add the image to the canvas above the "BIOCHEMISTRY REPORT" text and take the full width
     add_image(pdf, image_path, x=start_x, y=y, width=width, height=100)
@@ -3336,11 +3343,12 @@ def create_page(request, pdf, y, image_path, ccc_num, age, df1, start_x=80):
     pdf.setFont("Helvetica", 12)
     pdf.drawString(start_x, y - 50, f"Unique CCC No: {ccc_num}")
     pdf.drawString(start_x + 200, y - 50, f"Age: {age}")
+    pdf.drawString(start_x , y - 70, f"Facility Name: {facility_name}")
     performed_by_values = df1['performed_by'].dropna().unique()  # Drop NA/null values and get unique values
     if len(performed_by_values) > 0:
         formatted_value = performed_by_values[0].title()
         pdf.drawString(start_x + 300, y - 50, f"Test Performed by: {formatted_value}")
-    df1 = df1.drop(["performed_by", "age"], axis=1)
+    df1 = df1.drop(["performed_by", "age","county","sub_county","facility_name"], axis=1)
     # Insert dataframe
     pdf.setFont("Helvetica", 8)
     insert_dataframe_to_pdf(pdf, df1, start_x - 9, y - 200)
@@ -3356,7 +3364,8 @@ def create_page(request, pdf, y, image_path, ccc_num, age, df1, start_x=80):
     pdf.line(x1=start_x, y1=y - 220, x2=width, y2=y - 220)
 
 
-class GenerateBioChemistryPDF(View):
+class GenerateBioChemistryPDF(LoginRequiredMixin,View):
+    login_url = 'login'  # Specify the login URL
     def get(self, request):
         if request.user.is_authenticated and not request.user.first_name:
             return redirect("profile")
@@ -3384,10 +3393,11 @@ class GenerateBioChemistryPDF(View):
                 y = 680
             df2 = df1[df1['patient_id'] == i]
             age = df2['age'].values[0]
+            facility_name = df2['facility_name'].values[0]
             ccc_num = df2['patient_id'].values[0]
             df2 = df2.drop(["patient_id"], axis=1)  # drop Patient Id and Sample Id
             df2 = df2.rename(columns={"Full name": "Test", "results_interpretation": "interpretation"})  # Rename column
-            create_page(request, pdf, y, image_path, ccc_num, age, df2)
+            create_page(request, pdf, y, image_path, ccc_num, age,facility_name, df2)
             y = y - 400  # Adjust the y value for the next result on the same page
 
         pdf.save()
@@ -5433,7 +5443,8 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
     pdf.save()
 
 
-class GenerateDrtPDF(View):
+class GenerateDrtPDF(LoginRequiredMixin,View):
+    login_url = 'login'  # Specify the login URL
     def get(self, request):
         if request.user.is_authenticated and not request.user.first_name:
             return redirect("profile")

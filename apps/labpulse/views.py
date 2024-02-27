@@ -1,13 +1,10 @@
 import csv
-import io
 import json
 import math
 import os
 import re
 import textwrap
 from datetime import date, datetime, timedelta, timezone
-from functools import reduce
-from urllib.parse import unquote
 
 import numpy as np
 import pandas as pd
@@ -20,14 +17,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.staticfiles.finders import find
-from django.core import serializers
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import IntegrityError, transaction
-from django.db.models import ExpressionWrapper, F, IntegerField, Q, Sum
-from django.db.models.functions import Extract
-from django.forms import model_to_dict
+from django.db.models import Q, Sum
 from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -40,7 +35,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
-# from silk.profiling.profiler import silk_profile
 
 from apps.cqi.forms import FacilitiesForm
 from apps.cqi.models import Counties, Facilities, Sub_counties
@@ -55,6 +49,9 @@ from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, 
     EnableDisableCommodities, \
     LabPulseUpdateButtonSettings, ReagentStock
 from config.settings.base import BASE_DIR
+
+
+# from silk.profiling.profiler import silk_profile
 
 
 def results(df):
@@ -112,10 +109,13 @@ def biochemistry_data_prep(df):
     df = df.rename(columns={"High": "High Limit", "Low": "Low Limit"})
     collection_date_col = [col for col in df.columns if "collect" in col.lower()]
     mfl_col = [col for col in df.columns if "mfl" in col.lower()]
+    testing_date_col = [col for col in df.columns if "testing" in col.lower()]
     if len(collection_date_col) > 0:
         df = df.rename(columns={collection_date_col[0]: "Collection"})
     if len(collection_date_col) > 0:
         df = df.rename(columns={mfl_col[0]: "mfl_code"})
+    if len(testing_date_col) > 0:
+        df = df.rename(columns={testing_date_col[0]: "Result time"})
     df['High Limit'] = df['High Limit'].astype(float)
     df['Low Limit'] = df['Low Limit'].astype(float)
     df['Result'] = df['Result'].astype(float)
@@ -137,7 +137,8 @@ def biochemistry_data_prep(df):
         map_values(df, 'Reference class', gender_mapping)
     df['Collection'] = pd.to_datetime(df['Collection'])
     df['mfl_code'] = df['mfl_code'].astype(str).astype(int)
-    df['Patient Id'] = df['Patient Id'].astype(int)
+    df['Patient Id'].fillna(0, inplace=True)  # Replace NaN with a default value, e.g., 0
+    df['Patient Id'] = pd.to_numeric(df['Patient Id'])
     df['results_interpretation'] = df.apply(results, axis=1)
     df['number_of_samples'] = 1
     df = df[['Patient Id', 'Test', 'Full name', 'Result', 'Low Limit',
@@ -3228,8 +3229,40 @@ def load_biochemistry_results(request):
                     # Read the Excel file with dynamically determined header row
                     dfs.append(pd.read_excel(file, skiprows=header_row))
                 df = pd.concat(dfs)
-                if "Low" in df.columns and "High" in df.columns:
+
+                if "Low Limit" in df.columns and "High Limit" in df.columns:
                     df = biochemistry_data_prep(df)
+                    # Identify Patient Ids with lengths greater than 10
+                    more_than_ten = [patient_id for patient_id in df['Patient Id'].unique() if
+                                     len(str(patient_id)) > 10]
+                    less_than_ten = [patient_id for patient_id in df['Patient Id'].unique() if
+                                    len(str(patient_id)) < 10]
+                    if len(more_than_ten) >0:
+                        if len(more_than_ten) ==1:
+                            error_message = f"The following Patient Id have more than 10 characters:" \
+                                            f" {', '.join(map(str, more_than_ten))}. Please check and try again."
+                        else:
+                            error_message = f"The following Patient Ids have more than 10 characters:" \
+                                            f" {', '.join(map(str, more_than_ten))}. Please check and try again."
+                        messages.error(request, error_message)
+                        return redirect('load_biochemistry_results')
+                    if len(less_than_ten) >0:
+                        if len(less_than_ten) ==1:
+                            error_message = f"The following Patient Id have less than 10 characters:" \
+                                            f" {', '.join(map(str, less_than_ten))}. Please check and try again."
+                        else:
+                            error_message = f"The following Patient Ids have less than 10 characters:" \
+                                            f" {', '.join(map(str, less_than_ten))}. Please check and try again."
+                        messages.error(request, error_message)
+                        return redirect('load_biochemistry_results')
+                    missing_mfls = [mfl_code for mfl_code in df[df.columns[10]].unique() if
+                                    not Facilities.objects.filter(mfl_code=mfl_code).exists()]
+
+                    if missing_mfls:
+                        error_message = f"The following MFL codes are missing: {', '.join(map(str, sorted(missing_mfls)))}. Please check and try again."
+                        messages.error(request, error_message)
+                        return redirect('load_biochemistry_results')
+
                     saved = []
                     already_exist = []
                     for sample in df['Patient Id'].unique():
@@ -3238,35 +3271,39 @@ def load_biochemistry_results(request):
                         try:
                             with transaction.atomic():
                                 if df_specific.shape[1] == 14:
+                                    missing_mfl_codes=[]
                                     # Iterate over each row in the DataFrame
                                     for index, row in df_specific.iterrows():
                                         mfl_code = row[df_specific.columns[10]]
 
                                         # Fetch Facility, Sub_county, and County based on mfl_code
-                                        facility = Facilities.objects.get(mfl_code=mfl_code)
-                                        sub_county = Sub_counties.objects.filter(facilities__mfl_code=mfl_code).first()
-                                        county = Counties.objects.filter(sub_counties=sub_county).first() if sub_county else None
+                                        try:
+                                            facility = Facilities.objects.get(mfl_code=mfl_code)
+                                            sub_county = Sub_counties.objects.filter(facilities__mfl_code=mfl_code).first()
+                                            county = Counties.objects.filter(sub_counties=sub_county).first() if sub_county else None
 
-                                        chemistry_results = BiochemistryResult()
-                                        chemistry_results.patient_id = row[df_specific.columns[0]]
-                                        chemistry_results.test = row[df_specific.columns[1]]
-                                        chemistry_results.full_name = row[df_specific.columns[2]]
-                                        chemistry_results.result = row[df_specific.columns[3]]
-                                        chemistry_results.low_limit = row[df_specific.columns[4]]
-                                        chemistry_results.high_limit = row[df_specific.columns[5]]
-                                        chemistry_results.units = row[df_specific.columns[6]]
-                                        chemistry_results.reference_class = row[df_specific.columns[7]]
-                                        chemistry_results.collection_date = row[df_specific.columns[8]]
-                                        chemistry_results.result_time = row[df_specific.columns[9]]
-                                        chemistry_results.mfl_code = mfl_code
-                                        chemistry_results.facility = facility
-                                        chemistry_results.sub_county = sub_county
-                                        chemistry_results.county = county
-                                        chemistry_results.results_interpretation = row[df_specific.columns[11]]
-                                        chemistry_results.number_of_samples = row[df_specific.columns[12]]
-                                        chemistry_results.age = row[df_specific.columns[13]]
-                                        chemistry_results.performed_by = performed_by
-                                        chemistry_results.save()
+                                            chemistry_results = BiochemistryResult()
+                                            chemistry_results.patient_id = row[df_specific.columns[0]]
+                                            chemistry_results.test = row[df_specific.columns[1]]
+                                            chemistry_results.full_name = row[df_specific.columns[2]]
+                                            chemistry_results.result = row[df_specific.columns[3]]
+                                            chemistry_results.low_limit = row[df_specific.columns[4]]
+                                            chemistry_results.high_limit = row[df_specific.columns[5]]
+                                            chemistry_results.units = row[df_specific.columns[6]]
+                                            chemistry_results.reference_class = row[df_specific.columns[7]]
+                                            chemistry_results.collection_date = row[df_specific.columns[8]]
+                                            chemistry_results.result_time = row[df_specific.columns[9]]
+                                            chemistry_results.mfl_code = mfl_code
+                                            chemistry_results.facility = facility
+                                            chemistry_results.sub_county = sub_county
+                                            chemistry_results.county = county
+                                            chemistry_results.results_interpretation = row[df_specific.columns[11]]
+                                            chemistry_results.number_of_samples = row[df_specific.columns[12]]
+                                            chemistry_results.age = row[df_specific.columns[13]]
+                                            chemistry_results.performed_by = performed_by
+                                            chemistry_results.save()
+                                        except ObjectDoesNotExist:
+                                            missing_mfl_codes.append(mfl_code)
                                     saved.append(track_records(df_specific))
                                 else:
                                     # Notify the user that the data is not correct
@@ -3278,6 +3315,10 @@ def load_biochemistry_results(request):
                 else:
                     messages.error(request, "Upload the correct file!")
                     return render(request, 'lab_pulse/upload.html', context)
+                if len(missing_mfl_codes) > 0:
+                    error_message = f"Facility with MFL code {', '.join(map(str, set(missing_mfl_codes)))} not " \
+                                    f"found and DATA WAS NOT SAVED. Please check the MFL code and try again."
+                    messages.error(request, error_message)
                 saved_list = ', '.join(str(saved_sample) for saved_sample in sorted(saved))
                 if len(saved_list) > 0:
                     sample_ids_count = len(saved)
@@ -3292,7 +3333,7 @@ def load_biochemistry_results(request):
                     if len(list(already_exist)) == len(df['Patient Id'].unique()):
                         error_msg = f"The entire Biochemistry dataset has already been uploaded. Sample IDs: ({already_lists})"
                     else:
-                        error_msg = f"Biochemistry data already exists or missing Correct MFL Code for the following sample IDs: {already_lists}"
+                        error_msg = f"Biochemistry data already exists in the database for the following sample IDs: {already_lists}"
                     messages.error(request, error_msg)
                 return redirect('load_biochemistry_results')
     return render(request, 'lab_pulse/upload.html', context)
@@ -3816,7 +3857,8 @@ def prepare_drt_cascade_df(df_cascade):
 
 def add_percentage_and_count_string(haart_class_df,col="count"):
     # Calculate percentage and round to the nearest integer
-    haart_class_df['%'] = round(haart_class_df[col] / haart_class_df[col].sum() * 100).astype(int)
+    haart_class_df['%'] = round(haart_class_df[col] / haart_class_df[col].sum() * 100)
+    haart_class_df['%']=haart_class_df['%'].astype(int)
 
     # Create a new column with count and percentage string
     haart_class_df[f'{col} (%)'] = haart_class_df[col].astype(str) + " (" + haart_class_df['%'].astype(str) + "%)"

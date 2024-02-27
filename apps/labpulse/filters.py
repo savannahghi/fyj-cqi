@@ -96,20 +96,6 @@ class BiochemistryResultFilter(django_filters.FilterSet):
                                            widget=forms.Select(attrs={'class': 'form-control select2'}))
     county = django_filters.ChoiceFilter(choices=[], label='County',
                                            widget=forms.Select(attrs={'class': 'form-control select2'}))
-
-    # county = django_filters.ModelChoiceFilter(
-    #     queryset=Counties.objects.all(),
-    #     field_name='county__county_name',
-    #     label='County',
-    #     widget=forms.Select(attrs={'class': 'form-control select2'}),
-    # )
-    # sub_county = django_filters.ModelChoiceFilter(
-    #     queryset=Sub_counties.objects.all(),
-    #     field_name='sub_county__sub_counties',
-    #     label='Sub-County',
-    #     widget=forms.Select(attrs={'class': 'form-control select2'}),
-    # )
-
     result_gte = NumberFilter(field_name="result", lookup_expr="gte", label='Test result >=')
     result_lte = NumberFilter(field_name="result", lookup_expr="lte", label='Test result <=')
 

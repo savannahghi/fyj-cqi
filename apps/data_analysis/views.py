@@ -1,19 +1,27 @@
+import calendar
 import re
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
 # Create your views here.
 from django.utils.datastructures import MultiValueDictKeyError
+from django.views.generic import FormView
 from plotly.offline import plot
+# from silk.profiling.profiler import silk_profile
 
 from apps.data_analysis.forms import DataFilterForm, DateFilterForm, FileUploadForm, MultipleUploadForm
-from apps.data_analysis.models import FYJHealthFacility
+from apps.data_analysis.models import FYJHealthFacility, RTKData
+from .filters import RTKDataFilter
+from ..cqi.models import Facilities, Sub_counties
 
 
 @login_required(login_url='login')
@@ -3159,3 +3167,580 @@ def viral_load(request):
     }
 
     return render(request, 'data_analysis/vl.html', context)
+
+
+def convert_month_year(month_year):
+    month_name, year = month_year.split()
+    month_abbr = calendar.month_abbr[list(
+        calendar.month_name).index(month_name)]
+    year = year[-2:]
+    return f"{month_abbr}-{year}"
+
+
+def read_uploaded_file(request, uploaded_files):
+    expected_columns = [
+        'County', 'Sub-County', 'MFL Code', 'Facility Name',
+        'Commodity Name', 'Beginning Balance', 'Quantity Received',
+        'Quantity Used', 'Quantity Requested', 'Tests Done', 'Losses',
+        'Positive Adjustments', 'Negative Adjustments', 'Ending Balance',
+        'Days Out of Stock', 'Quantity Expiring in 6 Months'
+    ]
+    dfs = []
+    for file in uploaded_files:
+        pattern = r'\((\w+ \d{4})\)'
+        file_name = file.name.split('.')[0].title()
+        month_year = re.findall(pattern, file_name)
+        if file.name.endswith('.xlsx'):
+            if month_year:
+                month_year = convert_month_year(month_year[0])
+                df = pd.read_excel(file)
+                actual_columns = df.columns.tolist()
+                if actual_columns == expected_columns:
+                    df.insert(0, "month", f"{month_year}")
+                    df['month_column'] = pd.to_datetime(df['month'], format='%b-%y') + pd.offsets.MonthEnd(0)
+                    dfs.append(df)
+                else:
+                    messages.error(request, f"File: {file.name}, does not have the expected column names")
+            else:
+                messages.error(request, f"File: {file.name}, does not have the expected month name. "
+                                        f"Check if the file name was changed ")
+        else:
+            messages.error(request, f"File: {file.name} is not an .xlsx file")
+    if len(dfs) > 0:
+        final_df = pd.concat(dfs)
+    else:
+        final_df = None
+    return final_df
+
+
+class UploadRTKDataView(LoginRequiredMixin, FormView):
+    login_url = 'login'
+    template_name = 'data_analysis/rtk.html'
+    form_class = MultipleUploadForm
+    success_url = reverse_lazy('upload_rtk')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['dqa_type'] = 'upload_rtk'
+        return context
+
+    def form_valid(self, form):
+        """
+        Handle file upload and data import.
+
+        :param form: The form containing the uploaded files.
+        :return: A redirect to the RTK data upload page.
+        """
+        # Get the uploaded files from the form
+        uploaded_files = self.request.FILES.getlist('files')
+
+        # Read the uploaded data into a pandas DataFrame
+        data = read_uploaded_file(self.request, uploaded_files)
+
+        # Get the unique facility names, MFL codes, and commodity names from the data
+        months = set(data['month'].unique())
+        mfl_codes = set(data['MFL Code'].unique())
+        commodities = set(data['Commodity Name'].unique())
+
+        # Check if any of the data already exists in the database
+        existing_facilities = RTKData.objects.filter(
+            month__in=months,
+            commodity_name__in=commodities,
+            mfl_code__in=mfl_codes
+        ).values_list('facility_name', 'month').distinct().order_by('facility_name')
+
+        if existing_facilities:
+            # Format an error message if any data already exists
+            error_message = "The following data already exists:\n\n"
+            for facility, month in existing_facilities:
+                error_message += f"- {facility}: {month}\n"
+            # If there is an error message, display it and redirect the user back to the upload page
+            messages.error(self.request, error_message)
+            return redirect('upload_rtk')
+
+        # If there is no error message, save the data to the database using a transaction
+        if data is not None:
+            with transaction.atomic():
+                for index, row in data.iterrows():
+                    rtk_data = RTKData(
+                        month=row['month'],
+                        county=row['County'],
+                        sub_county=row['Sub-County'],
+                        mfl_code=row['MFL Code'],
+                        facility_name=row['Facility Name'],
+                        commodity_name=row['Commodity Name'],
+                        beginning_balance=row['Beginning Balance'],
+                        quantity_received=row['Quantity Received'],
+                        quantity_used=row['Quantity Used'],
+                        quantity_requested=row['Quantity Requested'],
+                        tests_done=row['Tests Done'],
+                        losses=row['Losses'],
+                        positive_adjustments=row['Positive Adjustments'],
+                        negative_adjustments=row['Negative Adjustments'],
+                        ending_balance=row['Ending Balance'],
+                        days_out_of_stock=row['Days Out of Stock'],
+                        quantity_expiring_in_6_months=row['Quantity Expiring in 6 Months'],
+                        month_column=row['month_column'],
+                    )
+                    rtk_data.save()
+            messages.success(self.request, 'Data uploaded successfully!')
+
+        # Return a redirect to the RTK data upload page
+        return super().form_valid(form)
+
+
+# @silk_profile(name='trend_variances')
+def trend_variances(negative_variances_df, title, bar_grouping=False):
+    if bar_grouping:
+        # Define a color map for resistance levels
+        color_map = {'Negative': '#e41a1c', 'Positive': '#4daf4a',
+
+                     }
+        fig = px.bar(negative_variances_df, x="month_num", y="Variance", color="variance type", text="Variance",
+                     title=title, height=400, barmode="group", color_discrete_map=color_map)
+
+        # Adjust the legend
+        fig.update_layout(legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ))
+        # Make text bigger and bold
+        fig.update_traces(textfont=dict(size=16, color='black', family='Arial',
+                                        #                                         weight='bold'
+                                        ))
+
+        # Ensure all month names are displayed on x-axis
+        fig.update_xaxes(tickmode='array',
+                         tickvals=negative_variances_df['month_num'],
+                         ticktext=negative_variances_df['month_num'].dt.strftime('%b-%y'))
+
+        # Adjust layout for better visibility of text annotations
+        fig.update_layout(
+            annotations=[dict(xref='paper', yref='paper', x=1, y=-0.15, showarrow=False, text="Source: HCMP")])
+    else:
+        fig = px.bar(negative_variances_df, x="month_num", y="Variance", text="Variance", title=title)
+
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def get_variance_df(df):
+    overall_variances_trend = df.groupby(["month", "month_num"]).sum()['Variance'].reset_index().sort_values(
+        "month_num")
+    positive_variances_df = df[df['Variance'] > 0]
+
+    positive_variances_df = positive_variances_df.groupby(["month", "month_num"]).sum()[
+        'Variance'].reset_index().sort_values("month_num")
+    positive_variances_df['variance type'] = "Positive"
+    negative_variances_df = df[df['Variance'] < 0]
+    negative_variances_df = negative_variances_df.groupby(["month", "month_num"]).sum()[
+        'Variance'].reset_index().sort_values("month_num")
+    negative_variances_df['Variance'] = negative_variances_df['Variance'].abs()
+    negative_variances_df['variance type'] = "Negative"
+    pos_neg_var = pd.concat([positive_variances_df, negative_variances_df]).sort_values("month_num")
+    no_variances_df = df[df['Variance'] == 0]
+    no_variances_df = no_variances_df.groupby(["month", "month_num"]).count()[
+        'Facility Name'].reset_index().sort_values("month_num")
+    return no_variances_df, pos_neg_var, negative_variances_df, positive_variances_df, overall_variances_trend
+
+
+def most_frequent_bars(most_frequent_sub_counties, county, x_axis, text, title, show_source=False, height=400,y_axis_title="Frequency"):
+    fig = px.bar(most_frequent_sub_counties, x=x_axis, y='count', text=text,
+                 title=title,
+                 height=height,
+                 labels={'count': y_axis_title, 'Sub-County': 'Sub-County'},
+                 color='count',  # You can use color to represent the frequency
+                 color_continuous_scale='bluered',  # Choose a color scale
+                 )
+
+    fig.update_traces(textfont=dict(size=18, color='black', family='Arial',
+                                    #                                         weight='bold'
+                                    ))
+    if show_source:
+        fig.update_layout(
+            annotations=[dict(xref='paper', yref='paper', x=1, y=-0.18, showarrow=False, text="Source: HCMP")])
+
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def add_percentage_and_count_string(haart_class_df, col):
+    # Calculate percentage and round to the nearest integer
+    haart_class_df['%'] = round(haart_class_df[col] / haart_class_df[col].sum() * 100).astype(int)
+
+    # Create a new column with count and percentage string
+    haart_class_df['count (%)'] = haart_class_df[col].astype(str) + " (" + haart_class_df['%'].astype(str) + "%)"
+
+    return haart_class_df
+
+
+def get_monthly_frequency(variances, col):
+    number_of_facilities = len(variances['Facility Name'].unique())
+    variances_trend_df = variances.groupby(["month", "month_num"]).count()[col].reset_index().sort_values(
+        "month_num")
+    variances_trend_df = variances_trend_df.rename(columns={col: "Frequency"})
+    variances_trend_df = add_percentage_and_count_string(variances_trend_df, "Frequency")
+    return variances_trend_df, number_of_facilities
+
+
+def trend_variances_(negative_variances_df,
+                     title,
+                     y_axis,
+                     x_axis,
+                     text,
+                     bar_grouping=False,
+                     color=None):
+    if bar_grouping:
+        # Define a color map for resistance levels
+        color_map = {'Negative': '#e41a1c', 'Positive': '#4daf4a'}
+        fig = px.bar(negative_variances_df,
+                     x=x_axis,
+                     y=y_axis,
+                     color=color,
+                     text=text,
+                     title=title,
+                     height=400,
+                     barmode="group",
+                     color_discrete_map=color_map)
+    else:
+        fig = px.bar(negative_variances_df,
+                     x=x_axis,
+                     y=y_axis,
+                     text=text,
+                     title=title)
+        # Adjust the legend
+        fig.update_layout(legend=dict(
+            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+        # Make text bigger and bold
+        fig.update_traces(
+            textfont=dict(size=16, color='black', family='Arial'))
+
+        # Ensure all month names are displayed on x-axis
+        fig.update_xaxes(
+            tickmode='array',
+            tickvals=negative_variances_df['month_num'],
+            ticktext=negative_variances_df['month_num'].dt.strftime('%b-%y'))
+
+        # Adjust layout for better visibility of text annotations
+        fig.update_layout(annotations=[
+            dict(xref='paper',
+                 yref='paper',
+                 x=1,
+                 y=-0.15,
+                 showarrow=False,
+                 text="Source: HCMP")
+        ])
+
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def convert_to_df(rtk_qs):
+    data = list(rtk_qs.values_list('month', 'county', 'sub_county', 'mfl_code', 'facility_name',
+                                   'commodity_name', 'beginning_balance', 'quantity_received',
+                                   'quantity_used', 'quantity_requested', 'tests_done', 'losses',
+                                   'positive_adjustments', 'negative_adjustments', 'ending_balance',
+                                   'days_out_of_stock', 'quantity_expiring_in_6_months'))
+
+    df = pd.DataFrame(data, columns=[
+        'month', 'County', 'Sub-County', 'MFL Code', 'Facility Name',
+        'Commodity Name', 'Beginning Balance', 'Quantity Received',
+        'Quantity Used', 'Quantity Requested', 'Tests Done', 'Losses',
+        'Positive Adjustments', 'Negative Adjustments', 'Ending Balance',
+        'Days Out of Stock', 'Quantity Expiring in 6 Months'
+    ])
+    return df
+
+
+# @silk_profile(name='calculate_screening_variances_for_loop')
+def calculate_screening_variances(bal):
+    bal = bal.copy()  # Make a copy of the DataFrame to avoid modifying the original
+    bal.loc[:, 'month_num'] = pd.to_datetime(bal['month'], format="%b-%y")
+    bal.loc[:, 'month_year'] = bal['month']
+    bal = bal.sort_values("month_num")
+    bal.loc[:, 'Previous month Ending Balance'] = bal.groupby(['Facility Name', 'Commodity Name'])[
+        'Ending Balance'].shift(1)
+    bal = bal.fillna(0)
+    bal.loc[:, 'Variance'] = bal['Beginning Balance'].astype(int) - bal['Previous month Ending Balance'].astype(int)
+    bal = bal[bal['Previous month Ending Balance'] != 0]
+    return bal
+
+
+def calculate_variances_subcounties(df, variances,col):
+    all_subcounty_reports = df[col].value_counts().sort_values(ascending=False).reset_index()
+
+    all_subcounty_reports.columns = [col, 'All reports']
+    most_frequent_sub_counties = variances[col].value_counts().sort_values(ascending=False).reset_index()
+    most_frequent_sub_counties.columns = [col, 'count']
+
+    most_frequent_sub_counties.columns = [col, 'variant reports']
+    subcounty_variance = most_frequent_sub_counties.merge(all_subcounty_reports, on=col)
+    subcounty_variance['%'] = round(subcounty_variance['variant reports'] / subcounty_variance['All reports'] * 100,
+                                    1)
+
+    subcounty_variance['variance %'] = subcounty_variance['variant reports'].astype(str) + " (" + \
+                                       subcounty_variance['%'].astype(str) + "%)"
+    subcounty_variance['Concordant report'] = subcounty_variance['All reports'] - subcounty_variance['variant reports']
+    subcounty_variance['concor_%'] = round(subcounty_variance['Concordant report'] / subcounty_variance['All reports'] * 100,
+                                    1)
+
+    subcounty_variance['Concordant report %'] = subcounty_variance['Concordant report'].astype(str) + " (" + \
+                                       subcounty_variance['concor_%'].astype(str) + "%)"
+    return subcounty_variance
+
+
+def show_subcounty_variances(subcounty_variance, county, min_date, max_date,x_axis):
+    # Create a bar plot for "All reports"
+    fig = px.bar(subcounty_variance, x=x_axis, y="Concordant report", text="Concordant report %", height=550,
+                 title=f"{x_axis} Reports and Variances    County : {county}   Period: {min_date} - {max_date}",
+                 color_discrete_sequence=['#4daf4a'], hover_data=[ "Concordant report","All reports"])
+
+    # Add a bar plot for "variance %" with a secondary y-axis
+    fig.add_traces(px.bar(subcounty_variance, x=x_axis, y='%', text='variance %',
+                          title="Percentage of Variant Reports",
+                          color_discrete_sequence=['#e41a1c'], hover_name='variance %').data)
+
+    # Set the range of the secondary y-axis
+    fig.update_layout(yaxis2=dict(overlaying='y', side='right', range=[0, 100]))
+
+    # Update the text font and size
+    fig.update_traces(textfont=dict(size=15, color='black', family='Arial'))
+    if x_axis=="Hub":
+        x_axis="Hubs"
+    else:
+        x_axis="Sub-Counties"
+
+    fig.update_layout(xaxis_title=x_axis, yaxis_title='Reports and Variances')
+
+    fig.update_layout(
+        annotations=[dict(xref='paper', yref='paper', x=1, y=-0.15, showarrow=False, text="Source: HCMP")])
+
+    # Show the plot
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+@login_required(login_url='login')
+def rtk_visualization(request):
+    """
+    Show visualizations of RTK data.
+
+    :param request: The request object.
+    :return: A render object with the visualizations.
+    """
+    #####################################
+    # Get chosen facility type
+    #####################################
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+        # record_count = int(request.GET.get('record_count', 10))  # Get the selected record count (default: 10)
+        selected_facility_type = request.GET.get('record_count', 'False')
+    else:
+        selected_facility_type = request.GET.get('record_count', 'True')
+
+
+    most_frequent_hub_figs=most_frequent_sub_counties_figs=sub_counties_figs=most_frequent_facilities_figs=\
+        sub_county_variances_list=None
+    hub_variances_list=trend_variances_list=trend_monthly_variances_list=[]
+
+    def fetch_past_one_year_cd4_data(request):
+        # Get the user's start_date input from the request GET parameters
+        start_date_param = request.GET.get('start_date')
+        end_date_param = request.GET.get('end_date')
+        use_one_year_data = True
+        days=395
+        # Use default logic for one year ago
+        one_year_ago = datetime.now() - timedelta(days=days)
+        one_year_ago = datetime(
+            one_year_ago.year,
+            one_year_ago.month,
+            one_year_ago.day,
+            23, 59, 59, 999999
+        )
+
+        if start_date_param:
+            # Parse the user's input into a datetime object
+            start_date = datetime.strptime(start_date_param, '%m/%d/%Y')
+
+            # If the user's input is beyond one year ago, use it
+            if start_date < datetime.now() - timedelta(days=days) and (
+                    not end_date_param or start_date < datetime.strptime(end_date_param, '%m/%d/%Y')):
+                one_year_ago = start_date
+                use_one_year_data = False
+        # Handle N+1 Query using prefetch_related /lab-pulse/download/{filter_type}
+        rtk_query_set = RTKData.objects.filter(month_column__gte=one_year_ago).order_by('facility_name', 'month')
+
+        return rtk_query_set, use_one_year_data
+
+    rtk_qs, use_one_year_data = fetch_past_one_year_cd4_data(request)
+
+    # Convert queryset to dataframe
+    # rtk_qs = RTKData.objects.all().order_by('facility_name', 'month')
+    rtk_qs_filters = RTKDataFilter(request.GET, queryset=rtk_qs)
+    facility_type_options = [("True", "All"), ("False","FYJ")]
+    df = convert_to_df(rtk_qs_filters.qs)
+    dqa_type="rtk"
+
+    if df.shape[0] > 0:
+        # Get all facilities
+        if selected_facility_type == "True":
+            all_facilities = True
+        else:
+            all_facilities = False
+
+
+
+        if not all_facilities:
+            type_of_facilities = "FYJ"
+            # Get FYJ facilities
+            facilities = Facilities.objects.all()
+            # Filter data by FYJ facilities
+            df = df[df['MFL Code'].isin([facility.mfl_code for facility in facilities])]
+            # Extracting hub information from Sub_counties model
+            sub_county_hub_mapping = Sub_counties.objects.values('facilities__mfl_code', 'hub__hub')
+            facility_hub_df=pd.DataFrame(sub_county_hub_mapping)
+            facility_hub_df.columns=["MFL Code","Hub"]
+            df=df.merge(facility_hub_df,on='MFL Code',how="left")
+            df = df[~df['Hub'].isnull()]
+            bal = df[['month', 'County', 'Sub-County', "Hub",'MFL Code', 'Facility Name',
+                      'Commodity Name', 'Beginning Balance', 'Ending Balance']]
+            bal=bal.drop_duplicates()
+            # df = df.drop_duplicates(subset=['MFL Code', 'Facility Name', 'Commodity Name'])
+
+
+        else:
+            type_of_facilities = "ALL"
+            bal = df[['month', 'County', 'Sub-County', 'MFL Code', 'Facility Name',
+                      'Commodity Name', 'Beginning Balance', 'Ending Balance']]
+        df = calculate_screening_variances(bal)
+
+        trend_variances_list = []
+        for county in df['County'].unique():
+            no_variances_df, pos_neg_var, negative_variances_df, positive_variances_df, overall_variances_trend = get_variance_df(
+                df[df['County'] == county])
+            trend_variances_list.append(trend_variances(pos_neg_var,
+                                                        f"Monthly Trend of Variances (Positive and Negative)  {type_of_facilities} facilities : {county} County",
+                                                        bar_grouping=True))
+
+        variances = df[df['Variance'] != 0].reset_index(drop=True)
+        max_date = variances["month_num"].max().date()
+        min_date = variances["month_num"].min().date()
+        try:
+            max_date = max_date.strftime("%b-%Y")
+            min_date = min_date.strftime("%b-%Y")
+        except ValueError:
+            max_date = ""
+            min_date = ""
+        if not all_facilities:
+            variances = variances[
+                ['month_year', 'month_num', 'month', 'County', 'Sub-County', "Hub", 'MFL Code', 'Facility Name',
+                 'Commodity Name',
+                 'Beginning Balance', 'Ending Balance',
+                 'Previous month Ending Balance', 'Variance']]
+        else:
+            variances = variances[
+                ['month_year', 'month_num', 'month', 'County', 'Sub-County', 'MFL Code', 'Facility Name', 'Commodity Name',
+                 'Beginning Balance', 'Ending Balance',
+                 'Previous month Ending Balance', 'Variance']]
+
+        trend_monthly_variances_list = []
+        for county in df['County'].unique():
+            county_specific_df = variances[variances['County'] == county]
+            variances_trend_df, number_of_facilities = get_monthly_frequency(county_specific_df, 'Facility Name')
+            trend_monthly_variances_list.append(trend_variances_(variances_trend_df,
+                                                                 f"Facility Monthly Variances       N= {len(variances['Facility Name'].unique())} {type_of_facilities}  Facilities   {county} County      Period: {min_date} - {max_date}",
+                                                                 y_axis="Frequency",
+                                                                 x_axis="month_num",
+                                                                 text="count (%)"))
+
+        most_frequent_sub_counties_figs = []
+        for county in df['County'].unique():
+            county_specific_df = variances[variances['County'] == county]
+            most_frequent_sub_counties = county_specific_df['Sub-County'].value_counts().sort_values(
+                ascending=False).reset_index()
+            most_frequent_sub_counties.columns = ['Sub-County', 'count']
+            most_frequent_sub_counties = add_percentage_and_count_string(most_frequent_sub_counties, "count")
+            title = f"Most Frequent Sub-Counties Over Time   N= {most_frequent_sub_counties['count'].sum()}   Reports : {len(variances['Facility Name'].unique())} {type_of_facilities} Facilities   {county} County      Period: {min_date} - {max_date}"
+            most_frequent_sub_counties_figs.append(
+                most_frequent_bars(most_frequent_sub_counties, county, "Sub-County", "count (%)", title, show_source=True))
+
+        if type_of_facilities=="FYJ":
+            most_frequent_hub_figs = []
+            for county in df['County'].unique():
+                county_specific_df = variances[variances['County'] == county]
+                most_frequent_hubs = county_specific_df['Hub'].value_counts().sort_values(
+                    ascending=False).reset_index()
+                most_frequent_hubs.columns = ['Hub', 'count']
+                most_frequent_hubs = add_percentage_and_count_string(most_frequent_hubs, "count")
+                title = f"Most Frequent Hub Over Time   N= {most_frequent_hubs['count'].sum()}   Reports : {len(variances['Facility Name'].unique())} {type_of_facilities} Facilities   {county} County      Period: {min_date} - {max_date}"
+                most_frequent_hub_figs.append(
+                    most_frequent_bars(most_frequent_hubs, county, "Hub", "count (%)", title, show_source=True))
+        # @silk_profile(name='subcounty_two')
+        # def subcounty_two(df, variances):
+        sub_counties_figs = []
+
+        # Group the data by County and Sub-County
+        grouped_df = variances.groupby(['County', 'Sub-County'])
+
+        # Iterate through each group and create a figure
+        for county, sub_county_df in grouped_df:
+            # Get the name of the sub-county
+            sub_county = sub_county_df['Sub-County'].unique()[0]
+            county = sub_county_df['County'].unique()[0]
+
+
+            # Get the monthly frequency data for the sub-county
+            variances_trend_df, number_of_facilities = get_monthly_frequency(sub_county_df, "Facility Name")
+
+            # Create a figure for the sub-county
+            sub_counties_figs.append(trend_variances_(
+                variances_trend_df,
+                f"Monthly Variances per Sub-County : {sub_county}    County : {county}    N={variances_trend_df['Frequency'].sum()}   Reports : {number_of_facilities} {type_of_facilities} Facilities   Period: {min_date} - {max_date}",
+                y_axis="Frequency",
+                x_axis="month_num",
+                text="count (%)"
+            ))
+        #     return sub_counties_figs
+        #
+        # sub_counties_figs=subcounty_two(df, variances)
+
+
+
+        unique_facilities_df = variances.drop_duplicates(subset=["Facility Name", "month_num"])
+
+        most_frequent_facilities_figs = []
+        for county in df['County'].unique():
+            county_specific_df = unique_facilities_df[unique_facilities_df['County'] == county]
+            most_frequent_facilities = county_specific_df['Facility Name'].value_counts().sort_values(
+                ascending=False).reset_index()
+            most_frequent_facilities.columns = ['Facility Name', 'count']
+            if most_frequent_facilities.shape[0] > 50:
+                top_50 = most_frequent_facilities.head(50)
+                top_50_text = "(Top 50 facilities)"
+            else:
+                top_50 = most_frequent_facilities
+                top_50_text = f"{most_frequent_facilities.shape[0]} facilities"
+            title = f'Most Frequent Facilities Over Time   {top_50_text}    {type_of_facilities} facilities    Period: {min_date} - {max_date}'
+            most_frequent_facilities_figs.append(
+                most_frequent_bars(top_50, county, "Facility Name", "count", title, show_source=False, height=600,y_axis_title="Variant reports in months"))
+
+        sub_county_variances_list = []
+        for county in df['County'].unique():
+            county_specific = df[df['County'] == county]
+            subcounty_variance = calculate_variances_subcounties(county_specific, variances,'Sub-County')
+            sub_county_variances_list.append(show_subcounty_variances(subcounty_variance, county, min_date, max_date,"Sub-County"))
+        if type_of_facilities=="FYJ":
+            hub_variances_list = []
+            for county in df['County'].unique():
+                county_specific = df[df['County'] == county]
+                hub_variance = calculate_variances_subcounties(county_specific, variances, 'Hub')
+                hub_variances_list.append(show_subcounty_variances(hub_variance, county, min_date, max_date,"Hub"))
+
+    context = {
+        "trend_variances_list": trend_variances_list, "trend_monthly_variances_list": trend_monthly_variances_list,
+        "most_frequent_sub_counties_figs": most_frequent_sub_counties_figs, "sub_counties_figs": sub_counties_figs,
+        "most_frequent_facilities_figs": most_frequent_facilities_figs,
+        "sub_county_variances_list": sub_county_variances_list,"most_frequent_hub_figs":most_frequent_hub_figs,
+        "hub_variances_list":hub_variances_list,"rtk_qs_filters":rtk_qs_filters,
+        "facility_type_options":facility_type_options,"dqa_type":dqa_type,
+    }
+
+    return render(request, 'data_analysis/rtk_viz.html', context)

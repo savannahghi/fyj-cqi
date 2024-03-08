@@ -1,0 +1,305 @@
+{% extends 'data_analysis/index_dqa.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load remove_underscores %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info col-12" role="alert">
+                            <h5 class="d-flex justify-content-evenly" style="font-size: x-small">{{ message }}</h5>
+                        </div>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <div class="container-fluid py-3">
+
+                <div class="d-flex justify-content-around mb-3">
+                    {% if dqa_type == "tat" %}
+                        <a href="{% url 'tat' %}" class="btn btn-success">Turn Around Time (TAT)</a>
+                    {% else %}
+                        <a href="{% url 'tat' %}" class="btn btn-outline-success">Turn Around Time (TAT)</a>
+                    {% endif %}
+                    {% if dqa_type == "viral_load" %}
+                        <a href="{% url 'viral_load' %}" class="btn btn-success">VL Analyzer</a>
+                    {% else %}
+                        <a href="{% url 'viral_load' %}" class="btn btn-outline-success">VL Analyzer</a>
+                    {% endif %}
+                    {% if dqa_type == "rtk" %}
+                        <a href="{% url 'rtk_visualization' %}" class="btn btn-success">HCMP REPORT</a>
+                    {% else %}
+                        <a href="{% url 'rtk_visualization' %}" class="btn btn-outline-success">HCMP REPORT</a>
+                    {% endif %}
+                </div>
+                <div class="col-md-12 alert alert-primary text-center">
+                    <h4>Customize your search or filter below</h4>
+                </div>
+                <div class="mt-3">
+                    <form id="filter-form" class="row g-3" autocomplete="off">
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.testing_laboratory|as_crispy_field }}#}
+                        {#                        </div>#}
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ rtk_qs_filters.form.facility_name|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ rtk_qs_filters.form.county|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ rtk_qs_filters.form.sub_county|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ rtk_qs_filters.form.commodity_name|as_crispy_field }}
+                        </div>
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ rtk_qs_filters.form.month|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.age_lte|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.age_gte|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.age_unit|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.report_type|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.received_status|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.serum_crag_results|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.cd4_count_results_lte|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.cd4_count_results_gte|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.reason_for_rejection|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.cd4_percentage_lte|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.cd4_percentage_gte|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.tb_lam_results|as_crispy_field }}#}
+                        {#                        </div>#}
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ rtk_qs_filters.form.start_date|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            {{ rtk_qs_filters.form.end_date|as_crispy_field }}
+                        </div>
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.min_tat|as_crispy_field }}#}
+                        {#                        </div>#}
+                        {#                        <div class="col-12 col-md-6 col-lg-2">#}
+                        {#                            {{ my_filters.form.max_tat|as_crispy_field }}#}
+                        {#                        </div>#}
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <label for="record_count" class="form-label">Facility type</label>
+                            <select name="record_count" id="record_count" class="form-select">
+                                {% for option_value, option_label in facility_type_options %}
+                                    <option value="{{ option_value }}" {% if request.GET.record_count == option_value %}
+                                            selected {% endif %}>
+                                        {{ option_label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <div class="row">
+                                <div class="mt-4">
+                                    <button class="btn btn-outline-primary btn-sm" type="submit">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <a class="nav-link"
+                                   href="{% url 'rtk_visualization' %}">
+                                    <span data-feather="refresh-cw" class="align-text-bottom"></span>
+                                    Reset Filters
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <hr>
+                {#                {% if qi_list %}#}
+                <div class="row">
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                        <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"
+                           class="btn btn-secondary btn-block" role="button"> All records
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                    {% if rejected_samples_exist %}
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                            <a href="{% url 'download_csv_lab' "rejected" %}?{{ request.GET.urlencode }}"
+                               class="btn btn-secondary btn-block" role="button"> Rejected samples
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+                    {% if tb_lam_pos_samples_exist %}
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                            <a href="{% url 'download_csv_lab' "positive_tb_lam" %}?{{ request.GET.urlencode }}"
+                               class="btn btn-secondary btn-block" role="button"> Positive TB LAM
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+                    {% if crag_pos_samples_exist %}
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                            <a href="{% url 'download_csv_lab' "positive_crag" %}?{{ request.GET.urlencode }}"
+                               class="btn btn-secondary btn-block" role="button"> Positive CrAg
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+                    {% if missing_crag_samples_exist %}
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                            <a href="{% url 'download_csv_lab' filter_type='missing_crag' %}?{{ request.GET.urlencode }}"
+                               class="btn btn-secondary btn-block" role="button"> Missing CrAg
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+                    {% if missing_tb_lam_samples_exist %}
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                            <a href="{% url 'download_csv_lab' "missing_tb_lam" %}?{{ request.GET.urlencode }}"
+                               class="btn btn-secondary btn-block" role="button"> Missing TB LAM
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                {#                    {% if title == "Results" %}#}
+                <hr>
+                <h4 class="fw-bold text-primary text-center"> Summary </h4>
+                <hr>
+                <div class="container">
+                    <div class="row">
+                        {% for fig in trend_variances_list %}
+                            <div class="col-12">
+                                {{ fig|safe }}
+                            </div>
+                            <hr>
+                        {% endfor %}
+                    </div>
+                    {#                            {% if dictionary.weekly_df %}#}
+                    <div class="row">
+                        {% for fig in trend_monthly_variances_list %}
+                            <div class="col-12">
+                                {{ fig|safe }}
+                            </div>
+                            <hr>
+                        {% endfor %}
+                    </div>
+                    {#                            {% endif %}#}
+                    {#                            {% if dictionary.rejected_df %}#}
+                    <div class="row">
+                        {% for fig in most_frequent_sub_counties_figs %}
+                            <div class="col-12">
+                                {{ fig|safe }}
+                            </div>
+                            <hr>
+                        {% endfor %}
+                    </div>
+                    {#                    {% if show_cd4_testing_workload %}#}
+                    <div class="row">
+                        {% for fig in sub_county_variances_list %}
+                            <div class="col-12">
+                                {{ fig|safe }}
+                            </div>
+                            <hr>
+                        {% endfor %}
+                    </div>
+                    {#                    {% endif %}#}
+                    {#                            {% endif %}#}
+                    {#                    {% if dictionary.justification_summary_df %}#}
+                    <div class="row">
+                        {% for fig in sub_counties_figs %}
+                            <div class="col-12">
+                                {{ fig|safe }}
+                            </div>
+                            <hr>
+                        {% endfor %}
+                    </div>
+                    {#                    {% endif %}#}
+                    <div class="row">
+                        {% for fig in most_frequent_facilities_figs %}
+                            <div class="col-12">
+                                {{ fig|safe }}
+                            </div>
+                            <hr>
+                        {% endfor %}
+                    </div>
+
+                    {#                    {% if show_crag_testing_workload %}#}
+                    <div class="row">
+                        {% for fig in most_frequent_hub_figs %}
+                            <div class="col-12">
+                                {{ fig|safe }}
+                            </div>
+                            <hr>
+                        {% endfor %}
+                    </div>
+                    {#                    {% endif %}#}
+                    {% if not crag_positivity_df.empty %}
+                        <div class="row">
+                            {% for fig in hub_variances_list %}
+                                <div class="col-12">
+                                    {{ fig|safe }}
+                                </div>
+                                <hr>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if not tb_lam_positivity_df.empty %}
+                        <div class="row">
+                            <div class="col-12">
+                                {{ tb_lam_positivity_fig|safe }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if not facility_positive_count.empty %}
+                        <div class="row">
+                            <div class="col-12">
+                                {{ facility_crag_positive_fig|safe }}
+                                {{ facility_tb_lam_positive_fig|safe }}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {#                <div class="row justify-content-around">#}
+                {#                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">#}
+                {#                        {% if record_count != "all" or qi_list|length <= 500 %}#}
+                {#                            <h4 class="fw-bold text-primary"> {{ title }} </h4>#}
+                {#                        {% else %}#}
+                {#                            <h6 class="text-primary text-sm-left"> > 500 records </h6>#}
+                {#                        {% endif %}#}
+                {#                    </div>#}
+                {#                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">#}
+                {#                        <a href="{% url 'generate_cd4_report_pdf' %}" class="btn btn-warning btn-block mb-2"#}
+                {#                           role="button"> Download PDF</a>#}
+                {#                    </div>#}
+                {#                </div>#}
+            </div>
+        </div>
+    </main>
+{% endblock %}

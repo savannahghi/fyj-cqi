@@ -33,6 +33,11 @@
                     {% else %}
                         <a href="{% url 'rtk_visualization' %}" class="btn btn-outline-success">HCMP REPORT</a>
                     {% endif %}
+                    {% if dqa_type == "upload_rtk" %}
+                        <a href="{% url 'upload_rtk' %}" class="btn btn-warning">Upload HCMP REPORT</a>
+                    {% else %}
+                        <a href="{% url 'upload_rtk' %}" class="btn btn-outline-warning">Upload HCMP REPORT</a>
+                    {% endif %}
                 </div>
                 <form method="post" id="filter-form" enctype="multipart/form-data">
                     {% csrf_token %}

@@ -3219,6 +3219,11 @@ class UploadRTKDataView(LoginRequiredMixin, FormView):
     form_class = MultipleUploadForm
     success_url = reverse_lazy('upload_rtk')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['dqa_type'] = 'upload_rtk'
+        return context
+
     def form_valid(self, form):
         """
         Handle file upload and data import.

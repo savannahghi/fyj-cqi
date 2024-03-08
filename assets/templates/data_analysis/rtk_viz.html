@@ -36,6 +36,11 @@
                     {% else %}
                         <a href="{% url 'rtk_visualization' %}" class="btn btn-outline-success">HCMP REPORT</a>
                     {% endif %}
+                    {% if dqa_type == "upload_rtk" %}
+                        <a href="{% url 'upload_rtk' %}" class="btn btn-warning">Upload HCMP REPORT</a>
+                    {% else %}
+                        <a href="{% url 'upload_rtk' %}" class="btn btn-outline-warning">Upload HCMP REPORT</a>
+                    {% endif %}
                 </div>
                 <div class="col-md-12 alert alert-primary text-center">
                     <h4>Customize your search or filter below</h4>

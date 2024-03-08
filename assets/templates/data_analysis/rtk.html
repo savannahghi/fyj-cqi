@@ -31,8 +31,12 @@
                     {% if dqa_type == "rtk" %}
                         <a href="{% url 'rtk_visualization' %}" class="btn btn-success">HCMP REPORT</a>
                     {% else %}
-
                         <a href="{% url 'rtk_visualization' %}" class="btn btn-outline-success">HCMP REPORT</a>
+                    {% endif %}
+                    {% if dqa_type == "upload_rtk" %}
+                        <a href="{% url 'upload_rtk' %}" class="btn btn-warning">Upload HCMP REPORT</a>
+                    {% else %}
+                        <a href="{% url 'upload_rtk' %}" class="btn btn-outline-warning">Upload HCMP REPORT</a>
                     {% endif %}
                 </div>
                 <form method="post" id="filter-form" enctype="multipart/form-data">
@@ -49,23 +53,41 @@
                                             (TAT)</h3>
                                     </div>
                                 {% endif %}
-                                <p>To begin, you will need to upload either the overall Detailed (Viral Load) or All
-                                    Outcomes (+/-) (Early Infant Diagnosis (EID)) CSV file from
-                                    <a
-                                            href="https://eiddash.nascop.org/reports">NASCOP's website
-                                    </a>.
-                                    Once you have uploaded the desired file, you can filter the dataset by selecting a
-                                    specific date
-                                    range (Date collected) for which you would like to view data. This will allow you to
-                                    narrow down
-                                    the dataset and focus on the relevant information that you need.</p>
-                                {#                                <div class="form-group col-md-12">#}
-                                {#                                     {{ form.files }}#}
-                                {#                                    {{ form.as_p }}#}
-                                {#                                    {% if form.is_bound %}#}
-                                {#                                        <p>Uploaded file: {{ form.cleaned_data.file.name }}</p>#}
-                                {#                                    {% endif %}#}
-                                <!-- Conditionally display uploaded files label -->
+                                <h1>HCMP Report Upload Instructions</h1>
+                                <p>To begin, you will need to Login credentials for HCMP website <a
+                                        href="https://rtk.nascop.org/rtk_management/county_admin_reports">HCMP
+                                    website</a>.</p>
+                                <p>Here are the step-by-step instructions for uploading the report:</p>
+                                <ul>
+                                    <li>Log in to the HCMP website using your credentials.</li>
+                                    <li>Once you are logged in, select the county for which you want to download the
+                                        report from the dropdown menu on the left navigation bar of the page.
+                                    </li>
+                                    <li>Click on "Reports" in the right navigation bar.</li>
+                                    <li>Under "CONSUMPTION DATA REPORTS", select the monthly report that you want to
+                                        download.
+                                    </li>
+                                    <li>Click on the "Download Detailed Consumption Report" to download it in .xlsx
+                                        format.
+                                    </li>
+                                    <li>Save the .xlsx file to your computer.</li>
+                                    <li>Now, click choose file on this page and select a maximum of 6 .xlsx reports you
+                                        downloaded from HCMP website.
+                                    </li>
+                                    <li>Click on the "Upload" button.</li>
+                                    <li>Once the file(s) is uploaded, go to <a href="{% url 'rtk_visualization' %}">RTK
+                                        Summary</a> to filter the dataset for which you would like to view data. This
+                                        will allow you to narrow down the dataset and focus on the relevant information
+                                        that you need.
+                                    </li>
+                                    <li>After customizing your search, click on the "Search" button to view the filtered
+                                        data.
+                                    </li>
+                                    <li>You can now analyze the data and generate insights based on the uploaded
+                                        report.
+                                    </li>
+                                </ul>
+
                                 <div id="files-input" class="mt-4">
                                     {{ form.files }}
                                 </div>
@@ -74,15 +96,8 @@
                                     Files:</label>
                                 <!-- Display uploaded file names dynamically -->
                                 <ul id="uploaded-files-list"></ul>
-                                {#                                </div>#}
-                                <div class="col-md-4">
-                                    {{ date_picker_form.from_date|as_crispy_field }}
-                                </div>
-                                <div class="col-md-4">
-                                    {{ date_picker_form.to_date|as_crispy_field }}
-                                </div>
                                 <div class="col-md-3 mb-2">
-                                    <button type="submit" class="btn btn-primary mt-4">Submit</button>
+                                    <button type="submit" class="btn btn-primary mt-4">Upload</button>
                                 </div>
                             </div>
                         </div>

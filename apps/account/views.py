@@ -80,7 +80,7 @@ def login_page(request):
             ##########################################################################################
             # Redirect labpulse facility, Program and Sub-county staffs, Referring Laboratory Staffs #
             ##########################################################################################
-            elif user.groups.filter(name__in=['subcounty_staffs_labpulse','laboratory_staffs_labpulse',
+            elif user.groups.filter(name__in=['laboratory_staffs_labpulse',
                                               'facility_staffs_labpulse',
                                               'referring_laboratory_staffs_labpulse']).exists():
                 return redirect("show_results")
@@ -89,6 +89,8 @@ def login_page(request):
             ##############################
             elif user.groups.filter(name='unitid_staffs_labpulse').exists():
                 return redirect("load_biochemistry_results")
+            elif user.groups.filter(name='subcounty_staffs_labpulse').exists():
+                return redirect("facilities_landing_page", project_type="facility")
             else:
                 # Redirect to CQI app
                 return redirect("facilities_landing_page", project_type="facility")

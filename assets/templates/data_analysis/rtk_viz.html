@@ -143,57 +143,6 @@
                     </form>
                 </div>
                 <hr>
-                {#                {% if qi_list %}#}
-                <div class="row">
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                        <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"
-                           class="btn btn-secondary btn-block" role="button"> All records
-                            <i class="fas fa-download"></i>
-                        </a>
-                    </div>
-                    {% if rejected_samples_exist %}
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                            <a href="{% url 'download_csv_lab' "rejected" %}?{{ request.GET.urlencode }}"
-                               class="btn btn-secondary btn-block" role="button"> Rejected samples
-                                <i class="fas fa-download"></i>
-                            </a>
-                        </div>
-                    {% endif %}
-                    {% if tb_lam_pos_samples_exist %}
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                            <a href="{% url 'download_csv_lab' "positive_tb_lam" %}?{{ request.GET.urlencode }}"
-                               class="btn btn-secondary btn-block" role="button"> Positive TB LAM
-                                <i class="fas fa-download"></i>
-                            </a>
-                        </div>
-                    {% endif %}
-                    {% if crag_pos_samples_exist %}
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                            <a href="{% url 'download_csv_lab' "positive_crag" %}?{{ request.GET.urlencode }}"
-                               class="btn btn-secondary btn-block" role="button"> Positive CrAg
-                                <i class="fas fa-download"></i>
-                            </a>
-                        </div>
-                    {% endif %}
-                    {% if missing_crag_samples_exist %}
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                            <a href="{% url 'download_csv_lab' filter_type='missing_crag' %}?{{ request.GET.urlencode }}"
-                               class="btn btn-secondary btn-block" role="button"> Missing CrAg
-                                <i class="fas fa-download"></i>
-                            </a>
-                        </div>
-                    {% endif %}
-                    {% if missing_tb_lam_samples_exist %}
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                            <a href="{% url 'download_csv_lab' "missing_tb_lam" %}?{{ request.GET.urlencode }}"
-                               class="btn btn-secondary btn-block" role="button"> Missing TB LAM
-                                <i class="fas fa-download"></i>
-                            </a>
-                        </div>
-                    {% endif %}
-                </div>
-                {#                    {% if title == "Results" %}#}
-                <hr>
                 <h4 class="fw-bold text-primary text-center"> Summary </h4>
                 <hr>
                 <div class="container">

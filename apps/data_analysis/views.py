@@ -1,4 +1,5 @@
 import calendar
+import hashlib
 import re
 from datetime import datetime, timedelta
 
@@ -8,6 +9,7 @@ import plotly.express as px
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -3579,6 +3581,19 @@ def rtk_visualization(request):
     df = convert_to_df(rtk_qs_filters.qs)
     dqa_type="rtk"
 
+    # Generate a cache key based on relevant data
+    data_hash = hashlib.sha256(
+         f"{df.to_dict()}:{request.GET.get('start_date')}:{request.GET.get('end_date')}:"
+         f"{request.GET.get('record_count')}:{request.GET.get('commodity_name')}:{request.GET.get('sub_county')}:"
+         f"{request.GET.get('county')}:{request.GET.get('facility_name')}".encode()
+    ).hexdigest()
+    cache_key = f'rtk_visualization:{data_hash}'
+
+    # Check if the view is cached
+    cached_view = cache.get(cache_key)
+    if cached_view is not None:
+        return cached_view
+
     if df.shape[0] > 0:
         # Get all facilities
         if selected_facility_type == "True":
@@ -3603,7 +3618,6 @@ def rtk_visualization(request):
             bal = df[['month', 'County', 'Sub-County', "Hub",'MFL Code', 'Facility Name',
                       'Commodity Name', 'Beginning Balance', 'Ending Balance']]
             bal=bal.drop_duplicates()
-            # df = df.drop_duplicates(subset=['MFL Code', 'Facility Name', 'Commodity Name'])
 
 
         else:
@@ -3673,8 +3687,7 @@ def rtk_visualization(request):
                 title = f"Most Frequent Hub Over Time   N= {most_frequent_hubs['count'].sum()}   Reports : {len(variances['Facility Name'].unique())} {type_of_facilities} Facilities   {county} County      Period: {min_date} - {max_date}"
                 most_frequent_hub_figs.append(
                     most_frequent_bars(most_frequent_hubs, county, "Hub", "count (%)", title, show_source=True))
-        # @silk_profile(name='subcounty_two')
-        # def subcounty_two(df, variances):
+
         sub_counties_figs = []
 
         # Group the data by County and Sub-County
@@ -3698,9 +3711,6 @@ def rtk_visualization(request):
                 x_axis="month_num",
                 text="count (%)"
             ))
-        #     return sub_counties_figs
-        #
-        # sub_counties_figs=subcounty_two(df, variances)
 
 
 
@@ -3743,4 +3753,9 @@ def rtk_visualization(request):
         "facility_type_options":facility_type_options,"dqa_type":dqa_type,
     }
 
-    return render(request, 'data_analysis/rtk_viz.html', context)
+    # Cache the entire rendered view for 30 days
+    rendered_view = render(request, 'data_analysis/rtk_viz.html', context)
+    cache.set(cache_key, rendered_view, 30 * 24 * 60 * 60)
+
+    return rendered_view
+    # return render(request, 'data_analysis/rtk_viz.html', context)

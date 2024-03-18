@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 import math
 import os
@@ -2211,7 +2212,6 @@ def get_cd4_tracker_data():
     return cached_data
 
 
-@cache_page(60 * 60)
 # @silk_profile(name='show results')
 @login_required(login_url='login')
 @group_required(
@@ -2279,6 +2279,19 @@ def show_results(request):
     cd4traker_qs, use_one_year_data = fetch_past_one_year_cd4_data(request)
 
     my_filters = Cd4trakerFilter(request.GET, queryset=cd4traker_qs)
+
+    # Generate a cache key based on relevant data
+    data_hash = hashlib.sha256(
+        f"{request.GET.get('received_status')}:{request.GET.get('start_date')}:{request.GET.get('end_date')}:"
+        f"{request.GET.get('record_count')}:{request.GET.get('testing_laboratory')}:{request.GET.get('sub_county')}:"
+        f"{request.GET.get('county')}:{request.GET.get('facility_name')}".encode()
+    ).hexdigest()
+    cache_key = f'labpulse_visualization:{data_hash}'
+
+    # Check if the view is cached
+    cached_view = cache.get(cache_key)
+    if cached_view is not None:
+        return cached_view
 
     if "current_page_url" in request.session:
         del request.session['current_page_url']
@@ -2437,7 +2450,13 @@ def show_results(request):
         "tb_lam_positivity_df": tb_lam_positivity_df, "weekly_df": weekly_df,
         "weekly_tat_trend_fig": weekly_tat_trend_fig, "facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
     }
-    return render(request, 'lab_pulse/show results.html', context)
+    # return render(request, 'lab_pulse/show results.html', context)
+
+    # Cache the entire rendered view for 30 days
+    rendered_view = render(request, 'lab_pulse/show results.html', context)
+    cache.set(cache_key, rendered_view, 30 * 24 * 60 * 60)
+
+    return rendered_view
 
 
 def generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch, unique_no, age,

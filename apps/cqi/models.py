@@ -153,7 +153,7 @@ class Department(models.Model):
 
     def save(self, *args, **kwargs):
         """Ensure department name is in title case"""
-        self.department = self.department.upper()
+        self.department = self.department.upper().replace("/", "_")
         super().save(*args, **kwargs)
 
 

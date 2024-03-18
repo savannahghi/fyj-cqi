@@ -12,10 +12,11 @@ class QI_ProjectsAdmin(admin.ModelAdmin):
     class by setting form = QI_ProjectsForm. Once you have created this custom form, you can register your custom
     admin class instead of the model class like this: admin.site.register( QI_Projects, QI_ProjectsAdmin). """
     form = QI_ProjectsForm
+    search_fields = ("facility_name__name", "facility_name__mfl_code")
 
 
 # admin.site.register(QI_Projects, QI_ProjectsAdmin)
-admin.site.register(QI_Projects)
+admin.site.register(QI_Projects,QI_ProjectsAdmin)
 admin.site.register(TestedChange)
 admin.site.register(ProjectComments)
 admin.site.register(ProjectResponses)

@@ -32,7 +32,7 @@ urlpatterns = [
     path('', include('apps.pmtct.urls')),
     path('dac/', include('apps.data_analysis.urls')),
     path('pharmacy_dqa/fyj/', include('apps.pharmacy.urls')),
-    path('lap_pulse/fyj/', include('apps.labpulse.urls')),
+    path('lab_pulse/fyj/', include('apps.labpulse.urls')),
     path('fyj_mentorship/fyj/', include('apps.fyj_mentorship.urls')),
     path('wash_dqa/fyj/', include('apps.wash_dqa.urls')),
     path('repository/fyj/', include('apps.repo.urls')),

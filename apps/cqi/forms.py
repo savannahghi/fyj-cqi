@@ -18,7 +18,7 @@ class QI_ProjectsForm(ModelForm):
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
     hub = forms.ModelChoiceField(
-        queryset=Hub.objects.all(),
+        queryset=Hub.objects.exclude(hub='HUB 3.'),
         empty_label="Select Hub",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
@@ -51,6 +51,7 @@ class QI_ProjectsForm(ModelForm):
                    ]
         labels = {
             'measurement_frequency': 'Monitoring frequency',
+            'process_analysis':'Attach Root cause image here'
         }
         widgets = {
             'problem_background': forms.Textarea(attrs={
@@ -142,6 +143,7 @@ class QI_ProjectsSubcountyForm(ModelForm):
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone', 'county']
         labels = {
             'measurement_frequency': 'Monitoring frequency',
+            'process_analysis': 'Attach Root cause image here'
         }
         widgets = {
             'problem_background': forms.Textarea(attrs={
@@ -213,6 +215,10 @@ class QI_Projects_countyForm(ModelForm):
         model = County_qi_projects
         fields = "__all__"
         exclude = ['created_by', 'modified_by', 'remote_addr', 'phone']
+        labels = {
+            'measurement_frequency': 'Monitoring frequency',
+            'process_analysis': 'Attach Root cause image here'
+        }
         widgets = {
             'problem_background': forms.Textarea(attrs={
                 'placeholder': 'Include current status, previous attempt, relevant research and studies, barriers, '
@@ -249,7 +255,7 @@ class QI_Projects_countyForm(ModelForm):
 
 class QI_Projects_hubForm(ModelForm):
     hub = forms.ModelChoiceField(
-        queryset=Hub.objects.all(),
+        queryset=Hub.objects.exclude(hub='HUB 3.'),
         empty_label="Select hub",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
@@ -319,6 +325,7 @@ class QI_Projects_programForm(ModelForm):
         labels = {
             'measurement_frequency': 'Monitoring frequency',
             'project_category': 'Component',
+            'process_analysis': 'Attach Root cause image here'
         }
         widgets = {
             'problem_background': forms.Textarea(attrs={
@@ -505,14 +512,17 @@ class ResourcesForm(ModelForm):
 
 
 class Qi_team_membersForm(ModelForm):
+    user = forms.ModelChoiceField(
+        queryset=CustomUser.objects.all(),
+        empty_label="Choose team member",
+        label="Team Member",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
     class Meta:
         model = Qi_team_members
         fields = "__all__"
         exclude = ['facility', 'qi_project', 'created_by', 'program_qi_project', 'program', 'subcounty_qi_project',
                    'hub_qi_project', 'county_qi_project']
-        labels = {
-            'user': 'Team Member',
-        }
         widgets = {
             'impact': forms.Textarea(attrs={'placeholder': 'How the stakeholder is impacted by the cqi, or how will'
                                                            ' he/she contribute to its success.',

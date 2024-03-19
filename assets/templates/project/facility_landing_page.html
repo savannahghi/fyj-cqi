@@ -77,15 +77,18 @@
                 </div>
                 <div class="mt-3">
                     <form class="row g-3" autocomplete="off">
-                        <div class="col-md-2">
-                            {{ my_filters.form.departments|as_crispy_field }}
-                        </div>
-                        <div class="col-md-2">
-                            {{ my_filters.form.problem_background|as_crispy_field }}
-                        </div>
                         {% if "facility" in project_type %}
                             <div class="col-md-2">
+                                {{ my_filters.form.county|as_crispy_field }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ my_filters.form.sub_county|as_crispy_field }}
+                            </div>
+                            <div class="col-md-2">
                                 {{ my_filters.form.facility_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ my_filters.form.hub|as_crispy_field }}
                             </div>
                         {% elif "program" in project_type %}
                             <div class="col-md-2">
@@ -104,6 +107,12 @@
                                 {{ my_filters.form.hub|as_crispy_field }}
                             </div>
                         {% endif %}
+                        <div class="col-md-2">
+                                {{ my_filters.form.departments|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ my_filters.form.problem_background|as_crispy_field }}
+                        </div>
 
                         <div class="col-md-2">
                             {{ my_filters.form.settings|as_crispy_field }}
@@ -114,13 +123,13 @@
                         <div class="col-md-2">
                             {{ my_filters.form.objective|as_crispy_field }}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             {{ my_filters.form.start_date|as_crispy_field }}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2">
                             {{ my_filters.form.end_date|as_crispy_field }}
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             {{ my_filters.form.measurement_frequency|as_crispy_field }}
                         </div>
                         <div class="col-md-1 mt-4 pt-2">

@@ -1,7 +1,7 @@
 import django_filters
 from django_filters import CharFilter, DateFilter, NumberFilter
-
-from . import forms
+from django import forms
+# from . import forms
 from .models import *
 
 
@@ -21,11 +21,35 @@ class QiprojectFilter(django_filters.FilterSet):
         label='Facility Name',
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+    sub_county = django_filters.ModelChoiceFilter(
+        queryset=Sub_counties.objects.all(),
+        field_name='sub_county__sub_counties',
+        label='Sub-County',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    county = django_filters.ModelChoiceFilter(
+        queryset=Counties.objects.all(),
+        field_name='county__county_name',
+        label='County',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    departments = django_filters.ModelChoiceFilter(
+        queryset=Department.objects.all(),
+        field_name='departments__department',
+        label='Department',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    hub = django_filters.ModelChoiceFilter(
+        queryset=Hub.objects.all(),
+        field_name='hub__hub',
+        label='Hub',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
 
     class Meta:
         model = QI_Projects
         fields = ['county', 'sub_county', 'project_title', 'departments', 'problem_background', 'facility_name',
-                  'settings', 'created_by',
+                  'settings', 'created_by','hub',
                   'start_date', 'measurement_frequency', 'measurement_status']
         exclude = ['process_analysis']
 
@@ -40,7 +64,12 @@ class ProgramQiprojectFilter(django_filters.FilterSet):
                                     label='Problem Background')
     # measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
     settings = CharFilter(field_name="settings", lookup_expr="icontains", label='Settings')
-
+    departments = django_filters.ModelChoiceFilter(
+        queryset=Department.objects.all(),
+        field_name='departments__department',
+        label='Department',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
     class Meta:
         model = Program_qi_projects
         fields = ['project_title', 'departments', 'problem_background', 'program',
@@ -59,6 +88,18 @@ class SubcountyQiprojectFilter(django_filters.FilterSet):
                                     label='Problem Background')
     # measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
     settings = CharFilter(field_name="settings", lookup_expr="icontains", label='Settings')
+    sub_county = django_filters.ModelChoiceFilter(
+        queryset=Sub_counties.objects.all(),
+        field_name='sub_county__sub_counties',
+        label='Sub-County',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    departments = django_filters.ModelChoiceFilter(
+        queryset=Department.objects.all(),
+        field_name='departments__department',
+        label='Department',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
 
     class Meta:
         model = Subcounty_qi_projects
@@ -78,6 +119,18 @@ class CountyQiprojectFilter(django_filters.FilterSet):
                                     label='Problem Background')
     # measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
     settings = CharFilter(field_name="settings", lookup_expr="icontains", label='Settings')
+    county = django_filters.ModelChoiceFilter(
+        queryset=Counties.objects.all(),
+        field_name='county__county_name',
+        label='County',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    departments = django_filters.ModelChoiceFilter(
+        queryset=Department.objects.all(),
+        field_name='departments__department',
+        label='Department',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
 
     class Meta:
         model = County_qi_projects
@@ -97,6 +150,18 @@ class HubQiprojectFilter(django_filters.FilterSet):
                                     label='Problem Background')
     # measurement_frequency = CharFilter(field_name="measurement_frequency", lookup_expr="icontains",label='Measurement Frequency')
     settings = CharFilter(field_name="settings", lookup_expr="icontains", label='Settings')
+    departments = django_filters.ModelChoiceFilter(
+        queryset=Department.objects.all(),
+        field_name='departments__department',
+        label='Department',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    hub = django_filters.ModelChoiceFilter(
+        queryset=Hub.objects.all(),
+        field_name='hub__hub',
+        label='Hub',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
 
     class Meta:
         model = Hub_qi_projects

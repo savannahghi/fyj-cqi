@@ -11,8 +11,8 @@ class QI_ProjectsAdmin(admin.ModelAdmin):
     which will allow you to include the desired checkboxes and then use this form in your custom QI_ProjectsAdmin
     class by setting form = QI_ProjectsForm. Once you have created this custom form, you can register your custom
     admin class instead of the model class like this: admin.site.register( QI_Projects, QI_ProjectsAdmin). """
-    form = QI_ProjectsForm
-    search_fields = ("facility_name__name", "facility_name__mfl_code")
+    # form = QI_ProjectsForm
+    search_fields = ("facility_name__name", "facility_name__mfl_code","project_title")
 
 
 # admin.site.register(QI_Projects, QI_ProjectsAdmin)

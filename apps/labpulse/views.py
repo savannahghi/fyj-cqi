@@ -1910,9 +1910,28 @@ def save_biochem_report(writer, queryset):
         # Write the data row to the CSV file
         writer.writerow(data_row)
 
+def clear_expired_cache_entries():
+    now = datetime.now()
+    keys_to_delete = []
+    for key in cache._cache:
+        value = cache._cache[key]
+        expiration_time = value[1]
+        if expiration_time and datetime.fromtimestamp(expiration_time) < now:  # Convert expiration time to datetime
+            keys_to_delete.append(key)
+
+    for key in keys_to_delete:
+        del cache._cache[key]
+
+def clear_cache():
+    cache.clear()
 
 @login_required(login_url='login')
 def download_csv(request, filter_type):
+    clear_cache()  # Clear the cache
+    # clear_expired_cache_entries()
+    # Clear the labpulse_visualization cached key
+    cache.delete('labpulse_visualization')
+
     current_page_url = request.session.get('current_page_url', '')
     queryset = Cd4trakerFilter(request.GET).qs
 
@@ -1958,6 +1977,13 @@ def download_csv(request, filter_type):
         save_biochem_report(writer, queryset)
 
     return response
+
+@login_required(login_url='login')
+def reload_page_without_cache(request):
+    clear_cache()  # Clear the cache
+    cache.delete('labpulse_visualization')
+    # return redirect(request.session['page_from'])
+    return redirect('show_results')
 
 
 # @login_required(login_url='login')

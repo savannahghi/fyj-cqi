@@ -2315,10 +2315,10 @@ def show_results(request):
     ).hexdigest()
     cache_key = f'labpulse_visualization:{data_hash}'
 
-    # # Check if the view is cached
-    # cached_view = cache.get(cache_key)
-    # if cached_view is not None:
-    #     return cached_view
+    # Check if the view is cached
+    cached_view = cache.get(cache_key)
+    if cached_view is not None:
+        return cached_view
 
     if "current_page_url" in request.session:
         del request.session['current_page_url']
@@ -2477,13 +2477,13 @@ def show_results(request):
         "tb_lam_positivity_df": tb_lam_positivity_df, "weekly_df": weekly_df,
         "weekly_tat_trend_fig": weekly_tat_trend_fig, "facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
     }
-    return render(request, 'lab_pulse/show results.html', context)
+    # return render(request, 'lab_pulse/show results.html', context)
 
     # Cache the entire rendered view for 30 days
-    # rendered_view = render(request, 'lab_pulse/show results.html', context)
-    # cache.set(cache_key, rendered_view, 30 * 24 * 60 * 60)
-    #
-    # return rendered_view
+    rendered_view = render(request, 'lab_pulse/show results.html', context)
+    cache.set(cache_key, rendered_view, 30 * 24 * 60 * 60)
+
+    return rendered_view
 
 
 def generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch, unique_no, age,

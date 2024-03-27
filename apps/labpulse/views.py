@@ -1619,12 +1619,12 @@ def generate_results_df(list_of_projects):
             '-ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Negative').sum()],
             '+ve TB-LAM': [(list_of_projects_fac['TB LAM'] == 'Positive').sum()],
             'Missing TB LAM': [
-                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'TB LAM'].isna()).sum()],
+                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] <= 200, 'TB LAM'].isna()).sum()],
             'CRAG': [list_of_projects_fac['Serum Crag'].notna().sum()],
             '-ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Negative').sum()],
             '+ve CRAG': [(list_of_projects_fac['Serum Crag'] == 'Positive').sum()],
             'Missing CRAG': [
-                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] < 200, 'Serum Crag'].isna()).sum()],
+                (list_of_projects_fac.loc[list_of_projects_fac['CD4 Count'] <= 200, 'Serum Crag'].isna()).sum()],
         })
 
         # Display the summary dataframe
@@ -1933,7 +1933,8 @@ def download_csv(request, filter_type):
     cache.delete('labpulse_visualization')
 
     current_page_url = request.session.get('current_page_url', '')
-    queryset = Cd4trakerFilter(request.GET).qs
+    cd4traker_qs, use_one_year_data = fetch_past_one_year_cd4_data(request, Cd4traker)
+    queryset = Cd4trakerFilter(request.GET, queryset=cd4traker_qs).qs
 
     # Perform filtering based on 'filter_type'
     if filter_type == 'all':
@@ -2236,7 +2237,36 @@ def get_cd4_tracker_data():
 
     # Return the cached queryset
     return cached_data
+def fetch_past_one_year_cd4_data(request,model):
+    # Get the user's start_date input from the request GET parameters
+    start_date_param = request.GET.get('start_date')
+    end_date_param = request.GET.get('end_date')
+    use_one_year_data = True
+    # Use default logic for one year ago
+    one_year_ago = datetime.now() - timedelta(days=365)
+    one_year_ago = datetime(
+        one_year_ago.year,
+        one_year_ago.month,
+        one_year_ago.day,
+        23, 59, 59, 999999
+    )
 
+    if start_date_param:
+        # Parse the user's input into a datetime object
+        start_date = datetime.strptime(start_date_param, '%m/%d/%Y')
+
+        # If the user's input is beyond one year ago, use it
+        if start_date < datetime.now() - timedelta(days=365) and (
+                not end_date_param or start_date < datetime.strptime(end_date_param, '%m/%d/%Y')):
+            one_year_ago = start_date
+            use_one_year_data = False
+    # Handle N+1 Query using prefetch_related /lab-pulse/download/{filter_type}
+    cd4traker_qs = model.objects.filter(date_of_collection__gte=one_year_ago).select_related(
+        'facility_name', 'sub_county', 'county', 'testing_laboratory', 'created_by',
+        'modified_by'
+    ).order_by('-date_dispatched')
+
+    return cd4traker_qs, use_one_year_data
 
 # @silk_profile(name='show results')
 @login_required(login_url='login')
@@ -2271,38 +2301,9 @@ def show_results(request):
                      "missing_tb_lam_samples_exist": False}
 
     # @silk_profile(name='fetch_cd4_data')
-    def fetch_past_one_year_cd4_data(request):
-        # Get the user's start_date input from the request GET parameters
-        start_date_param = request.GET.get('start_date')
-        end_date_param = request.GET.get('end_date')
-        use_one_year_data = True
-        # Use default logic for one year ago
-        one_year_ago = datetime.now() - timedelta(days=365)
-        one_year_ago = datetime(
-            one_year_ago.year,
-            one_year_ago.month,
-            one_year_ago.day,
-            23, 59, 59, 999999
-        )
 
-        if start_date_param:
-            # Parse the user's input into a datetime object
-            start_date = datetime.strptime(start_date_param, '%m/%d/%Y')
 
-            # If the user's input is beyond one year ago, use it
-            if start_date < datetime.now() - timedelta(days=365) and (
-                    not end_date_param or start_date < datetime.strptime(end_date_param, '%m/%d/%Y')):
-                one_year_ago = start_date
-                use_one_year_data = False
-        # Handle N+1 Query using prefetch_related /lab-pulse/download/{filter_type}
-        cd4traker_qs = Cd4traker.objects.filter(date_of_collection__gte=one_year_ago).select_related(
-            'facility_name', 'sub_county', 'county', 'testing_laboratory', 'created_by',
-            'modified_by'
-        ).order_by('-date_dispatched')
-
-        return cd4traker_qs, use_one_year_data
-
-    cd4traker_qs, use_one_year_data = fetch_past_one_year_cd4_data(request)
+    cd4traker_qs, use_one_year_data = fetch_past_one_year_cd4_data(request,Cd4traker)
 
     my_filters = Cd4trakerFilter(request.GET, queryset=cd4traker_qs)
 
@@ -2314,10 +2315,10 @@ def show_results(request):
     ).hexdigest()
     cache_key = f'labpulse_visualization:{data_hash}'
 
-    # Check if the view is cached
-    cached_view = cache.get(cache_key)
-    if cached_view is not None:
-        return cached_view
+    # # Check if the view is cached
+    # cached_view = cache.get(cache_key)
+    # if cached_view is not None:
+    #     return cached_view
 
     if "current_page_url" in request.session:
         del request.session['current_page_url']
@@ -2476,13 +2477,13 @@ def show_results(request):
         "tb_lam_positivity_df": tb_lam_positivity_df, "weekly_df": weekly_df,
         "weekly_tat_trend_fig": weekly_tat_trend_fig, "facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
     }
-    # return render(request, 'lab_pulse/show results.html', context)
+    return render(request, 'lab_pulse/show results.html', context)
 
     # Cache the entire rendered view for 30 days
-    rendered_view = render(request, 'lab_pulse/show results.html', context)
-    cache.set(cache_key, rendered_view, 30 * 24 * 60 * 60)
-
-    return rendered_view
+    # rendered_view = render(request, 'lab_pulse/show results.html', context)
+    # cache.set(cache_key, rendered_view, 30 * 24 * 60 * 60)
+    #
+    # return rendered_view
 
 
 def generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch, unique_no, age,

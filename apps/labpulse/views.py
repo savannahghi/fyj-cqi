@@ -2268,6 +2268,28 @@ def fetch_past_one_year_cd4_data(request,model):
 
     return cd4traker_qs, use_one_year_data
 
+def store_dataframes_in_session(request, *dataframes):
+    """
+    Store non-empty DataFrames in the session object associated with the given request.
+
+    Parameters:
+        request (object): The request object associated with the current session.
+        *dataframes (tuple): Variable number of tuples containing DataFrames and their corresponding session keys.
+
+    Returns:
+        dictionary: A dictionary obtained from the function `get_key_from_session_names(request)`.
+
+    """
+    for df, session_key in dataframes:
+        if df.shape[0] > 0:
+            request.session[session_key] = df.to_dict()
+        elif session_key in request.session:
+            del request.session[session_key]
+
+    # Convert dict_items into a list
+    dictionary = get_key_from_session_names(request)
+    return dictionary
+
 # @silk_profile(name='show results')
 @login_required(login_url='login')
 @group_required(
@@ -2315,10 +2337,10 @@ def show_results(request):
     ).hexdigest()
     cache_key = f'labpulse_visualization:{data_hash}'
 
-    # # Check if the view is cached
-    # cached_view = cache.get(cache_key)
-    # if cached_view is not None:
-    #     return cached_view
+    # Check if the view is cached
+    cached_view = cache.get(cache_key)
+    if cached_view is not None:
+        return cached_view
 
     if "current_page_url" in request.session:
         del request.session['current_page_url']
@@ -2449,15 +2471,16 @@ def show_results(request):
         (rejected_df, 'rejected_df')
     ]
 
-    for df, session_key in dataframes:
-        if df.shape[0] > 0:
-            request.session[session_key] = df.to_dict()
-        else:
-            if session_key in request.session:
-                del request.session[session_key]
+    # for df, session_key in dataframes:
+    #     if df.shape[0] > 0:
+    #         request.session[session_key] = df.to_dict()
+    #     else:
+    #         if session_key in request.session:
+    #             del request.session[session_key]
 
     # Convert dict_items into a list
-    dictionary = get_key_from_session_names(request)
+    # dictionary = get_key_from_session_names(request)
+    dictionary=store_dataframes_in_session(request, *dataframes)
     context = {
         "title": "Results", "record_count_options": record_count_options, "record_count": record_count,
         "missing_crag_samples_exist": available_dfs["missing_crag_samples_exist"],
@@ -2477,13 +2500,13 @@ def show_results(request):
         "tb_lam_positivity_df": tb_lam_positivity_df, "weekly_df": weekly_df,
         "weekly_tat_trend_fig": weekly_tat_trend_fig, "facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
     }
-    return render(request, 'lab_pulse/show results.html', context)
+    # return render(request, 'lab_pulse/show results.html', context)
 
     # Cache the entire rendered view for 30 days
-    # rendered_view = render(request, 'lab_pulse/show results.html', context)
-    # cache.set(cache_key, rendered_view, 30 * 24 * 60 * 60)
-    #
-    # return rendered_view
+    rendered_view = render(request, 'lab_pulse/show results.html', context)
+    cache.set(cache_key, rendered_view, 30 * 24 * 60 * 60)
+
+    return rendered_view
 
 
 def generate_report(request, pdf, name, mfl_code, date_collection, date_testing, date_dispatch, unique_no, age,

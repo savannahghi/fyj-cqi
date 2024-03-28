@@ -3577,7 +3577,7 @@ def rtk_visualization(request):
     # Convert queryset to dataframe
     # rtk_qs = RTKData.objects.all().order_by('facility_name', 'month')
     rtk_qs_filters = RTKDataFilter(request.GET, queryset=rtk_qs)
-    facility_type_options = [("True", "All"), ("False","FYJ")]
+    facility_type_options = [("False","FYJ"),("True", "All")]
     df = convert_to_df(rtk_qs_filters.qs)
     dqa_type="rtk"
 

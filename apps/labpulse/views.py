@@ -2268,6 +2268,28 @@ def fetch_past_one_year_cd4_data(request,model):
 
     return cd4traker_qs, use_one_year_data
 
+def store_dataframes_in_session(request, *dataframes):
+    """
+    Store non-empty DataFrames in the session object associated with the given request.
+
+    Parameters:
+        request (object): The request object associated with the current session.
+        *dataframes (tuple): Variable number of tuples containing DataFrames and their corresponding session keys.
+
+    Returns:
+        dictionary: A dictionary obtained from the function `get_key_from_session_names(request)`.
+
+    """
+    for df, session_key in dataframes:
+        if df.shape[0] > 0:
+            request.session[session_key] = df.to_dict()
+        elif session_key in request.session:
+            del request.session[session_key]
+
+    # Convert dict_items into a list
+    dictionary = get_key_from_session_names(request)
+    return dictionary
+
 # @silk_profile(name='show results')
 @login_required(login_url='login')
 @group_required(
@@ -2449,15 +2471,16 @@ def show_results(request):
         (rejected_df, 'rejected_df')
     ]
 
-    for df, session_key in dataframes:
-        if df.shape[0] > 0:
-            request.session[session_key] = df.to_dict()
-        else:
-            if session_key in request.session:
-                del request.session[session_key]
+    # for df, session_key in dataframes:
+    #     if df.shape[0] > 0:
+    #         request.session[session_key] = df.to_dict()
+    #     else:
+    #         if session_key in request.session:
+    #             del request.session[session_key]
 
     # Convert dict_items into a list
-    dictionary = get_key_from_session_names(request)
+    # dictionary = get_key_from_session_names(request)
+    dictionary=store_dataframes_in_session(request, *dataframes)
     context = {
         "title": "Results", "record_count_options": record_count_options, "record_count": record_count,
         "missing_crag_samples_exist": available_dfs["missing_crag_samples_exist"],

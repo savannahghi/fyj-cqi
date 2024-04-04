@@ -227,7 +227,7 @@ STATICFILES_FINDERS = [
 ]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 WHITENOISE_MANIFEST_STRICT = False
-SESSION_COOKIE_AGE = 3600  # Set the session expiration to 1 hour (in seconds)
+SESSION_COOKIE_AGE = 14400  # Set the session expiration to 1 hour (in seconds)
 ###############################
 # DEBUG CONFIG
 ###############################

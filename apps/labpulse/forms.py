@@ -327,16 +327,19 @@ class DrtForm(MultipleUploadForm):
         return patient_name
 
     # Override clean method to conditionally set files field required
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Set files field as not required initially
+        self.fields['files'].required = False
+
     def clean(self):
         cleaned_data = super().clean()
         sequence_summary = cleaned_data.get('sequence_summary')
-        files = cleaned_data.get('files')
 
-        if sequence_summary == 'FAILED' and not files:
-            # No validation error when sequence summary is 'FAILED' and no files
-            return cleaned_data
-
-        # Perform other validations if needed
+        if sequence_summary == 'FAILED':
+            # If sequence summary is 'FAILED', mark files field as not required
+            self.fields['files'].required = False
 
         return cleaned_data
 

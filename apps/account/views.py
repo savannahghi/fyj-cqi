@@ -89,6 +89,11 @@ def login_page(request):
             ##############################
             elif user.groups.filter(name='unitid_staffs_labpulse').exists():
                 return redirect("load_biochemistry_results")
+            ##############################
+            # Redirect Repo viewer       #
+            ##############################
+            elif user.groups.filter(name='repository_readers').exists():
+                return redirect("manuscript_list")
             elif user.groups.filter(name='subcounty_staffs_labpulse').exists():
                 return redirect("facilities_landing_page", project_type="facility")
             else:

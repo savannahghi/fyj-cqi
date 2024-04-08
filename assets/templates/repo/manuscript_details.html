@@ -64,6 +64,7 @@
                                             </a>
                                         {% endif %}
                                     </div>
+                                {% if user.id == resource.uploaded_by.id or user.is_superuser %}
                                     <div class="col-md-1">
                                         <a href="{% url 'manuscript_update' manuscript.id %}">
                                             <button type="button"
@@ -84,6 +85,7 @@
                                             {% endif %}
                                         </a>
                                     </div>
+                                {% endif %}
                                 </div>
                             </div>
                         </h6>

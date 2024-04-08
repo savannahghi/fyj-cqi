@@ -1228,7 +1228,7 @@ def line_chart_median_mean(df, x_axis, y_axis, title, color=None, xaxis_title=No
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def create_summary_chart(data, column_name, title,xaxis_title=None):
+def create_summary_chart(data, column_name, title, xaxis_title=None):
     unique_values = data[column_name].unique()
     unique_values = unique_values[~pd.isnull(unique_values)]
 
@@ -1238,7 +1238,7 @@ def create_summary_chart(data, column_name, title,xaxis_title=None):
     }).sort_values('Count')
 
     total = summary_df['Count'].sum()
-    fig = bar_chart(summary_df, column_name, 'Count', f"{title} N={total}",xaxis_title=xaxis_title)
+    fig = bar_chart(summary_df, column_name, 'Count', f"{title} N={total}", xaxis_title=xaxis_title)
 
     return fig, summary_df
 
@@ -1869,8 +1869,8 @@ def save_biochem_report(writer, queryset):
     # Define the header row for the CSV file
     header = [
         'County', 'Sub-County', 'Facility Name', 'MFL CODE', 'Patient Id', 'Age', 'Test',
-        'Full Name', 'Result', 'Low Limit', 'High Limit', 'Units','Reference Class', 'Collection Date',
-        'Result Time','Results Interpretation','Date Created', 'Performed By',
+        'Full Name', 'Result', 'Low Limit', 'High Limit', 'Units', 'Reference Class', 'Collection Date',
+        'Result Time', 'Results Interpretation', 'Date Created', 'Performed By',
     ]
     # Write the header row to the CSV file
     writer.writerow(header)
@@ -1880,9 +1880,9 @@ def save_biochem_report(writer, queryset):
 
     # Retrieve data as a list of dictionaries
     data_list = list(queryset.values(
-        'county__county_name','sub_county__sub_counties','facility__name',
-        'mfl_code', 'patient_id', 'age', 'test','full_name', 'result', 'low_limit', 'high_limit', 'units',
-        'reference_class', 'collection_date', 'result_time', 'results_interpretation','date_created', 'performed_by',
+        'county__county_name', 'sub_county__sub_counties', 'facility__name',
+        'mfl_code', 'patient_id', 'age', 'test', 'full_name', 'result', 'low_limit', 'high_limit', 'units',
+        'reference_class', 'collection_date', 'result_time', 'results_interpretation', 'date_created', 'performed_by',
     ))
 
     # Write data rows based on the list of dictionaries
@@ -1910,6 +1910,7 @@ def save_biochem_report(writer, queryset):
         # Write the data row to the CSV file
         writer.writerow(data_row)
 
+
 def clear_expired_cache_entries():
     now = datetime.now()
     keys_to_delete = []
@@ -1922,8 +1923,10 @@ def clear_expired_cache_entries():
     for key in keys_to_delete:
         del cache._cache[key]
 
+
 def clear_cache():
     cache.clear()
+
 
 @login_required(login_url='login')
 def download_csv(request, filter_type):
@@ -1979,6 +1982,7 @@ def download_csv(request, filter_type):
 
     return response
 
+
 @login_required(login_url='login')
 def reload_page_without_cache(request):
     clear_cache()  # Clear the cache
@@ -1987,229 +1991,6 @@ def reload_page_without_cache(request):
     return redirect('show_results')
 
 
-# @login_required(login_url='login')
-# @group_required(
-#     ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'
-#         , 'referring_laboratory_staffs_labpulse'])
-# def show_results(request):
-#     if not request.user.first_name:
-#         return redirect("profile")
-#     if request.method == "GET":
-#         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-#         # record_count = int(request.GET.get('record_count', 10))  # Get the selected record count (default: 10)
-#         record_count = request.GET.get('record_count', '5')
-#         if record_count == 'all':
-#             record_count = 'all'  # Preserve the 'all' value if selected
-#         else:
-#             record_count = int(record_count)  # Convert to integer if a specific value is selected
-#     else:
-#         record_count = 100  # Default record count if no selection is made
-#     cd4_summary_fig = None
-#     cd4_testing_lab_fig = None
-#     crag_testing_lab_fig = None
-#     weekly_tat_trend_fig = None
-#     facility_tb_lam_positive_fig = None
-#     weekly_trend_fig = None
-#     age_distribution_fig = None
-#     rejection_summary_fig = None
-#     justification_summary_fig = None
-#     crag_positivity_fig = None
-#     tb_lam_positivity_fig = None
-#     facility_crag_positive_fig = None
-#     list_of_projects_fac = pd.DataFrame()
-#     crag_pos_df = pd.DataFrame()
-#     tb_lam_pos_df = pd.DataFrame()
-#     weekly_df = pd.DataFrame()
-#     missing_df = pd.DataFrame()
-#     missing_tb_lam_df = pd.DataFrame()
-#     rejected_df = pd.DataFrame()
-#     rejection_summary_df = pd.DataFrame()
-#     justification_summary_df = pd.DataFrame()
-#     show_cd4_testing_workload = False
-#     show_crag_testing_workload = False
-#     crag_positivity_df = pd.DataFrame()
-#     tb_lam_positivity_df = pd.DataFrame()
-#     facility_positive_count = pd.DataFrame()
-#     # Access the page URL
-#     current_page_url = request.path
-#
-#     # Handle N+1 Query /lab-pulse/download/{filter_type}
-#     cd4traker_qs = Cd4traker.objects.all().prefetch_related('facility_name', 'sub_county', 'county',
-#                                                             'testing_laboratory', 'created_by', 'modified_by'
-#                                                             ).order_by('-date_dispatched')
-#     my_filters = Cd4trakerFilter(request.GET, queryset=cd4traker_qs)
-#     try:
-#         if "filtered_queryset" in request.session:
-#             del request.session['filtered_queryset']
-#         if "current_page_url" in request.session:
-#             del request.session['current_page_url']
-#
-#         # Serialize the filtered queryset to JSON and store it in the session
-#         filtered_data_json = serializers.serialize('json', my_filters.qs)
-#         request.session['filtered_queryset'] = filtered_data_json
-#         request.session['current_page_url'] = current_page_url
-#     except KeyError:
-#         # Handles the case where the session key doesn't exist
-#         pass
-#
-#     record_count_options = [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50]] + [("all", "All"), ]
-#
-#     qi_list = pagination_(request, my_filters.qs, record_count)
-#
-#     # Check if there records exists in filtered queryset
-#     rejected_samples_exist = my_filters.qs.filter(received_status="Rejected").exists()
-#     tb_lam_pos_samples_exist = my_filters.qs.filter(tb_lam_results="Positive").exists()
-#     crag_pos_samples_exist = my_filters.qs.filter(serum_crag_results="Positive").exists()
-#     missing_crag_samples_exist = my_filters.qs.filter(cd4_count_results__isnull=False,
-#                                                       cd4_count_results__lte=200,
-#                                                       serum_crag_results__isnull=True
-#                                                       ).exists()
-#     missing_tb_lam_samples_exist = my_filters.qs.filter(cd4_count_results__isnull=False,
-#                                                         cd4_count_results__lte=200,
-#                                                         tb_lam_results__isnull=True
-#                                                         ).exists()
-#
-#     ######################
-#     # Hide update button #
-#     ######################
-#     if qi_list:
-#         disable_update_buttons(request, qi_list, 'date_dispatched')
-#     if my_filters.qs:
-#         # fields to extract
-#         fields = ['county__county_name', 'sub_county__sub_counties', 'testing_laboratory__testing_lab_name',
-#                   'facility_name__name', 'facility_name__mfl_code', 'patient_unique_no', 'age', 'sex',
-#                   'date_of_collection', 'date_of_testing', 'date_sample_received', 'date_dispatched', 'justification',
-#                   'cd4_count_results',
-#                   'date_serum_crag_results_entered', 'serum_crag_results', 'date_tb_lam_results_entered',
-#                   'tb_lam_results', 'received_status', 'reason_for_rejection', 'tat_days', 'age_unit']
-#
-#         # Extract the data from the queryset using values()
-#         data = my_filters.qs.values(*fields)
-#
-#         age_sex_df, cd4_summary_fig, crag_testing_lab_fig, cd4_testing_lab_fig, rejected_df, tb_lam_pos_df, \
-#             crag_pos_df, missing_tb_lam_df, missing_df, list_of_projects_fac, show_cd4_testing_workload, \
-#             show_crag_testing_workload = generate_results_df(data)
-#         ###################################
-#         # AGE AND SEX CHART
-#         ###################################
-#         age_sex_df = pd.melt(age_sex_df, id_vars="Age Group",
-#                              value_vars=list(age_sex_df.columns[1:]),
-#                              var_name="Sex", value_name='# of sample processed')
-#
-#         age_distribution_fig = bar_chart(age_sex_df, "Age Group", "# of sample processed",
-#                                          "CD4 Count Distribution By Age Band and Sex", color="Sex")
-#         if "Age Group" in list_of_projects_fac.columns:
-#             del list_of_projects_fac['Age Group']
-#
-#         ###################################
-#         # REJECTED SAMPLES
-#         ###################################
-#         rejection_summary_fig, rejection_summary_df = create_summary_chart(list_of_projects_fac, 'Rejection reason',
-#                                                                            'Reasons for Sample Rejection')
-#
-#         ###################################
-#         # Justification
-#         ###################################
-#         justification_summary_fig, justification_summary_df = create_summary_chart(
-#             list_of_projects_fac, 'Justification', 'Justification Summary')
-#
-#         ###########################
-#         # SERUM CRAG POSITIVITY
-#         ###########################
-#         crag_positivity_fig, crag_positivity_df = calculate_positivity_rate(list_of_projects_fac, 'Serum Crag',
-#                                                                             "Serum CrAg")
-#         ###############################
-#         # FACILITY WITH POSITIVE CRAG #
-#         ###############################
-#         facility_positive_count = filter_result_type(list_of_projects_fac, "Serum Crag")
-#
-#         facility_crag_positive_fig = visualize_facility_results_positivity(facility_positive_count, "Serum CRAG",
-#                                                                            "Serum CrAg")
-#         #################################
-#         # FACILITY WITH POSITIVE TB LAM #
-#         #################################
-#         facility_positive_count = filter_result_type(list_of_projects_fac, "TB LAM")
-#         facility_tb_lam_positive_fig = visualize_facility_results_positivity(facility_positive_count, "TB LAM",
-#                                                                              "TB LAM")
-#         ###########################
-#         # TB LAM POSITIVITY
-#         ###########################
-#         tb_lam_positivity_fig, tb_lam_positivity_df = calculate_positivity_rate(list_of_projects_fac, 'TB LAM',
-#                                                                                 "TB LAM")
-#         ###################################
-#         # Weekly Trend viz
-#         ###################################
-#         df_weekly = list_of_projects_fac.copy()
-#         df_weekly['Collection Date'] = pd.to_datetime(df_weekly['Collection Date'], format='%Y-%m-%d')
-#
-#         df_weekly['week_start'] = df_weekly['Collection Date'].dt.to_period('W').dt.start_time
-#         weekly_df = df_weekly.groupby('week_start').size().reset_index(name='# of samples processed')
-#         weekly_df['Weekly Trend'] = weekly_df["week_start"].astype(str) + "."
-#         weekly_trend = weekly_df['# of samples processed'].sum()
-#         if weekly_df.shape[0] > 1:
-#             weekly_trend_fig = line_chart_median_mean(weekly_df, "Weekly Trend", "# of samples processed",
-#                                                       f"Weekly Trend CD4 Samples Processing N={weekly_trend}"
-#                                                       f"      Maximum # CD4 counts : {max(weekly_df['# of samples processed'])}")
-#
-#         weekly_df['week_start'] = pd.to_datetime(weekly_df['week_start']).dt.date
-#         weekly_df['week_start'] = weekly_df['week_start'].replace(np.datetime64('NaT'), '')
-#         weekly_df['week_start'] = weekly_df['week_start'].astype(str)
-#
-#         ###################################
-#         # Weekly TAT Trend viz
-#         ###################################
-#         melted_tat_df, mean_c_r, mean_c_d = calculate_weekly_tat(list_of_projects_fac.copy())
-#         if melted_tat_df.shape[0] > 1:
-#             weekly_tat_trend_fig = line_chart_median_mean(melted_tat_df, "Weekly Trend", "Weekly mean TAT",
-#                                                           f"Weekly Collection to Dispatch vs Collection to Receipt Mean "
-#                                                           f"TAT Trend  (C-D TAT = {mean_c_d}, C-R TAT = {mean_c_r})",
-#                                                           color="TAT type",time=104
-#                                                           )
-#     try:
-#         if "list_of_projects_fac" in request.session:
-#             del request.session['list_of_projects_fac']
-#         request.session['list_of_projects_fac'] = list_of_projects_fac.to_dict()
-#     except KeyError:
-#         # Handle the case where the session key doesn't exist
-#         pass
-#
-#     dataframes = [
-#         (missing_df, 'missing_df'),
-#         (missing_tb_lam_df, 'missing_tb_lam_df'),
-#         (justification_summary_df, 'justification_summary_df'),
-#         (tb_lam_pos_df, 'tb_lam_pos_df'),
-#         (weekly_df, 'weekly_df'),
-#         (crag_pos_df, 'crag_pos_df'),
-#         (rejected_df, 'rejected_df')
-#     ]
-#
-#     for df, session_key in dataframes:
-#         if df.shape[0] > 0:
-#             request.session[session_key] = df.to_dict()
-#         else:
-#             if session_key in request.session:
-#                 del request.session[session_key]
-#
-#     # Convert dict_items into a list
-#     dictionary = get_key_from_session_names(request)
-#     context = {
-#         "title": "Results", "record_count_options": record_count_options, "record_count": record_count,
-#         "rejected_samples_exist": rejected_samples_exist, "tb_lam_pos_samples_exist": tb_lam_pos_samples_exist,
-#         "crag_pos_samples_exist": crag_pos_samples_exist, "missing_crag_samples_exist": missing_crag_samples_exist,
-#         "missing_tb_lam_samples_exist": missing_tb_lam_samples_exist, "dictionary": dictionary,
-#         "my_filters": my_filters,
-#         "qi_list": qi_list, "cd4_summary_fig": cd4_summary_fig, "crag_testing_lab_fig": crag_testing_lab_fig,
-#         "weekly_trend_fig": weekly_trend_fig, "cd4_testing_lab_fig": cd4_testing_lab_fig,
-#         "age_distribution_fig": age_distribution_fig, "rejection_summary_fig": rejection_summary_fig,
-#         "justification_summary_fig": justification_summary_fig, "crag_positivity_fig": crag_positivity_fig,
-#         "justification_summary_df": justification_summary_df, "facility_crag_positive_fig": facility_crag_positive_fig,
-#         "rejection_summary_df": rejection_summary_df, "show_cd4_testing_workload": show_cd4_testing_workload,
-#         "show_crag_testing_workload": show_crag_testing_workload, "crag_positivity_df": crag_positivity_df,
-#         "facility_positive_count": facility_positive_count, "tb_lam_positivity_fig": tb_lam_positivity_fig,
-#         "tb_lam_positivity_df": tb_lam_positivity_df, "weekly_df": weekly_df,
-#         "weekly_tat_trend_fig": weekly_tat_trend_fig, "facility_tb_lam_positive_fig": facility_tb_lam_positive_fig
-#     }
-#     return render(request, 'lab_pulse/show results.html', context)
 # @silk_profile(name='get_cd4_tracker_data')
 def get_cd4_tracker_data():
     # Check if the data is already in the cache
@@ -2237,7 +2018,9 @@ def get_cd4_tracker_data():
 
     # Return the cached queryset
     return cached_data
-def fetch_past_one_year_cd4_data(request,model):
+
+
+def fetch_past_one_year_cd4_data(request, model):
     # Get the user's start_date input from the request GET parameters
     start_date_param = request.GET.get('start_date')
     end_date_param = request.GET.get('end_date')
@@ -2268,6 +2051,7 @@ def fetch_past_one_year_cd4_data(request,model):
 
     return cd4traker_qs, use_one_year_data
 
+
 def store_dataframes_in_session(request, *dataframes):
     """
     Store non-empty DataFrames in the session object associated with the given request.
@@ -2289,6 +2073,7 @@ def store_dataframes_in_session(request, *dataframes):
     # Convert dict_items into a list
     dictionary = get_key_from_session_names(request)
     return dictionary
+
 
 # @silk_profile(name='show results')
 @login_required(login_url='login')
@@ -2324,8 +2109,7 @@ def show_results(request):
 
     # @silk_profile(name='fetch_cd4_data')
 
-
-    cd4traker_qs, use_one_year_data = fetch_past_one_year_cd4_data(request,Cd4traker)
+    cd4traker_qs, use_one_year_data = fetch_past_one_year_cd4_data(request, Cd4traker)
 
     my_filters = Cd4trakerFilter(request.GET, queryset=cd4traker_qs)
 
@@ -2398,7 +2182,7 @@ def show_results(request):
         # Justification
         ###################################
         justification_summary_fig, justification_summary_df = create_summary_chart(
-            list_of_projects_fac, 'Justification', 'Justification Summary',xaxis_title="Justification")
+            list_of_projects_fac, 'Justification', 'Justification Summary', xaxis_title="Justification")
 
         ###########################
         # SERUM CRAG POSITIVITY
@@ -2437,7 +2221,8 @@ def show_results(request):
             weekly_trend_fig = line_chart_median_mean(weekly_df, "Weekly Trend", "# of samples processed",
                                                       f"Weekly Trend CD4 Samples Processing N={weekly_trend}"
                                                       f"      Maximum # CD4 counts : {max(weekly_df['# of samples processed'])}",
-                                                      use_one_year_data=use_one_year_data,xaxis_title="Date (Start of Week)")
+                                                      use_one_year_data=use_one_year_data,
+                                                      xaxis_title="Date (Start of Week)")
 
         weekly_df['week_start'] = pd.to_datetime(weekly_df['week_start']).dt.date.replace(np.datetime64('NaT'),
                                                                                           '').astype(str)
@@ -2451,7 +2236,8 @@ def show_results(request):
                                                           f"Weekly Collection to Dispatch vs Collection to Receipt Mean "
                                                           f"TAT Trend  (C-D TAT = {mean_c_d}, C-R TAT = {mean_c_r})",
                                                           color="TAT type", time=104,
-                                                          use_one_year_data=use_one_year_data,xaxis_title="Date (Start of the week)"
+                                                          use_one_year_data=use_one_year_data,
+                                                          xaxis_title="Date (Start of the week)"
                                                           )
     try:
         if "list_of_projects_fac" in request.session:
@@ -2480,7 +2266,7 @@ def show_results(request):
 
     # Convert dict_items into a list
     # dictionary = get_key_from_session_names(request)
-    dictionary=store_dataframes_in_session(request, *dataframes)
+    dictionary = store_dataframes_in_session(request, *dataframes)
     context = {
         "title": "Results", "record_count_options": record_count_options, "record_count": record_count,
         "missing_crag_samples_exist": available_dfs["missing_crag_samples_exist"],
@@ -2633,8 +2419,9 @@ def generate_report(request, pdf, name, mfl_code, date_collection, date_testing,
     return y
 
 
-class GeneratePDF(LoginRequiredMixin,View):
+class GeneratePDF(LoginRequiredMixin, View):
     login_url = 'login'  # Specify the login URL
+
     def get(self, request):
         if request.user.is_authenticated and not request.user.first_name:
             return redirect("profile")
@@ -2966,7 +2753,7 @@ def load_biochemistry_results(request):
     if not request.user.first_name:
         return redirect("profile")
     tests_summary_fig = summary_fig = summary_fig_per_text = weekly_trend_fig = test_trend_fig = \
-        age_distribution_fig = sex_fig = county_fig = sub_county_fig=None
+        age_distribution_fig = sex_fig = county_fig = sub_county_fig = None
 
     #####################################
     # Display existing data
@@ -3001,16 +2788,16 @@ def load_biochemistry_results(request):
         data = list(queryset.values(
             'county__county_name', 'sub_county__sub_counties',
             'facility__name', 'mfl_code', 'patient_id', 'test',
-                  'full_name', 'result', 'low_limit', 'high_limit', 'units',
-                  'reference_class', 'collection_date', 'result_time', 'mfl_code', 'results_interpretation',
-                  'number_of_samples', 'date_created', 'performed_by', 'age',
+            'full_name', 'result', 'low_limit', 'high_limit', 'units',
+            'reference_class', 'collection_date', 'result_time', 'mfl_code', 'results_interpretation',
+            'number_of_samples', 'date_created', 'performed_by', 'age',
         ))
 
         # Extract the data from the queryset using values()
         # data = my_filters.qs.values(*fields)
         df = pd.DataFrame(data)
-        df = df.rename(columns={"full_name": "test_name",'county__county_name':'county',
-                                'sub_county__sub_counties':'sub_county', 'facility__name':'facility_name'})
+        df = df.rename(columns={"full_name": "test_name", 'county__county_name': 'county',
+                                'sub_county__sub_counties': 'sub_county', 'facility__name': 'facility_name'})
         bio_chem_df = df.copy()
 
         try:
@@ -3080,7 +2867,7 @@ def load_biochemistry_results(request):
         df['results_interpretation'] = pd.Categorical(df['results_interpretation'],
                                                       ['Low', 'Normal', 'High'])
         b = df.groupby("results_interpretation").sum(numeric_only=True)['number_of_samples'].reset_index()
-        b=add_percentage_and_count_string(b, col="number_of_samples")
+        b = add_percentage_and_count_string(b, col="number_of_samples")
 
         fig = px.bar(b, x="results_interpretation", y="number_of_samples", text="number_of_samples (%)", height=350,
                      title=f"Overall Results interpretation N={b['number_of_samples'].sum()}")
@@ -3270,7 +3057,7 @@ def load_biochemistry_results(request):
                "threshold_of_result_to_display": threshold_of_result_to_display, "summary_fig": summary_fig,
                "summary_fig_per_text": summary_fig_per_text, "weekly_trend_fig": weekly_trend_fig, "form": form,
                "test_trend_fig": test_trend_fig, "sex_fig": sex_fig, "age_distribution_fig": age_distribution_fig,
-               "county_fig":county_fig,"sub_county_fig":sub_county_fig}
+               "county_fig": county_fig, "sub_county_fig": sub_county_fig}
 
     #####################################
     # Load new data
@@ -3305,9 +3092,9 @@ def load_biochemistry_results(request):
                     more_than_ten = [patient_id for patient_id in df['Patient Id'].unique() if
                                      len(str(patient_id)) > 10]
                     less_than_ten = [patient_id for patient_id in df['Patient Id'].unique() if
-                                    len(str(patient_id)) < 10]
-                    if len(more_than_ten) >0:
-                        if len(more_than_ten) ==1:
+                                     len(str(patient_id)) < 10]
+                    if len(more_than_ten) > 0:
+                        if len(more_than_ten) == 1:
                             error_message = f"The following Patient Id have more than 10 characters:" \
                                             f" {', '.join(map(str, more_than_ten))}. Please check and try again."
                         else:
@@ -3315,8 +3102,8 @@ def load_biochemistry_results(request):
                                             f" {', '.join(map(str, more_than_ten))}. Please check and try again."
                         messages.error(request, error_message)
                         return redirect('load_biochemistry_results')
-                    if len(less_than_ten) >0:
-                        if len(less_than_ten) ==1:
+                    if len(less_than_ten) > 0:
+                        if len(less_than_ten) == 1:
                             error_message = f"The following Patient Id have less than 10 characters:" \
                                             f" {', '.join(map(str, less_than_ten))}. Please check and try again."
                         else:
@@ -3340,7 +3127,7 @@ def load_biochemistry_results(request):
                         try:
                             with transaction.atomic():
                                 if df_specific.shape[1] == 14:
-                                    missing_mfl_codes=[]
+                                    missing_mfl_codes = []
                                     # Iterate over each row in the DataFrame
                                     for index, row in df_specific.iterrows():
                                         mfl_code = row[df_specific.columns[10]]
@@ -3348,8 +3135,10 @@ def load_biochemistry_results(request):
                                         # Fetch Facility, Sub_county, and County based on mfl_code
                                         try:
                                             facility = Facilities.objects.get(mfl_code=mfl_code)
-                                            sub_county = Sub_counties.objects.filter(facilities__mfl_code=mfl_code).first()
-                                            county = Counties.objects.filter(sub_counties=sub_county).first() if sub_county else None
+                                            sub_county = Sub_counties.objects.filter(
+                                                facilities__mfl_code=mfl_code).first()
+                                            county = Counties.objects.filter(
+                                                sub_counties=sub_county).first() if sub_county else None
 
                                             chemistry_results = BiochemistryResult()
                                             chemistry_results.patient_id = row[df_specific.columns[0]]
@@ -3436,7 +3225,7 @@ def insert_dataframe_to_pdf(pdf, df, x, y):
     table.drawOn(pdf, x, y)  # Adjust the position (x, y) as needed
 
 
-def create_page(request, pdf, y, image_path, ccc_num, age,facility_name, df1, start_x=80):
+def create_page(request, pdf, y, image_path, ccc_num, age, facility_name, df1, start_x=80):
     width = letter[0] - 100
     # Add the image to the canvas above the "BIOCHEMISTRY REPORT" text and take the full width
     add_image(pdf, image_path, x=start_x, y=y, width=width, height=100)
@@ -3453,12 +3242,12 @@ def create_page(request, pdf, y, image_path, ccc_num, age,facility_name, df1, st
     pdf.setFont("Helvetica", 12)
     pdf.drawString(start_x, y - 50, f"Unique CCC No: {ccc_num}")
     pdf.drawString(start_x + 200, y - 50, f"Age: {age}")
-    pdf.drawString(start_x , y - 70, f"Facility Name: {facility_name}")
+    pdf.drawString(start_x, y - 70, f"Facility Name: {facility_name}")
     performed_by_values = df1['performed_by'].dropna().unique()  # Drop NA/null values and get unique values
     if len(performed_by_values) > 0:
         formatted_value = performed_by_values[0].title()
         pdf.drawString(start_x + 300, y - 50, f"Test Performed by: {formatted_value}")
-    df1 = df1.drop(["performed_by", "age","county","sub_county","facility_name"], axis=1)
+    df1 = df1.drop(["performed_by", "age", "county", "sub_county", "facility_name"], axis=1)
     # Insert dataframe
     pdf.setFont("Helvetica", 8)
     insert_dataframe_to_pdf(pdf, df1, start_x - 9, y - 200)
@@ -3474,8 +3263,9 @@ def create_page(request, pdf, y, image_path, ccc_num, age,facility_name, df1, st
     pdf.line(x1=start_x, y1=y - 220, x2=width, y2=y - 220)
 
 
-class GenerateBioChemistryPDF(LoginRequiredMixin,View):
+class GenerateBioChemistryPDF(LoginRequiredMixin, View):
     login_url = 'login'  # Specify the login URL
+
     def get(self, request):
         if request.user.is_authenticated and not request.user.first_name:
             return redirect("profile")
@@ -3507,7 +3297,7 @@ class GenerateBioChemistryPDF(LoginRequiredMixin,View):
             ccc_num = df2['patient_id'].values[0]
             df2 = df2.drop(["patient_id"], axis=1)  # drop Patient Id and Sample Id
             df2 = df2.rename(columns={"Full name": "Test", "results_interpretation": "interpretation"})  # Rename column
-            create_page(request, pdf, y, image_path, ccc_num, age,facility_name, df2)
+            create_page(request, pdf, y, image_path, ccc_num, age, facility_name, df2)
             y = y - 400  # Adjust the y value for the next result on the same page
 
         pdf.save()
@@ -3924,10 +3714,10 @@ def prepare_drt_cascade_df(df_cascade):
     return summary_df_cascade
 
 
-def add_percentage_and_count_string(haart_class_df,col="count"):
+def add_percentage_and_count_string(haart_class_df, col="count"):
     # Calculate percentage and round to the nearest integer
     haart_class_df['%'] = round(haart_class_df[col] / haart_class_df[col].sum() * 100)
-    haart_class_df['%']=haart_class_df['%'].astype(int)
+    haart_class_df['%'] = haart_class_df['%'].astype(int)
 
     # Create a new column with count and percentage string
     haart_class_df[f'{col} (%)'] = haart_class_df[col].astype(str) + " (" + haart_class_df['%'].astype(str) + "%)"
@@ -5554,8 +5344,9 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
     pdf.save()
 
 
-class GenerateDrtPDF(LoginRequiredMixin,View):
+class GenerateDrtPDF(LoginRequiredMixin, View):
     login_url = 'login'  # Specify the login URL
+
     def get(self, request):
         if request.user.is_authenticated and not request.user.first_name:
             return redirect("profile")
@@ -5575,7 +5366,6 @@ class GenerateDrtPDF(LoginRequiredMixin,View):
         else:
             response['Content-Disposition'] = f'filename="DRT Report_{drt_values.get("todays_date", "")}.pdf"'
         pdf = canvas.Canvas(response, pagesize=letter)
-
         generate_drt_report(
             pdf,
             drt_values.get("todays_date", ""),

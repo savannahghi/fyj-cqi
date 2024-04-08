@@ -34,7 +34,7 @@ import plotly.offline as opy
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError, connection, models, reset_queries, transaction, DatabaseError
+from django.db import IntegrityError, connection, reset_queries, transaction, DatabaseError
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 

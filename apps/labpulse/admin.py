@@ -6,15 +6,31 @@ from apps.labpulse.models import BiochemistryResult, Cd4traker, Cd4TestingLabs, 
     LabPulseUpdateButtonSettings, ReagentStock
 from django.contrib.auth.models import Permission
 
+
+class BioChemAdmin(admin.ModelAdmin):
+    search_fields = ("facility__name", "facility__mfl_code", "test", "full_name", "patient_id", "age", "performed_by")
+
+
+class Cd4trakerAdmin(admin.ModelAdmin):
+    search_fields = (
+        "facility_name__name", "facility_name__mfl_code", "reason_for_rejection", "reason_for_no_serum_crag",
+        "patient_unique_no", "received_status")
+
+
+class DrtResultsAdmin(admin.ModelAdmin):
+    search_fields = (
+        "facility_name__name", "facility_name__mfl_code", "patient_id")
+
+
 # Register your models here.
 admin.site.register(Cd4TestingLabs)
-admin.site.register(Cd4traker)
+admin.site.register(Cd4traker, Cd4trakerAdmin)
 admin.site.register(Permission)
 admin.site.register(LabPulseUpdateButtonSettings)
 admin.site.register(Commodities)
 admin.site.register(ReagentStock)
 admin.site.register(EnableDisableCommodities)
-admin.site.register(BiochemistryResult)
-admin.site.register(DrtResults)
+admin.site.register(BiochemistryResult, BioChemAdmin)
+admin.site.register(DrtResults, DrtResultsAdmin)
 admin.site.register(DrtPdfFile)
 admin.site.register(DrtProfile)

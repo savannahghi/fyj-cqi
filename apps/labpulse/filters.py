@@ -81,8 +81,8 @@ class Cd4trakerFilter(django_filters.FilterSet):
 class BiochemistryResultFilter(django_filters.FilterSet):
     collection_date_lte = DateFilter(field_name="collection_date", lookup_expr="lte", label='To (Collection Date)')
     collection_date_gte = DateFilter(field_name="collection_date", lookup_expr="gte", label='From (Collection Date)')
-    result_time_gte = DateFilter(field_name="result_time", lookup_expr="gte", label='From (Result Date)')
-    result_time_lte = DateFilter(field_name="result_time", lookup_expr="lte", label='To (ResultDate)')
+    result_time_gte = DateFilter(field_name="result_time", lookup_expr="gte", label='From (Testing Date)')
+    result_time_lte = DateFilter(field_name="result_time", lookup_expr="lte", label='To (Testing Date)')
     patient_id = CharFilter(field_name="patient_id", lookup_expr="icontains", label='Patient Unique No.')
     mfl_code = CharFilter(field_name="mfl_code", lookup_expr="icontains", label='MFL CODE.')
     sample_id = CharFilter(field_name="sample_id", lookup_expr="icontains", label='Sample Id.')

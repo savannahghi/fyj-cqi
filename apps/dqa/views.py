@@ -340,13 +340,24 @@ def load_data(request):
         if sheet_names:
             dfs = pd.read_excel(file, sheet_name=sheet_names)
             df = pd.concat([df.assign(sheet_name=name) for name, df in dfs.items()])
-            columns_to_use = ['MFL', 'Facility', 'Month', 'TST_p', 'TST_a', 'TST_t', 'TST_pos_p',
-                              'TST_pos_a', 'TST_pos_t', 'TX_New_p', 'TX_New_a', 'TX_New_t',
-                              'TX_Curr_p', 'TX_Curr_a', 'TX_Curr_t', 'PMTCT_STAT_D', 'PMTCT_STAT_N',
-                              'PMTCT_Pos', 'PMTCT_ARV', 'PMTCT_INF_ARV', 'PMTCT_EID', 'HEI_Pos',
-                              'HEI_Pos ART', 'PrEP_New', 'GBV_Sexual', 'GBV Emotional/Phy', 'KP_ANC',
-                              'Newpos_ANC', 'on HAART _ANC', 'New on HAART_ANC', 'Pos_L&D', 'Pos_PNC',
-                              'CXCA', 'TB_STAT_D', 'IPT', 'TB_Prev_N', 'TX_ML', 'TX_RTT']
+            df.columns = df.columns.str.lower()
+            facility_name_cols = [col for col in df.columns if "facility" in col]
+            months_name_cols = [col for col in df.columns if "month" in col or "period" in col]
+            mfl_codes_cols = [col for col in df.columns if "mfl" in col]
+            df = df.rename(
+                columns={
+                    mfl_codes_cols[0]: "mfl",
+                    facility_name_cols[0]: "facility",
+                    months_name_cols[0]: "month"
+                })
+
+            columns_to_use = ['mfl', 'facility', 'month', 'tst_p', 'tst_a', 'tst_t', 'tst_pos_p',
+                              'tst_pos_a', 'tst_pos_t', 'tx_new_p', 'tx_new_a', 'tx_new_t', 'tx_curr_p', 'tx_curr_a',
+                              'tx_curr_t', 'pmtct_stat_d', 'pmtct_stat_n', 'pmtct_pos', 'pmtct_arv', 'pmtct_inf_arv',
+                              'pmtct_eid', 'hei_pos', 'hei_pos art', 'prep_new', 'gbv_sexual', 'gbv emotional/phy',
+                              'kp_anc','newpos_anc', 'on haart _anc', 'new on haart_anc', 'pos_l&d', 'pos_pnc',
+                              'cxca', 'tb_stat_d', 'ipt', 'tb_prev_n', 'tx_ml', 'tx_rtt']
+
             df = df[columns_to_use]
             try:
                 with transaction.atomic():
@@ -403,6 +414,9 @@ def load_data(request):
                         messages.error(request, f'Data successfully saved in the database!')
                         return redirect('show_data_verification')
             except IntegrityError:
+                quarter_year = row[df.columns[2]]
+                messages.error(request, f"Data for  {quarter_year} already exists.")
+            except ValidationError:
                 quarter_year = row[df.columns[2]]
                 messages.error(request, f"Data for  {quarter_year} already exists.")
 

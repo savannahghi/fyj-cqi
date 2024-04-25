@@ -232,7 +232,7 @@ class FyjPerformance(models.Model):
         year = int(year_str)
 
         # Get the month string
-        month = month_str.split()[0]
+        month = month_str.split("-")[0].strip()
         quarter = None
 
         # Determine the quarter based on the month while handling both full month names and abbreviated names
@@ -255,6 +255,22 @@ class FyjPerformance(models.Model):
 
         # Construct the quarter-year string
         self.quarter_year = quarter + "-" + str(year)[-2:]
+
+        parts = month_str.split("-")
+
+        self.month = parts[0].strip() + " - " + parts[1].strip()
+
+        # Check if a record with the same mfl_code, quarter_year, and month already exists
+        existing_record = FyjPerformance.objects.filter(
+            mfl_code=self.mfl_code,
+            quarter_year=self.quarter_year,
+            month=self.month
+        ).first()
+
+        if existing_record:
+            # If a duplicate is found, raise a ValidationError
+            error_message = f"A record for {self.month} of {self.quarter_year} already exists."
+            raise ValidationError(error_message)
 
         # Call the parent save method to save the object
         super().save(*args, **kwargs)

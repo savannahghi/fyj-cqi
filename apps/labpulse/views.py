@@ -2112,12 +2112,21 @@ def show_results(request):
     cd4traker_qs, use_one_year_data = fetch_past_one_year_cd4_data(request, Cd4traker)
 
     my_filters = Cd4trakerFilter(request.GET, queryset=cd4traker_qs)
+    record_count_options = [(str(i), str(i)) for i in [5, 10, 20]]
+
+    qi_list = pagination_(request, my_filters.qs, record_count)
+    page_number = request.GET.get('page', 1)
+
+    if "current_page_url" in request.session:
+        del request.session['current_page_url']
+    # Access the page URL
+    request.session['current_page_url'] = request.path
 
     # Generate a cache key based on relevant data
     data_hash = hashlib.sha256(
         f"{request.GET.get('received_status')}:{request.GET.get('start_date')}:{request.GET.get('end_date')}:"
         f"{request.GET.get('record_count')}:{request.GET.get('testing_laboratory')}:{request.GET.get('sub_county')}:"
-        f"{request.GET.get('county')}:{request.GET.get('facility_name')}".encode()
+        f"{request.GET.get('county')}:{request.GET.get('facility_name')}:{page_number}".encode()
     ).hexdigest()
     cache_key = f'labpulse_visualization:{data_hash}'
 
@@ -2126,15 +2135,7 @@ def show_results(request):
     if cached_view is not None:
         return cached_view
 
-    if "current_page_url" in request.session:
-        del request.session['current_page_url']
-    # Access the page URL
-    request.session['current_page_url'] = request.path
 
-    # record_count_options = [(str(i), str(i)) for i in [5, 10, 20]] + [("all", "All"), ]
-    record_count_options = [(str(i), str(i)) for i in [5, 10, 20]]
-
-    qi_list = pagination_(request, my_filters.qs, record_count)
 
     ######################
     # Hide update button #
@@ -2257,15 +2258,7 @@ def show_results(request):
         (rejected_df, 'rejected_df')
     ]
 
-    # for df, session_key in dataframes:
-    #     if df.shape[0] > 0:
-    #         request.session[session_key] = df.to_dict()
-    #     else:
-    #         if session_key in request.session:
-    #             del request.session[session_key]
 
-    # Convert dict_items into a list
-    # dictionary = get_key_from_session_names(request)
     dictionary = store_dataframes_in_session(request, *dataframes)
     context = {
         "title": "Results", "record_count_options": record_count_options, "record_count": record_count,

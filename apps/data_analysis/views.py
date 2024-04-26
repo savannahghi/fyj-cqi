@@ -121,81 +121,6 @@ def get_key_from_session_names(request):
     return dictionary
 
 
-# def prepare_sc_curr_arvdisp_df(df1, fyj_facility_mfl_code, default_cols):
-#     df1 = df1[~df1['organisationunitname'].str.contains("adventist centre", case=False)]
-#     # df1 = pd.read_csv(path1)
-#     # Add Hope med C MFL CODE
-#     df1.loc[df1['organisationunitname'] == "Hope Med C", 'organisationunitcode'] = 19278
-#     # st francis
-#     # df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
-#     df1.loc[df1['organisationunitname'].str.contains("st francis comm", case=False), 'organisationunitcode'] = 17943
-#
-#     # adventist
-#     # df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
-#     df1.loc[df1['organisationunitname'].str.contains("better living", case=False), 'organisationunitcode'] = 18535
-#     df1.loc[df1['organisationunitname'].str.contains("better living",
-#                                                      case=False),
-#     'organisationunitname'] = "Adventist Centre for Care and Support"
-#
-#     # illasit
-#     # df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
-#     df1.loc[df1['organisationunitname'].str.contains("illasit h", case=False), 'organisationunitcode'] = 14567
-#     # imara
-#     # df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
-#     df1.loc[df1['organisationunitname'].str.contains("imara health", case=False), 'organisationunitcode'] = 12981
-#     # mary immaculate
-#     df1.loc[
-#         df1['organisationunitname'].str.contains("mary immaculate sister", case=False), 'organisationunitcode'] = 13062
-#
-#     # biafra lion
-#     df1.loc[
-#         df1['organisationunitname'].str.contains("biafra lion", case=False), 'organisationunitcode'] = 12883
-#
-#     # for i in df1['organisationunitcode'].unique():
-#     #     if "18535" in i.lower():
-#     #         print(i)
-#     #     print("Not found")
-#     df1 = df1[~df1['organisationunitcode'].isnull()]
-#     df1 = convert_mfl_code_to_int(df1)
-#     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
-#
-#     # df1["organisationunitcode"] = df1["organisationunitcode"].astype(int)
-#     dispensed_cols = [col for col in df1.columns if "Total Quantity issued this month" in col]
-#     end_of_months_cols = [col for col in df1.columns if "End of Month Physical Stock Count" in col]
-#
-#     if len(dispensed_cols) > 0:
-#         # get the last 6 months data
-#         # divide the period into 2
-#         first_3_months = sorted(list(df1['periodid'].unique()))[:3]
-#         last_3_months = sorted(list(df1['periodid'].unique()))[3:]
-#
-#         ###########################################################
-#         # UNCOMMENT BELOW TO GET DATA FOR THE FIRST THREE MONTHS  #
-#         ###########################################################
-#         #         print(f"FIRST THREE MONTHS: {first_3_months}")
-#         #         df1=df1[df1['periodid'].isin(first_3_months)]
-#
-#         ###########################################################
-#         # UNCOMMENT BELOW TO GET DATA FOR THE LAST THREE MONTHS  #
-#         ###########################################################
-#
-#         #         print(f"LAST THREE MONTHS: {last_3_months}")
-#         #         df1=df1[df1['periodid'].isin(last_3_months)]
-#         ###################################################################
-#         # TO GET DATA FOR THE LAST 2 QUARTERS, COMMENT ABOVE TWO FILTERS  #
-#         ###################################################################
-#         dispensed_df = df1[default_cols + dispensed_cols]
-#         filename = "sc_arvdisp"
-#     else:
-#         # get the last month data
-#         last_month = df1['periodid'].unique().max()
-#         df1 = df1[df1['periodid'] == last_month]
-#
-#         dispensed_df = df1[default_cols + end_of_months_cols]
-#         filename = "sc_curr"
-#     return dispensed_df, df1, dispensed_cols, end_of_months_cols, filename
-
-
 def rename_khis_col(df1, fyj_facility_mfl_code):
     df1 = df1[~df1['organisationunitname'].str.contains("adventist centre", case=False)]
     # df1 = pd.read_csv(path1)
@@ -803,7 +728,7 @@ def analyse_pharmacy_data(request, df, df1):
 
 @login_required(login_url='login')
 def pharmacy(request):
-    final_df = pd.DataFrame()
+    final_df = pmp_report = pd.DataFrame()
     filename = None
     other_adult_df_file = pd.DataFrame()
     adult_others_filename = None
@@ -816,6 +741,7 @@ def pharmacy(request):
     datasets = ["Total Quantity issued this month <strong>or</strong>", "End of Month Physical Stock Count"]
     dqa_type = "sc_curr_arvdisp"
     report_name = "ARV Dispensing and Stock Availability Analysis for FYJ-Supported Facilities"
+    month_names_str = ""
     if not request.user.first_name:
         return redirect("profile")
     if request.method == 'POST':
@@ -852,16 +778,23 @@ def pharmacy(request):
                         })
                         if df.shape[0] > 0 and df1.shape[0] > 0:
                             final_df, filename, other_adult_df_file, adult_others_filename, paeds_others_filename, \
-                                other_paeds_bottles_df_file, reporting_errors_df, reporting_error_filename = analyse_pharmacy_data(
-                                request, df,
-                                df1)
+                                other_paeds_bottles_df_file, reporting_errors_df, reporting_error_filename = \
+                                analyse_pharmacy_data(request, df, df1)
+                            # Compile PMP report
+                            pmp_report = compile_pmp_report(final_df, other_adult_df_file, other_paeds_bottles_df_file)
+                            month_names = final_df['periodname'].unique()
+                            month_names_str = "_".join(month_names) if len(month_names) > 1 else month_names[0]
+                            if len(month_names) > 1:
+                                month_names_str = month_names_str.rsplit("_", 1)[0] + "" + \
+                                                  month_names_str.rsplit("_", 1)[1]
                     else:
-                        message = f"Please generate and upload either the Total Quantity issued this month or End of Month " \
+                        message = f"Please generate and upload either the Total Quantity issued this month or End of " \
+                                  f"Month " \
                                   f"Physical Stock Count CSV file from <a href='{url}'>KHIS's website</a>."
                         messages.success(request, message)
                 else:
-                    message = f"Please generate and upload either the Total Quantity issued this month or End of Month " \
-                              f"Physical Stock Count CSV file from <a href='{url}'>KHIS's website</a>."
+                    message = f"Please generate and upload either the Total Quantity issued this month or End " \
+                              f"of Month Physical Stock Count CSV file from <a href='{url}'>KHIS's website</a>."
                     messages.success(request, message)
                     return redirect('load_data_pharmacy')
             else:
@@ -871,7 +804,8 @@ def pharmacy(request):
                 return redirect('load_data_pharmacy')
         except MultiValueDictKeyError:
             context = {
-                "final_df": final_df,
+                "final_df": final_df, "pmp_report": pmp_report,
+                "pmp_report_filename": f"{filename}_pmp_report {month_names_str}",
                 "dictionary": dictionary,
                 "filename": filename,
                 "other_adult_df_file": other_adult_df_file,
@@ -885,10 +819,12 @@ def pharmacy(request):
             return render(request, 'data_analysis/upload.html', context)
 
     request.session['report'] = final_df.to_dict()
+    request.session['pmp_report'] = pmp_report.to_dict()
     # Convert dict_items into a list
     dictionary = get_key_from_session_names(request)
     context = {
-        "final_df": final_df,
+        "final_df": final_df, "pmp_report": pmp_report,
+        "pmp_report_filename": f"{filename}_pmp_report {month_names_str}",
         "dictionary": dictionary,
         "filename": filename,
         "other_adult_df_file": other_adult_df_file,
@@ -1747,34 +1683,34 @@ def transform_make_charts(all_facilities, cols_730b, name, fyj_facility_mfl_code
 
 
 def prepare_program_facilities_df(df1, fyj_facility_mfl_code):
-    df1 = df1[~df1['facility'].str.contains("adventist centre", case=False)]
-
-    # Add Hope med C MFL CODE
-    df1.loc[df1['facility'] == "Hope Med C", 'organisationunitcode'] = 19278
-    # st francis
-    # df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
-    df1.loc[df1['facility'].str.contains("st francis comm", case=False), 'organisationunitcode'] = 17943
-
-    # adventist
-    # df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
-    df1.loc[df1['facility'].str.contains("better living", case=False), 'organisationunitcode'] = 18535
-    df1.loc[df1['facility'].str.contains("better living",
-                                         case=False),
-    'facility'] = "Adventist Centre for Care and Support"
-
-    # illasit
-    # df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
-    df1.loc[df1['facility'].str.contains("illasit h", case=False), 'organisationunitcode'] = 14567
-    # imara
-    # df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
-    df1.loc[df1['facility'].str.contains("imara health", case=False), 'organisationunitcode'] = 12981
-    # mary immaculate
-    df1.loc[
-        df1['facility'].str.contains("mary immaculate sister", case=False), 'organisationunitcode'] = 13062
-
-    # biafra lion
-    df1.loc[
-        df1['facility'].str.contains("biafra lion", case=False), 'organisationunitcode'] = 12883
+    # df1 = df1[~df1['facility'].str.contains("adventist centre", case=False)]
+    #
+    # # Add Hope med C MFL CODE
+    # df1.loc[df1['facility'] == "Hope Med C", 'organisationunitcode'] = 19278
+    # # st francis
+    # # df1.loc[df1['organisationunitcode'] == 13202, 'organisationunitcode'] = 17943
+    # df1.loc[df1['facility'].str.contains("st francis comm", case=False), 'organisationunitcode'] = 17943
+    #
+    # # adventist
+    # # df1.loc[df1['organisationunitcode'] == 23385, 'organisationunitcode'] = 18535
+    # df1.loc[df1['facility'].str.contains("better living", case=False), 'organisationunitcode'] = 18535
+    # df1.loc[df1['facility'].str.contains("better living",
+    #                                      case=False),
+    # 'facility'] = "Adventist Centre for Care and Support"
+    #
+    # # illasit
+    # # df1.loc[df1['organisationunitcode'] == 20372, 'organisationunitcode'] = 14567
+    # df1.loc[df1['facility'].str.contains("illasit h", case=False), 'organisationunitcode'] = 14567
+    # # imara
+    # # df1.loc[df1['organisationunitcode'] == 17685, 'organisationunitcode'] = 12981
+    # df1.loc[df1['facility'].str.contains("imara health", case=False), 'organisationunitcode'] = 12981
+    # # mary immaculate
+    # df1.loc[
+    #     df1['facility'].str.contains("mary immaculate sister", case=False), 'organisationunitcode'] = 13062
+    #
+    # # biafra lion
+    # df1.loc[
+    #     df1['facility'].str.contains("biafra lion", case=False), 'organisationunitcode'] = 12883
 
     df1 = df1[~df1['organisationunitcode'].isnull()]
     df1 = convert_mfl_code_to_int(df1)
@@ -2739,6 +2675,63 @@ def calculate_justification_resuppression_rate(resuppression_status):
     return facility_resuppression_status
 
 
+def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
+                 other_paeds_df: pd.DataFrame) -> pd.DataFrame:
+    """Prepare data for merging"""
+    other_adult_df.columns = [
+        'County', 'Subcounty', 'organisationunitname',
+        'MFL Code', 'periodname', 'ABC) 300mg Tablets 60s',
+        'ABC/3TC 600mg/300mg FDC Tablets 60s', 'ATV/r 300/100mg Tablets 30s',
+        'DRV 600mg Tablets 60s', 'ETV 200mg Tablets 60s',
+        '3TC 150mg Tablets 60s', 'RAL 400mg Tablets 60s',
+        'RTV 100mg Tablets 60s', 'TDF/3TC FDC (300/300mg) Tablets 30s',
+        'AZT 300mg Tablets 60s', 'AZT/3TC FDC (300/150mg) Tablets 30s',
+        'LPV/r 200/50mg Tablets 120s', 'DTG 50mg tabs 30s',
+        'Other (Adult) bottles'
+    ]
+
+    other_paeds_df.columns = [
+        'County', 'Subcounty', 'organisationunitname',
+        'MFL Code', 'periodname', 'ABC/3TC 120mg/60mg',
+        'ABC/3TC 60mg/30mg FDC Tablets 60s', 'ATV 100mg Caps 60s',
+        'DRV 150mg Tablets 240s', 'DRV 75mg Tablets 480s',
+        'DRV susp 100mg/ml  (200ml Bottles) 200ml bottle',
+        'ETV 100mg Tablets 60s', 'ETV 25mg Tablets 60s',
+        '3TC liquid 10mg/ml (240ml Bottles) 240ml bottle',
+        'RAL 25mg Tablets 60s',
+        'Ritonavir liquid 80mg/ml (90ml Bottles) 90ml bottle',
+        'AZT/3TC FDC (60/30mg) Tablets 60s', 'Other (Pediatric) bottles'
+    ]
+    # Convert MFL code to int
+    main_df = main_df[main_df["County"] != ""]
+    main_df['MFL Code'] = main_df['MFL Code'].astype(int)
+    other_adult_df['MFL Code'] = other_adult_df['MFL Code'].astype(int)
+    other_paeds_df['MFL Code'] = other_paeds_df['MFL Code'].astype(int)
+    # merge dfs together
+    merged = main_df.merge(
+        other_adult_df,
+        on=["County", "MFL Code", "organisationunitname", "periodname"]).merge(
+        other_paeds_df,
+        on=["County", "MFL Code", "organisationunitname", "periodname"])
+
+    return merged
+
+
+def compile_pmp_report(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
+                       other_paeds_df: pd.DataFrame) -> pd.DataFrame:
+    """Compile the PMP report"""
+    prepared_data = prepare_data(main_df, other_adult_df, other_paeds_df)
+    pmp = prepared_data.groupby(['County']).sum()[[
+        'TLD 90s', 'DTG 10', 'DTG 50mg tabs 30s', 'ABC/3TC 120mg/60mg', 'CTX 240mg/5ml', '3HP 300/300',
+    ]].reset_index()
+    pmp.index += 1
+    pmp.loc['Total'] = pmp.sum(numeric_only=True)
+    pmp.loc['Total'] = pmp.loc['Total'].fillna("")
+    for col in pmp.columns[1:]:
+        pmp[col] = pmp[col].astype(int)
+    return pmp
+
+
 def prepare_to_send_via_sessions(llv_linelist):
     llv_linelist = llv_linelist.applymap(
         lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if isinstance(x, pd.Timestamp) else x)
@@ -3348,7 +3341,8 @@ def get_variance_df(df):
     return no_variances_df, pos_neg_var, negative_variances_df, positive_variances_df, overall_variances_trend
 
 
-def most_frequent_bars(most_frequent_sub_counties, county, x_axis, text, title, show_source=False, height=400,y_axis_title="Frequency"):
+def most_frequent_bars(most_frequent_sub_counties, county, x_axis, text, title, show_source=False, height=400,
+                       y_axis_title="Frequency"):
     fig = px.bar(most_frequent_sub_counties, x=x_axis, y='count', text=text,
                  title=title,
                  height=height,
@@ -3468,7 +3462,7 @@ def calculate_screening_variances(bal):
     return bal
 
 
-def calculate_variances_subcounties(df, variances,col):
+def calculate_variances_subcounties(df, variances, col):
     all_subcounty_reports = df[col].value_counts().sort_values(ascending=False).reset_index()
 
     all_subcounty_reports.columns = [col, 'All reports']
@@ -3483,19 +3477,20 @@ def calculate_variances_subcounties(df, variances,col):
     subcounty_variance['variance %'] = subcounty_variance['variant reports'].astype(str) + " (" + \
                                        subcounty_variance['%'].astype(str) + "%)"
     subcounty_variance['Concordant report'] = subcounty_variance['All reports'] - subcounty_variance['variant reports']
-    subcounty_variance['concor_%'] = round(subcounty_variance['Concordant report'] / subcounty_variance['All reports'] * 100,
-                                    1)
+    subcounty_variance['concor_%'] = round(
+        subcounty_variance['Concordant report'] / subcounty_variance['All reports'] * 100,
+        1)
 
     subcounty_variance['Concordant report %'] = subcounty_variance['Concordant report'].astype(str) + " (" + \
-                                       subcounty_variance['concor_%'].astype(str) + "%)"
+                                                subcounty_variance['concor_%'].astype(str) + "%)"
     return subcounty_variance
 
 
-def show_subcounty_variances(subcounty_variance, county, min_date, max_date,x_axis):
+def show_subcounty_variances(subcounty_variance, county, min_date, max_date, x_axis):
     # Create a bar plot for "All reports"
     fig = px.bar(subcounty_variance, x=x_axis, y="Concordant report", text="Concordant report %", height=550,
                  title=f"{x_axis} Reports and Variances    County : {county}   Period: {min_date} - {max_date}",
-                 color_discrete_sequence=['#4daf4a'], hover_data=[ "Concordant report","All reports"])
+                 color_discrete_sequence=['#4daf4a'], hover_data=["Concordant report", "All reports"])
 
     # Add a bar plot for "variance %" with a secondary y-axis
     fig.add_traces(px.bar(subcounty_variance, x=x_axis, y='%', text='variance %',
@@ -3507,10 +3502,10 @@ def show_subcounty_variances(subcounty_variance, county, min_date, max_date,x_ax
 
     # Update the text font and size
     fig.update_traces(textfont=dict(size=15, color='black', family='Arial'))
-    if x_axis=="Hub":
-        x_axis="Hubs"
+    if x_axis == "Hub":
+        x_axis = "Hubs"
     else:
-        x_axis="Sub-Counties"
+        x_axis = "Sub-Counties"
 
     fig.update_layout(xaxis_title=x_axis, yaxis_title='Reports and Variances')
 
@@ -3519,6 +3514,7 @@ def show_subcounty_variances(subcounty_variance, county, min_date, max_date,x_ax
 
     # Show the plot
     return plot(fig, include_plotlyjs=False, output_type="div")
+
 
 @login_required(login_url='login')
 def rtk_visualization(request):
@@ -3538,17 +3534,16 @@ def rtk_visualization(request):
     else:
         selected_facility_type = request.GET.get('record_count', 'True')
 
-
-    most_frequent_hub_figs=most_frequent_sub_counties_figs=sub_counties_figs=most_frequent_facilities_figs=\
-        sub_county_variances_list=None
-    hub_variances_list=trend_variances_list=trend_monthly_variances_list=[]
+    most_frequent_hub_figs = most_frequent_sub_counties_figs = sub_counties_figs = most_frequent_facilities_figs = \
+        sub_county_variances_list = None
+    hub_variances_list = trend_variances_list = trend_monthly_variances_list = []
 
     def fetch_past_one_year_cd4_data(request):
         # Get the user's start_date input from the request GET parameters
         start_date_param = request.GET.get('start_date')
         end_date_param = request.GET.get('end_date')
         use_one_year_data = True
-        days=395
+        days = 395
         # Use default logic for one year ago
         one_year_ago = datetime.now() - timedelta(days=days)
         one_year_ago = datetime(
@@ -3577,15 +3572,15 @@ def rtk_visualization(request):
     # Convert queryset to dataframe
     # rtk_qs = RTKData.objects.all().order_by('facility_name', 'month')
     rtk_qs_filters = RTKDataFilter(request.GET, queryset=rtk_qs)
-    facility_type_options = [("False","FYJ"),("True", "All")]
+    facility_type_options = [("False", "FYJ"), ("True", "All")]
     df = convert_to_df(rtk_qs_filters.qs)
-    dqa_type="rtk"
+    dqa_type = "rtk"
 
     # Generate a cache key based on relevant data
     data_hash = hashlib.sha256(
-         f"{df.to_dict()}:{request.GET.get('start_date')}:{request.GET.get('end_date')}:"
-         f"{request.GET.get('record_count')}:{request.GET.get('commodity_name')}:{request.GET.get('sub_county')}:"
-         f"{request.GET.get('county')}:{request.GET.get('facility_name')}".encode()
+        f"{df.to_dict()}:{request.GET.get('start_date')}:{request.GET.get('end_date')}:"
+        f"{request.GET.get('record_count')}:{request.GET.get('commodity_name')}:{request.GET.get('sub_county')}:"
+        f"{request.GET.get('county')}:{request.GET.get('facility_name')}".encode()
     ).hexdigest()
     cache_key = f'rtk_visualization:{data_hash}'
 
@@ -3601,8 +3596,6 @@ def rtk_visualization(request):
         else:
             all_facilities = False
 
-
-
         if not all_facilities:
             type_of_facilities = "FYJ"
             # Get FYJ facilities
@@ -3611,13 +3604,13 @@ def rtk_visualization(request):
             df = df[df['MFL Code'].isin([facility.mfl_code for facility in facilities])]
             # Extracting hub information from Sub_counties model
             sub_county_hub_mapping = Sub_counties.objects.values('facilities__mfl_code', 'hub__hub')
-            facility_hub_df=pd.DataFrame(sub_county_hub_mapping)
-            facility_hub_df.columns=["MFL Code","Hub"]
-            df=df.merge(facility_hub_df,on='MFL Code',how="left")
+            facility_hub_df = pd.DataFrame(sub_county_hub_mapping)
+            facility_hub_df.columns = ["MFL Code", "Hub"]
+            df = df.merge(facility_hub_df, on='MFL Code', how="left")
             df = df[~df['Hub'].isnull()]
-            bal = df[['month', 'County', 'Sub-County', "Hub",'MFL Code', 'Facility Name',
+            bal = df[['month', 'County', 'Sub-County', "Hub", 'MFL Code', 'Facility Name',
                       'Commodity Name', 'Beginning Balance', 'Ending Balance']]
-            bal=bal.drop_duplicates()
+            bal = bal.drop_duplicates()
 
 
         else:
@@ -3651,7 +3644,8 @@ def rtk_visualization(request):
                  'Previous month Ending Balance', 'Variance']]
         else:
             variances = variances[
-                ['month_year', 'month_num', 'month', 'County', 'Sub-County', 'MFL Code', 'Facility Name', 'Commodity Name',
+                ['month_year', 'month_num', 'month', 'County', 'Sub-County', 'MFL Code', 'Facility Name',
+                 'Commodity Name',
                  'Beginning Balance', 'Ending Balance',
                  'Previous month Ending Balance', 'Variance']]
 
@@ -3674,9 +3668,10 @@ def rtk_visualization(request):
             most_frequent_sub_counties = add_percentage_and_count_string(most_frequent_sub_counties, "count")
             title = f"Most Frequent Sub-Counties Over Time   N= {most_frequent_sub_counties['count'].sum()}   Reports : {len(variances['Facility Name'].unique())} {type_of_facilities} Facilities   {county} County      Period: {min_date} - {max_date}"
             most_frequent_sub_counties_figs.append(
-                most_frequent_bars(most_frequent_sub_counties, county, "Sub-County", "count (%)", title, show_source=True))
+                most_frequent_bars(most_frequent_sub_counties, county, "Sub-County", "count (%)", title,
+                                   show_source=True))
 
-        if type_of_facilities=="FYJ":
+        if type_of_facilities == "FYJ":
             most_frequent_hub_figs = []
             for county in df['County'].unique():
                 county_specific_df = variances[variances['County'] == county]
@@ -3699,7 +3694,6 @@ def rtk_visualization(request):
             sub_county = sub_county_df['Sub-County'].unique()[0]
             county = sub_county_df['County'].unique()[0]
 
-
             # Get the monthly frequency data for the sub-county
             variances_trend_df, number_of_facilities = get_monthly_frequency(sub_county_df, "Facility Name")
 
@@ -3711,8 +3705,6 @@ def rtk_visualization(request):
                 x_axis="month_num",
                 text="count (%)"
             ))
-
-
 
         unique_facilities_df = variances.drop_duplicates(subset=["Facility Name", "month_num"])
 
@@ -3730,27 +3722,29 @@ def rtk_visualization(request):
                 top_50_text = f"{most_frequent_facilities.shape[0]} facilities"
             title = f'Most Frequent Facilities Over Time   {top_50_text}    {type_of_facilities} facilities    Period: {min_date} - {max_date}'
             most_frequent_facilities_figs.append(
-                most_frequent_bars(top_50, county, "Facility Name", "count", title, show_source=False, height=600,y_axis_title="Variant reports in months"))
+                most_frequent_bars(top_50, county, "Facility Name", "count", title, show_source=False, height=600,
+                                   y_axis_title="Variant reports in months"))
 
         sub_county_variances_list = []
         for county in df['County'].unique():
             county_specific = df[df['County'] == county]
-            subcounty_variance = calculate_variances_subcounties(county_specific, variances,'Sub-County')
-            sub_county_variances_list.append(show_subcounty_variances(subcounty_variance, county, min_date, max_date,"Sub-County"))
-        if type_of_facilities=="FYJ":
+            subcounty_variance = calculate_variances_subcounties(county_specific, variances, 'Sub-County')
+            sub_county_variances_list.append(
+                show_subcounty_variances(subcounty_variance, county, min_date, max_date, "Sub-County"))
+        if type_of_facilities == "FYJ":
             hub_variances_list = []
             for county in df['County'].unique():
                 county_specific = df[df['County'] == county]
                 hub_variance = calculate_variances_subcounties(county_specific, variances, 'Hub')
-                hub_variances_list.append(show_subcounty_variances(hub_variance, county, min_date, max_date,"Hub"))
+                hub_variances_list.append(show_subcounty_variances(hub_variance, county, min_date, max_date, "Hub"))
 
     context = {
         "trend_variances_list": trend_variances_list, "trend_monthly_variances_list": trend_monthly_variances_list,
         "most_frequent_sub_counties_figs": most_frequent_sub_counties_figs, "sub_counties_figs": sub_counties_figs,
         "most_frequent_facilities_figs": most_frequent_facilities_figs,
-        "sub_county_variances_list": sub_county_variances_list,"most_frequent_hub_figs":most_frequent_hub_figs,
-        "hub_variances_list":hub_variances_list,"rtk_qs_filters":rtk_qs_filters,
-        "facility_type_options":facility_type_options,"dqa_type":dqa_type,
+        "sub_county_variances_list": sub_county_variances_list, "most_frequent_hub_figs": most_frequent_hub_figs,
+        "hub_variances_list": hub_variances_list, "rtk_qs_filters": rtk_qs_filters,
+        "facility_type_options": facility_type_options, "dqa_type": dqa_type,
     }
 
     # Cache the entire rendered view for 30 days

@@ -2258,7 +2258,6 @@ def show_results(request):
         (rejected_df, 'rejected_df')
     ]
 
-
     dictionary = store_dataframes_in_session(request, *dataframes)
     context = {
         "title": "Results", "record_count_options": record_count_options, "record_count": record_count,

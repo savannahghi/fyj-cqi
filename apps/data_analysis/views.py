@@ -781,7 +781,8 @@ def pharmacy(request):
                                 other_paeds_bottles_df_file, reporting_errors_df, reporting_error_filename = \
                                 analyse_pharmacy_data(request, df, df1)
                             # Compile PMP report
-                            pmp_report = compile_pmp_report(final_df, other_adult_df_file, other_paeds_bottles_df_file)
+                            pmp_report = compile_pmp_report(final_df, other_adult_df_file, other_paeds_bottles_df_file,
+                                                            filename)
                             month_names = final_df['periodname'].unique()
                             month_names_str = "_".join(month_names) if len(month_names) > 1 else month_names[0]
                             if len(month_names) > 1:
@@ -2676,7 +2677,7 @@ def calculate_justification_resuppression_rate(resuppression_status):
 
 
 def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
-                 other_paeds_df: pd.DataFrame) -> pd.DataFrame:
+                 other_paeds_df: pd.DataFrame, filename):
     """Prepare data for merging"""
     other_adult_df.columns = [
         'County', 'Subcounty', 'organisationunitname',
@@ -2707,6 +2708,30 @@ def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
     main_df['MFL Code'] = main_df['MFL Code'].astype(int)
     other_adult_df['MFL Code'] = other_adult_df['MFL Code'].astype(int)
     other_paeds_df['MFL Code'] = other_paeds_df['MFL Code'].astype(int)
+
+    total_df = main_df[[
+        'County', 'Health Subcounty', 'Subcounty',
+        'organisationunitname', 'MFL Code', 'Hub(1,2,3 o 4)', 'periodname',
+        'TLD 30s', 'TLD 90s', 'TLD 180s', 'TL_400 30', 'TLE_400 90s',
+        'TLE_600 30s', 'LPV/r 40/10', 'LPV/r 100/25', 'DTG 10', 'NVP 200',
+        'NVP (Pediatric) bottles', 'Other (Adult) bottles',
+        'Other (Pediatric) bottles'
+    ]]
+    col_name = f"{filename.upper()} Bottles(Units)"
+    total_df = total_df.melt(id_vars=[
+        'County', 'Health Subcounty', 'Subcounty',
+        'organisationunitname', 'MFL Code', 'Hub(1,2,3 o 4)', 'periodname'
+    ],
+        value_vars=[
+            'TLD 30s', 'TLD 90s', 'TLD 180s', 'TL_400 30',
+            'TLE_400 90s', 'TLE_600 30s', 'LPV/r 40/10',
+            'LPV/r 100/25', 'DTG 10', 'NVP 200',
+            'NVP (Pediatric) bottles',
+            'Other (Adult) bottles',
+            'Other (Pediatric) bottles'
+        ], value_name=col_name)
+
+    total_df = total_df.groupby("County").sum()[col_name].reset_index()
     # merge dfs together
     merged = main_df.merge(
         other_adult_df,
@@ -2714,16 +2739,17 @@ def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
         other_paeds_df,
         on=["County", "MFL Code", "organisationunitname", "periodname"])
 
-    return merged
+    return merged, total_df
 
 
 def compile_pmp_report(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
-                       other_paeds_df: pd.DataFrame) -> pd.DataFrame:
+                       other_paeds_df: pd.DataFrame, filename) -> pd.DataFrame:
     """Compile the PMP report"""
-    prepared_data = prepare_data(main_df, other_adult_df, other_paeds_df)
+    prepared_data, total_df = prepare_data(main_df, other_adult_df, other_paeds_df, filename)
     pmp = prepared_data.groupby(['County']).sum()[[
         'TLD 90s', 'DTG 10', 'DTG 50mg tabs 30s', 'ABC/3TC 120mg/60mg', 'CTX 240mg/5ml', '3HP 300/300',
     ]].reset_index()
+    pmp = total_df.merge(pmp, on="County", how="left")
     pmp.index += 1
     pmp.loc['Total'] = pmp.sum(numeric_only=True)
     pmp.loc['Total'] = pmp.loc['Total'].fillna("")

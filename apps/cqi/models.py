@@ -2,9 +2,13 @@
 import re
 import uuid
 
+from django.conf.global_settings import EMAIL_HOST_USER
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 from django.db import models
 from crum import get_current_user, get_current_request
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 # from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
@@ -15,6 +19,8 @@ from phonenumber_field.modelfields import PhoneNumberField
 from apps.account.models import CustomUser
 
 from apps.cqi.utils import image_resize
+
+
 def read_txt(file_):
     # read a local file with facility names
     data = open(file_, 'r').read()
@@ -23,6 +29,7 @@ def read_txt(file_):
     # Make a tuple
     FACILITY_CHOICES = tuple((choice, choice) for choice in facility_list)
     return FACILITY_CHOICES
+
 
 class GetFirstAttributeMixin:
     def get_first_attribute(self, attributes):
@@ -34,10 +41,10 @@ class GetFirstAttributeMixin:
         return ''  # Or any default value you want to return if none of the attributes exist
 
 
-
 class Program(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     program = models.CharField(max_length=250, unique=True)
+
     class Meta:
         verbose_name_plural = 'Programs'
         ordering = ['program']
@@ -72,7 +79,7 @@ class Facilities(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=250, unique=True)
     mfl_code = models.IntegerField(unique=True)
-    fyj_facilities = models.BooleanField(default=False,blank=True)  # Set default value to False
+    fyj_facilities = models.BooleanField(default=False, blank=True)  # Set default value to False
 
     class Meta:
         verbose_name_plural = 'facilities'
@@ -235,7 +242,7 @@ class QI_Projects(models.Model):
     # Django fix Admin plural
     class Meta:
         verbose_name_plural = "QI_Projects"
-        ordering = ['facility_name','start_date']
+        ordering = ['facility_name', 'start_date']
 
     def save(self, commit=True, *args, **kwargs):
         user = get_current_user()
@@ -314,7 +321,7 @@ class Subcounty_qi_projects(models.Model):
     # Django fix Admin plural
     class Meta:
         verbose_name_plural = "QI_Projects_sub_counties"
-        ordering = ['sub_county','start_date']
+        ordering = ['sub_county', 'start_date']
 
     def save(self, commit=True, *args, **kwargs):
         user = get_current_user()
@@ -333,7 +340,7 @@ class Subcounty_qi_projects(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.sub_county)+"  - "+str(self.project_title)
+        return str(self.sub_county) + "  - " + str(self.project_title)
 
 
 class County_qi_projects(models.Model):
@@ -393,7 +400,7 @@ class County_qi_projects(models.Model):
     # Django fix Admin plural
     class Meta:
         verbose_name_plural = "QI_Projects_counties"
-        ordering=['county']
+        ordering = ['county']
 
     def save(self, commit=True, *args, **kwargs):
         user = get_current_user()
@@ -412,7 +419,7 @@ class County_qi_projects(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.county)+"  - "+str(self.project_title)
+        return str(self.county) + "  - " + str(self.project_title)
 
 
 class Hub_qi_projects(models.Model):
@@ -471,7 +478,7 @@ class Hub_qi_projects(models.Model):
     # Django fix Admin plural
     class Meta:
         verbose_name_plural = "QI_Projects_hub"
-        ordering = ['hub','start_date']
+        ordering = ['hub', 'start_date']
 
     def save(self, commit=True, *args, **kwargs):
         user = get_current_user()
@@ -490,7 +497,7 @@ class Hub_qi_projects(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.hub)+"  - "+str(self.project_title)
+        return str(self.hub) + "  - " + str(self.project_title)
 
 
 class Program_qi_projects(models.Model):
@@ -549,7 +556,7 @@ class Program_qi_projects(models.Model):
     # Django fix Admin plural
     class Meta:
         verbose_name_plural = "QI_Projects_program"
-        ordering = ['program','start_date']
+        ordering = ['program', 'start_date']
 
     def save(self, commit=True, *args, **kwargs):
         user = get_current_user()
@@ -588,7 +595,7 @@ class Close_project(models.Model):
         verbose_name_plural = "close_project"
 
 
-class TestedChange(models.Model,GetFirstAttributeMixin):
+class TestedChange(models.Model, GetFirstAttributeMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
     program_project = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
@@ -608,7 +615,7 @@ class TestedChange(models.Model,GetFirstAttributeMixin):
 
     class Meta:
         verbose_name_plural = "Test of change"
-        ordering = ['project', 'subcounty_project', 'county_project', 'hub_project','program_project']
+        ordering = ['project', 'subcounty_project', 'county_project', 'hub_project', 'program_project']
 
     def __str__(self):
         return self.get_first_attribute(
@@ -640,17 +647,18 @@ class Comment(models.Model):
         verbose_name_plural = "Comments"
         ordering = ['qi_project_title', 'subcounty_qi_project_title', 'county_project_title',
                     'hub_qi_project_title', 'program_qi_project_title']
+
     def __str__(self):
         if self.qi_project_title is not None:
-            return str(self.qi_project_title) + "  - (" + str(self.author)+ ")"
+            return str(self.qi_project_title) + "  - (" + str(self.author) + ")"
         elif self.program_qi_project_title is not None:
-            return str(self.program_qi_project_title) + "  - (" + str(self.author)+ ")"
+            return str(self.program_qi_project_title) + "  - (" + str(self.author) + ")"
         elif self.hub_qi_project_title is not None:
-            return str(self.hub_qi_project_title) + "  - (" + str(self.author)+ ")"
+            return str(self.hub_qi_project_title) + "  - (" + str(self.author) + ")"
         elif self.subcounty_qi_project_title is not None:
-            return str(self.subcounty_qi_project_title) + "  - (" + str(self.author)+ ")"
+            return str(self.subcounty_qi_project_title) + "  - (" + str(self.author) + ")"
         elif self.county_project_title is not None:
-            return str(self.county_project_title) + "  - (" + str(self.author)+ ")"
+            return str(self.county_project_title) + "  - (" + str(self.author) + ")"
 
 
 class LikeDislike(models.Model):
@@ -672,7 +680,7 @@ class ProjectComments(models.Model):
 
     class Meta:
         verbose_name_plural = "Project comments"
-        ordering=['qi_project_title']
+        ordering = ['qi_project_title']
 
     def __str__(self):
         return self.comment
@@ -810,7 +818,7 @@ class Qi_team_members(models.Model):
         super().save(*args, **kwargs)
 
 
-class ArchiveProject(models.Model,GetFirstAttributeMixin):
+class ArchiveProject(models.Model, GetFirstAttributeMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     qi_project = models.ForeignKey(QI_Projects, on_delete=models.CASCADE, blank=True, null=True)
     program = models.ForeignKey(Program_qi_projects, on_delete=models.CASCADE, blank=True, null=True)
@@ -823,11 +831,11 @@ class ArchiveProject(models.Model,GetFirstAttributeMixin):
 
     class Meta:
         verbose_name_plural = "archived projects"
-        ordering=['qi_project', 'subcounty', 'county', 'hub', 'program']
+        ordering = ['qi_project', 'subcounty', 'county', 'hub', 'program']
 
     def __str__(self):
         return self.get_first_attribute(
-        ['qi_project', 'subcounty', 'county', 'hub', 'program'])
+            ['qi_project', 'subcounty', 'county', 'hub', 'program'])
 
 
 class Stakeholder(models.Model):
@@ -868,7 +876,7 @@ class Milestone(models.Model):
 
     class Meta:
         verbose_name_plural = "Milestone"
-        ordering = ['facility','subcounty_qi_project','county_qi_project','hub_qi_project','program', 'start_date']
+        ordering = ['facility', 'subcounty_qi_project', 'county_qi_project', 'hub_qi_project', 'program', 'start_date']
 
     def __str__(self):
         qi_project_str = str(self.qi_project) + " - " if self.qi_project else ""
@@ -955,7 +963,7 @@ class Lesson_learned(models.Model):
 
     class Meta:
         verbose_name_plural = "Lesson learnt"
-        ordering = ['project_name', 'subcounty', 'county', 'hub','program']
+        ordering = ['project_name', 'subcounty', 'county', 'hub', 'program']
 
     def __str__(self):
         qi_project_str = str(self.project_name) + " - " if self.project_name else ""

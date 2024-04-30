@@ -8,6 +8,8 @@ env:
   DJANGO_SECRET_KEY: "${{ secrets.DJANGO_SECRET_KEY }}"
   DOCKER_BUILDKIT: 1 # Enable Buildkit and let compose use it to speed up image building
   GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  EMAIL_HOST_USER: "${{ secrets.CQI_EMAIL_HOST_USER }}"
+  EMAIL_HOST_PASSWORD: "${{ secrets.CQI_EMAIL_HOST_PASSWORD }}"
   POSTGRES_DB: postgres
   POSTGRES_HOST: localhost
   POSTGRES_PASSWORD: postgres

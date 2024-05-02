@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import include, path
-
+from django.contrib.auth import views as auth_views
 
 from apps.account.views import update_profile
 from apps.cqi.views import dashboard, deep_dive_facilities, load_data, monthly_data_review, deep_dive_chmt, \
@@ -23,7 +23,6 @@ from apps.cqi.views import dashboard, deep_dive_facilities, load_data, monthly_d
     download_lessons, download_pdf, add_trigger, completed_closed_program, single_project_subcounty, \
     single_project_county, single_project_hub, completed_closed_subcounty, completed_closed_county, \
     completed_closed_hub, action_plans_for_responsible_person, qiteam_member_filter_project
-
 
 urlpatterns = [
     path('', dashboard, name="dashboard"),
@@ -70,7 +69,8 @@ urlpatterns = [
     path('qiteam-member-projects/<uuid:pk>', qiteam_member_filter_project, name="qiteam_member_filter_project"),
 
     path('qi-managers-projects/<uuid:pk>', qi_managers_projects, name="qi_managers_projects"),
-    path('action_plans_for_responsible_person/<uuid:pk>', action_plans_for_responsible_person, name="action_plans_for_responsible_person"),
+    path('action_plans_for_responsible_person/<uuid:pk>', action_plans_for_responsible_person,
+         name="action_plans_for_responsible_person"),
     path('canceled-projects/<str:pk>', canceled_projects, name="canceled_projects"),
     path('not-started/<str:pk>', not_started, name="not_started"),
     path('completed-closed/<str:pk>', completed_closed, name="completed_closed"),
@@ -82,32 +82,42 @@ urlpatterns = [
 
     path('add-lesson-learnt-facility/<uuid:pk>/<str:facility_name>/', add_lesson_learnt,
          name='add_lesson_learnt_facility'),
-    path('add-lesson-learnt-program/<uuid:pk>/<str:program_name>/', add_lesson_learnt,name='add_lesson_learnt_program'),
-    path('add-lesson-learnt-subcounty/<uuid:pk>/<str:subcounty_name>/', add_lesson_learnt,name='add_lesson_learnt_subcounty'),
-    path('add-lesson-learnt-county/<uuid:pk>/<str:county_name>/', add_lesson_learnt,name='add_lesson_learnt_county'),
-    path('add-lesson-learnt-hub/<uuid:pk>/<str:hub_name>/', add_lesson_learnt,name='add_lesson_learnt_hub'),
+    path('add-lesson-learnt-program/<uuid:pk>/<str:program_name>/', add_lesson_learnt,
+         name='add_lesson_learnt_program'),
+    path('add-lesson-learnt-subcounty/<uuid:pk>/<str:subcounty_name>/', add_lesson_learnt,
+         name='add_lesson_learnt_subcounty'),
+    path('add-lesson-learnt-county/<uuid:pk>/<str:county_name>/', add_lesson_learnt, name='add_lesson_learnt_county'),
+    path('add-lesson-learnt-hub/<uuid:pk>/<str:hub_name>/', add_lesson_learnt, name='add_lesson_learnt_hub'),
 
     path('lesson-learnt/', lesson_learnt, name="lesson_learnt"),
     # path('show-qi-cqi-comments/<uuid:pk>', show_project_comments, name="show_project_comments"),
 
-    path('show-project-comments-facility/<uuid:pk>/<str:facility_name>/', show_project_comments, name='show_project_comments_facility'),
-    path('show-project-comments-program/<uuid:pk>/<str:program_name>/', show_project_comments, name='show_project_comments_program'),
-    path('show-project-comments-subcounty/<uuid:pk>/<str:subcounty_name>/', show_project_comments, name='show_project_comments_subcounty'),
-    path('show-project-comments-county/<uuid:pk>/<str:county_name>/', show_project_comments, name='show_project_comments_county'),
-    path('show-project-comments-hub/<uuid:pk>/<str:hub_name>/', show_project_comments, name='show_project_comments_hub'),
+    path('show-project-comments-facility/<uuid:pk>/<str:facility_name>/', show_project_comments,
+         name='show_project_comments_facility'),
+    path('show-project-comments-program/<uuid:pk>/<str:program_name>/', show_project_comments,
+         name='show_project_comments_program'),
+    path('show-project-comments-subcounty/<uuid:pk>/<str:subcounty_name>/', show_project_comments,
+         name='show_project_comments_subcounty'),
+    path('show-project-comments-county/<uuid:pk>/<str:county_name>/', show_project_comments,
+         name='show_project_comments_county'),
+    path('show-project-comments-hub/<uuid:pk>/<str:hub_name>/', show_project_comments,
+         name='show_project_comments_hub'),
 
     path('like-dislike/<uuid:pk>', like_dislike, name="like_dislike"),
     path('show-sustainmentPlan/', show_sustainmentPlan, name="show_sustainmentPlan"),
-
 
     # path('archive-cqi/<uuid:project_id>', archive_project, name="archive_project"),
     # path('unarchive-cqi/<uuid:pk>', unarchive_project, name="unarchive_project"),
     # path('unarchive-cqi/<uuid:project_id>', toggle_archive_project, name="toggle_archive_project"),
 
-    path('unarchive-cqi-facility/<uuid:pk>/<str:facility_name>/', toggle_archive_project, name='toggle_archive_project_facility'),
-    path('unarchive-cqi-program/<uuid:pk>/<str:program_name>/', toggle_archive_project, name='toggle_archive_project_program'),
-    path('unarchive-cqi-subcounty/<uuid:pk>/<str:subcounty_name>/', toggle_archive_project, name='toggle_archive_project_subcounty'),
-    path('unarchive-cqi-county/<uuid:pk>/<str:county_name>/', toggle_archive_project, name='toggle_archive_project_county'),
+    path('unarchive-cqi-facility/<uuid:pk>/<str:facility_name>/', toggle_archive_project,
+         name='toggle_archive_project_facility'),
+    path('unarchive-cqi-program/<uuid:pk>/<str:program_name>/', toggle_archive_project,
+         name='toggle_archive_project_program'),
+    path('unarchive-cqi-subcounty/<uuid:pk>/<str:subcounty_name>/', toggle_archive_project,
+         name='toggle_archive_project_subcounty'),
+    path('unarchive-cqi-county/<uuid:pk>/<str:county_name>/', toggle_archive_project,
+         name='toggle_archive_project_county'),
     path('unarchive-cqi-hub/<uuid:pk>/<str:hub_name>/', toggle_archive_project, name='toggle_archive_project_hub'),
 
     path('ongoing-projects/<str:pk>', ongoing, name="ongoing"),
@@ -131,41 +141,63 @@ urlpatterns = [
     path('add-cqi/program', add_project_program, name="add_project_program"),
     # path('add-qi-team-member/<uuid:pk>', add_qi_team_member, name="add_qi_team_member"),
 
-    path('add-qi-team-member-facility/<uuid:pk>/<str:facility_name>/', add_qi_team_member, name='add_qi_team_member_facility'),
-    path('add-qi-team-member-program/<uuid:pk>/<str:program_name>/', add_qi_team_member, name='add_qi_team_member_program'),
-    path('add-qi-team-member-subcounty/<uuid:pk>/<str:subcounty_name>/', add_qi_team_member, name='add_qi_team_member_subcounty'),
-    path('add-qi-team-member-county/<uuid:pk>/<str:county_name>/', add_qi_team_member, name='add_qi_team_member_county'),
+    path('add-qi-team-member-facility/<uuid:pk>/<str:facility_name>/', add_qi_team_member,
+         name='add_qi_team_member_facility'),
+    path('add-qi-team-member-program/<uuid:pk>/<str:program_name>/', add_qi_team_member,
+         name='add_qi_team_member_program'),
+    path('add-qi-team-member-subcounty/<uuid:pk>/<str:subcounty_name>/', add_qi_team_member,
+         name='add_qi_team_member_subcounty'),
+    path('add-qi-team-member-county/<uuid:pk>/<str:county_name>/', add_qi_team_member,
+         name='add_qi_team_member_county'),
     path('add-qi-team-member-hub/<uuid:pk>/<str:hub_name>/', add_qi_team_member, name='add_qi_team_member_hub'),
 
     # path('add-cqi-milestone/<uuid:pk>', add_project_milestone, name="add_project_milestone"),
-    path('add-project-milestone-facility/<uuid:pk>/<str:facility_name>/', add_project_milestone, name='add_project_milestone_facility'),
-    path('add-project-milestone-program/<uuid:pk>/<str:program_name>/', add_project_milestone, name='add_project_milestone_program'),
-    path('add-project-milestone-subcounty/<uuid:pk>/<str:subcounty_name>/', add_project_milestone, name='add_project_milestone_subcounty'),
-    path('add-project-milestone-county/<uuid:pk>/<str:county_name>/', add_project_milestone, name='add_project_milestone_county'),
-    path('add-project-milestone-hub/<uuid:pk>/<str:hub_name>/', add_project_milestone, name='add_project_milestone_hub'),
+    path('add-project-milestone-facility/<uuid:pk>/<str:facility_name>/', add_project_milestone,
+         name='add_project_milestone_facility'),
+    path('add-project-milestone-program/<uuid:pk>/<str:program_name>/', add_project_milestone,
+         name='add_project_milestone_program'),
+    path('add-project-milestone-subcounty/<uuid:pk>/<str:subcounty_name>/', add_project_milestone,
+         name='add_project_milestone_subcounty'),
+    path('add-project-milestone-county/<uuid:pk>/<str:county_name>/', add_project_milestone,
+         name='add_project_milestone_county'),
+    path('add-project-milestone-hub/<uuid:pk>/<str:hub_name>/', add_project_milestone,
+         name='add_project_milestone_hub'),
     # path('add-corrective-action/<uuid:pk>', add_corrective_action, name="add_corrective_action"),
 
-    path('add-corrective-action-facility/<uuid:pk>/<str:facility_name>/', add_corrective_action, name='add_corrective_action_facility'),
-    path('add-corrective-action-program/<uuid:pk>/<str:program_name>/', add_corrective_action, name='add_corrective_action_program'),
-    path('add-corrective-action-subcounty/<uuid:pk>/<str:subcounty_name>/', add_corrective_action, name='add_corrective_action_subcounty'),
-    path('add-corrective-action-county/<uuid:pk>/<str:county_name>/', add_corrective_action, name='add_corrective_action_county'),
-    path('add-corrective-action-hub/<uuid:pk>/<str:hub_name>/', add_corrective_action, name='add_corrective_action_hub'),
+    path('add-corrective-action-facility/<uuid:pk>/<str:facility_name>/', add_corrective_action,
+         name='add_corrective_action_facility'),
+    path('add-corrective-action-program/<uuid:pk>/<str:program_name>/', add_corrective_action,
+         name='add_corrective_action_program'),
+    path('add-corrective-action-subcounty/<uuid:pk>/<str:subcounty_name>/', add_corrective_action,
+         name='add_corrective_action_subcounty'),
+    path('add-corrective-action-county/<uuid:pk>/<str:county_name>/', add_corrective_action,
+         name='add_corrective_action_county'),
+    path('add-corrective-action-hub/<uuid:pk>/<str:hub_name>/', add_corrective_action,
+         name='add_corrective_action_hub'),
 
     path('add-lesson-learnt/', add_lesson_learnt, name="add_lesson_learnt"),
     # path('add-sustainment-plan/<uuid:pk>', add_sustainmentplan, name="add_sustainmentplan"),
 
-    path('add-sustainment-plan-facility/<uuid:pk>/<str:facility_name>/', add_sustainmentplan, name='add_sustainmentplan_facility'),
-    path('add-sustainment-plan-program/<uuid:pk>/<str:program_name>/', add_sustainmentplan, name='add_sustainmentplan_program'),
-    path('add-sustainment-plan-subcounty/<uuid:pk>/<str:subcounty_name>/', add_sustainmentplan, name='add_sustainmentplan_subcounty'),
-    path('add-sustainment-plan-county/<uuid:pk>/<str:county_name>/', add_sustainmentplan, name='add_sustainmentplan_county'),
+    path('add-sustainment-plan-facility/<uuid:pk>/<str:facility_name>/', add_sustainmentplan,
+         name='add_sustainmentplan_facility'),
+    path('add-sustainment-plan-program/<uuid:pk>/<str:program_name>/', add_sustainmentplan,
+         name='add_sustainmentplan_program'),
+    path('add-sustainment-plan-subcounty/<uuid:pk>/<str:subcounty_name>/', add_sustainmentplan,
+         name='add_sustainmentplan_subcounty'),
+    path('add-sustainment-plan-county/<uuid:pk>/<str:county_name>/', add_sustainmentplan,
+         name='add_sustainmentplan_county'),
     path('add-sustainment-plan-hub/<uuid:pk>/<str:hub_name>/', add_sustainmentplan, name='add_sustainmentplan_hub'),
     # path('add-baseline-image/<uuid:pk>', add_baseline_image, name="add_baseline_image"),
 
-    path('add-baseline-image-facility/<uuid:pk>/<str:facility_name>/', add_baseline_image, name='add_baseline_image_facility'),
-    path('add-baseline-image-program/<uuid:pk>/<str:program_name>/', add_baseline_image, name='add_baseline_image_program'),
-    path('add-baseline-image-subcounty/<uuid:pk>/<str:subcounty_name>/', add_baseline_image, name='add_baseline_image_subcounty'),
+    path('add-baseline-image-facility/<uuid:pk>/<str:facility_name>/', add_baseline_image,
+         name='add_baseline_image_facility'),
+    path('add-baseline-image-program/<uuid:pk>/<str:program_name>/', add_baseline_image,
+         name='add_baseline_image_program'),
+    path('add-baseline-image-subcounty/<uuid:pk>/<str:subcounty_name>/', add_baseline_image,
+         name='add_baseline_image_subcounty'),
     path('add-baseline-image-hub/<uuid:pk>/<str:hub_name>/', add_baseline_image, name='add_baseline_image_hub'),
-    path('add-baseline-image-county/<uuid:pk>/<str:county_name>/', add_baseline_image, name='add_baseline_image_county'),
+    path('add-baseline-image-county/<uuid:pk>/<str:county_name>/', add_baseline_image,
+         name='add_baseline_image_county'),
 
     path('add-image-facility/<uuid:pk>/<str:facility_name>/', add_images, name='add_image_facility'),
     path('add-image-program/<uuid:pk>/<str:program_name>/', add_images, name='add_image_program'),
@@ -183,7 +215,6 @@ urlpatterns = [
 
     path('add-program/', add_program, name="add_program"),
     path('add-trigger/', add_trigger, name="add_trigger"),
-
 
     path('qi-projects-involved-in/<uuid:pk>', qi_team_involved, name="qi_team_involved"),
 
@@ -211,20 +242,26 @@ urlpatterns = [
     path('update-qi-managers/<uuid:pk>/', update_qi_managers, name="update_qi_managers"),
     # path('update-qi-team-member/<uuid:pk>/', update_qi_team_member, name="update_qi_team_member"),
 
-    path('update-qi-team-member-facility/<uuid:pk>/<str:facility_name>/', update_qi_team_member, name='update_qi_team_member_facility'),
-    path('update-qi-team-member-program/<uuid:pk>/<str:program_name>/', update_qi_team_member, name='update_qi_team_member_program'),
-    path('update-qi-team-member-subcounty/<uuid:pk>/<str:subcounty_name>/', update_qi_team_member, name='update_qi_team_member_subcounty'),
-    path('update-qi-team-member-county/<uuid:pk>/<str:county_name>/', update_qi_team_member, name='update_qi_team_member_county'),
-    path('update-qi-team-member-hub/<uuid:pk>/<str:hub_name>/', update_qi_team_member, name='update_qi_team_member_hub'),
+    path('update-qi-team-member-facility/<uuid:pk>/<str:facility_name>/', update_qi_team_member,
+         name='update_qi_team_member_facility'),
+    path('update-qi-team-member-program/<uuid:pk>/<str:program_name>/', update_qi_team_member,
+         name='update_qi_team_member_program'),
+    path('update-qi-team-member-subcounty/<uuid:pk>/<str:subcounty_name>/', update_qi_team_member,
+         name='update_qi_team_member_subcounty'),
+    path('update-qi-team-member-county/<uuid:pk>/<str:county_name>/', update_qi_team_member,
+         name='update_qi_team_member_county'),
+    path('update-qi-team-member-hub/<uuid:pk>/<str:hub_name>/', update_qi_team_member,
+         name='update_qi_team_member_hub'),
 
     # path('update-milestone/<uuid:pk>/', update_milestone, name="update_milestone"),
 
-    path('update-milestone-facility/<uuid:pk>/<str:facility_name>/', update_milestone, name='update_milestone_facility'),
+    path('update-milestone-facility/<uuid:pk>/<str:facility_name>/', update_milestone,
+         name='update_milestone_facility'),
     path('update-milestone-program/<uuid:pk>/<str:program_name>/', update_milestone, name='update_milestone_program'),
-    path('update-milestone-member-subcounty/<uuid:pk>/<str:subcounty_name>/', update_milestone, name='update_milestone_subcounty'),
+    path('update-milestone-member-subcounty/<uuid:pk>/<str:subcounty_name>/', update_milestone,
+         name='update_milestone_subcounty'),
     path('update-milestone-county/<uuid:pk>/<str:county_name>/', update_milestone, name='update_milestone_county'),
     path('update-milestone-hub/<uuid:pk>/<str:hub_name>/', update_milestone, name='update_milestone_hub'),
-
 
     path('update-sub-counties/<uuid:pk>/', update_sub_counties, name="update_sub_counties"),
     path('update-hub/<uuid:pk>/', update_hub, name="update_hub"),
@@ -242,28 +279,38 @@ urlpatterns = [
 
     # path('update-lesson-learnt/<uuid:pk>/', update_lesson_learnt, name="update_lesson_learnt"),
 
-    path('update-lesson-learnt-facility/<uuid:pk>/<str:facility_name>/', update_lesson_learnt, name='update_lesson_learnt_facility'),
-    path('update-lesson-learnt-program/<uuid:pk>/<str:program_name>/', update_lesson_learnt, name='update_lesson_learnt_program'),
-    path('update-lesson-learnt-subcounty/<uuid:pk>/<str:subcounty_name>/', update_lesson_learnt, name='update_lesson_learnt_subcounty'),
-    path('update-lesson-learnt-county/<uuid:pk>/<str:county_name>/', update_lesson_learnt, name='update_lesson_learnt_county'),
+    path('update-lesson-learnt-facility/<uuid:pk>/<str:facility_name>/', update_lesson_learnt,
+         name='update_lesson_learnt_facility'),
+    path('update-lesson-learnt-program/<uuid:pk>/<str:program_name>/', update_lesson_learnt,
+         name='update_lesson_learnt_program'),
+    path('update-lesson-learnt-subcounty/<uuid:pk>/<str:subcounty_name>/', update_lesson_learnt,
+         name='update_lesson_learnt_subcounty'),
+    path('update-lesson-learnt-county/<uuid:pk>/<str:county_name>/', update_lesson_learnt,
+         name='update_lesson_learnt_county'),
     path('update-lesson-learnt-hub/<uuid:pk>/<str:hub_name>/', update_lesson_learnt, name='update_lesson_learnt_hub'),
 
     # path('update-baseline/<uuid:pk>/', update_baseline, name="update_baseline"),
 
     path('update-baseline-facility/<uuid:pk>/<str:facility_name>/', update_baseline, name='update_baseline_facility'),
     path('update-baseline-program/<uuid:pk>/<str:program_name>/', update_baseline, name='update_baseline_program'),
-    path('update-baseline-subcounty/<uuid:pk>/<str:subcounty_name>/', update_baseline, name='update_baseline_subcounty'),
+    path('update-baseline-subcounty/<uuid:pk>/<str:subcounty_name>/', update_baseline,
+         name='update_baseline_subcounty'),
     path('update-baseline-county/<uuid:pk>/<str:county_name>/', update_baseline, name='update_baseline_county'),
     path('update-baseline-hub/<uuid:pk>/<str:hub_name>/', update_baseline, name='update_baseline_hub'),
 
     path('update-fields', update_fields, name="update_fields"),
     # path('update-sustainable-plan/<uuid:pk>', update_sustainable_plan, name="update_sustainable_plan"),
 
-    path('update-sustainable-plan-facility/<uuid:pk>/<str:facility_name>/', update_sustainable_plan, name='update_sustainable_plan_facility'),
-    path('update-sustainable-plan-program/<uuid:pk>/<str:program_name>/', update_sustainable_plan, name='update_sustainable_plan_program'),
-    path('update-sustainable-plan-subcounty/<uuid:pk>/<str:subcounty_name>/', update_sustainable_plan, name='update_sustainable_plan_subcounty'),
-    path('update-sustainable-plan-county/<uuid:pk>/<str:county_name>/', update_sustainable_plan, name='update_sustainable_plan_county'),
-    path('update-sustainable-plan-hub/<uuid:pk>/<str:hub_name>/', update_sustainable_plan, name='update_sustainable_plan_hub'),
+    path('update-sustainable-plan-facility/<uuid:pk>/<str:facility_name>/', update_sustainable_plan,
+         name='update_sustainable_plan_facility'),
+    path('update-sustainable-plan-program/<uuid:pk>/<str:program_name>/', update_sustainable_plan,
+         name='update_sustainable_plan_program'),
+    path('update-sustainable-plan-subcounty/<uuid:pk>/<str:subcounty_name>/', update_sustainable_plan,
+         name='update_sustainable_plan_subcounty'),
+    path('update-sustainable-plan-county/<uuid:pk>/<str:county_name>/', update_sustainable_plan,
+         name='update_sustainable_plan_county'),
+    path('update-sustainable-plan-hub/<uuid:pk>/<str:hub_name>/', update_sustainable_plan,
+         name='update_sustainable_plan_hub'),
 
     path('update-comments/<uuid:pk>/', update_comments, name="update_comments"),
 
@@ -284,12 +331,15 @@ urlpatterns = [
     path('download_lessons', download_lessons, name="download_lessons"),
     path('download_pdf', download_pdf, name="download_pdf"),
 
+    # path('password-reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(),name='password_reset_confirm'),
+    path('password-reset/<uidb64>/<token>/', auth_views.PasswordChangeView.as_view(), name='password_reset_confirm'),
 
 ]
 
 # Include debug toolbar URLs only in DEBUG mode
 if settings.DEBUG:
     import debug_toolbar
+
     urlpatterns += [
         path('__debug__/', include(debug_toolbar.urls)),
     ]

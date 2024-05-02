@@ -1,4 +1,4 @@
-from django.conf.global_settings import EMAIL_HOST_USER
+import environs
 from django.core.mail import send_mail
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -6,7 +6,9 @@ from django.dispatch import receiver
 from apps.cqi.models import ActionPlan, Baseline, County_qi_projects, Hub_qi_projects, Milestone, Program_qi_projects, \
     QI_Projects, Qi_team_members, Subcounty_qi_projects, TestedChange
 
+env = environs.Env()
 
+EMAIL_HOST_USER = env.str("EMAIL_HOST_USER", default=None)
 def get_project_level_details(instance):
     """
     Get the project level name and organization unit for a given project instance.
@@ -258,11 +260,14 @@ def send_email_to_team_member(sender, instance, created, **kwargs):
         organization_unit = PROJECT_TYPES[project_type]['organization_unit']
         project_level_field = PROJECT_TYPES[project_type]['project_level_field']
         project_level_name = getattr(project, project_level_field).sub_counties if project_level_field == 'sub_county' \
-            else getattr(project,project_level_field).county_name if project_level_field == 'county' \
+            else getattr(project, project_level_field).county_name if project_level_field == 'county' \
+            else getattr(project, project_level_field).hub if project_level_field == 'hub' \
+            else getattr(project, project_level_field).hub if project_level_field == 'hub' \
+            else getattr(project, project_level_field).name if project_level_field == 'facility_name' \
             else getattr(project, project_level_field).program
         project_type = PROJECT_TYPES[project_type]['project_type']
 
-        subject = f"You're Added as a QI Team Member: {project.project_title}"
+        subject = f"You're Added as a QI Team Member ({organization_unit} level): {project.project_title}"
 
         # Construct the project URL
         project_url = f"https://cqi.fahariyajamii.org/{project_type}/{project.id}"

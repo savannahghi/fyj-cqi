@@ -332,7 +332,7 @@ urlpatterns = [
     path('download_pdf', download_pdf, name="download_pdf"),
 
     # path('password-reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(),name='password_reset_confirm'),
-    path('password-reset/<uidb64>/<token>/', auth_views.PasswordChangeView.as_view(), name='password_reset_confirm'),
+    # path('password-reset/<uidb64>/<token>/', auth_views.PasswordChangeView.as_view(), name='password_reset_confirm'),
 
 ]
 

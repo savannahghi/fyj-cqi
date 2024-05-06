@@ -143,7 +143,7 @@ SESSION_COOKIE_SECURE = True
 # STORAGES
 ###############################################################################
 
-INSTALLED_APPS += ["storages"]  # noqa: F405
+INSTALLED_APPS += ["storages", "anymail"]  # noqa: F405
 GS_BUCKET_NAME = env.str("DJANGO_GCP_STORAGE_BUCKET_NAME")
 GS_DEFAULT_ACL = "projectPrivate"
 
@@ -248,3 +248,27 @@ sentry_sdk.init(
     environment=env.str("SENTRY_ENVIRONMENT", default="production"),
     traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=1.0),
 )
+
+# =============================================================================
+# EMAIL
+# =============================================================================
+EMAIL_BACKEND = env(
+    "DJANGO_EMAIL_BACKEND",
+    default="anymail.backends.mailgun.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = env(
+    "DJANGO_DEFAULT_FROM_EMAIL",default=None
+)
+# https://docs.djangoproject.com/en/dev/ref/settings/#server-email
+SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+# https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
+EMAIL_SUBJECT_PREFIX = env(
+    "DJANGO_EMAIL_SUBJECT_PREFIX",
+    default="[FYJ CQI]",
+)
+ANYMAIL = {
+    "MAILGUN_API_KEY": env("MAILGUN_API_KEY", default=""),  # blank default for local dev and tests
+    "MAILGUN_SENDER_DOMAIN": env("MAILGUN_DOMAIN",default=None),
+    "MAILGUN_API_URL": env("MAILGUN_API_URL", default="https://api.eu.mailgun.net/v3"),
+}
+EMAIL_TIMEOUT = 5

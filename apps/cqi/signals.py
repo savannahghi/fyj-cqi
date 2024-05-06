@@ -1,4 +1,4 @@
-import environs
+from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -6,9 +6,7 @@ from django.dispatch import receiver
 from apps.cqi.models import ActionPlan, Baseline, County_qi_projects, Hub_qi_projects, Milestone, Program_qi_projects, \
     QI_Projects, Qi_team_members, Subcounty_qi_projects, TestedChange
 
-env = environs.Env()
 
-EMAIL_HOST_USER = env.str("EMAIL_HOST_USER", default=None)
 def get_project_level_details(instance):
     """
     Get the project level name and organization unit for a given project instance.
@@ -93,7 +91,13 @@ def send_project_creation_email(sender, instance, created, **kwargs):
             </body>
         </html>
         """
-        send_mail(subject, creator_message, EMAIL_HOST_USER, [user_email], html_message=creator_message)
+        send_mail(
+            subject=subject,
+            message=creator_message,
+            from_email=settings.SERVER_EMAIL,
+            recipient_list=[user_email],
+            html_message=creator_message,
+        )
 
         # Send email to the QI Manager
         qi_manager_message = f"""
@@ -119,7 +123,13 @@ def send_project_creation_email(sender, instance, created, **kwargs):
                     </body>
                 </html>
                 """
-        send_mail(subject, qi_manager_message, EMAIL_HOST_USER, [qi_manager_email], html_message=qi_manager_message)
+        send_mail(
+            subject=subject,
+            message=qi_manager_message,
+            from_email=settings.SERVER_EMAIL,
+            recipient_list=[instance.qi_manager.email],
+            html_message=qi_manager_message,
+        )
 
 
 PROJECT_MODEL_FIELDS = {
@@ -218,11 +228,20 @@ def send_missing_cqi_details_email(sender, instance, created, **kwargs):
                            '<li>Test of Change</li>' if missing_tested_change else ''
 
                        ]))
-
-            send_mail(subject, creator_message, EMAIL_HOST_USER, [instance.created_by.email],
-                      html_message=creator_message)
-            send_mail(subject, qi_manager_message, EMAIL_HOST_USER, [instance.qi_manager.email],
-                      html_message=qi_manager_message)
+            send_mail(
+                subject=subject,
+                message=creator_message,
+                from_email=settings.SERVER_EMAIL,
+                recipient_list=[instance.created_by.email],
+                html_message=creator_message,
+            )
+            send_mail(
+                subject=subject,
+                message=qi_manager_message,
+                from_email=settings.SERVER_EMAIL,
+                recipient_list=[instance.qi_manager.email],
+                html_message=qi_manager_message,
+            )
 
 
 PROJECT_TYPES = {
@@ -297,4 +316,10 @@ def send_email_to_team_member(sender, instance, created, **kwargs):
         </html>
         """
 
-        send_mail(subject, "", EMAIL_HOST_USER, [instance.user.email], html_message=message)
+        send_mail(
+            subject=subject,
+            message="",
+            from_email=settings.SERVER_EMAIL,
+            recipient_list=[instance.user.email],
+            html_message=message,
+        )

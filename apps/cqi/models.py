@@ -2,7 +2,7 @@
 import re
 import uuid
 
-from django.conf.global_settings import EMAIL_HOST_USER
+
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import models

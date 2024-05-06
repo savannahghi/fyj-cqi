@@ -20,7 +20,7 @@ def send_user_created_email(sender, instance, created, **kwargs):
         uid = urlsafe_base64_encode(force_bytes(instance))
         token = default_token_generator.make_token(instance)
         password_reset_url = f'https://cqi.fahariyajamii.org/password-reset/{uid}/{token}/'
-        password_reset_url = f'{settings.BASE_URL}/password-reset/{uid}/{token}/'
+        password_reset_url = f'http://localhost:8000/password-reset/{uid}/{token}/'
         message = f"""
             <html>
                 <body>

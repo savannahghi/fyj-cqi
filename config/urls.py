@@ -21,7 +21,7 @@ from django.urls import path, include
 from django_select2 import urls as django_select2_urls
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.generic.base import RedirectView
-
+from django.contrib.auth import views as auth_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     # https://stackoverflow.com/a/57042608
@@ -38,6 +38,7 @@ urlpatterns = [
     path('repository/fyj/', include('apps.repo.urls')),
     path('ckeditor/', include('ckeditor_uploader.urls')),
     path('select2/', include(django_select2_urls)),
+    path('password-reset/<uidb64>/<token>/', auth_views.PasswordChangeView.as_view(), name='password_reset_confirm'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

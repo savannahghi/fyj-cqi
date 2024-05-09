@@ -4108,7 +4108,7 @@ def rtk_inventory_viz(request):
             df_sorted = df_sorted.copy().reset_index(drop=True)
             df_sorted.loc['Column_Total'] = df_sorted.sum(numeric_only=True, axis=0)
             # Fill NaN values with 0 before converting to integers
-            df_sorted.fillna(0, inplace=True)
+            # df_sorted.fillna(0, inplace=True)
             # Convert the columns to integers
             numeric_cols = df_sorted.select_dtypes(include=[np.number])
             df_sorted[numeric_cols.columns] = numeric_cols.apply(lambda x: x.astype(int), axis=0)

@@ -8,6 +8,7 @@ import inflect
 import pandas as pd
 # from django.contrib.auth import get_user_model
 from django.apps import apps
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 # from django.core.files.storage import FileSystemStorage
 from django.contrib import messages
@@ -22,6 +23,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.html import strip_tags
 
 from apps.account.forms import UpdateUserForm
 # from config import settings
@@ -649,6 +651,7 @@ def add_project(request):
     context = {"form": form, "county_form": county_form, "trigger_form": trigger_form}
     return render(request, "project/add_project.html", context)
 
+
 @login_required(login_url='login')
 def choose_project_level(request):
     return render(request, "project/choose_project.html")
@@ -804,6 +807,7 @@ def add_subcounty(request):
     context = {"form": form, "title": title}
     return render(request, "project/add_subcounty.html", context)
 
+
 @login_required(login_url='login')
 def sub_counties_list(request):
     if not request.user.first_name:
@@ -812,6 +816,7 @@ def sub_counties_list(request):
     sub_counties = Sub_counties.objects.all().order_by('counties__county_name')
     context = {'sub_counties': sub_counties}
     return render(request, 'project/sub_counties_list.html', context)
+
 
 @login_required(login_url='login')
 def update_fields(request):
@@ -909,6 +914,7 @@ def add_facility(request):
         form = FacilitiesForm()
     context = {"form": form, "title": title}
     return render(request, "project/add_qi_manager.html", context)
+
 
 @login_required(login_url='login')
 def add_hub(request):
@@ -1248,6 +1254,7 @@ def deep_dive_facilities(request):
         return redirect("profile")
     return render(request, "project/deep_dive_facilities.html")
 
+
 @login_required(login_url='login')
 def make_archive_charts(list_of_projects):
     dfs = []
@@ -1283,6 +1290,7 @@ def make_archive_charts(list_of_projects):
             dicts[keys[i]] = all_other_projects_trend[i]
         pro_perfomance_trial = dict(zip(keys, all_other_projects_trend))
         return pro_perfomance_trial, dicts
+
 
 @login_required(login_url='login')
 def archived(request):
@@ -2391,6 +2399,7 @@ def not_started(request, pk):
                "title": "Not started"
                }
     return render(request, "project/department_projects.html", context)
+
 
 @login_required(login_url='login')
 def postponed(request, pk):
@@ -3938,9 +3947,9 @@ def bar_chart_horizontal(df, x_axis, y_axis, title):
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow=False,xaxis_title=None,text=None,
-              title_size=12,axis_text_size=10,yaxis_title=None,legend_title=None):
-    category_orders={}
+def bar_chart(df, x_axis, y_axis, title, height=300, color=None, background_shadow=False, xaxis_title=None, text=None,
+              title_size=12, axis_text_size=10, yaxis_title=None, legend_title=None):
+    category_orders = {}
     if "age" in x_axis.lower():
         age_categories = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44',
                           '45-49', '50-54', '55-59', '60-64', '65+']
@@ -3951,11 +3960,11 @@ def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow
         filtered_categories = [category for category in age_categories if category in available_categories]
         category_orders[x_axis] = sorted(filtered_categories, key=age_categories.index)
     if text is not None:
-        text=text
+        text = text
     else:
-        text=y_axis
+        text = y_axis
 
-    fig = px.bar(df, x=x_axis, y=y_axis, text=text, title=title, height=height,color=color,
+    fig = px.bar(df, x=x_axis, y=y_axis, text=text, title=title, height=height, color=color,
                  category_orders=category_orders
                  # hover_name=x_axis,  hover_data={
                  #                                        "tested of change":True,
@@ -3966,9 +3975,9 @@ def bar_chart(df, x_axis, y_axis, title, height=300,color=None,background_shadow
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
     if yaxis_title is None:
-        yaxis_title=y_axis
+        yaxis_title = y_axis
     else:
-        yaxis_title=yaxis_title
+        yaxis_title = yaxis_title
     fig.update_layout(
         xaxis_title=f"{xaxis_title}",
         yaxis_title=f"{yaxis_title}",
@@ -4617,6 +4626,7 @@ def single_project_county(request, pk):
 
     return render(request, "project/individual_qi_project.html", context)
 
+
 @login_required(login_url='login')
 def single_project_hub(request, pk):
     if not request.user.first_name:
@@ -4790,6 +4800,7 @@ def untracked_projects(request, project_type):
         "project_type": project_type,
     }
     return render(request, "project/untracked_projects.html", context)
+
 
 @login_required(login_url='login')
 def add_stake_holders(request, pk):
@@ -5928,6 +5939,7 @@ def update_comments(request, pk):
 
     return render(request, "project/add_lesson_learnt.html", context)
 
+
 @login_required(login_url='login')
 def delete_comments(request, pk):
     if not request.user.first_name:
@@ -6021,6 +6033,7 @@ def show_project_comments(request, pk, program_name=None, facility_name=None, su
                }
     return render(request, 'project/comments_trial.html', context)
 
+
 @login_required(login_url='login')
 def show_all_comments(request):
     if not request.user.first_name:
@@ -6035,6 +6048,7 @@ def show_all_comments(request):
         "title": "All comments"
     }
     return render(request, "project/comments_trial.html", context)
+
 
 @login_required(login_url='login')
 def like_dislike(request, pk):
@@ -6164,6 +6178,7 @@ def add_sustainmentplan(request, pk, program_name=None, facility_name=None, subc
     context = {"form": form, "title": title, "qi_project": qi_project, "lesson_learnt": lesson, }
     return render(request, "project/add_qi_manager.html", context)
 
+
 @login_required(login_url='login')
 def show_sustainmentPlan(request):
     if not request.user.first_name:
@@ -6174,6 +6189,7 @@ def show_sustainmentPlan(request):
         "plan": plan
     }
     return render(request, "project/sustainment_plan.html", context)
+
 
 @login_required(login_url='login')
 def update_sustainable_plan(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
@@ -6314,6 +6330,7 @@ def add_images(request, pk, program_name=None, facility_name=None, subcounty_nam
                "hub_name": hub_name,
                }
     return render(request, 'project/baseline_images.html', context)
+
 
 @login_required(login_url='login')
 def action_plans_for_responsible_person(request, pk):
@@ -6469,3 +6486,50 @@ def qiteam_member_filter_project(request, pk):
 
                }
     return render(request, "project/department_filter_projects.html", context)
+
+
+##########################################################
+# Send email for missing details in QI projects
+##########################################################
+
+# def send_missing_details_email_view(request):
+#     projects = QI_Projects.objects.all()
+#     for project in projects:
+#         missing_milestones = Milestone.objects.filter(qi_project=project).count() == 0
+#         missing_action_plan = ActionPlan.objects.filter(qi_project=project).count() == 0
+#         missing_baseline = Baseline.objects.filter(qi_project=project).count() == 0
+#         missing_qi_team_members = Qi_team_members.objects.filter(qi_project=project).count() == 0
+#         missing_tested_change = TestedChange.objects.filter(project=project).count() == 0
+#         missing_root_cause_analysis = project.process_analysis == ""
+#
+#         if missing_milestones or missing_action_plan or missing_baseline or missing_qi_team_members or \
+#                 missing_tested_change or missing_root_cause_analysis:
+#             subject = "Complete Your QI Project Details: {}".format(project.project_title)
+#             message = """
+#                     <html>
+#                         <body>
+#                             <p>Dear {project.created_by.first_name} {project.created_by.last_name},</p>
+#                             <p>The following details are missing for QI Project: {project.project_title}</p>
+#                             <ul>
+#                                 {missing_details}
+#                             </ul>
+#                             <p>Please update the project details accordingly.</p>
+#                             <p>Best regards,</p>
+#                             <p>Peter</p>
+#                             <p>Quality Improvement Specialist</p>
+#                         </body>
+#                     </html>
+#                     """.format(project=project, missing_details='\n'.join([
+#                 '<li>Baseline status</li>' if missing_baseline else '',
+#                 '<li>Root cause analysis</li>' if missing_root_cause_analysis else '',
+#                 '<li>QI team members</li>' if missing_qi_team_members else '',
+#                 '<li>Action Plan</li>' if missing_action_plan else '',
+#                 '<li>Milestones</li>' if missing_milestones else '',
+#                 '<li>Test of Change</li>' if missing_tested_change else '',
+#             ]))
+#
+#             plain_message = strip_tags(message)
+#             send_mail(subject, plain_message, settings.EMAIL_HOST_USER, [project.created_by.email],
+#                       html_message=message)
+#
+#     return HttpResponse("Emails sent successfully")

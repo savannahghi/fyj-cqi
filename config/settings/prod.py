@@ -148,9 +148,9 @@ GS_BUCKET_NAME = env.str("DJANGO_GCP_STORAGE_BUCKET_NAME")
 GS_DEFAULT_ACL = "projectPrivate"
 
 
-###############################################################################
+#############################################################################
 # STATIC ASSETS AND MEDIA FILES
-###############################################################################
+#############################################################################
 
 DEFAULT_FILE_STORAGE = "utils.storages.MediaRootGoogleCloudStorage"
 MEDIA_URL = "https://storage.googleapis.com/%s/media/" % GS_BUCKET_NAME

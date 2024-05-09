@@ -18,11 +18,12 @@ from django.urls import reverse_lazy
 from django.utils.datastructures import MultiValueDictKeyError
 from django.views.generic import FormView
 from plotly.offline import plot
+import plotly.graph_objects as go
 # from silk.profiling.profiler import silk_profile
 
 from apps.data_analysis.forms import DataFilterForm, DateFilterForm, FileUploadForm, MultipleUploadForm
 from apps.data_analysis.models import FYJHealthFacility, RTKData
-from .filters import RTKDataFilter
+from .filters import RTKDataFilter, RTKInventoryFilter
 from ..cqi.models import Facilities, Sub_counties
 
 
@@ -3542,6 +3543,148 @@ def show_subcounty_variances(subcounty_variance, county, min_date, max_date, x_a
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
+def get_quarter(month: str) -> str:
+    """
+    This function takes a month string in the format 'Month-Year' and returns the corresponding quarter.
+
+    Parameters:
+    month (str): The month string in the format 'Month-Year'.
+
+    Returns:
+    str: The quarter string in the format 'QX-Year', where X is the quarter number (1-4).
+    """
+    # Extract the year from the month string
+    year = int(month.split('-')[1])
+    # Determine the quarter based on the month
+    if 'Oct' in month or 'Nov' in month or 'Dec' in month:
+        return f'Q1-{year + 1}'
+    elif 'Jan' in month or 'Feb' in month or 'Mar' in month:
+        return f'Q2-{year}'
+    elif 'Apr' in month or 'May' in month or 'Jun' in month:
+        return f'Q3-{year}'
+    elif 'Jul' in month or 'Aug' in month or 'Sep' in month:
+        return f'Q4-{year}'
+
+
+def generate_quarter_map(quarters: list) -> dict:
+    """
+    This function takes a list of quarter strings and returns a dictionary mapping each quarter to the next quarter.
+
+    Parameters:
+    quarters (list): A list of quarter strings in the format 'QX-Year', where X is the quarter number (1-4).
+
+    Returns:
+    dict: A dictionary mapping each quarter to the next quarter.
+    """
+    quarter_map = {}
+    for quarter in quarters:
+        quarter, year = quarter.split('-')
+        next_quarter = {'Q1': 'Q2', 'Q2': 'Q3', 'Q3': 'Q4', 'Q4': 'Q1'}[quarter]
+        next_year = year if quarter != 'Q4' else str(int(year) + 1)
+        quarter_map[quarter + '-' + year] = next_quarter + '-' + next_year
+    return quarter_map
+
+
+# Define a function to extract quarter and year
+def extract_quarter_and_year(quarter_fy):
+    quarter, year = quarter_fy.split('-')
+    return (int(year), {'Q1': 1, 'Q2': 2, 'Q3': 3, 'Q4': 4}[quarter])
+
+
+def sort_quarter_year(kaj):
+    # Filter out NaN values and convert quarters_fy to datetime for sorting
+    quarters_filtered = kaj['quarters_fy'].dropna()
+
+    # Sort quarters chronologically
+    quarters_sorted = sorted(quarters_filtered.unique(), key=extract_quarter_and_year)
+    kaj = kaj.copy()
+    kaj['quarters_fy'] = pd.Categorical(kaj['quarters_fy'], categories=quarters_sorted, ordered=True)
+    # Sort the DataFrame by quarters_fy
+    df_sorted = kaj.sort_values(by='quarters_fy')
+    return df_sorted
+
+
+def process_data(rtk_df, cols_to_use, groupby_period, get_facility_data=None):
+    """
+   This function processes the data in the given DataFrame.
+
+   Parameters:
+   rtk_df (pandas.DataFrame): The input DataFrame.
+   cols_to_use (list): A list of column names to be used for summing.
+   groupby_period (str): The period to group the data by (e.g. 'quarter', 'year').
+
+   Returns:
+   tuple: A tuple containing two DataFrames. The first DataFrame contains the processed data,
+          and the second DataFrame contains the filtered data with the beginning balance.
+   """
+    rtk_df_filtered_ending_bal = pd.DataFrame()
+    # Create a copy of the DataFrame
+    rtks_df = rtk_df.copy()
+
+    # Apply the get_quarter function to the 'month' column again (not sure why this is done twice)
+    rtks_df[f'{groupby_period}'] = rtks_df.apply(lambda row: get_quarter(row['month']), axis=1)
+
+    # Group the DataFrame by county, commodity_name, and quarters_fy, and sum the quantity_received, tests_done,
+    # and days_out_of_stock columns
+    if get_facility_data is None:
+        result = rtks_df.groupby(['County', 'Commodity Name', f'{groupby_period}'])[cols_to_use].sum().reset_index()
+    else:
+        result = rtks_df.groupby(['County', 'Facility Name', 'Commodity Name', f'{groupby_period}'])[
+            cols_to_use].sum().reset_index()
+
+    # Filter the DataFrame to only include rows where the 'month' column contains 'Mar', 'Dec', 'Jun', or 'Sep'
+    rtk_df_filtered = rtks_df[(rtks_df['month'].str.contains('Mar|Dec|Jun|Sep'))]
+
+    # Group the filtered DataFrame by county, commodity_name, and quarters_fy, and sum the ending_balance column
+    if get_facility_data is None:
+        rtk_df_filtered = rtk_df_filtered.groupby(['County', 'Commodity Name', f'{groupby_period}'])[
+            'Ending Balance'].sum().reset_index()
+    else:
+        rtk_df_filtered = rtk_df_filtered.groupby(['County', 'Facility Name', 'Commodity Name', f'{groupby_period}'])[
+            'Ending Balance'].sum().reset_index()
+        rtk_df_filtered_ending_bal = rtk_df_filtered.copy()
+
+    # Get unique quarters from the filtered DataFrame
+    unique_quarters = rtk_df_filtered[f'{groupby_period}'].unique()
+
+    # Generate the quarter map
+    quarter_map = generate_quarter_map(unique_quarters)
+
+    # Apply the quarter map to the 'quarters_fy' column
+    rtk_df_filtered[f'{groupby_period}'] = rtk_df_filtered[f'{groupby_period}'].map(quarter_map)
+    rtk_df_filtered = sort_quarter_year(rtk_df_filtered)
+    # Rename the 'ending_balance' column to 'beginning_balance'
+    rtk_df_filtered = rtk_df_filtered.rename(columns={"Ending Balance": "Beginning Balance"})
+
+    # Merge the result DataFrame with the filtered DataFrame
+    if get_facility_data is None:
+        commodity_result = result.merge(rtk_df_filtered, on=['County', 'Commodity Name', f'{groupby_period}'])
+        # Rename the columns of the merged DataFrame
+        commodity_result = commodity_result[
+            ['County', 'Commodity Name', f'{groupby_period}', 'Beginning Balance'] + cols_to_use]
+    else:
+        commodity_result = result.merge(rtk_df_filtered,
+                                        on=['County', 'Facility Name', 'Commodity Name', f'{groupby_period}'])
+        if "Ending Balance" in commodity_result.columns:
+            del commodity_result["Ending Balance"]
+
+        commodity_result = commodity_result.merge(rtk_df_filtered_ending_bal,
+                                                  on=['County', 'Facility Name', 'Commodity Name', 'quarters_fy'])
+        commodity_result['Unattributable losses/gains'] = commodity_result["Ending Balance"] - (
+                (commodity_result['Beginning Balance'] + commodity_result['Quantity Received'] +
+                 commodity_result['Positive Adjustments']) - (
+                        commodity_result['Quantity Used'] + commodity_result['Losses'] +
+                        commodity_result['Negative Adjustments'])
+        )
+        # Rename the columns of the merged DataFrame
+        commodity_result = commodity_result[
+            ['County', 'Facility Name', 'Commodity Name', f'{groupby_period}', 'Beginning Balance'] + cols_to_use + [
+                'Unattributable losses/gains']]
+
+        # Final result
+    return commodity_result, rtk_df_filtered.reset_index()
+
+
 @login_required(login_url='login')
 def rtk_visualization(request):
     """
@@ -3569,7 +3712,7 @@ def rtk_visualization(request):
         start_date_param = request.GET.get('start_date')
         end_date_param = request.GET.get('end_date')
         use_one_year_data = True
-        days = 395
+        days = 450
         # Use default logic for one year ago
         one_year_ago = datetime.now() - timedelta(days=days)
         one_year_ago = datetime(
@@ -3581,11 +3724,11 @@ def rtk_visualization(request):
 
         if start_date_param:
             # Parse the user's input into a datetime object
-            start_date = datetime.strptime(start_date_param, '%m/%d/%Y')
+            start_date = datetime.strptime(start_date_param, '%Y-%m-%d')
 
             # If the user's input is beyond one year ago, use it
             if start_date < datetime.now() - timedelta(days=days) and (
-                    not end_date_param or start_date < datetime.strptime(end_date_param, '%m/%d/%Y')):
+                    not end_date_param or start_date < datetime.strptime(end_date_param, '%Y-%m-%d')):
                 one_year_ago = start_date
                 use_one_year_data = False
         # Handle N+1 Query using prefetch_related /lab-pulse/download/{filter_type}
@@ -3771,6 +3914,256 @@ def rtk_visualization(request):
         "sub_county_variances_list": sub_county_variances_list, "most_frequent_hub_figs": most_frequent_hub_figs,
         "hub_variances_list": hub_variances_list, "rtk_qs_filters": rtk_qs_filters,
         "facility_type_options": facility_type_options, "dqa_type": dqa_type,
+    }
+
+    # Cache the entire rendered view for 30 days
+    rendered_view = render(request, 'data_analysis/rtk_viz.html', context)
+    cache.set(cache_key, rendered_view, 30 * 24 * 60 * 60)
+
+    return rendered_view
+    # return render(request, 'data_analysis/rtk_viz.html', context)
+
+
+def waterfall(df, beginning_balance, quantity_received, positive_adjustments, losses, negative_adjustments,
+              ending_balance, last_week_tx_curr, start_quarters_fy, end_quarters_fy, commodity_name,
+              type_of_facilities):
+    expect_tx_curr = int(beginning_balance + quantity_received + positive_adjustments)
+    total_accounted = int(negative_adjustments + ending_balance + losses)
+    difference = last_week_tx_curr - expect_tx_curr - total_accounted
+    if difference > 0:
+        text_loss = "Unattributable Gain"
+        text_loss = f"<b>{text_loss}</b>"
+    elif difference < 0:
+        text_loss = "Unattributable Loss"
+        text_loss = f"<b>{text_loss}</b>"
+    else:
+        text_loss = "No Gain/Loss"
+
+    last_week_txcurr_date = end_quarters_fy
+    fig = go.Figure(go.Waterfall(
+        name="20", orientation="v",
+        measure=["relative", "relative", "relative", "total", "relative", "relative", "relative", "relative",
+                 "total"],
+        # x=[f"{start_quarters_fy} Opening Bal", "Quantity received", "+ve adjustments", "Available Stocks",
+        #    "Quantity used", "Losses", "-ve adjustments", f"{text_loss}", f"{last_week_txcurr_date} Ending Bal"],
+        x=[f"<b>{start_quarters_fy} Opening Bal</b>", "Quantity received", "+ve adjustments", "Available Stocks",
+           "Quantity used", "Losses", "-ve adjustments", text_loss,
+           f"<b>{last_week_txcurr_date} Ending Bal</b>"],
+
+        textposition="outside",
+        text=[beginning_balance, quantity_received, positive_adjustments, expect_tx_curr, ending_balance,
+              losses, negative_adjustments, difference, last_week_tx_curr],
+        y=[beginning_balance, quantity_received, positive_adjustments, expect_tx_curr, ending_balance, losses,
+           negative_adjustments, difference, last_week_tx_curr],
+        connector={"line": {"color": "rgb(63, 63, 63)"}},
+    ))
+
+    fig.update_layout(
+        title=f"{type_of_facilities} Waterfall Analysis: {commodity_name.strip()} Inventory Transactions ({start_quarters_fy} to "
+              f"{end_quarters_fy})",
+        #         autosize=False,
+        height=550,
+        title_font={"size": 16},
+        font={"size": 11},
+        margin=dict(l=50, r=50, b=100, t=100, pad=4)
+    )
+
+    fig.update_yaxes(automargin=True)
+    # remove grid lines
+    fig.update_yaxes(showgrid=False)
+    fig.update_xaxes(showgrid=False)
+    # change connectors color
+    fig.update_traces(connector_line_color="black")
+    fig.update_traces(connector_line_dash="dashdot")
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+@login_required(login_url='login')
+def rtk_inventory_viz(request):
+    """
+    Show visualizations of RTK data.
+
+    :param request: The request object.
+    :return: A render object with the visualizations.
+    """
+    #####################################
+    # Get chosen facility type
+    #####################################
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+        selected_facility_type = request.GET.get('record_count', 'False')
+    else:
+        selected_facility_type = request.GET.get('record_count', 'True')
+    waterfall_chart = dictionary = None
+    unattributable_df = commodity_result_df = pd.DataFrame()
+    unattributable_filename = commodity_report_filename = ""
+
+    def fetch_past_one_year_cd4_data(request):
+        """
+        Retrieves CD4 data from the past year based on user input or default logic.
+
+        Args:
+            request: A request object containing GET parameters.
+
+        Returns:
+            A tuple containing the query set and a flag indicating whether to use the default one-year data.
+        """
+
+        # Retrieve user input from request GET parameters
+        start_date_param = request.GET.get('start_date')
+        end_date_param = request.GET.get('end_date')
+
+        # Set default values
+        use_one_year_data = True
+        days = 450
+
+        # Calculate one year ago
+        one_year_ago = datetime.now() - timedelta(days=days)
+        one_year_ago = one_year_ago.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+        # Handle user input
+        if start_date_param:
+            start_date = datetime.strptime(start_date_param, '%Y-%m-%d')
+            if start_date < datetime.now() - timedelta(days=days):
+                if not end_date_param or start_date < datetime.strptime(end_date_param, '%Y-%m-%d'):
+                    one_year_ago = start_date
+                    use_one_year_data = False
+
+        # Query the database
+        rtk_query_set = RTKData.objects.filter(month_column__gte=one_year_ago).order_by('facility_name', 'month')
+
+        return rtk_query_set, use_one_year_data
+
+    rtk_qs, use_one_year_data = fetch_past_one_year_cd4_data(request)
+
+    # Convert queryset to dataframe
+    rtk_qs_filters = RTKInventoryFilter(request.GET, queryset=rtk_qs)
+    facility_type_options = [("False", "FYJ"), ("True", "All")]
+    df = convert_to_df(rtk_qs_filters.qs)
+    facility_name_ = request.GET.get('facility_name')
+    facility_type = request.GET.get('record_count')
+
+    rtk_all = df.copy()
+    # Apply the get_quarter function to the 'month' column to create a new 'quarters_fy' column
+    rtk_all.loc[:, 'quarters_fy'] = rtk_all['month'].apply(get_quarter)
+    dqa_type = "rtk_viz"
+
+    # Generate a cache key based on relevant data
+    data_hash = hashlib.sha256(
+        f"{rtk_all.to_dict()}:{request.GET.get('start_date')}:{request.GET.get('end_date')}:"
+        f"{request.GET.get('record_count')}:{request.GET.get('commodity_name')}:{request.GET.get('sub_county')}:"
+        f"{request.GET.get('county')}:{request.GET.get('facility_name')}".encode()
+    ).hexdigest()
+    cache_key = f'rtk_inventory_viz:{data_hash}'
+
+    # Check if the view is cached
+    cached_view = cache.get(cache_key)
+    if cached_view is not None:
+        return cached_view
+
+    if df.shape[0] > 0:
+        # Get all facilities
+        if selected_facility_type == "True":
+            all_facilities = True
+        else:
+            all_facilities = False
+
+        cols_to_use = ['Quantity Received', 'Quantity Used', 'Quantity Requested', 'Tests Done', 'Losses',
+                       'Positive Adjustments', 'Negative Adjustments', 'Ending Balance', 'Days Out of Stock',
+                       'Quantity Expiring in 6 Months']
+
+        report_cols_to_use = ['Quantity Received', 'Tests Done', 'Days Out of Stock', 'Ending Balance']
+
+        if not all_facilities:
+            type_of_facilities = "FYJ Facilities"
+            # Get FYJ facilities
+            facilities = Facilities.objects.all()
+            # Filter data by FYJ facilities
+            rtk_all = rtk_all[rtk_all['MFL Code'].isin([facility.mfl_code for facility in facilities])]
+            # Extracting hub information from Sub_counties model
+            sub_county_hub_mapping = Sub_counties.objects.values('facilities__mfl_code', 'hub__hub')
+            facility_hub_df = pd.DataFrame(sub_county_hub_mapping)
+            facility_hub_df.columns = ["MFL Code", "Hub"]
+            rtk_all = rtk_all.merge(facility_hub_df, on='MFL Code', how="left")
+            rtk_all = rtk_all[~rtk_all['Hub'].isnull()]
+            rtk_df = rtk_all[
+                ['month', 'County', 'Sub-County', "Hub", 'MFL Code', 'Facility Name', 'Commodity Name'] + cols_to_use]
+            rtk_df = rtk_df.drop_duplicates()
+        else:
+            type_of_facilities = "ALL Facilities"
+            rtk_df = df[['month', 'County', 'Sub-County', 'MFL Code', 'Facility Name', 'Commodity Name'] + cols_to_use]
+        if len(rtk_df['month'].unique()) > 1:
+            if facility_name_ is not "" or facility_type == "False":
+                get_facility_data = facility_name_
+
+            else:
+                get_facility_data = None
+            kaj, rtk_df_filtered = process_data(rtk_df, cols_to_use, groupby_period="quarters_fy",
+                                                get_facility_data=get_facility_data)
+
+            # Sort the DataFrame by quarters_fy
+            df = sort_quarter_year(kaj)
+
+            df_sorted = df.sort_values(by='quarters_fy')
+            df_sorted = df_sorted.copy().reset_index(drop=True)
+            df_sorted.loc['Column_Total'] = df_sorted.sum(numeric_only=True, axis=0)
+            # Fill NaN values with 0 before converting to integers
+            # df_sorted.fillna(0, inplace=True)
+            # Convert the columns to integers
+            numeric_cols = df_sorted.select_dtypes(include=[np.number])
+            df_sorted[numeric_cols.columns] = numeric_cols.apply(lambda x: x.astype(int), axis=0)
+
+            start_quarters_fy = df_sorted.head(1)['quarters_fy'].unique()[0]
+            end_quarters_fy = df_sorted.tail(2)['quarters_fy'].unique()[0]
+            commodity_name = ', '.join(map(str, df_sorted['Commodity Name'].dropna().unique())).strip()
+
+            if len(commodity_name.split(', ')) == 4:
+                commodity_name = "All Commodities"
+
+            rtk_df_filtered = rtk_df_filtered.groupby(['Commodity Name', 'quarters_fy']).sum().reset_index()
+
+            if len(df_sorted["Commodity Name"].dropna().unique()) > 1:
+                beginning_balance = df_sorted.tail(1)['Beginning Balance'].unique()[0]
+
+                last_quarter = df_sorted["quarters_fy"].dropna().tail(1).unique()[0]
+                last_quarter_df = df_sorted[df_sorted["quarters_fy"] == last_quarter]
+                ending_balance = last_quarter_df['Ending Balance'].sum()
+            else:
+                beginning_balance = df_sorted.head(1)['Beginning Balance'].unique()[0]
+                ending_balance = sort_quarter_year(rtk_df_filtered).tail(1)['Beginning Balance'].unique()[0]
+
+            quantity_received = df_sorted.tail(1)['Quantity Received'].unique()[0]
+            quantity_used = df_sorted.tail(1)['Quantity Used'].unique()[0] * -1
+            losses = df_sorted.tail(1)['Losses'].unique()[0] * -1
+            positive_adjustments = df_sorted.tail(1)['Positive Adjustments'].unique()[0]
+            negative_adjustments = df_sorted.tail(1)['Negative Adjustments'].unique()[0] * -1
+
+            waterfall_chart = waterfall(df, beginning_balance, quantity_received, positive_adjustments, losses,
+                                        negative_adjustments, quantity_used, ending_balance, start_quarters_fy,
+                                        end_quarters_fy,
+                                        commodity_name, type_of_facilities)
+
+            if 'Unattributable losses/gains' in df_sorted.columns:
+                unattributable_df = df_sorted.copy()
+                unattributable_filename = "Unattributable_gains_losses"
+                request.session['unattributed_report'] = unattributable_df.to_dict()
+
+            ##############################################################
+            # Generate report
+            ##############################################################
+            commodity_result_df, beg_bal_filtered = process_data(rtk_df, report_cols_to_use,
+                                                                 groupby_period="quarters_fy",
+                                                                 )
+
+            commodity_report_filename = "commodity_report"
+            request.session['commodity_report'] = commodity_result_df.to_dict()
+        dictionary = get_key_from_session_names(request)
+
+    context = {
+        "rtk_qs_filters": rtk_qs_filters, "facility_type_options": facility_type_options, "dqa_type": dqa_type,
+        "waterfall_chart": waterfall_chart, "dictionary": dictionary, "unattributable_df": unattributable_df,
+        "commodity_result_df": commodity_result_df, "unattributable_filename": unattributable_filename,
+        "commodity_report_filename": commodity_report_filename,
     }
 
     # Cache the entire rendered view for 30 days

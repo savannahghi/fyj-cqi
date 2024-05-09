@@ -1,4 +1,5 @@
 import django_filters
+from django.forms import DateInput
 from django_filters import CharFilter, DateFilter, NumberFilter
 from django import forms
 # from . import forms
@@ -6,8 +7,10 @@ from .models import *
 
 
 class QiprojectFilter(django_filters.FilterSet):
-    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From')
-    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To')
+    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From',
+                            widget=DateInput(attrs={'type': 'date'}))
+    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To',
+                          widget=DateInput(attrs={'type': 'date'}))
     # facility = CharFilter(field_name="facility", lookup_expr="icontains",label='Facility')
     project_title = CharFilter(field_name="project_title", lookup_expr="icontains", label='Project Title')
     objective = CharFilter(field_name="objective", lookup_expr="icontains", label='Objective')
@@ -55,8 +58,10 @@ class QiprojectFilter(django_filters.FilterSet):
 
 
 class ProgramQiprojectFilter(django_filters.FilterSet):
-    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From')
-    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To')
+    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From',
+                            widget=DateInput(attrs={'type': 'date'}))
+    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To',
+                          widget=DateInput(attrs={'type': 'date'}))
     # facility = CharFilter(field_name="facility", lookup_expr="icontains",label='Facility')
     project_title = CharFilter(field_name="project_title", lookup_expr="icontains", label='Project Title')
     objective = CharFilter(field_name="objective", lookup_expr="icontains", label='Objective')
@@ -79,8 +84,10 @@ class ProgramQiprojectFilter(django_filters.FilterSet):
 
 
 class SubcountyQiprojectFilter(django_filters.FilterSet):
-    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From')
-    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To')
+    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From',
+                            widget=DateInput(attrs={'type': 'date'}))
+    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To',
+                          widget=DateInput(attrs={'type': 'date'}))
     # sub_county = CharFilter(field_name="sub_county", lookup_expr="icontains",label='Sub county')
     project_title = CharFilter(field_name="project_title", lookup_expr="icontains", label='Project Title')
     objective = CharFilter(field_name="objective", lookup_expr="icontains", label='Objective')
@@ -110,8 +117,10 @@ class SubcountyQiprojectFilter(django_filters.FilterSet):
 
 
 class CountyQiprojectFilter(django_filters.FilterSet):
-    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From')
-    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To')
+    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From',
+                            widget=DateInput(attrs={'type': 'date'}))
+    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To',
+                          widget=DateInput(attrs={'type': 'date'}))
     # county = CharFilter(field_name="county", lookup_expr="icontains",label='County')
     project_title = CharFilter(field_name="project_title", lookup_expr="icontains", label='Project Title')
     objective = CharFilter(field_name="objective", lookup_expr="icontains", label='Objective')
@@ -141,8 +150,10 @@ class CountyQiprojectFilter(django_filters.FilterSet):
 
 
 class HubQiprojectFilter(django_filters.FilterSet):
-    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From')
-    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To')
+    start_date = DateFilter(field_name="start_date", lookup_expr="gte", label='From',
+                            widget=DateInput(attrs={'type': 'date'}))
+    end_date = DateFilter(field_name="start_date", lookup_expr="lte", label='To',
+                          widget=DateInput(attrs={'type': 'date'}))
     # hub = CharFilter(field_name="hub", lookup_expr="icontains",label='Hub')
     project_title = CharFilter(field_name="project_title", lookup_expr="icontains", label='Project Title')
     objective = CharFilter(field_name="objective", lookup_expr="icontains", label='Objective')

@@ -2036,11 +2036,11 @@ def fetch_past_one_year_cd4_data(request, model):
 
     if start_date_param:
         # Parse the user's input into a datetime object
-        start_date = datetime.strptime(start_date_param, '%m/%d/%Y')
+        start_date = datetime.strptime(start_date_param, '%Y-%m-%d')
 
         # If the user's input is beyond one year ago, use it
         if start_date < datetime.now() - timedelta(days=365) and (
-                not end_date_param or start_date < datetime.strptime(end_date_param, '%m/%d/%Y')):
+                not end_date_param or start_date < datetime.strptime(end_date_param, '%Y-%m-%d')):
             one_year_ago = start_date
             use_one_year_data = False
     # Handle N+1 Query using prefetch_related /lab-pulse/download/{filter_type}

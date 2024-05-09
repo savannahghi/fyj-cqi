@@ -1,5 +1,6 @@
 import django_filters
 from django import forms
+from django.forms import DateInput
 from django_filters import DateFilter, CharFilter
 
 from apps.pmtct.models import PatientDetails
@@ -7,8 +8,10 @@ from apps.cqi.models import Facilities
 
 
 class PatientDetailsFilter(django_filters.FilterSet):
-    start_date = DateFilter(field_name="edd", lookup_expr="gte", label='EDD (>=)')
-    end_date = DateFilter(field_name="edd", lookup_expr="lte", label='EDD (<=)')
+    start_date = DateFilter(field_name="edd", lookup_expr="gte", label='EDD (>=)',
+                            widget=DateInput(attrs={'type': 'date'}))
+    end_date = DateFilter(field_name="edd", lookup_expr="lte", label='EDD (<=)',
+                          widget=DateInput(attrs={'type': 'date'}))
     date_started_on_art = DateFilter(field_name="date_started_on_art", lookup_expr="lte", label='Date started on HAART (<=)')
     date_started_on_art_above = DateFilter(field_name="date_started_on_art", lookup_expr="gte", label='Date started on HAART (>=)')
     marital_status = CharFilter(field_name="marital_status", lookup_expr="icontains", label='Marital status')

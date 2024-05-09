@@ -1,5 +1,6 @@
 import django_filters
 from django import forms
+from django.forms import DateInput
 from django_filters import CharFilter, ChoiceFilter, DateFilter, NumberFilter
 
 from apps.cqi.models import Counties, Facilities, Sub_counties
@@ -7,8 +8,10 @@ from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, 
 
 
 class Cd4trakerFilter(django_filters.FilterSet):
-    start_date = DateFilter(field_name="date_of_collection", lookup_expr="gte", label='From (Collection Date)')
-    end_date = DateFilter(field_name="date_of_collection", lookup_expr="lte", label='To (Collection Date)')
+    start_date = DateFilter(field_name="date_of_collection", lookup_expr="gte", label='From (Collection Date)',
+                            widget=DateInput(attrs={'type': 'date'}))
+    end_date = DateFilter(field_name="date_of_collection", lookup_expr="lte", label='To (Collection Date)',
+                          widget=DateInput(attrs={'type': 'date'}))
     patient_unique_no = CharFilter(field_name="patient_unique_no", lookup_expr="icontains", label='Patient Unique No.')
     cd4_count_results_gte = NumberFilter(field_name="cd4_count_results", lookup_expr="gte", label='CD4 Count >=')
     cd4_count_results_lte = NumberFilter(field_name="cd4_count_results", lookup_expr="lte", label='CD4 Count <=')

@@ -5,6 +5,7 @@ import django_filters
 from PyPDF2.errors import PdfReadError
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms import DateInput
 
 from .models import Author, Category, Conference, Journal, Manuscript, Venue
 
@@ -141,9 +142,9 @@ class ManuscriptFilter(django_filters.FilterSet):
     citations_lte = django_filters.CharFilter(field_name="citations", lookup_expr="lte", label='Citations <=')
     citations_gte = django_filters.CharFilter(field_name="citations", lookup_expr="gte", label='Citations >=')
     start_date = django_filters.DateFilter(field_name="data_started", lookup_expr="gte",
-                                           label='From (Date started writing)')
+                                           label='From (Date started writing)',widget=DateInput(attrs={'type': 'date'}))
     end_date = django_filters.DateFilter(field_name="data_started", lookup_expr="lte",
-                                         label='To (Date started writing)')
+                                         label='To (Date started writing)',widget=DateInput(attrs={'type': 'date'}))
     data_submitted_from = django_filters.DateFilter(field_name="data_submitted", lookup_expr="gte",
                                                     label='From (Date Submitted)')
     data_submitted_to = django_filters.DateFilter(field_name="data_submitted", lookup_expr="lte",

@@ -1,6 +1,7 @@
 from django.urls import include, path
 
-from apps.data_analysis.views import UploadRTKDataView, pharmacy, download_csv, load_fyj_censused, rtk_visualization, \
+from apps.data_analysis.views import UploadRTKDataView, pharmacy, download_csv, load_fyj_censused, rtk_inventory_viz, \
+    rtk_visualization, \
     tat, fmaps_reporting_rate, viral_load
 
 urlpatterns = [
@@ -12,5 +13,6 @@ urlpatterns = [
     path('tat', tat, name='tat'),
     path('upload-rtks-data/', UploadRTKDataView.as_view(), name='upload_rtk'),
     path('rtk-visualization/', rtk_visualization, name='rtk_visualization'),
+    path('rtk-inventory-viz/', rtk_inventory_viz, name='rtk_inventory_viz'),
 ]
 # urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]

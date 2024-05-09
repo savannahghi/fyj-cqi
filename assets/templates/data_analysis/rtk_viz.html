@@ -32,9 +32,16 @@
                         <a href="{% url 'viral_load' %}" class="btn btn-outline-success">VL Analyzer</a>
                     {% endif %}
                     {% if dqa_type == "rtk" %}
-                        <a href="{% url 'rtk_visualization' %}" class="btn btn-success">HCMP REPORT</a>
+                        <a href="{% url 'rtk_visualization' %}" class="btn btn-success">HCMP: Opening vs Closing bal</a>
                     {% else %}
-                        <a href="{% url 'rtk_visualization' %}" class="btn btn-outline-success">HCMP REPORT</a>
+                        <a href="{% url 'rtk_visualization' %}" class="btn btn-outline-success">HCMP: Opening vs Closing
+                            bal</a>
+                    {% endif %}
+                    {% if dqa_type == "rtk_viz" %}
+                        <a href="{% url 'rtk_inventory_viz' %}" class="btn btn-success">HCMP: Inventory Report</a>
+                    {% else %}
+                        <a href="{% url 'rtk_inventory_viz' %}" class="btn btn-outline-success">HCMP: Inventory
+                            Report</a>
                     {% endif %}
                     {% if dqa_type == "upload_rtk" %}
                         <a href="{% url 'upload_rtk' %}" class="btn btn-warning">Upload HCMP REPORT</a>
@@ -133,11 +140,19 @@
                                 </div>
                             </div>
                             <div class="mt-4">
-                                <a class="nav-link"
-                                   href="{% url 'rtk_visualization' %}">
-                                    <span data-feather="refresh-cw" class="align-text-bottom"></span>
-                                    Reset Filters
-                                </a>
+                                {% if dqa_type == "rtk_viz" %}
+                                    <a class="nav-link"
+                                       href="{% url 'rtk_inventory_viz' %}">
+                                        <span data-feather="refresh-cw" class="align-text-bottom"></span>
+                                        Reset Filters
+                                    </a>
+                                {% else %}
+                                    <a class="nav-link"
+                                       href="{% url 'rtk_visualization' %}">
+                                        <span data-feather="refresh-cw" class="align-text-bottom"></span>
+                                        Reset Filters
+                                    </a>
+                                {% endif %}
                             </div>
                         </div>
                     </form>
@@ -238,6 +253,73 @@
                             </div>
                         </div>
                     {% endif %}
+
+                    <!-- RTK INVENTORY VISUALISATION-->
+
+                    {% if waterfall_chart %}
+                        <div class="row">
+                            <div class="col-12">
+                                {{ waterfall_chart|safe }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="col d-flex justify-content-between mt-3">
+                        {% if dictionary.unattributed_report  and unattributable_filename %}
+                            <!--DOWNLOAD BUTTON-->
+                            <div>
+                                <a href="{% url 'download_csv' dictionary.unattributed_report unattributable_filename %}">
+                                    <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ unattributable_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                        <!--DOWNLOAD BUTTON-->
+                        {% if dictionary.commodity_report and commodity_report_filename %}
+                            <div>
+                                <a href="{% url 'download_csv' dictionary.commodity_report commodity_report_filename %}">
+                                    <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ commodity_report_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                        <!--DOWNLOAD BUTTON-->
+                        {% if dictionary.hubs_collect_receipt_tat and hub_c_r_filename %}
+                            <div>
+                                <a href="{% url 'download_csv' dictionary.hubs_collect_receipt_tat hub_c_r_filename %}">
+                                    <button type="button" class="btn btn-success btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ hub_c_r_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                        <!--DOWNLOAD BUTTON-->
+                        {% if dictionary.counties_collect_receipt_tat and county_c_r_filename %}
+                            <div>
+                                <a href="{% url 'download_csv' dictionary.counties_collect_receipt_tat county_c_r_filename %}">
+                                    <button type="button" class="btn btn-success btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ county_c_r_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                        <!--DOWNLOAD BUTTON-->
+                        {% if dictionary.program_collect_receipt_tat and program_c_r_filename %}
+                            <div>
+                                <a href="{% url 'download_csv' dictionary.program_collect_receipt_tat program_c_r_filename %}">
+                                    <button type="button" class="btn btn-success btn-floating mr-2"
+                                            data-mdb-ripple-color="dark">
+                                        {{ program_c_r_filename }} <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
 
                 {#                <div class="row justify-content-around">#}

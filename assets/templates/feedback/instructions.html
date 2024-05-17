@@ -1,0 +1,718 @@
+{% extends 'feedback/index_lab_pulse.html' %}
+{#{% extends 'cqi/index.html' %}#}
+{% load static %}
+{% load crispy_forms_tags %}
+{% regroup sub_counties by counties as sub_counties_by_county %}
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <div class="col-md-12">
+                <h6 class="display-6 text-primary text-center">USER GUIDE</h6>
+                <hr>
+                <div class="d-flex justify-content-around">
+                    {% if section == "introduction" %}
+                        <a href="{% url 'instructions_lab' section='introduction' %}"
+                           class="btn btn-success">1. Introduction</a>
+                    {% else %}
+                        <a href="{% url 'instructions_lab' section='introduction' %}"
+                           class="btn btn-outline-success">1. Introduction</a>
+                    {% endif %}
+                    {% if section == "getting_started" %}
+                        <a href="{% url 'instructions_lab' section='getting_started' %}"
+                           class="btn btn-success">2. Getting Started</a>
+                    {% else %}
+                        <a href="{% url 'instructions_lab' section='getting_started' %}"
+                           class="btn btn-outline-success">2. Getting Started</a>
+                    {% endif %}
+                    {% if section == "entering_results" %}
+                        <a href="{% url 'instructions_lab' section='entering_results' %}"
+                           class="btn btn-success">3. Entering Results</a>
+                    {% else %}
+                        <a href="{% url 'instructions_lab' section='entering_results' %}"
+                           class="btn btn-outline-success">3. Entering Results</a>
+                    {% endif %}
+                    {% if section == "viewing_results" %}
+                        <a href="{% url 'instructions_lab' section='viewing_results' %}"
+                           class="btn btn-success">4. Viewing Results</a>
+                    {% else %}
+                        <a href="{% url 'instructions_lab' section='viewing_results' %}"
+                           class="btn btn-outline-success">4. Viewing Results</a>
+                    {% endif %}
+                    {% if section == "recommendations" %}
+                        <a href="{% url 'instructions_lab' section='recommendations' %}"
+                           class="btn btn-success">5. Maximizing The Platform</a>
+                    {% else %}
+                        <a href="{% url 'instructions_lab' section='recommendations' %}"
+                           class="btn btn-outline-success">5. Maximizing The Platform</a>
+                    {% endif %}
+                </div>
+                {% if section == "introduction" %}
+                    <blockquote class="blockquote">
+                        <div class="row">
+                            <div class="col mt-3">
+                                <div class="card ">
+                                    <div class="card-body">
+                                        <div class="container">
+                                            <div class="col">
+                                                <div class="row ">
+                                                    <blockquote class="blockquote">
+                                                        <p>
+                                                            Welcome to the LabPulse User Guide! This comprehensive guide
+                                                            is designed to help you learn and make the
+                                                            most of the powerful LabPulse app. It is a Django-based
+                                                            platform
+                                                            developed to improve and speed up the process of delivering
+                                                            CD4, reflex sCrAg and TB
+                                                            LAM
+                                                            results
+                                                            for patients in Nairobi and Kajiado.
+                                                        </p>
+                                                    </blockquote>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#whatlabpulsedoes"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="whatlabpulsedoes">
+                                            1.1 What LabPulse Does
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="whatlabpulsedoes">
+                                    <p>The App aims to bridge the gap in the timely delivery of services to
+                                        patients
+                                        with
+                                        advanced HIV disease (AHD). It provides a seamless process for delivering CD4,
+                                        reflex
+                                        sCrAg and TB LAM results. Laboratory staff can easily upload results to the
+                                        platform,
+                                        and
+                                        facility clinicians can access the results virtually. Cutting down the time it
+                                        takes
+                                        to
+                                        deliver results empowers healthcare providers to take prompt and, targeted
+                                        action to
+                                        help patients in need.
+                                    </p>
+                                    <img class="img-fluid" src="{% static 'images/labpulse_does.png' %}" alt="">
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#howlabpulseimprovesahd"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="howlabpulseimprovesahd">
+                                            1.2 How LabPulse Improves AHD Screening and Management
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="howlabpulseimprovesahd">
+                                    <p>LabPulse offers a range of advantages that make AHD screening and management more
+                                        efficient and effective:
+                                    </p>
+                                    <ol>
+                                        <li>
+                                            <strong>Quicker Results Delivery:</strong> The most important benefit
+                                            LabPulse
+                                            offers is significantly speeding up the time it takes to get results from
+                                            the
+                                            lab to
+                                            the clinician. This allows quicker treatment decisions and better outcomes
+                                            for
+                                            patients.
+                                        </li>
+                                        <li>
+                                            <strong>User-Friendly Design: </strong>LabPulse has an intuitive,
+                                            easy-to-use
+                                            interface that simplifies navigation and data entry, even for users with
+                                            minimal
+                                            tech skills. This smoothens the workflows and boosts productivity.
+                                        </li>
+                                        <li>
+                                            <strong>Comprehensive Data Entry: </strong>The app enables entry of both
+                                            current
+                                            and
+                                            past results, giving complete patient records. This comprehensive approach
+                                            simplifies data management and access.
+                                        </li>
+                                        <li>
+                                            <strong>Metrics and Visualizations: </strong>LabPulse presents key metrics
+                                            and
+                                            visualizations like CD4 distributions, positivity rates, and weekly trends.
+                                            These
+                                            visual aids provide valuable insights to inform healthcare professionals.
+                                        </li>
+                                        <li>
+                                            <strong>Future Reagent Tracking: </strong>Upcoming versions of LabPulse will
+                                            include
+                                            reagent tracking to enhance lab inventory management for uninterrupted
+                                            testing.
+                                        </li>
+                                    </ol>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#wholabpulseisfor"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="wholabpulseisfor">
+                                            1.3 Who LabPulse is For
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="wholabpulseisfor">
+                                    <p>LabPulse serves a range of essential roles in AHD management. Here’s a quick look
+                                        at
+                                        how
+                                        different users benefit:
+                                    </p>
+                                    <ol>
+                                        <li>
+                                            <strong>Clinicians :</strong> As frontline healthcare providers, clinicians
+                                            need
+                                            access to the most up-to-date CD4 and sCrAg results to make informed patient
+                                            treatment decisions. LabPulse empowers clinicians by delivering quick access
+                                            to
+                                            critical lab results to effectively tailor care plans and monitor disease
+                                            progression.
+                                        </li>
+                                        <li>
+                                            <strong>Laboratory Staff: </strong>Laboratory technicians play a crucial
+                                            behind-the-scenes
+                                            role in
+                                            conducting laboratory tests and generating results. For them, LabPulse
+                                            simplifies
+                                            workflows
+                                            by providing an intuitive interface to log and transmit CD4, sCrAg and TB
+                                            LAM data
+                                            to
+                                            clinicians seamlessly.
+                                        </li>
+                                        <li>
+                                            <strong>Facility Managers and HIV implementing partners: </strong>LabPulse
+                                            offers
+                                            invaluable oversight into operations. It allows easy access to patient
+                                            testing
+                                            data,
+                                            helps monitor lab throughput, and informs how to allocate resources for
+                                            optimal results.
+                                        </li>
+                                        <li>
+                                            <strong>County and Sub-county Leads: </strong>For health authorities at
+                                            county
+                                            and
+                                            sub-county levels, LabPulse enables real-time tracking and management of AHD
+                                            screening and care across facilities in their network. The data in LabPulse
+                                            empowers
+                                            leads to make well-informed decisions and strategically guide screening and
+                                            treatment programs.
+                                        </li>
+                                    </ol>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse" href="#gettinglogin"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="gettinglogin">
+                                            1.4 Getting Login Credentials
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="gettinglogin">
+                                    <p>To access LabPulse, users must get login credentials from the platform
+                                        administrator.
+                                        Provide
+                                        your email and carder. The administrator will review and grant you access to the
+                                        App.
+                                        In the following sections, we’ll guide you through all the App’s features to
+                                        help
+                                        you
+                                        get the most out of this powerful tool. Let’s get started!
+                                    </p>
+                                    <a href="{% url 'instructions_lab' section='getting_started' %}"
+                                       class="btn btn-success">2. Getting Started
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </blockquote>
+                {% elif section == "getting_started" %}
+                    <blockquote class="blockquote">
+                        <div class="row">
+                            <div class="col mt-3">
+                                <div class="card ">
+                                    <div class="card-body">
+                                        <div class="container">
+                                            <div class="col">
+                                                <div class="row ">
+                                                    <blockquote class="blockquote">
+                                                        <p>
+                                                            Welcome to LabPulse, an advanced platform that enhances AHD
+                                                            screening and patient management. This guide will walk you
+                                                            through
+                                                            the initial steps to access the application and establish
+                                                            your
+                                                            user
+                                                            account.
+                                                        </p>
+                                                    </blockquote>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#whatlabpulsedoes"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="whatlabpulsedoes">
+                                            2.1 Obtaining Login Credentials
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="whatlabpulsedoes">
+                                    <p>To start using LabPulse, you will need login credentials provided by the platform
+                                        administrator. Please get in touch with the administrator by filling out the
+                                        access
+                                        <a href="https://forms.office.com/r/punmqT69uw">request form</a> , indicating
+                                        your name,
+                                        email
+                                        and designation to request credentials if you have not yet received them.
+                                        Labpulse is hosted on: https://cqi.fahariyajamii.org/
+                                    </p>
+                                    <img class="img-fluid" src="{% static 'images/login.png' %}" alt="">
+                                    <p>
+                                        <strong>Note:</strong> A stable internet connection is required to utilize
+                                        LabPulse effectively.
+                                        Before login, ensure you have reliable connectivity.
+                                    </p>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#howlabpulseimprovesahd"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="howlabpulseimprovesahd">
+                                            2.2 First Login and Profile Setup
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="howlabpulseimprovesahd">
+                                    <p>Upon logging in for the first time, you will be directed to set up your user
+                                        profile. Completing your profile is essential to access all functionality
+                                        relevant
+                                        to your user role.
+
+                                    </p>
+                                    <img class="img-fluid" src="{% static 'images/profile.png' %}" alt="">
+                                    <p>During setup, you will be asked to enter:</p>
+                                    <ul>
+                                        <li>
+                                            First and last name
+                                        </li>
+                                        <li>
+                                            Contact phone number
+                                        </li>
+                                        <li>
+                                            Email address
+                                        </li>
+                                    </ul>
+                                    <p>You may opt to change your username at this stage if desired. Be sure to retain
+                                        your
+                                        username for future logins.</p>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#wholabpulseisfor"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="wholabpulseisfor">
+                                            2.3 Navigating the Application
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="wholabpulseisfor">
+                                    <p>After completing your profile, you can access the main dashboard. Key
+                                        sections include:
+                                    </p>
+                                    <ul>
+                                        <li>
+                                            <strong>Instructions :</strong> Usage guidelines and documentation
+                                        </li>
+                                        <li>
+                                            <strong>Data Entry : </strong>For entry of CD4 results, current and
+                                            retrospective
+                                        </li>
+                                        <li>
+                                            <strong>Results: </strong>View and analyze all CD4 results, sCrAg and TB
+                                            LAM. Custom filters
+                                            are
+                                            available.
+                                        </li>
+                                    </ul>
+                                    <img class="img-fluid" src="{% static 'images/labpulse_sections.png' %}" alt="">
+                                    <p>And that covers the basics to get you rolling with LabPulse! In the sections
+                                        ahead,
+                                        we’ll explore all the sections in detail. Let’s go - your journey with LabPulse
+                                        starts now!</p>
+                                    <a href="{% url 'instructions_lab' section='entering_results' %}"
+                                       class="btn btn-success">3. Entering Results
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </blockquote>
+                {% elif section == "entering_results" %}
+                    <blockquote class="blockquote">
+                        <div class="row">
+                            <div class="col mt-3">
+                                <div class="card ">
+                                    <div class="card-body">
+                                        <div class="container">
+                                            <div class="col">
+                                                <div class="row ">
+                                                    <blockquote class="blockquote">
+                                                        <p>
+                                                            The CD4 Results Entry section allows you to efficiently
+                                                            record current
+                                                            and
+                                                            historical CD4 and reflex sCrAg results for patients
+                                                            ,
+                                                            enabling timely and accurate data management. This section
+                                                            consists
+                                                            of Ongoing CD4 Entry and Retrospective CD4 Entry.
+                                                        </p>
+                                                    </blockquote>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#whatlabpulsedoes"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="whatlabpulsedoes">
+                                            3.1 Entering Current CD4 Results
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="whatlabpulsedoes">
+                                    <p>In this section, you can easily log patients’ latest CD4, reflex sCrAg, and TB
+                                        LAM
+                                        results as soon as they become available from the testing lab.
+                                    </p>
+                                    <img class="img-fluid" src="{% static 'images/choose testing labs.png' %}" alt="">
+                                    <p>Just follow these straightforward steps:</p>
+                                    <ol>
+                                        <li>
+                                            Select the appropriate testing lab from the dropdown menu for which you will
+                                            enter
+                                            results.
+                                        </li>
+                                        <li>
+                                            Enter essential patient information, including facility name, unique ID,
+                                            age,
+                                            and gender. These details are vital for proper patient
+                                            identification
+                                            and result tracking.
+                                        </li>
+                                        <li>
+                                            Enter the CD4 count and percentage values in the designated fields. If
+                                            reflex
+                                            sCrAg testing was done, also enter the sCrAg result.
+                                        </li>
+                                        <li>
+                                            Enter the collection date, sample collection date, and testing date. The
+                                            system
+                                            will automatically log the dispatch date.
+                                        </li>
+                                        <li>
+                                            Provide additional relevant details, such as reasons for rejection, not
+                                            conducting sCrAg testing, TB LAM result, and CD4 % values.
+                                        </li>
+                                    </ol>
+                                    <img class="img-fluid" src="{% static 'images/ongoing results entry.png' %}" alt="">
+                                    <p>
+                                        Please note that fields like facility, patient ID, age, gender, collection date,
+                                        received date and sample testing date are required. In contrast, other form
+                                        fields may be optional depending on the information available or subject to
+                                        change in future versions.
+                                    </p>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#howlabpulseimprovesahd"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="howlabpulseimprovesahd">
+                                            3.2 Entering Historical CD4 Results
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="howlabpulseimprovesahd">
+                                    <p>This section lets you enter older CD4, reflex sCrAg and TB LAM results to build
+                                        comprehensive patient histories. The process mirrors the ongoing entry section
+                                        above, adding a dispatch date field.
+                                    </p>
+                                    <img class="img-fluid" src="{% static 'images/retrospective results entry.png' %}"
+                                         alt="">
+                                    <p>Please note: The administrator needs to enable retrospective entry for specific
+                                        periods
+                                        upon
+                                        request. If you need this capability, check with the administrator to ensure it
+                                        is
+                                        activated (support@mail.fahariyajamii.org).</p>
+                                    <p>This section lets you maintain accurate patient records for timely clinical
+                                        decision-making. The following guide sections will provide instructions on
+                                        effectively utilizing viewing CD4 results features. Let’s continue exploring
+                                        LabPulse!</p>
+                                    <a href="{% url 'instructions_lab' section='viewing_results' %}"
+                                       class="btn btn-success">4. Viewing Results
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </blockquote>
+                {% elif section == "viewing_results" %}
+                    <blockquote class="blockquote">
+                        <div class="row">
+                            <div class="col mt-3">
+                                <div class="card ">
+                                    <div class="card-body">
+                                        <div class="container">
+                                            <div class="col">
+                                                <div class="row ">
+                                                    <blockquote class="blockquote">
+                                                        <p>
+                                                            The CD4 and sCrAg results section comprehensively looks at
+                                                            all
+                                                            results entered into LabPulse. This powerful section offers
+                                                            various
+                                                            tools and visualizations to help you analyze and understand
+                                                            the
+                                                            data. Let’s explore the key features.
+                                                        </p>
+                                                    </blockquote>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#whatlabpulsedoes"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="whatlabpulsedoes">
+                                            4.1 Using the Filters
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="whatlabpulsedoes">
+                                    <img class="img-fluid" src="{% static 'images/filters.png' %}" alt="">
+                                    <p>The 18 customizable filters let you refine your search and zoom in on
+                                        specific results. You can apply filters individually or in groups depending on
+                                        your
+                                        needs. For example, you could:
+                                    </p>
+                                    <ul>
+                                        <li>
+                                            Filter by a particular lab to see their results.
+                                        </li>
+                                        <li>
+                                            View results for an age group or sex to assess demographic impacts.
+                                        </li>
+                                        <li>
+                                            Find records from a given period.
+                                        </li>
+                                        <li>
+                                            Combine filters like lab, sex, and age range for targeted results.
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#howlabpulseimprovesahd"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="howlabpulseimprovesahd">
+                                            4.2 Visualizations and Metrics
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="howlabpulseimprovesahd">
+                                    <img class="img-fluid" src="{% static 'images/labpulse summaries.png' %}" alt="">
+                                    <p>The result section includes helpful data visualizations:
+                                    </p>
+                                    <ol>
+                                        <li>
+                                            <strong>Summary Reports :</strong> Show the total CD4 samples processed and
+                                            categorized into CD4>200 and CD4≤200. You can see the cascade for TB LAM and
+                                            serum CrAg testing for the latter - positive, negative, and missing results.
+                                            This quickly identifies patients needing intervention.
+                                        </li>
+                                        <li>
+                                            <strong>Weekly Trend Charts : </strong> Display patterns and fluctuations in
+                                            CD4 processing over time.
+                                        </li>
+                                        <li>
+                                            <strong>Rejection Reasons : </strong> Help address issues and improve
+                                            testing processes.
+                                        </li>
+                                        <li>
+                                            <strong>Justification summaries : </strong> Compile explanations provided
+                                            during data entry.
+                                        </li>
+                                        <li>
+                                            <strong>Distribution Charts : </strong> Visualize CD4 counts across age,
+                                            sex, and other factors.
+                                        </li>
+                                        <li>
+                                            <strong>Lab Performance Metrics : </strong> Show the number of CD4/sCrAg
+                                            reports processed per lab.
+                                        </li>
+                                        <li>
+                                            <strong>Positivity Breakdowns : </strong> Provide distribution of positive
+                                            TB LAM and serum CrAg results.
+                                        </li>
+                                    </ol>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                           href="#wholabpulseisfor"
+                                           role="button"
+                                           aria-expanded="false" aria-controls="wholabpulseisfor">
+                                            4.3 Robust Table and Download Features
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="collapse bg-light mt-2" id="wholabpulseisfor">
+                                    <img class="img-fluid" src="{% static 'images/labpulse summaries.png' %}" alt="">
+                                    <p>The CD4 results table allows searching to organize and find data using filter at
+                                        the top of the page.
+                                        LabPulse also lets you download the following:
+                                    </p>
+                                    <ol>
+                                        <li>
+                                            All CD4 Results as PDFs for offline access and analysis.
+                                        </li>
+                                        <li>
+                                            Lists of rejected samples and reasons.
+                                        </li>
+                                        <li>
+                                            Records of positive TB LAM and serum CrAg to facilitate follow-up.
+                                        </li>
+                                        <li>
+                                            Samples with missing results to prompt further action.
+                                        </li>
+                                    </ol>
+                                    <p>The table and downloads help streamline data management for better AHD screening
+                                        and care.
+                                    </p>
+                                    <a href="{% url 'instructions_lab' section='recommendations' %}"
+                                       class="btn btn-success">5. Maximizing The Platform
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </blockquote>
+                {% elif section == "recommendations" %}
+                    <div class="row">
+                        <div class="col mt-3">
+                            <div class="card ">
+                                <div class="card-body">
+                                    <div class="container">
+                                        <div class="col">
+                                            <div class="row ">
+                                                <blockquote class="blockquote">
+                                                    <p>
+                                                        LabPulse offers powerful capabilities to improve AHD
+                                                        screening and care. Here are some recommendations to help you
+                                                        maximize the platform:
+                                                    </p>
+                                                    <ul class="list-group list-group-numbered">
+                                                        <li class="list-group-item">
+                                                            Keep your user profile updated with your latest info.
+                                                            This helps LabPulse identify you correctly and stay in
+                                                            touch.
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            Secure your login credentials, and <strong
+                                                                class="text-danger fw-bold">DO NOT</strong> share them.
+                                                            If you change your username on the first login, remember it
+                                                            for the next time.
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            Ensure you have a stable internet connection before
+                                                            accessing
+                                                            LabPulse to facilitate access and use.
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            When entering results, double-check that all data is
+                                                            accurate
+                                                            and complete to maintain comprehensive patient records.
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            Use the customizable filters to narrow down datasets for
+                                                            more
+                                                            focused analysis.
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            Explore the visualizations and metrics which provide
+                                                            valuable
+                                                            insights into trends and performance.
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            Get familiar with the download options to export data
+                                                            for
+                                                            offline exploration and reporting.
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            Regularly review summary reports to stay updated on
+                                                            counts,
+                                                            positivity rates, and trends.
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            Coordinate with administrators if you need retrospective
+                                                            data
+                                                            entry
+                                                            enabled for specific periods
+                                                            (support@mail.fahariyajamii.org).
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            Handle patient data securely and comply with healthcare
+                                                            privacy
+                                                            regulations.
+                                                        </li>
+                                                        <li class="list-group-item">
+                                                            Consult the user guide and keep abreast with new feature
+                                                            updates.
+                                                        </li>
+                                                    </ul>
+                                                </blockquote>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'feedback/index_lab_pulse.html' %}
+{% load remove_underscores %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+<!-- apps_list.html -->
+
+{% block content %}
+    <!-- Main content section -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h3 class="display-6 text-primary text-center">{{ title }}</h3>
+        <div class="p-5 mb-4 bg-light rounded-3">
+            {% if messages %}
+                <!--group the messages by their text and display only one message for each unique text-->
+                {% regroup messages by message as message_list %}
+                {% for message in message_list %}
+                    <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                        <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <!-- Insert the feedback component HTML here -->
+            <div class="card p-4 mb-4">
+                <div class="card-header">
+                    <h2>Leave your feedback</h2>
+                </div>
+                <div class="d-flex justify-content-around mt-3">
+                    {% if view_type == "submit" %}
+                        <a href="{% url 'submit_feedback' %}" class="btn btn-success">Add feedback</a>
+                    {% else %}
+                        <a href="{% url 'submit_feedback' %}"
+                           class="btn btn-outline-success">Add feedback</a>
+                    {% endif %}
+                    {% if view_type == "view" %}
+                        <a href="{% url 'feedback_list' %}" class="btn btn-success">View Feedback</a>
+                    {% else %}
+                        <a href="{% url 'feedback_list' %}"
+                           class="btn btn-outline-success">View Feedback</a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <form action="#" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mt-4">
+                            {{ form.user_feedback|as_crispy_field }}
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-4 mt-4">
+                            <label for="app_name" class="form-label">Feedback for</label>
+                            <div class="input-group">
+                                <select name="app_name" id="app_name" class="form-select">
+                                    {% for option_value, option_label in form.app_name.field.choices %}
+                                        <option value="{{ option_value }}" {% if form.app_name.value == option_value %}
+                                                selected {% endif %}>
+                                            {{ option_label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        {% if form.app_name.errors %}
+                            <span class="text-danger">{{ form.app_name.errors }}</span>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary btn-lg mt-2">Provide feedback</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}

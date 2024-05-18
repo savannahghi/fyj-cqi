@@ -226,8 +226,8 @@
                                                         href="{% url 'facility_project' pk=qi.hub.id project_type="hub" %}">{{ qi.hub.hub }}</a>
                                                 </li>
                                             {% endif %}
-                                            <li>Problem background : {{ qi.problem_background }} </li>
-                                            <li>Objective : {{ qi.objective }} </li>
+                                            <li>Problem background : {{ qi.problem_background|safe }} </li>
+                                            <li>Objective : {{ qi.objective|safe }} </li>
                                             <li>Setting : {{ qi.settings }} </li>
                                             <li>Department : {{ qi.departments.department }} </li>
                                             <li>Measurement Frequency : <a
@@ -342,8 +342,8 @@
                                                                 href="{% url 'facility_project' pk=qi.hub.id project_type="hub" %}">{{ qi.hub.hub }}</a>
                                                         </li>
                                                     {% endif %}
-                                                    <li>Problem background : {{ qi.problem_background }} </li>
-                                                    <li>Objective : {{ qi.objective }} </li>
+                                                    <li>Problem background : {{ qi.problem_background|safe }} </li>
+                                                    <li>Objective : {{ qi.objective|safe }} </li>
                                                     <li>Setting : {{ qi.settings }} </li>
                                                     <li>Department : <a
                                                             href="{% url 'department_project' qi.departments.id %} ">{{ qi.departments.department }}</a>

@@ -87,7 +87,7 @@
 
 </div>
     <h6 class="mt-2"><strong>PROBLEM STATEMENT :</strong></h6>
-    <p>{{ facility_project.problem_background }}</p>
+    <p>{{ facility_project.problem_background|safe }}</p>
 
     {% if facility_project.process_analysis.url is not null %}
         <h6><strong>PROCESS ANALYSIS :</strong></h6>
@@ -97,7 +97,7 @@
 
 
     <h6><strong>OBJECTIVE :</strong></h6>
-    <p>{{ facility_project.objective }}</p>
+    <p>{{ facility_project.objective|safe }}</p>
 
     <h6><strong>Responsible people :</strong></h6>
     <p>{{ facility_project.responsible_people }}</p>

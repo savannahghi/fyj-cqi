@@ -35,8 +35,8 @@
         <h6 class="card-title"> {{ forloop.counter }}. {{ qi.project_title|upper}}</h6>
           <ul>
               <li>Facility : {{ qi.facility_name }}</li>
-              <li>Problem background : {{ qi.problem_background }}</li>
-              <li>Objective : {{ qi.objective }}</li>
+              <li>Problem background : {{ qi.problem_background|safe }}</li>
+              <li>Objective : {{ qi.objective|safe }}</li>
               <li>Setting : {{ qi.settings }}</li>
               <li>Department : {{ qi.departments }}</li>
               <li>Measurement Frequency : {{ qi.measurement_frequency }}</li>
@@ -91,8 +91,8 @@
           <ul>
               <li>Facility : {{ qi.facility_name }}</li>
 {#              <li>Facility : {{ qi. }}</li>#}
-              <li>Problem background : {{ qi.problem_background }}</li>
-              <li>Objective : {{ qi.objective }}</li>
+              <li>Problem background : {{ qi.problem_background|safe }}</li>
+              <li>Objective : {{ qi.objective|safe }}</li>
               <li>Setting : {{ qi.settings }}</li>
               <li>Department : {{ qi.departments }}</li>
               <li>Measurement Frequency : {{ qi.measurement_frequency }}</li>

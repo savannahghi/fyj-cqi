@@ -35,7 +35,7 @@
         <h6 class="card-title"> {{ forloop.counter }}. {{ qi.project_title}}</h6>
           <ul>
               <li>Facility : {{ qi.facility }}</li>
-              <li>Problem background : {{ qi.problem_background }}</li>
+              <li>Problem background : {{ qi.problem_background|safe }}</li>
               <li>Objective : {{ qi.objective }}</li>
               <li>Setting : {{ qi.settings }}</li>
               <li>Department : {{ qi.department }}</li>
@@ -128,7 +128,7 @@
           {% elif qi.program %}
               <li>Program : {{ qi.program }}</li>
           {% endif %}
-              <li>Problem background : {{ qi.problem_background }}</li>
+              <li>Problem background : {{ qi.problem_background|safe }}</li>
               <li>Objective : {{ qi.objective }}</li>
               <li>Setting : {{ qi.settings }}</li>
               <li>Department : {{ qi.departments }}</li>

@@ -2,6 +2,7 @@
 import re
 import uuid
 
+from ckeditor.fields import RichTextField
 from django.conf.global_settings import EMAIL_HOST_USER
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
@@ -204,9 +205,9 @@ class QI_Projects(models.Model):
     sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
     hub = models.ForeignKey(Hub, null=True, blank=True, on_delete=models.CASCADE)
     settings = models.CharField(max_length=250)
-    problem_background = models.TextField()
+    problem_background = RichTextField(null=True, blank=True)
     process_analysis = models.ImageField(upload_to='images', null=True, blank=True)
-    objective = models.TextField()
+    objective = RichTextField(null=True, blank=True)
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
@@ -282,9 +283,9 @@ class Subcounty_qi_projects(models.Model):
     county = models.ForeignKey(Counties, on_delete=models.CASCADE)
     sub_county = models.ForeignKey(Sub_counties, on_delete=models.CASCADE)
     settings = models.CharField(max_length=250)
-    problem_background = models.TextField()
+    problem_background = RichTextField(null=True, blank=True)
     process_analysis = models.ImageField(upload_to='images', null=True, blank=True)
-    objective = models.TextField()
+    objective = RichTextField(null=True, blank=True)
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
@@ -360,9 +361,9 @@ class County_qi_projects(models.Model):
     project_title = models.CharField(max_length=250)
     county = models.ForeignKey(Counties, on_delete=models.CASCADE)
     settings = models.CharField(max_length=250)
-    problem_background = models.TextField()
+    problem_background = RichTextField(null=True, blank=True)
     process_analysis = models.ImageField(upload_to='images', null=True, blank=True)
-    objective = models.TextField()
+    objective = RichTextField(null=True, blank=True)
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
@@ -438,9 +439,9 @@ class Hub_qi_projects(models.Model):
     project_title = models.CharField(max_length=250)
     hub = models.ForeignKey(Hub, null=True, blank=True, on_delete=models.CASCADE)
     settings = models.CharField(max_length=250)
-    problem_background = models.TextField()
+    problem_background = RichTextField(null=True, blank=True)
     process_analysis = models.ImageField(upload_to='images', null=True, blank=True)
-    objective = models.TextField()
+    objective = RichTextField(null=True, blank=True)
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)
@@ -516,9 +517,9 @@ class Program_qi_projects(models.Model):
     project_title = models.CharField(max_length=250)
     program = models.ForeignKey(Program, on_delete=models.CASCADE)
     settings = models.CharField(max_length=250)
-    problem_background = models.TextField()
+    problem_background = RichTextField(null=True, blank=True)
     process_analysis = models.ImageField(upload_to='images', null=True, blank=True)
-    objective = models.TextField()
+    objective = RichTextField(null=True, blank=True)
     numerator = models.CharField(max_length=250)
     denominator = models.CharField(max_length=250)
     qi_manager = models.ForeignKey('Qi_managers', on_delete=models.CASCADE, null=True)

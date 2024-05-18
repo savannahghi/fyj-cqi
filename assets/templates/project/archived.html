@@ -113,8 +113,8 @@
                                 <li><strong>Hub</strong> : <a href="{% url 'facility_project' pk=qi.hub.id project_type="hub" %}">{{ qi.hub }}</a></li>
                             {% endif %}
         {#                                  <li>Facility : <a href="{% url 'facility_project' qi.mfl_code %}">{{ qi.facility_name }}</a></li>#}
-                              <li><strong>Problem background</strong> : {{ qi.problem_background }}</li>
-                              <li><strong>Objective</strong> : {{ qi.objective }}</li>
+                              <li><strong>Problem background</strong> : {{ qi.problem_background|safe }}</li>
+                              <li><strong>Objective</strong> : {{ qi.objective|safe }}</li>
                               <li><strong>Setting</strong> : {{ qi.settings }}  Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>
         {#                                  <li>Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>#}
                               <li><strong>Qi manager</strong> : {{ qi.qi_manager }}</li>
@@ -178,8 +178,8 @@
                                 <li><strong>Hub</strong> : <a href="{% url 'facility_project' pk=qi.hub.id project_type="hub" %}">{{ qi.hub }}</a></li>
                             {% endif %}
         {#                                  <li>Facility : <a href="{% url 'facility_project' qi.mfl_code %}">{{ qi.facility_name }}</a></li>#}
-                              <li><strong>Problem background</strong> : {{ qi.problem_background }}</li>
-                              <li><strong>Objective</strong> : {{ qi.objective }}</li>
+                              <li><strong>Problem background</strong> : {{ qi.problem_background|safe }}</li>
+                              <li><strong>Objective</strong> : {{ qi.objective|safe }}</li>
                               <li><strong>Setting</strong> : {{ qi.settings }}  Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>
         {#                                  <li>Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>#}
                               <li><strong>Qi manager</strong> : {{ qi.qi_manager }}</li>

@@ -43,8 +43,8 @@
                                         <ul>
                                             <li><strong>Facility :</strong> {{ qi.qi_project.facility }}</li>
                                             <li><strong>Problem background
-                                                :</strong> {{ qi.qi_project.problem_background }}</li>
-                                            <li><strong>Objective :</strong> {{ qi.qi_project.objective }}</li>
+                                                :</strong> {{ qi.qi_project.problem_background|safe }}</li>
+                                            <li><strong>Objective :</strong> {{ qi.qi_project.objective|safe }}</li>
                                             <li><strong>Setting :</strong> {{ qi.qi_project.settings }}</li>
                                             <li><strong>Department :</strong> {{ qi.qi_project.departments }}</li>
                                             <li><strong>Measurement Frequency
@@ -70,8 +70,8 @@
                                             {% if qi.qi_project.facility_name %}
                                                 <li><strong>Facility :</strong> {{ qi.qi_project.facility_name }}</li>
                                                 <li><strong>Problem background
-                                                    :</strong> {{ qi.qi_project.problem_background }}</li>
-                                                <li><strong>Objective :</strong> {{ qi.qi_project.objective }}</li>
+                                                    :</strong> {{ qi.qi_project.problem_background|safe }}</li>
+                                                <li><strong>Objective :</strong> {{ qi.qi_project.objective|safe }}</li>
                                                 <li><strong>Setting :</strong> {{ qi.qi_project.settings }}</li>
                                                 <li><strong>Department :</strong> {{ qi.qi_project.departments }}</li>
                                                 <li><strong>Measurement Frequency
@@ -81,8 +81,8 @@
                                                 <li><strong>Sub county
                                                     :</strong> {{ qi.subcounty_qi_project.sub_county }}</li>
                                                 <li><strong>Problem background
-                                                    :</strong> {{ qi.subcounty_qi_project.problem_background }}</li>
-                                                <li><strong>Objective :</strong> {{ qi.subcounty_qi_project.objective }}
+                                                    :</strong> {{ qi.subcounty_qi_project.problem_background|safe }}</li>
+                                                <li><strong>Objective :</strong> {{ qi.subcounty_qi_project.objective|safe }}
                                                 </li>
                                                 <li><strong>Setting :</strong> {{ qi.subcounty_qi_project.settings }}
                                                 </li>
@@ -95,8 +95,8 @@
                                             {% elif qi.county_qi_project.county %}
                                                 <li><strong>County :</strong> {{ qi.county_qi_project.county }}</li>
                                                 <li><strong>Problem background
-                                                    :</strong> {{ qi.county_qi_project.problem_background }}</li>
-                                                <li><strong>Objective :</strong> {{ qi.county_qi_project.objective }}
+                                                    :</strong> {{ qi.county_qi_project.problem_background|safe }}</li>
+                                                <li><strong>Objective :</strong> {{ qi.county_qi_project.objective|safe }}
                                                 </li>
                                                 <li><strong>Setting :</strong> {{ qi.county_qi_project.settings }}</li>
                                                 <li><strong>Department :</strong> {{ qi.county_qi_project.departments }}
@@ -108,8 +108,8 @@
                                             {% elif qi.hub_qi_project.hub %}
                                                 <li><strong>Hub :</strong> {{ qi.hub_qi_project.hub }}</li>
                                                 <li><strong>Problem background
-                                                    :</strong> {{ qi.hub_qi_project.problem_background }}</li>
-                                                <li><strong>Objective :</strong> {{ qi.hub_qi_project.objective }}</li>
+                                                    :</strong> {{ qi.hub_qi_project.problem_background|safe }}</li>
+                                                <li><strong>Objective :</strong> {{ qi.hub_qi_project.objective|safe }}</li>
                                                 <li><strong>Setting :</strong> {{ qi.hub_qi_project.settings }}</li>
                                                 <li><strong>Department :</strong> {{ qi.hub_qi_project.departments }}
                                                 </li>
@@ -120,8 +120,8 @@
                                             {% elif qi.program_qi_project.program %}
                                                 <li><strong>Program :</strong> {{ qi.program_qi_project.program }}</li>
                                                 <li><strong>Problem background
-                                                    :</strong> {{ qi.program_qi_project.problem_background }}</li>
-                                                <li><strong>Objective :</strong> {{ qi.program_qi_project.objective }}
+                                                    :</strong> {{ qi.program_qi_project.problem_background|safe }}</li>
+                                                <li><strong>Objective :</strong> {{ qi.program_qi_project.objective|safe }}
                                                 </li>
                                                 <li><strong>Setting :</strong> {{ qi.program_qi_project.settings }}</li>
                                                 <li><strong>Department

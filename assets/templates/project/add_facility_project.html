@@ -1,153 +1,128 @@
 {% extends 'project/index.html' %}
+{% load crispy_forms_filters %}
 {% load crispy_forms_tags %}
 {% load static %}
 
 
 {% block content %}
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-    <div class="p-5 mb-4 bg-light rounded-3">
-      <div class="container-fluid py-5">
-      {% if title %}
-
-
-          <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
-          {% else %}
-          <h6 class="display-6 fw-bold text-primary">UPDATE {{ update|upper }} QI</h6>
-      {% endif %}
-
-
-          <div class="d-flex justify-content-between">
-              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
-              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
-              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>
-{#              {% if "facility" in title %}#}
-{#                  <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>#}
-{#                 {% elif "program" in title %}#}
-{#              <a href="{% url 'add_program' %}" class="btn btn-success" role="button">ADD PROGRAM</a>#}
-{##}
-{#              {% endif %}#}
-
-{#              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>#}
-{#              <a href="{% url 'add_hub' %}" class="btn btn-success" role="button">ADD HUB</a>#}
-{#              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
-          </div>
-
-        <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
-            {% csrf_token %}
-{#            {{ form|crispy}}#}
-            {% if "facility" in  title %}
-            <div class="col-md-2 mt-4">
-                {{ form.hub|as_crispy_field }}
-            </div>
-
-        {% endif %}
-
-            <div class="col-md-2 mt-4">
-                {{ form.qi_manager|as_crispy_field }}
-            </div>
-            <div class="col-md-2 mt-4">
-                {{ form.departments|as_crispy_field }}
-            </div>
-
-        {% if "facility" in  title %}
-            <div class="col-md-2 mt-4">
-                {{ form.project_category|as_crispy_field }}
-            </div>
-            <div class="col-md-2 mt-4">
-                {{ form.facility_name|as_crispy_field }}
-            </div>
-        {% elif "program" in  title %}
-            <div class="col-md-3 mt-4">
-                {{ form.project_category|as_crispy_field }}
-            </div>
-            <div class="col-md-3 mt-4">
-                {{ form.program|as_crispy_field }}
-            </div>
-
-            {% elif "sub" in  title %}
-            <div class="col-md-3 mt-4">
-                {{ form.project_category|as_crispy_field }}
-            </div>
-            <div class="col-md-3 mt-4">
-                {{ form.sub_county|as_crispy_field }}
-            </div>
-            {% elif title == "county"  %}
-            <div class="col-md-3 mt-4">
-                {{ form.project_category|as_crispy_field }}
-            </div>
-            <div class="col-md-3 mt-4">
-                {{ form.county|as_crispy_field }}
-            </div>
-            {% elif title == "hub"  %}
-            <div class="col-md-3 mt-4">
-                {{ form.project_category|as_crispy_field }}
-            </div>
-            <div class="col-md-3 mt-4">
-                {{ form.hub|as_crispy_field }}
-            </div>
-        {% endif %}
-
-         <div class="col-md-2 mt-4">
-                {{ form.settings|as_crispy_field }}
-            </div>
-
-            <div class="col-md-12">
-                {{ form.project_title|as_crispy_field }}
-            </div>
-            <div class="col-md-6">
-                {{ form.problem_background|as_crispy_field }}
-            </div>
-            <div class="col-md-6">
-                {{ form.objective|as_crispy_field }}
-            </div>
-
-
-            <div class="col-md-6">
-                {{ form.numerator|as_crispy_field }}
-            </div>
-            <div class="col-md-6">
-                {{ form.denominator|as_crispy_field }}
-            </div>
-            <div class="col-md-4">
-                {{ form.process_analysis|as_crispy_field }}
-            </div>
-
-
-             <div class="col-md-4">
-                {{ form.measurement_frequency|as_crispy_field }}
-            </div>
-            <div class="col-md-4">
-                {{ form.measurement_status|as_crispy_field }}
-            </div>
-
-            <div class="col-md-12">
-            {% if request.user.is_superuser %}
-             <a href="{% url 'add_trigger' %}" class="btn btn-success mt-3 mb-3" role="button">ADD TRIGGER</a>
-            {% endif %}
-
-                <p>What triggered the creation of this QI Initiative?</p>
-                  {% for checkbox in form.triggers %}
-                    <label class="form-check-inline">
-                      {{ checkbox.tag }}
-                      {{ checkbox.choice_label }}
-                    </label>
-                  {% endfor %}
-            </div>
-            <div class="col-md-3 mt-4 pt-2">
-                <input class="btn btn-success mt-1" type="submit" value="Submit">
-            </div>
-{% if messages %}
-        <ul class="messages">
-             <div class="alert alert-info col-12 animated fadeIn" role="alert">
-                    {% for message in messages|slice:":1" %}
-                    <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
-                    {% endfor %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div class="container-fluid py-5">
+                {% if title %}
+                    <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
+                {% else %}
+                    <h6 class="display-6 fw-bold text-primary">UPDATE {{ update|upper }} QI</h6>
+                {% endif %}
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
+                    <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
+                    <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>
                 </div>
-
-       </ul>
-    {% endif %}
-        </form>
-      </div>
-    </div>
-</main>
+                <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    {% csrf_token %}
+                    {% if "facility" in  title %}
+                        <div class="col-md-2 mt-4">
+                            {{ form.hub|as_crispy_field }}
+                        </div>
+                    {% endif %}
+                    <div class="col-md-2 mt-4">
+                        {{ form.qi_manager|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-4">
+                        {{ form.departments|as_crispy_field }}
+                    </div>
+                    {% if "facility" in  title %}
+                        <div class="col-md-2 mt-4">
+                            {{ form.project_category|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2 mt-4">
+                            {{ form.facility_name|as_crispy_field }}
+                        </div>
+                    {% elif "program" in  title %}
+                        <div class="col-md-3 mt-4">
+                            {{ form.project_category|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3 mt-4">
+                            {{ form.program|as_crispy_field }}
+                        </div>
+                    {% elif "sub" in  title %}
+                        <div class="col-md-3 mt-4">
+                            {{ form.project_category|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3 mt-4">
+                            {{ form.sub_county|as_crispy_field }}
+                        </div>
+                    {% elif title == "county" %}
+                        <div class="col-md-3 mt-4">
+                            {{ form.project_category|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3 mt-4">
+                            {{ form.county|as_crispy_field }}
+                        </div>
+                    {% elif title == "hub" %}
+                        <div class="col-md-3 mt-4">
+                            {{ form.project_category|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3 mt-4">
+                            {{ form.hub|as_crispy_field }}
+                        </div>
+                    {% endif %}
+                    <div class="col-md-2 mt-4">
+                        {{ form.settings|as_crispy_field }}
+                    </div>
+                    <div class="col-md-12">
+                        {{ form.project_title|as_crispy_field }}
+                    </div>
+                    <div class="col-md-12">
+                        {{ form.problem_background|as_crispy_field }}
+                    </div>
+                    <div class="col-md-12">
+                        {{ form.objective|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.numerator|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.denominator|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.process_analysis|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.measurement_frequency|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.measurement_status|as_crispy_field }}
+                    </div>
+                    <div class="col-md-12">
+                        {% if request.user.is_superuser %}
+                            <a href="{% url 'add_trigger' %}" class="btn btn-success mt-3 mb-3" role="button">ADD
+                                TRIGGER</a>
+                        {% endif %}
+                        <p>What triggered the creation of this QI Initiative?</p>
+                        {% for checkbox in form.triggers %}
+                            <label class="form-check-inline">
+                                {{ checkbox.tag }}
+                                {{ checkbox.choice_label }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-3 mt-4 pt-2">
+                        <input class="btn btn-success mt-1" type="submit" value="Submit">
+                    </div>
+                    {% if messages %}
+                        <ul class="messages">
+                            <li>
+                                <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                                    {% for message in messages|slice:":1" %}
+                                        <h5 class="d-flex justify-content-evenly small">{{ message }}</h5>
+                                    {% endfor %}
+                                </div>
+                            </li>
+                        </ul>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </main>
 {% endblock %}

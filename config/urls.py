@@ -30,6 +30,7 @@ urlpatterns = [
     path('', include('apps.account.urls')),
     path('', include('apps.dqa.urls')),
     path('', include('apps.pmtct.urls')),
+    path('feedback-hub/fyj/', include('apps.feedback.urls')),
     path('dac/', include('apps.data_analysis.urls')),
     path('pharmacy_dqa/fyj/', include('apps.pharmacy.urls')),
     path('lab_pulse/fyj/', include('apps.labpulse.urls')),

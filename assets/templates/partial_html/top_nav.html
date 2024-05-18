@@ -11,6 +11,9 @@
     <form class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center" action="" method="GET">
         {% csrf_token %}
     </form>
+    <div class="navbar-nav">
+        <a class="nav-link px-3" href="{% url 'submit_feedback' %}">Feedback Hub</a>
+    </div>
     {% if perms.labpulse.view_show_results %}
         <div class="navbar-nav">
             <a class="nav-link px-3" href="{% url 'facilities_landing_page' project_type='facility' %}">CQI</a>

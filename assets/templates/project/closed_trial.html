@@ -114,8 +114,8 @@
                         {% endif %}
                               <ul >
                                   <li>Facility : {{ qi.facility_name }}</li>
-                                  <li>Problem background : {{ qi.problem_background }}</li>
-                                  <li>Objective : {{ qi.objective }}</li>
+                                  <li>Problem background : {{ qi.problem_background|safe }}</li>
+                                  <li>Objective : {{ qi.objective|safe }}</li>
                                   <li>Setting : {{ qi.settings }}  Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>
 {#                                  <li>Department : <a href="{% url 'department_project' qi.departments.department %}">{{ qi.departments.department }}</a></li>#}
                                   <li>Responsible person : {{ qi.responsible_people }}</li>

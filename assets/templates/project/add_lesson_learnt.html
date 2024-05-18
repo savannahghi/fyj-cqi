@@ -24,7 +24,7 @@
 
           <h6 class="mb-4">CQI PROJECT: {{ qi_project.project_title|upper }}</h6>
                 <div class="col-md-6">
-                       <strong>OBJECTIVE(s): </strong>{{ qi_project.objective|title }}
+                       <strong>OBJECTIVE(s): </strong>{{ qi_project.objective|safe|title }}
                   </div>
                   <div class="col-md-6">
                        <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}

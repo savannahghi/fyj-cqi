@@ -4,7 +4,7 @@
 
 
 {% url "submit_feedback" as submit_feedback %}
-{% url "apps_list" as apps_list %}
+{% url "create_app" as create_app %}
 {% url "feedback_list" as feedback_list %}
 {% url "feedback_with_response" as feedback_with_response %}
 {% url "feedback_without_response" as feedback_without_response %}
@@ -34,8 +34,8 @@
                         <span>Platform apps</span>
                     </h6>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == apps_list %} active{% endif %}"
-                           href="{% url 'apps_list' %}">
+                        <a class="nav-link {% if request.path == create_app %} active{% endif %}"
+                           href="{% url 'create_app' %}">
                             <span data-feather="book" class="align-text-bottom"></span>
                             Add Platform Apps
                         </a>

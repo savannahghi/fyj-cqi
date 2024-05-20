@@ -51,3 +51,9 @@ class ResponseForm(forms.ModelForm):
     class Meta:
         model = Response
         fields = ('response_text',)
+
+
+class AppForm(forms.ModelForm):
+    class Meta:
+        model = App
+        fields = "__all__"

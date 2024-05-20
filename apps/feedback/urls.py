@@ -5,6 +5,7 @@ from . import views
 
 urlpatterns = [
     path('apps/', views.apps_list, name='apps_list'),
+    path('create-apps/', views.create_app, name='create_app'),
     path('feedback/', views.feedback_list, name='feedback_list'),
     path('submit-feedback/', views.submit_feedback, name='submit_feedback'),
     path('feedback-with-response/', views.feedback_with_response, name='feedback_with_response'),
@@ -15,6 +16,8 @@ urlpatterns = [
     path('single-feedback/<uuid:pk>/', views.feedback_detail, name='feedback_detail'),
 
     path('feedback/<uuid:pk>/update/', views.update_feedback, name='update_feedback'),
+    path('app/<uuid:pk>/update/', views.update_app, name='update_app'),
+    path('app/<uuid:pk>/delete/', views.AppDeleteView.as_view(), name='delete_app'),
 
     path('response/<uuid:pk>/update/', views.update_response, name='update_response'),
 ]

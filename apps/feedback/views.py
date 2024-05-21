@@ -1,10 +1,14 @@
 import pandas as pd
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse_lazy
+from django.views.generic import DeleteView
+
 from .models import App, Feedback, Response
-from .forms import FeedbackForm, ResponseForm
+from .forms import AppForm, FeedbackForm, ResponseForm
 from ..cqi.views import bar_chart
 
 
@@ -81,6 +85,59 @@ def app_detail(request, pk):
 
 
 @login_required(login_url='login')
+def create_app(request):
+    apps = App.objects.all()
+    if request.method == 'POST':
+        form = AppForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('create_app')
+    else:
+        form = AppForm()
+    context = {'form': form, "apps": apps, "view_type": "add_app"}
+    return render(request, 'feedback/submit_feedback.html', context)
+
+
+@login_required(login_url='login')
+def update_app(request, pk):
+    app = get_object_or_404(App, id=pk)
+    if request.method == 'POST':
+        form = AppForm(request.POST, instance=app)
+        if form.is_valid():
+            form.save()
+            return redirect('create_app')
+    else:
+        form = AppForm(instance=app)
+    return render(request, 'feedback/submit_feedback.html',
+                  {'form': form, 'feedback': app, "view_type": "add_app"})
+
+
+@login_required(login_url='login')
+def delete_app(request, pk):
+    app = get_object_or_404(App, id=pk)
+    if request.method == 'POST':
+        form = AppForm(request.POST, instance=app)
+        if form.is_valid():
+            form.save()
+            return redirect('create_app')
+    else:
+        form = AppForm(instance=app)
+    return render(request, 'feedback/submit_feedback.html',
+                  {'form': form, 'feedback': app, "view_type": "add_app"})
+
+
+class AppDeleteView(LoginRequiredMixin, DeleteView):
+    login_url = 'login'  # Specify the login URL
+    model = App
+    template_name = 'feedback/delete_page.html'
+    success_url = reverse_lazy('create_app')  # Redirect to a list view after deletion
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+
+@login_required(login_url='login')
 def feedback_detail(request, pk):
     # Retrieve the feedback object with the given primary key (pk)
     feedback = get_object_or_404(Feedback, id=pk)
@@ -132,7 +189,7 @@ def feedback_with_response(request):
     feedback_response_dict = {}
     for feedback in feedback_with_responses:
         feedback_response_dict[feedback] = feedback.response_set.all()
-    context={'feedback_response_dict': feedback_response_dict}
+    context = {'feedback_response_dict': feedback_response_dict}
     # Pass the feedback objects with their responses to the template
     return render(request, 'feedback/feedback_with_response.html', context)
 

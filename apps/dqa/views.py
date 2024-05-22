@@ -4608,21 +4608,22 @@ def dqa_dashboard(request, dqa_type=None):
 
         if "KHIS" in merged_df.columns:
             del merged_df['KHIS']
-        merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right').fillna(
-            0)
-        try:
-            merged_df = merged_df[
-                ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
-        except KeyError:
-            messages.info(request, f"No KHIS data for {quarter_year}!")
-        for i in merged_df.columns[4:]:
-            merged_df[i] = merged_df[i].astype(int)
-        merged_df = merged_df.groupby(['indicator', 'quarter_year']).sum(numeric_only=True).reset_index()
-        dicts, merged_viz_df = compare_data_verification(merged_df, 'DATIM', description_list)
-        data_verification_viz = bar_chart_dqa(merged_viz_df, "indicator",
-                                              "Absolute difference proportion (Difference/Source*100)",
-                                              pepfar_col="DATIM", color='Score',
-                                              title="Data verification final scores")
+        if not khis_perf_df.empty and not merged_df.empty:
+            merged_df = khis_perf_df.merge(merged_df, on=['mfl_code', 'quarter_year', 'indicator'], how='right').fillna(
+                0)
+            try:
+                merged_df = merged_df[
+                    ['mfl_code', 'facility', 'indicator', 'quarter_year', 'Source', 'MOH 731', 'KHIS', 'DATIM']]
+            except KeyError:
+                messages.info(request, f"No KHIS data for {quarter_year}!")
+            for i in merged_df.columns[4:]:
+                merged_df[i] = merged_df[i].astype(int)
+            merged_df = merged_df.groupby(['indicator', 'quarter_year']).sum(numeric_only=True).reset_index()
+            dicts, merged_viz_df = compare_data_verification(merged_df, 'DATIM', description_list)
+            data_verification_viz = bar_chart_dqa(merged_viz_df, "indicator",
+                                                  "Absolute difference proportion (Difference/Source*100)",
+                                                  pepfar_col="DATIM", color='Score',
+                                                  title="Data verification final scores")
         if viz is None:
             messages.error(request, f"No DQA data found for {quarter_year}")
         if audit_team:
@@ -4699,7 +4700,7 @@ def dqa_dashboard(request, dqa_type=None):
                                                     color=None)
 
     # Print the number of queries executed
-    print(f"Number of queries: {len(connection.queries)}")
+    # print(f"Number of queries: {len(connection.queries)}")
 
     context = {
         "quarter_form": quarter_form,

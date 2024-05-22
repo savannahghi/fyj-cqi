@@ -4,7 +4,7 @@
 {#{% url "add_pharmacy_records" as add_pharmacy_records %}#}
 {% url "facility_dqa_summary" as facility_dqa_summary %}
 {% url "load_khis_data" as load_khis_data %}
-{% url "show_work_plan" as show_work_plan %}
+{% url "pharmacy_show_work_plan" as pharmacy_show_work_plan %}
 {% url "show_inventory" as show_inventory %}
 {% url "show_audit_team_pharmacy" as show_audit_team_pharmacy %}
 {% url "show_commodity_records" as show_commodity_records %}
@@ -16,7 +16,7 @@
 {% url "lesson_learnt" as lesson_learnt %}
 {% url "load_datim_data" as load_datim_data %}
 {% url "update_button_settings" as update_button_settings %}
-{% url "dqa_dashboard" dqa_type='program' as dqa_dashboard %}
+{% url "pharmacy_dqa_dashboard" dqa_type='program' as pharmacy_dqa_dashboard %}
 {#{% url 'completed_closed' pk='Completed-or-Closed' as completed_closed %}#}
 {% url 'choose_facilities_inventory' as choose_facilities_inventory %}
 
@@ -85,8 +85,8 @@
                 </li>
                 <hr>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.path == show_work_plan %} active{% endif %}"
-                       href="{% url 'show_work_plan' %}">
+                    <a class="nav-link {% if request.path == pharmacy_show_work_plan %} active{% endif %}"
+                       href="{% url 'pharmacy_show_work_plan' %}">
                         <span data-feather="briefcase" class="align-text-bottom"></span>
                         Work plan
                     </a>
@@ -98,6 +98,12 @@
                         Audit team
                     </a>
                 </li>
+            <li class="nav-item">
+            <a class="nav-link {% if request.path == pharmacy_dqa_dashboard %} active{% endif %}" aria-current="page" href="{% url 'pharmacy_dqa_dashboard' dqa_type="program" %}">
+              <span data-feather="home" class="align-text-bottom"></span>
+                DQA DASHBOARD
+            </a>
+          </li>
                 {% if request.user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == load_datim_data %} active{% endif %}"

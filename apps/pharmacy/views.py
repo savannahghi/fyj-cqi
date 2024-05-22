@@ -22,7 +22,10 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.cqi.models import Facilities
-from apps.dqa.form import QuarterSelectionForm, YearSelectionForm, FacilitySelectionForm
+from apps.dqa.form import CountySelectionForm, HubSelectionForm, ProgramSelectionForm, QuarterSelectionForm, \
+    SubcountySelectionForm, \
+    YearSelectionForm, \
+    FacilitySelectionForm
 from apps.dqa.models import Period
 from apps.dqa.views import disable_update_buttons
 from apps.pharmacy.forms import PharmacyRecordsForm, DateSelectionForm, StockCardsForm, \
@@ -966,7 +969,10 @@ def create_df(df, title, row_index):
     data = []
     for i in range(1, 7):
         stock_card_tld = df.iloc[row_index, i]
-        data.append(int(stock_card_tld))
+        if pd.isna(stock_card_tld):
+            data.append(0)
+        else:
+            data.append(int(stock_card_tld))
     # Create DataFrame
     df7 = pd.DataFrame(data, columns=[title])
     df7 = df7.T
@@ -998,22 +1004,93 @@ def divide_rows(a, num_index, deno_index):
             division_row[col] = 0
     return division_row
 
-def calculate_facility_score(a,ideal_target=100):
+
+def calculate_facility_score(a, ideal_target=100, dqa_type="facility"):
     # Get the count of values equal to 100 in each row
     count_100 = (a.iloc[:, 1:] == ideal_target).sum(axis=1)
     count_nas = (a.iloc[:, 1:] == 9999).sum(axis=1)
 
     # Calculate the division result
-    division_result = round(count_100 / (a.shape[1] - 1-count_nas), 2)
+    division_result = round(count_100 / (a.shape[1] - 1 - count_nas), 2)
     # Add the new column 'Facility mean score' to the DataFrame
-    a['Facility mean score'] = division_result*100
+    a[f'{dqa_type.title()} mean score'] = division_result * 100
     return a
-def calculate_supply_chain_kpis(df, expected_description_order):
+
+
+def group_and_merge(df, float_cols):
+    yes_no_rows = [
+        row for row in df['description'].to_list() if "there" in row.lower()
+                                                      or "are the" in row.lower() or "does the" in row.lower()
+    ]
+    boolean_df = df[df['description'].isin(yes_no_rows)]
+    grouped_boolean_df = boolean_df.groupby('description')[float_cols].mean().reset_index()
+    float_cols = grouped_boolean_df.select_dtypes(include=['float']).columns
+
+    # Convert float columns to integers
+    grouped_boolean_df[float_cols] = grouped_boolean_df[float_cols].astype(int)
+    non_boolean_df = df[~df['description'].isin(yes_no_rows)]
+    grouped_non_boolean_df = non_boolean_df.groupby('description')[float_cols].sum().reset_index()
+    df = pd.concat([grouped_boolean_df, grouped_non_boolean_df]).reset_index(drop=True)
+    return df
+
+
+def process_levels(df, expected_description_order):
+    """
+    Process levels in a DataFrame and calculate supply chain KPIs.
+
+    Parameters:
+        df (pd.DataFrame): Input DataFrame containing level information
+        expected_description_order (list): List of expected description orders
+
+    Returns:
+        pd.DataFrame: Concatenated DataFrame with level-specific supply chain KPIs
+
+    """
+    # Initialize list to store level-specific DataFrames
+    levels_dfs = sort_focus_area = []
+    facility_mean = 0
+
+    # Iterate over unique levels in sorted order
+    for level in sorted(df['level'].unique()):
+        # Filter DataFrame for current level
+        level_df = df[df['level'] == level]
+
+        # Check if level has at least 29 rows
+        if level_df.shape[0] >= 29:
+            # Calculate supply chain KPIs for current level
+            supply_chain_target_100, sort_focus_area, facility_mean = calculate_supply_chain_kpis(level_df,
+                                                                                                  expected_description_order)
+
+            # Add 'Entity' column with level and mean score
+            supply_chain_target_100.insert(0, 'Entity', f"{level} (mean score : {facility_mean})")
+
+            # Find columns containing 'mean score'
+            mean_score_cols = [col for col in supply_chain_target_100.columns if "mean score" in col]
+
+            # Rename 'mean score' column
+            supply_chain_target_100 = supply_chain_target_100.rename(
+                columns={mean_score_cols[0]: "Focus Area Mean Score"})
+
+            # Append level-specific DataFrame to list
+            levels_dfs.append(supply_chain_target_100)
+
+    # Concatenate level-specific DataFrames
+    return pd.concat(levels_dfs), sort_focus_area, facility_mean
+
+
+def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facility"):
     # Replace values in the DataFrame
-    df = df.replace({"No": 0, "Yes": 100, "N/A": 9999})
+    df = df.replace({"No": 0, "Yes": 100, "N/A": 9999, np.nan: 9999})
 
     # Convert columns to integer type
-    df[df.columns[1:]] = df[df.columns[1:]].astype(int)
+    # Identify float columns
+    # float_cols = df.select_dtypes(include=['float']).columns
+    float_cols = df.columns[-6:]
+
+    # Convert float columns to integers
+    df[float_cols] = df[float_cols].astype(int)
+    # df[df.columns[1:]] = df[df.columns[1:]].astype(int)
+    df = group_and_merge(df, float_cols)
 
     # Set 'description' column as categorical
     df['description'] = pd.Categorical(df['description'], categories=expected_description_order, ordered=True)
@@ -1125,35 +1202,12 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     # a.to_csv("supply_chain.csv",index=False)
     last_two_rows = a[a["description"].str.contains("Inventory variation|DAR vs CDRR Quantity Dispensed")]
     a = a[~a["description"].str.contains("Inventory variation|DAR vs CDRR Quantity Dispensed")]
-    a = calculate_facility_score(a)
-    last_two_rows = calculate_facility_score(last_two_rows, ideal_target=0)
+    a = calculate_facility_score(a, dqa_type=dqa_type)
+    last_two_rows = calculate_facility_score(last_two_rows, ideal_target=0, dqa_type=dqa_type)
     a = pd.concat([a, last_two_rows])
     # Multiply all values in the "Facility mean score" column
-    facility_mean = a['Facility mean score'].mean().astype(float)
-    facility_mean=round(facility_mean, 2)
-
-    # # Get the count of values equal to 100 in each row
-    # count_100 = (a.iloc[:, 1:] == 100).sum(axis=1)
-    # # handle cell values containing NAs
-    # count_nas = (a.iloc[:, 1:] == 9999).sum(axis=1)
-    #
-    # # Calculate the division result and remove the NAs values
-    # division_result = round(count_100 / (a.shape[1] - 1-count_nas), 2)
-    #
-    # # Add the new column 'Facility mean score' to the DataFrame
-    # a['Facility mean score'] = division_result
-    #
-    # # Multiply all values in the "Facility mean score" column
-    # product = a['Facility mean score'].prod()
-
-    # # Create a new row with the product value
-    # new_row = ['Stock Record Validity'] + [0] * (a.shape[1] - 2) + [product]
-    # new_row = pd.DataFrame(new_row).T.reset_index(drop=True)
-    # # Replace values in the DataFrame
-    # new_row.columns = list(df.columns) + ['Facility mean score']
-    #
-    # # Concatenate new_row to the DataFrame 'a'
-    # a = pd.concat([a, new_row])
+    facility_mean = a[f'{dqa_type.title()} mean score'].mean().astype(float)
+    facility_mean = round(facility_mean, 2)
 
     # Rename the 'description' column to 'Focus area'
     a = a.rename(
@@ -1161,8 +1215,8 @@ def calculate_supply_chain_kpis(df, expected_description_order):
                  "3hp": "3HP", "fp": "IMPLANT 1 ROD", "al": "AL 24"})
 
     # Convert 'Facility mean score' column to numeric and round to 2 decimal places
-    a[f'Facility mean score'] = pd.to_numeric(a['Facility mean score'], errors='coerce')
-    a=a.rename(columns={"Facility mean score":f"Facility mean score: {facility_mean} %"})
+    a[f'{dqa_type.title()} mean score'] = pd.to_numeric(a[f'{dqa_type.title()} mean score'], errors='coerce')
+    a = a.rename(columns={f"{dqa_type.title()} mean score": f"{dqa_type.title()} mean score: {facility_mean} %"})
     a = a.reset_index(drop=True)
 
     sort_focus_area = ['Delivered in full', 'Stock card available',
@@ -1182,7 +1236,7 @@ def calculate_supply_chain_kpis(df, expected_description_order):
     a = a.replace({"No": 0, "Yes": 100, 9999: ""})
 
     # Final DataFrame 'a'
-    return a, sort_focus_area,facility_mean
+    return a, sort_focus_area, facility_mean
 
 
 @login_required(login_url='login')
@@ -1313,7 +1367,9 @@ def show_inventory(request):
                                       'What quantity was dispensed, based the CDRR, at this facility during the review period?',
                                       'What is the average monthly consumption?']
 
-        supply_chain_target_100, sort_focus_area,facility_mean = calculate_supply_chain_kpis(df,expected_description_order)
+        supply_chain_target_100, sort_focus_area, facility_mean = calculate_supply_chain_kpis(df,
+                                                                                              expected_description_order)
+
     context = {
         # 'form': form,
         'title': 'Inventory Management',
@@ -1323,11 +1379,201 @@ def show_inventory(request):
         "facility_form": facility_form,
         "models_to_check": models_to_check,
         "field_values": field_values,
-        "supply_chain_target_100": supply_chain_target_100,"facility_mean":facility_mean,
+        "supply_chain_target_100": supply_chain_target_100, "facility_mean": facility_mean,
         "sort_focus_areas": sort_focus_area,
     }
 
     return render(request, 'pharmacy/show_inventory_management.html', context)
+
+
+def dqa_dashboard(request, dqa_type=None):
+    if not request.user.first_name:
+        return redirect("profile")
+
+    # Get the query parameters from the URL
+    quarter_form_initial = request.GET.get('quarter_form')
+    year_form_initial = request.GET.get('year_form')
+    facility_form_initial = request.GET.get('facility_form')
+
+    hub_form_initial = request.GET.get('hub_form')
+    subcounty_form_initial = request.GET.get('subcounty_form')
+    county_form_initial = request.GET.get('county_form')
+    program_form_initial = request.GET.get('program_form')
+
+    # Parse the string values into dictionary objects
+    quarter_form_initial = ast.literal_eval(quarter_form_initial) if quarter_form_initial else {}
+    year_form_initial = ast.literal_eval(year_form_initial) if year_form_initial else {}
+    facility_form_initial = ast.literal_eval(facility_form_initial) if facility_form_initial else {}
+
+    hub_form_initial = ast.literal_eval(hub_form_initial) if hub_form_initial else {}
+    subcounty_form_initial = ast.literal_eval(subcounty_form_initial) if subcounty_form_initial else {}
+    county_form_initial = ast.literal_eval(county_form_initial) if county_form_initial else {}
+    program_form_initial = ast.literal_eval(program_form_initial) if program_form_initial else {}
+
+    quarter_form = QuarterSelectionForm(request.POST or None, initial=quarter_form_initial)
+    year_form = YearSelectionForm(request.POST or None, initial=year_form_initial)
+    facility_form = FacilitySelectionForm(request.POST or None, initial=facility_form_initial)
+
+    hub_form = HubSelectionForm(request.POST or None, initial=hub_form_initial)
+    subcounty_form = SubcountySelectionForm(request.POST or None, initial=subcounty_form_initial)
+    county_form = CountySelectionForm(request.POST or None, initial=county_form_initial)
+    program_form = ProgramSelectionForm(request.POST or None, initial=program_form_initial)
+
+    # date_form = DateSelectionForm(request.POST or None)
+
+    supply_chain_target_100 = pd.DataFrame()
+    sort_focus_area = selected_facility = quarter_year = mean_score = None
+    facility_mean = 0
+
+    models_to_check = {
+        "stock_cards": StockCards,
+        "unit_supplied": UnitSupplied,
+        "beginning_balance": BeginningBalance,
+        "positive_adjustments": PositiveAdjustments,
+        "unit_issued": UnitIssued,
+        "negative_adjustment": NegativeAdjustment,
+        "expired_units": ExpiredUnits,
+        "expired": Expired,
+        "expiry_tracking": ExpiryTracking,
+        "s11_form_availability": S11FormAvailability,
+        "s11_form_endorsed": S11FormEndorsed,
+        "stock_management": StockManagement,
+    }
+    model_names = list(models_to_check.keys())
+
+    # Create an empty list to store the filtered objects
+    filtered_data = []
+
+    if dqa_type == "facility":
+        if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
+            selected_quarter = quarter_form.cleaned_data['quarter']
+            selected_year = year_form.cleaned_data['year']
+            selected_facility = facility_form.cleaned_data['name']
+            year_suffix = selected_year[-2:]
+            quarter_year = f"{selected_quarter}-{year_suffix}"
+
+        elif quarter_form_initial != {}:
+            selected_facility = facility_form_initial["name"]
+            quarter_year = quarter_form_initial['quarter']
+
+        # Iterate over the model names
+        for model_name in model_names:
+            # Get the model class from the models_to_check dictionary
+            model_class = models_to_check[model_name]
+            objects = model_class.objects.filter(
+                # facility_name__name=selected_facility,
+                quarter_year__quarter_year=quarter_year
+            ).order_by('date_created')
+
+            # Append the filtered objects to the list
+            filtered_data.extend(objects)
+    if dqa_type == "hub":
+        if quarter_form.is_valid() and year_form.is_valid() and hub_form.is_valid():
+
+            selected_quarter = quarter_form.cleaned_data['quarter']
+            selected_year = year_form.cleaned_data['year']
+            selected_facility = hub_form.cleaned_data['hub']
+            year_suffix = selected_year[-2:]
+            quarter_year = f"{selected_quarter}-{year_suffix}"
+
+        elif quarter_form_initial != {}:
+            selected_facility = hub_form_initial["name"]
+            quarter_year = quarter_form_initial['quarter']
+
+        # Iterate over the model names
+        for model_name in model_names:
+            # Get the model class from the models_to_check dictionary
+            model_class = models_to_check[model_name]
+            objects = model_class.objects.filter(facility_name__sub_counties__hub__hub=selected_facility,
+                                                 quarter_year__quarter_year=quarter_year
+                                                 ).order_by('date_created')
+
+            # Append the filtered objects to the list
+            filtered_data.extend(objects)
+
+    work_plans = WorkPlan.objects.all()
+    if len(filtered_data) == 0 and quarter_year is not None:
+        messages.success(request, f"Inventory management data for {selected_facility} {quarter_year} is missing! "
+                                  f"Kindly enter data using the form provided in the 'DATA ENTRY' section.")
+    field_values = []
+
+    # Iterate over the work plans
+    for work_plan in work_plans:
+        # Iterate over the models in models_to_check dictionary
+        for field_name, model in models_to_check.items():
+            field_id = getattr(work_plan, field_name + "_id", None)
+            if field_id is not None:
+                field_values.append(field_id)
+    if len(filtered_data) >= 29:
+        data = []
+        for model_data in filtered_data:
+            record = {
+                'level': model_data.facility_name.name,
+                'description': model_data.description,
+                'tld_90': model_data.adult_arv_tdf_3tc_dtg,
+                'dtg_10': model_data.pead_arv_dtg_10mg,
+                'abc_3tc': model_data.paed_arv_abc_3tc_120_60mg,
+                '3hp': model_data.tb_3hp,
+                'fp': model_data.family_planning_rod,
+                'al': model_data.al_24,
+            }
+            data.append(record)
+            # break
+        # Create DataFrame
+        df = pd.DataFrame(data)
+        expected_description_order = ['Is there currently a stock card or electronic record available for?',
+                                      'Does the stock card or electronic record cover the entire period under review, which began on {start_date} to {end_date}?',
+                                      'How many units were supplied by MEDS/KEMSA to this facility during the period under review from delivery notes?',
+                                      'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
+                                      'What was the beginning balance? (At the start of the review period)',
+                                      'How many units were supplied by MEDS/KEMSA to this facility during the period under review?',
+                                      'How many units were received from other facilities (Positive Adjustments) during the period under review?',
+                                      'How many positive adjustment transactions do not have a corresponding S11 form?',
+                                      'How many units were issued from the storage areas to service delivery/dispensing point(s) within this facility during the period under review?',
+                                      'How many units were issued to other facilities (Negative Adjustments) during the period under review?',
+                                      'How many negative adjustment transactions were made on the stock card for transfers to other health facilities during the period under review?',
+                                      'How many negative adjustment transactions do not have a corresponding S11 form?',
+                                      'How many days out of stock?',
+                                      'How many expired units  were in the facility during the review period?',
+                                      'Has there been a stock out during the period under review?',
+                                      'Were there any expiries during the period under review?',
+                                      'Are there any expires in the facility?',
+                                      'Is there a current expiry tracking chart/register in this facility (wall chart or electronic)?',
+                                      'Are there units with less than 6 months to expiry?',
+                                      'Are the units (with less than 6 months to expiry) captured on the expiry chart?',
+                                      'Is there a corresponding S11 form at this facility for each of the positive adjustment transactions?',
+                                      'Is there a corresponding S11 form at this facility for each of the negative adjustment transactions?',
+                                      'Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this facility?',
+                                      'Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at this facility?',
+                                      'What is the ending balance on the stock card or electronic record on the last day of the review period?',
+                                      'What was the actual physical count of this on the day of the visit?',
+                                      'What is the stock balance on the stock card or electronic record on the day of the visit?',
+                                      'What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
+                                      'What quantity was dispensed, based the CDRR, at this facility during the review period?',
+                                      'What is the average monthly consumption?']
+
+        supply_chain_target_100, sort_focus_area, facility_mean = process_levels(df, expected_description_order)
+        # supply_chain_target_100, sort_focus_area, facility_mean = calculate_supply_chain_kpis(df,
+        #                                                                                       expected_description_order,
+        #                                                                                       dqa_type=dqa_type)
+
+    context = {
+        "hub_form": hub_form, "mean_score": f"{dqa_type.title()} mean score",
+        "subcounty_form": subcounty_form,
+        "county_form": county_form,
+        "program_form": program_form,
+        'title': 'Inventory Management', "dqa_type": dqa_type,
+        "stock_card_data": filtered_data,
+        "quarter_form": quarter_form,
+        "year_form": year_form,
+        "facility_form": facility_form,
+        "models_to_check": models_to_check,
+        "field_values": field_values,
+        "supply_chain_target_100": supply_chain_target_100, "facility_mean": facility_mean,
+        "sort_focus_areas": sort_focus_area,
+    }
+
+    return render(request, 'pharmacy/dqa_dashboard.html', context)
 
 
 @login_required(login_url='login')

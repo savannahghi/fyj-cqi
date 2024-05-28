@@ -73,9 +73,10 @@
                         {% elif view_type == "add_app" %}
                             <div class="mt-4">
                                 {{ form.name|as_crispy_field }}
+                            <button type="submit" class="btn btn-primary btn-lg mt-2">Submit</button>
                             </div>
                         {% endif %}
-                        <button type="submit" class="btn btn-primary btn-lg mt-2">Submit</button>
+
                     </form>
                     {% if apps %}
                         <hr>

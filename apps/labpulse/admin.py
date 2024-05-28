@@ -8,13 +8,14 @@ from django.contrib.auth.models import Permission
 
 
 class BioChemAdmin(admin.ModelAdmin):
-    search_fields = ("facility__name", "facility__mfl_code", "test", "full_name", "patient_id", "age", "performed_by")
+    search_fields = ("facility__name", "facility__mfl_code", "test", "full_name", "patient_id", "age", "performed_by",
+                     "date_created", "collection_date", "result_time")
 
 
 class Cd4trakerAdmin(admin.ModelAdmin):
     search_fields = (
         "facility_name__name", "facility_name__mfl_code", "reason_for_rejection", "reason_for_no_serum_crag",
-        "patient_unique_no", "received_status")
+        "patient_unique_no", "received_status", "date_of_collection")
 
 
 class DrtResultsAdmin(admin.ModelAdmin):

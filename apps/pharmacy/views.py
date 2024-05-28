@@ -8,34 +8,32 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db import DatabaseError, transaction, IntegrityError
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Q
 from django.forms import modelformset_factory
-from django.http import HttpResponseRedirect
-from django.shortcuts import render, redirect, get_object_or_404
-
+from django.http import HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 # Create your views here.
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.cqi.models import Facilities
-from apps.dqa.form import CountySelectionForm, HubSelectionForm, ProgramSelectionForm, QuarterSelectionForm, \
+from apps.dqa.form import CountySelectionForm, FacilitySelectionForm, HubSelectionForm, ProgramSelectionForm, \
+    QuarterSelectionForm, \
     SubcountySelectionForm, \
-    YearSelectionForm, \
-    FacilitySelectionForm
+    YearSelectionForm
 from apps.dqa.models import Period
 from apps.dqa.views import disable_update_buttons
-from apps.pharmacy.forms import PharmacyRecordsForm, DateSelectionForm, StockCardsForm, \
-    UnitSuppliedForm, BeginningBalanceForm, PositiveAdjustmentsForm, \
-    UnitIssuedForm, NegativeAdjustmentForm, ExpiredUnitsForm, ExpiredForm, ExpiryTrackingForm, StockManagementForm, \
-    S11FormAvailabilityForm, S11FormEndorsedForm, WorkPlanForm, PharmacyAuditTeamForm
-from apps.pharmacy.models import StockCards, UnitSupplied, BeginningBalance, \
-    PositiveAdjustments, UnitIssued, NegativeAdjustment, ExpiredUnits, Expired, ExpiryTracking, \
-    StockManagement, S11FormAvailability, S11FormEndorsed, WorkPlan, TableNames, PharmacyRecords, Registers, \
-    PharmacyAuditTeam
+from apps.pharmacy.forms import BeginningBalanceForm, DateSelectionForm, ExpiredForm, ExpiredUnitsForm, \
+    ExpiryTrackingForm, FacilityForm, NegativeAdjustmentForm, PharmacyAuditTeamForm, PharmacyRecordsForm, \
+    PositiveAdjustmentsForm, QuarterSelectForm, S11FormAvailabilityForm, S11FormEndorsedForm, StockCardsForm, \
+    StockManagementForm, UnitIssuedForm, UnitSuppliedForm, WorkPlanForm, YearSelectForm
+from apps.pharmacy.models import BeginningBalance, Expired, ExpiredUnits, ExpiryTracking, NegativeAdjustment, \
+    PharmacyAuditTeam, PharmacyRecords, PositiveAdjustments, Registers, S11FormAvailability, S11FormEndorsed, \
+    StockCards, StockManagement, TableNames, UnitIssued, UnitSupplied, WorkPlan
 
 
 def get_query_params(request, form, selected_facility, selected_date):
@@ -1062,7 +1060,7 @@ def process_levels(df, expected_description_order):
                                                                                                   expected_description_order)
 
             # Add 'Entity' column with level and mean score
-            supply_chain_target_100.insert(0, 'Entity', f"{level} (mean score : {facility_mean})")
+            supply_chain_target_100.insert(0, 'Entity', f"{level}")
 
             # Find columns containing 'mean score'
             mean_score_cols = [col for col in supply_chain_target_100.columns if "mean score" in col]
@@ -1070,6 +1068,8 @@ def process_levels(df, expected_description_order):
             # Rename 'mean score' column
             supply_chain_target_100 = supply_chain_target_100.rename(
                 columns={mean_score_cols[0]: "Focus Area Mean Score"})
+            # Add 'Overall mean' column with level and mean score
+            supply_chain_target_100["Overall Entity Mean"] = facility_mean
 
             # Append level-specific DataFrame to list
             levels_dfs.append(supply_chain_target_100)
@@ -1386,40 +1386,197 @@ def show_inventory(request):
     return render(request, 'pharmacy/show_inventory_management.html', context)
 
 
+# @login_required(login_url='login')
+# def dqa_dashboard(request, dqa_type=None):
+#     if not request.user.first_name:
+#         return redirect("profile")
+#
+#     quarter_form = QuarterSelectForm(request.POST or None)
+#     year_form = YearSelectForm(request.POST or None)
+#     selected_quarter = None
+#     selected_year = None
+#
+#     if quarter_form.is_valid():
+#         selected_quarter = quarter_form.cleaned_data['quarter']
+#
+#     if year_form.is_valid():
+#         selected_year = year_form.cleaned_data['year']
+#
+#     facility_form = FacilityForm(request.POST or None, selected_year=selected_year, selected_quarter=selected_quarter)
+#
+#     # facility_form = FacilitySelectionForm(request.POST or None)
+#     hub_form = HubSelectionForm(request.POST or None)
+#     subcounty_form = SubcountySelectionForm(request.POST or None)
+#     county_form = CountySelectionForm(request.POST or None)
+#     program_form = ProgramSelectionForm(request.POST or None)
+#
+#     supply_chain_target_100 = pd.DataFrame()
+#     sort_focus_area = selected_facility = quarter_year = mean_score = None
+#     facility_mean = 0
+#
+#     models_to_check = {
+#         "stock_cards": StockCards,
+#         "unit_supplied": UnitSupplied,
+#         "beginning_balance": BeginningBalance,
+#         "positive_adjustments": PositiveAdjustments,
+#         "unit_issued": UnitIssued,
+#         "negative_adjustment": NegativeAdjustment,
+#         "expired_units": ExpiredUnits,
+#         "expired": Expired,
+#         "expiry_tracking": ExpiryTracking,
+#         "s11_form_availability": S11FormAvailability,
+#         "s11_form_endorsed": S11FormEndorsed,
+#         "stock_management": StockManagement,
+#     }
+#     model_names = list(models_to_check.keys())
+#
+#     # Create an empty list to store the filtered objects
+#     filtered_data = []
+#
+#     if dqa_type == "facility":
+#         if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
+#             selected_quarter = quarter_form.cleaned_data['quarter']
+#             selected_year = year_form.cleaned_data['year']
+#             selected_facility = facility_form.cleaned_data['name']
+#             year_suffix = selected_year[-2:]
+#             quarter_year = f"{selected_quarter}-{year_suffix}"
+#
+#         # Iterate over the model names
+#         for model_name in model_names:
+#             # Get the model class from the models_to_check dictionary
+#             model_class = models_to_check[model_name]
+#             objects = model_class.objects.filter(
+#                 # facility_name__name=selected_facility,
+#                 quarter_year__quarter_year=quarter_year
+#             ).order_by('date_created')
+#
+#             # Append the filtered objects to the list
+#             filtered_data.extend(objects)
+#     if dqa_type == "hub":
+#         if quarter_form.is_valid() and year_form.is_valid() and hub_form.is_valid():
+#             selected_quarter = quarter_form.cleaned_data['quarter']
+#             selected_year = year_form.cleaned_data['year']
+#             selected_facility = hub_form.cleaned_data['hub']
+#             year_suffix = selected_year[-2:]
+#             quarter_year = f"{selected_quarter}-{year_suffix}"
+#
+#         # Iterate over the model names
+#         for model_name in model_names:
+#             # Get the model class from the models_to_check dictionary
+#             model_class = models_to_check[model_name]
+#             objects = model_class.objects.filter(
+#                 # facility_name__sub_counties__hub__hub=selected_facility,
+#                 quarter_year__quarter_year=quarter_year
+#             ).order_by('date_created')
+#
+#             # Append the filtered objects to the list
+#             filtered_data.extend(objects)
+#         for model_name in model_names:
+#             # Get the model class from the models_to_check dictionary
+#             model_class = models_to_check[model_name]
+#             objects = model_class.objects.all(
+#                 # facility_name__sub_counties__hub__hub=selected_facility,
+#                 # quarter_year__quarter_year=quarter_year
+#             ).order_by('date_created')
+#
+#             # Append the filtered objects to the list
+#             filtered_data.extend(objects)
+#
+#     if len(filtered_data) >= 29:
+#         data = []
+#         for model_data in filtered_data:
+#             record = {
+#                 'level': model_data.facility_name.name,
+#                 'description': model_data.description,
+#                 'tld_90': model_data.adult_arv_tdf_3tc_dtg,
+#                 'dtg_10': model_data.pead_arv_dtg_10mg,
+#                 'abc_3tc': model_data.paed_arv_abc_3tc_120_60mg,
+#                 '3hp': model_data.tb_3hp,
+#                 'fp': model_data.family_planning_rod,
+#                 'al': model_data.al_24,
+#             }
+#             data.append(record)
+#
+#         # Create DataFrame
+#         df = pd.DataFrame(data)
+#         expected_description_order = ['Is there currently a stock card or electronic record available for?',
+#                                       'Does the stock card or electronic record cover the entire period under review, '
+#                                       'which began on {start_date} to {end_date}?',
+#                                       'How many units were supplied by MEDS/KEMSA to this facility during the period '
+#                                       'under review from delivery notes?',
+#                                       'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
+#                                       'What was the beginning balance? (At the start of the review period)',
+#                                       'How many units were supplied by MEDS/KEMSA to this facility during the period '
+#                                       'under review?',
+#                                       'How many units were received from other facilities (Positive Adjustments) '
+#                                       'during the period under review?',
+#                                       'How many positive adjustment transactions do not have a corresponding S11 form?',
+#                                       'How many units were issued from the storage areas to service '
+#                                       'delivery/dispensing point(s) within this facility during the period under '
+#                                       'review?',
+#                                       'How many units were issued to other facilities (Negative Adjustments) during '
+#                                       'the period under review?',
+#                                       'How many negative adjustment transactions were made on the stock card for '
+#                                       'transfers to other health facilities during the period under review?',
+#                                       'How many negative adjustment transactions do not have a corresponding S11 form?',
+#                                       'How many days out of stock?',
+#                                       'How many expired units  were in the facility during the review period?',
+#                                       'Has there been a stock out during the period under review?',
+#                                       'Were there any expiries during the period under review?',
+#                                       'Are there any expires in the facility?',
+#                                       'Is there a current expiry tracking chart/register in this facility (wall chart '
+#                                       'or electronic)?',
+#                                       'Are there units with less than 6 months to expiry?',
+#                                       'Are the units (with less than 6 months to expiry) captured on the expiry chart?',
+#                                       'Is there a corresponding S11 form at this facility for each of the positive '
+#                                       'adjustment transactions?',
+#                                       'Is there a corresponding S11 form at this facility for each of the negative adjustment transactions?',
+#                                       'Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this facility?',
+#                                       'Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at this facility?',
+#                                       'What is the ending balance on the stock card or electronic record on the last day of the review period?',
+#                                       'What was the actual physical count of this on the day of the visit?',
+#                                       'What is the stock balance on the stock card or electronic record on the day of the visit?',
+#                                       'What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
+#                                       'What quantity was dispensed, based the CDRR, at this facility during the review period?',
+#                                       'What is the average monthly consumption?']
+#
+#         supply_chain_target_100, sort_focus_area, facility_mean = process_levels(df, expected_description_order)
+#         supply_chain_target_100['facility_index'] = supply_chain_target_100.groupby("Entity").ngroup() + 1
+#         supply_chain_target_100 = supply_chain_target_100.set_index("facility_index")
+#
+#     context = {
+#         "hub_form": hub_form, "mean_score": f"{dqa_type.title()} mean score",
+#         "subcounty_form": subcounty_form, "county_form": county_form, "program_form": program_form,
+#         'title': 'Inventory Management', "dqa_type": dqa_type, "stock_card_data": filtered_data,
+#         "quarter_form": quarter_form, "year_form": year_form, "facility_form": facility_form,
+#         "models_to_check": models_to_check, "supply_chain_target_100": supply_chain_target_100,
+#         "facility_mean": facility_mean, "sort_focus_areas": sort_focus_area,
+#     }
+#
+#     return render(request, 'pharmacy/dqa_dashboard.html', context)
+# def dqa_dashboard(request, dqa_type=None):
+@login_required(login_url='login')
 def dqa_dashboard(request, dqa_type=None):
     if not request.user.first_name:
         return redirect("profile")
 
-    # Get the query parameters from the URL
-    quarter_form_initial = request.GET.get('quarter_form')
-    year_form_initial = request.GET.get('year_form')
-    facility_form_initial = request.GET.get('facility_form')
+    # Handle form submissions
+    quarter_form = QuarterSelectForm(request.POST or None)
+    year_form = YearSelectForm(request.POST or None)
+    selected_quarter = "Qtr1"
+    selected_year = "2021"
+    if quarter_form.is_valid():
+        selected_quarter = quarter_form.cleaned_data['quarter']
 
-    hub_form_initial = request.GET.get('hub_form')
-    subcounty_form_initial = request.GET.get('subcounty_form')
-    county_form_initial = request.GET.get('county_form')
-    program_form_initial = request.GET.get('program_form')
+    if year_form.is_valid():
+        selected_year = year_form.cleaned_data['year']
 
-    # Parse the string values into dictionary objects
-    quarter_form_initial = ast.literal_eval(quarter_form_initial) if quarter_form_initial else {}
-    year_form_initial = ast.literal_eval(year_form_initial) if year_form_initial else {}
-    facility_form_initial = ast.literal_eval(facility_form_initial) if facility_form_initial else {}
+    facility_form = FacilityForm(request.POST or None, selected_year=selected_year, selected_quarter=selected_quarter)
 
-    hub_form_initial = ast.literal_eval(hub_form_initial) if hub_form_initial else {}
-    subcounty_form_initial = ast.literal_eval(subcounty_form_initial) if subcounty_form_initial else {}
-    county_form_initial = ast.literal_eval(county_form_initial) if county_form_initial else {}
-    program_form_initial = ast.literal_eval(program_form_initial) if program_form_initial else {}
-
-    quarter_form = QuarterSelectionForm(request.POST or None, initial=quarter_form_initial)
-    year_form = YearSelectionForm(request.POST or None, initial=year_form_initial)
-    facility_form = FacilitySelectionForm(request.POST or None, initial=facility_form_initial)
-
-    hub_form = HubSelectionForm(request.POST or None, initial=hub_form_initial)
-    subcounty_form = SubcountySelectionForm(request.POST or None, initial=subcounty_form_initial)
-    county_form = CountySelectionForm(request.POST or None, initial=county_form_initial)
-    program_form = ProgramSelectionForm(request.POST or None, initial=program_form_initial)
-
-    # date_form = DateSelectionForm(request.POST or None)
+    hub_form = HubSelectionForm(request.POST or None)
+    subcounty_form = SubcountySelectionForm(request.POST or None)
+    county_form = CountySelectionForm(request.POST or None)
+    program_form = ProgramSelectionForm(request.POST or None)
 
     supply_chain_target_100 = pd.DataFrame()
     sort_focus_area = selected_facility = quarter_year = mean_score = None
@@ -1451,59 +1608,66 @@ def dqa_dashboard(request, dqa_type=None):
             selected_facility = facility_form.cleaned_data['name']
             year_suffix = selected_year[-2:]
             quarter_year = f"{selected_quarter}-{year_suffix}"
+            if selected_facility is not None:
+                # Iterate over the model names
+                for model_name in model_names:
+                    # Get the model class from the models_to_check dictionary
+                    model_class = models_to_check[model_name]
+                    objects = model_class.objects.filter(
+                        facility_name__name=selected_facility,
+                        quarter_year__quarter_year=quarter_year
+                    ).order_by('date_created')
 
-        elif quarter_form_initial != {}:
-            selected_facility = facility_form_initial["name"]
-            quarter_year = quarter_form_initial['quarter']
+                    # Append the filtered objects to the list
+                    filtered_data.extend(objects)
+            else:
+                # Filter by the selected facility
+                for model_name in model_names:
+                    model_class = models_to_check[model_name]
+                    objects = model_class.objects.filter(
 
-        # Iterate over the model names
-        for model_name in model_names:
-            # Get the model class from the models_to_check dictionary
-            model_class = models_to_check[model_name]
-            objects = model_class.objects.filter(
-                # facility_name__name=selected_facility,
-                quarter_year__quarter_year=quarter_year
-            ).order_by('date_created')
-
-            # Append the filtered objects to the list
-            filtered_data.extend(objects)
-    if dqa_type == "hub":
-        if quarter_form.is_valid() and year_form.is_valid() and hub_form.is_valid():
-
-            selected_quarter = quarter_form.cleaned_data['quarter']
-            selected_year = year_form.cleaned_data['year']
-            selected_facility = hub_form.cleaned_data['hub']
+                        quarter_year__quarter_year=quarter_year
+                    ).order_by('date_created')
+                    filtered_data.extend(objects)
+        else:
+            # Use default quarter and year if forms are not valid
             year_suffix = selected_year[-2:]
             quarter_year = f"{selected_quarter}-{year_suffix}"
+            for model_name in model_names:
+                model_class = models_to_check[model_name]
+                objects = model_class.objects.filter(
 
-        elif quarter_form_initial != {}:
-            selected_facility = hub_form_initial["name"]
-            quarter_year = quarter_form_initial['quarter']
+                    quarter_year__quarter_year=quarter_year
+                ).order_by('date_created')
+                filtered_data.extend(objects)
 
-        # Iterate over the model names
-        for model_name in model_names:
-            # Get the model class from the models_to_check dictionary
-            model_class = models_to_check[model_name]
-            objects = model_class.objects.filter(facility_name__sub_counties__hub__hub=selected_facility,
-                                                 quarter_year__quarter_year=quarter_year
-                                                 ).order_by('date_created')
+    # if dqa_type == "hub":
+    #     if quarter_form.is_valid() and year_form.is_valid() and hub_form.is_valid():
+    #         selected_quarter = quarter_form.cleaned_data['quarter']
+    #         selected_year = year_form.cleaned_data['year']
+    #         selected_facility = hub_form.cleaned_data['hub']
+    #         year_suffix = selected_year[-2:]
+    #         quarter_year = f"{selected_quarter}-{year_suffix}"
+    #
+    #         # Iterate over the model names
+    #         for model_name in model_names:
+    #             model_class = models_to_check[model_name]
+    #             objects = model_class.objects.filter(
+    #                 quarter_year__quarter_year=quarter_year
+    #             ).order_by('date_created')
+    #
+    #             filtered_data.extend(objects)
+    #     else:
+    #         year_suffix = selected_year[-2:]
+    #         quarter_year = f"{selected_quarter}-{year_suffix}"
+    #         for model_name in model_names:
+    #             model_class = models_to_check[model_name]
+    #             objects = model_class.objects.filter(
+    #                 # facility_name__sub_counties__hub__hub=selected_facility,
+    #                 quarter_year__quarter_year=quarter_year
+    #             ).order_by('date_created')
+    #             filtered_data.extend(objects)
 
-            # Append the filtered objects to the list
-            filtered_data.extend(objects)
-
-    work_plans = WorkPlan.objects.all()
-    if len(filtered_data) == 0 and quarter_year is not None:
-        messages.success(request, f"Inventory management data for {selected_facility} {quarter_year} is missing! "
-                                  f"Kindly enter data using the form provided in the 'DATA ENTRY' section.")
-    field_values = []
-
-    # Iterate over the work plans
-    for work_plan in work_plans:
-        # Iterate over the models in models_to_check dictionary
-        for field_name, model in models_to_check.items():
-            field_id = getattr(work_plan, field_name + "_id", None)
-            if field_id is not None:
-                field_values.append(field_id)
     if len(filtered_data) >= 29:
         data = []
         for model_data in filtered_data:
@@ -1518,62 +1682,95 @@ def dqa_dashboard(request, dqa_type=None):
                 'al': model_data.al_24,
             }
             data.append(record)
-            # break
+
         # Create DataFrame
         df = pd.DataFrame(data)
-        expected_description_order = ['Is there currently a stock card or electronic record available for?',
-                                      'Does the stock card or electronic record cover the entire period under review, which began on {start_date} to {end_date}?',
-                                      'How many units were supplied by MEDS/KEMSA to this facility during the period under review from delivery notes?',
-                                      'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
-                                      'What was the beginning balance? (At the start of the review period)',
-                                      'How many units were supplied by MEDS/KEMSA to this facility during the period under review?',
-                                      'How many units were received from other facilities (Positive Adjustments) during the period under review?',
-                                      'How many positive adjustment transactions do not have a corresponding S11 form?',
-                                      'How many units were issued from the storage areas to service delivery/dispensing point(s) within this facility during the period under review?',
-                                      'How many units were issued to other facilities (Negative Adjustments) during the period under review?',
-                                      'How many negative adjustment transactions were made on the stock card for transfers to other health facilities during the period under review?',
-                                      'How many negative adjustment transactions do not have a corresponding S11 form?',
-                                      'How many days out of stock?',
-                                      'How many expired units  were in the facility during the review period?',
-                                      'Has there been a stock out during the period under review?',
-                                      'Were there any expiries during the period under review?',
-                                      'Are there any expires in the facility?',
-                                      'Is there a current expiry tracking chart/register in this facility (wall chart or electronic)?',
-                                      'Are there units with less than 6 months to expiry?',
-                                      'Are the units (with less than 6 months to expiry) captured on the expiry chart?',
-                                      'Is there a corresponding S11 form at this facility for each of the positive adjustment transactions?',
-                                      'Is there a corresponding S11 form at this facility for each of the negative adjustment transactions?',
-                                      'Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this facility?',
-                                      'Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at this facility?',
-                                      'What is the ending balance on the stock card or electronic record on the last day of the review period?',
-                                      'What was the actual physical count of this on the day of the visit?',
-                                      'What is the stock balance on the stock card or electronic record on the day of the visit?',
-                                      'What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
-                                      'What quantity was dispensed, based the CDRR, at this facility during the review period?',
-                                      'What is the average monthly consumption?']
+        expected_description_order = [
+            'Is there currently a stock card or electronic record available for?',
+            'Does the stock card or electronic record cover the entire period under review, '
+            'which began on {start_date} to {end_date}?',
+            'How many units were supplied by MEDS/KEMSA to this facility during the period '
+            'under review from delivery notes?',
+            'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
+            'What was the beginning balance? (At the start of the review period)',
+            'How many units were supplied by MEDS/KEMSA to this facility during the period '
+            'under review?',
+            'How many units were received from other facilities (Positive Adjustments) '
+            'during the period under review?',
+            'How many positive adjustment transactions do not have a corresponding S11 form?',
+            'How many units were issued from the storage areas to service '
+            'delivery/dispensing point(s) within this facility during the period under '
+            'review?',
+            'How many units were issued to other facilities (Negative Adjustments) during '
+            'the period under review?',
+            'How many negative adjustment transactions were made on the stock card for '
+            'transfers to other health facilities during the period under review?',
+            'How many negative adjustment transactions do not have a corresponding S11 form?',
+            'How many days out of stock?',
+            'How many expired units  were in the facility during the review period?',
+            'Has there been a stock out during the period under review?',
+            'Were there any expiries during the period under review?',
+            'Are there any expires in the facility?',
+            'Is there a current expiry tracking chart/register in this facility (wall chart '
+            'or electronic)?',
+            'Are there units with less than 6 months to expiry?',
+            'Are the units (with less than 6 months to expiry) captured on the expiry chart?',
+            'Is there a corresponding S11 form at this facility for each of the positive '
+            'adjustment transactions?',
+            'Is there a corresponding S11 form at this facility for each of the negative '
+            'adjustment transactions?',
+            'Of the available S11 forms for positive adjustments, how many are endorsed ('
+            'signed) by someone at this facility?',
+            'Of the available S11 forms for the negative adjustments, how many are endorsed '
+            '(signed) by someone at this facility?',
+            'What is the ending balance on the stock card or electronic record on the last '
+            'day of the review period?',
+            'What was the actual physical count of this on the day of the visit?',
+            'What is the stock balance on the stock card or electronic record on the day of '
+            'the visit?',
+            'What quantity was dispensed at this facility based on the DAR/ADT during the '
+            'review period?',
+            'What quantity was dispensed, based the CDRR, at this facility during the '
+            'review period?',
+            'What is the average monthly consumption?'
+        ]
 
         supply_chain_target_100, sort_focus_area, facility_mean = process_levels(df, expected_description_order)
-        # supply_chain_target_100, sort_focus_area, facility_mean = calculate_supply_chain_kpis(df,
-        #                                                                                       expected_description_order,
-        #                                                                                       dqa_type=dqa_type)
+        supply_chain_target_100['facility_index'] = supply_chain_target_100.groupby("Entity").ngroup() + 1
+        supply_chain_target_100 = supply_chain_target_100.set_index("facility_index")
 
     context = {
         "hub_form": hub_form, "mean_score": f"{dqa_type.title()} mean score",
-        "subcounty_form": subcounty_form,
-        "county_form": county_form,
-        "program_form": program_form,
-        'title': 'Inventory Management', "dqa_type": dqa_type,
-        "stock_card_data": filtered_data,
-        "quarter_form": quarter_form,
-        "year_form": year_form,
-        "facility_form": facility_form,
-        "models_to_check": models_to_check,
-        "field_values": field_values,
-        "supply_chain_target_100": supply_chain_target_100, "facility_mean": facility_mean,
-        "sort_focus_areas": sort_focus_area,
+        "subcounty_form": subcounty_form, "county_form": county_form, "program_form": program_form,
+        'title': 'Inventory Management', "dqa_type": dqa_type, "stock_card_data": filtered_data,
+        "quarter_form": quarter_form, "year_form": year_form, "facility_form": facility_form,
+        "models_to_check": models_to_check, "supply_chain_target_100": supply_chain_target_100,
+        "facility_mean": facility_mean, "sort_focus_areas": sort_focus_area,
     }
 
     return render(request, 'pharmacy/dqa_dashboard.html', context)
+
+
+# def get_filtered_facilities(request):
+#     selected_year = request.GET.get('year')
+#     selected_quarter = request.GET.get('quarter')
+#
+    # models_to_check = [
+    #     StockCards, UnitSupplied, BeginningBalance, PositiveAdjustments,
+    #     UnitIssued, NegativeAdjustment, ExpiredUnits, Expired, ExpiryTracking,
+    #     S11FormAvailability, S11FormEndorsed, StockManagement,
+    # ]
+#
+#     facility_ids = set()
+#     for model in models_to_check:
+#         facility_ids.update(
+#             model.objects.filter(quarter_year__quarter_year=f"{selected_quarter}-{selected_year[-2:]}")
+#             .values_list('facility_name_id', flat=True)
+#         )
+#
+#     facilities = Facilities.objects.filter(id__in=facility_ids)
+#     facilities_list = [{'id': facility.id, 'name': facility.name} for facility in facilities]
+#     return JsonResponse(facilities_list, safe=False)
 
 
 @login_required(login_url='login')

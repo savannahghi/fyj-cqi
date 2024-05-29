@@ -1,0 +1,1186 @@
+{% extends 'pharmacy/index_pharmacy.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load mathfilters %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h6 class="display-6 text-primary text-center">DQA DASHBOARD</h6>
+        <hr>
+        <div class="p-5 mb-4 bg-light rounded-3">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info col-12" role="alert">
+                        <h5 class="small">{{ message }}</h5>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            {% if "facility" in title %}
+                <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
+            {% elif "program" in title %}
+                <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
+            {% endif %}
+            <div class="d-flex justify-content-around mb-3">
+                {% if dqa_type == "facility" %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-success">FACILITY
+                        DQA</a>
+                {% else %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-outline-success">FACILITY
+                        DQA</a>
+                {% endif %}
+                {% if dqa_type == "hub" %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='hub' %}" class="btn btn-success">HUB DQA</a>
+                {% else %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='hub' %}" class="btn btn-outline-success">HUB
+                        DQA</a>
+                {% endif %}
+                {% if dqa_type == "subcounty" %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-success">SUB-COUNTIES
+                        DQA</a>
+                {% else %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-outline-success">SUB-COUNTIES
+                        DQA</a>
+                {% endif %}
+                {% if dqa_type == "county" %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='county' %}" class="btn btn-success">COUNTY
+                        DQA</a>
+                {% else %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='county' %}" class="btn btn-outline-success">COUNTY
+                        DQA</a>
+                {% endif %}
+                {% if dqa_type == "program" %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='program' %}" class="btn btn-success">PROGRAM
+                        DQA</a>
+                {% else %}
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='program' %}" class="btn btn-outline-success">PROGRAM
+                        DQA</a>
+                {% endif %}
+            </div>
+            <form class="row g-3" id="dqa-form" method="POST" class="mt-5" enctype='multipart/form-data'
+                  autocomplete="off">
+                {% csrf_token %}
+                <p> Please choose quarter, year and then submit </p>
+
+                <div class="col-md-3 mt-2">
+                    {{ quarter_form.quarter|as_crispy_field }}
+                </div>
+                <div class="col-md-3 mt-2 pr-5">
+                    {{ year_form.year|as_crispy_field }}
+                </div>
+                {% if dqa_type == "subcounty" %}
+                    <div class="col-md-4 mt-2">
+                        {{ subcounty_form.subcounty |as_crispy_field }}
+                    </div>
+                {% elif dqa_type == "county" %}
+                    <div class="col-md-4 mt-2">
+                        {{ county_form.county |as_crispy_field }}
+                    </div>
+                {% elif dqa_type == "hub" %}
+                    <div class="col-md-4 mt-2">
+                        {{ hub_form.hub |as_crispy_field }}
+                    </div>
+                {% elif dqa_type == "program" %}
+                    <div class="col-md-4 mt-2">
+                        {{ program_form.program |as_crispy_field }}
+                    </div>
+                {% elif dqa_type == "facility" %}
+                    <div id="facility" class="col-md-4 mt-2">
+                        {{ facility_form.name|as_crispy_field }}
+                    </div>
+                {% endif %}
+                {#                <div class="col-md-2 mt-2 pt-3">#}
+                {#                    <input class="btn btn-success mt-1" type="submit" value="Submit">#}
+                {#                </div>#}
+            </form>
+            <script>
+                $(document).ready(function () {
+                    $('#id_name').on('change', function () {
+                        $('#dqa-form').submit();
+                    });
+                });
+            </script>
+
+            {% if not supply_chain_target_100.empty %}
+                <hr>
+                <h6 class=" fw-bold text-primary text-center">Supply chain KPIs with a target of 100% </h6>
+                <hr>
+                <!--SUPPLY CHAIN PERFORMANCE KEY-->
+                <div class="col mt-3">
+                    <table class="table table-striped table-hover" style="font-size: x-small;">
+                        <thead class="thead-dark text-center">
+                        <tr>
+                            <th colspan="2">COLOUR CODE KEY</th>
+                        </tr>
+                        <tr>
+                            <th>Color code</th>
+                            <th>Range</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td class="text-center text-black"
+                                style="background-color: green; border: 1px solid black;">
+                                <strong>Green <span class="text-info"> (Meets standard)</span></strong>
+                            </td>
+                            <td class="text-primary text-center">
+                                <strong> >= 90 %</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-center text-black"
+                                style="background-color: yellow; border: 1px solid black;">
+                                <strong>Yellow <span class="text-info"> (Needs improvement)</span></strong>
+                            </td>
+                            <td class="text-primary text-center">
+                                <strong> >= 80 % and < 90 %</strong>
+                            </td>
+                        <tr>
+                            <td class="text-center text-black"
+                                style="background-color: red; border: 1px solid black;">
+                                <strong>Red <span
+                                        class="text-info"> (Needs urgent remediation)</span></strong>
+                            </td>
+                            <td class="text-primary text-center">
+                                <strong> < 80%</strong>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!--SUPPLY CHAIN KPIs WITH A TARGET OF 100-->
+                <table class="table table-striped table-hover">
+                    <thead class="thead-dark">
+                    <th scope="col"></th>
+                    {% for col in supply_chain_target_100.columns %}
+                        {% if mean_score in col %}
+                            {% if facility_mean >= 90 %}
+                                <th class="text-center" scope="col"
+                                    style="background-color: green; border: 3px solid black">{{ col }}</th>
+                            {% elif facility_mean < 90  and facility_mean >= 80 %}
+                                <th class="text-center text-primary" scope="col"
+                                    style="background-color: yellow; border: 3px solid black">{{ col }}</th>
+                            {% elif facility_mean < 80 %}
+                                <th class="text-center" scope="col"
+                                    style="background-color: red; border: 3px solid black">{{ col }}</th>
+                            {% endif %}
+                        {% else %}
+                            <th class="text-center" scope="col">{{ col }}</th>
+                        {% endif %}
+                    {% endfor %}
+                    </thead>
+                    <tbody>
+                    {% for index, row in supply_chain_target_100.iterrows %}
+                        <tr>
+                            <th scope="row">{{ index }}</th>
+                            {% for cell in row %}
+                                <!--Format last column (Level mean score) -->
+                                {% if forloop.last %}
+                                    {% if cell >= 90  and cell not in sort_focus_areas %}
+                                        <td class="text-center fw-bold text-light"
+                                            style="background-color: green">
+                                            {{ cell }} %
+                                        </td>
+                                    {% elif cell < 90  and cell >= 80 and cell not in sort_focus_areas %}
+                                        <td class="text-center fw-bold text-primary"
+                                            style="background-color: yellow">
+                                            {{ cell }} %
+                                        </td>
+                                    {% elif cell < 80 and cell not in sort_focus_areas %}
+                                        <td class="text-center fw-bold text-light"
+                                            style="background-color: red">
+                                            {{ cell }} %
+                                        </td>
+                                    {% endif %}
+                                    <!-- Format first and second columns -->
+                                {% elif forloop.first or forloop.counter == 2 %}
+                                    <td class="text-center fw-bold">
+                                        {{ cell }}
+                                    </td>
+                                    <!--Format other columns in between -->
+                                {% else %}
+                                    <!--Remove background color format to the last two in table -->
+                                    {% if forloop.parentloop.revcounter <= 2 %}
+                                        {% if cell == 0  and cell not in sort_focus_areas %}
+                                            <td class="text-center text-light"
+                                                style="background-color: green">
+                                                {{ cell }}
+                                            </td>
+                                        {% elif cell > 0 and cell < 9999.9 and cell not in sort_focus_areas %}
+                                            <td class="text-center text-light"
+                                                style="background-color: red">
+                                                {{ cell }}
+                                            </td>
+                                        {% elif cell < 0 and cell not in sort_focus_areas %}
+                                            <td class="text-center text-light"
+                                                style="background-color: red">
+                                                {{ cell }}
+                                            </td>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if cell == 100  and cell not in sort_focus_areas %}
+                                            <td class="text-center text-light"
+                                                style="background-color: green">
+                                                {{ cell }}
+                                            </td>
+                                        {% elif cell < 100 and cell not in sort_focus_areas %}
+                                            <td class="text-center text-light"
+                                                style="background-color: red">
+                                                {{ cell }}
+                                            </td>
+                                        {% elif cell > 100 and cell not in sort_focus_areas %}
+                                            <td class="text-center text-light"
+                                                style="background-color: grey">
+                                                {{ cell }}
+                                            </td>
+                                        {% else %}
+                                            <td class="text-center text-light">
+                                                {{ cell }}
+                                            </td>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+
+            {#            {% if viz %}#}
+            {#                <hr>#}
+            {#                <h6 class="text-primary text-center">{{ quarter_year }} Overall DQA Activities</h6>#}
+            {#                <hr>#}
+            {#                <div class="col-md-12 d-flex">#}
+            {#                    <div class="col-md-4">#}
+            {#                        {{ county_viz|safe }}#}
+            {#                    </div>#}
+            {#                    <div class="col-md-8">#}
+            {#                        {{ hub_viz|safe }}#}
+            {#                    </div>#}
+            {#                </div>#}
+            {#                <div class="col mt-3">#}
+            {#                    {{ sub_county_viz|safe }}#}
+            {#                </div>#}
+            {#                <div class="col mt-3">#}
+            {#                    {{ viz|safe }}#}
+            {#                </div>#}
+            {#            {% endif %}#}
+            {#            {% if charts %}#}
+            {#                <hr>#}
+            {#                <h6 class="text-primary text-center">System Assessment</h6>#}
+            {#                <hr>#}
+            {#                <div class="col mt-3">#}
+            {#                    <table class="table table-striped table-hover" style="font-size: x-small;">#}
+            {#                        <thead class="thead-dark text-center">#}
+            {#                        <tr>#}
+            {#                            <th colspan="2">COLOUR CODE KEY</th>#}
+            {#                        </tr>#}
+            {#                        <tr>#}
+            {#                            <th>Color code</th>#}
+            {#                            <th>Range</th>#}
+            {#                        </tr>#}
+            {#                        </thead>#}
+            {#                        <tbody>#}
+            {##}
+            {#                        <tr>#}
+            {#                            <td class="text-center text-black"#}
+            {#                                style="background-color: green; border: 1px solid black;">#}
+            {#                                <strong>Green <span class="text-info"> (Meets standard)</span></strong>#}
+            {#                            </td>#}
+            {#                            <td class="text-primary text-center">#}
+            {#                                <strong> >= 2.5</strong>#}
+            {#                            </td>#}
+            {#                        </tr>#}
+            {#                        <tr>#}
+            {#                            <td class="text-center text-black"#}
+            {#                                style="background-color: yellow; border: 1px solid black;">#}
+            {#                                <strong>Yellow <span class="text-info"> (Needs improvement)</span></strong>#}
+            {#                            </td>#}
+            {#                            <td class="text-primary text-center">#}
+            {#                                <strong> >= 1.5 and < 2.5</strong>#}
+            {#                            </td>#}
+            {##}
+            {#                        <tr>#}
+            {#                            <td class="text-center text-black" style="background-color: red; border: 1px solid black;">#}
+            {#                                <strong>Red <span class="text-info"> (Needs urgent remediation)</span></strong>#}
+            {#                            </td>#}
+            {#                            <td class="text-primary text-center">#}
+            {#                                <strong> < 1.5</strong>#}
+            {#                            </td>#}
+            {#                        </tr>#}
+            {#                        </tr>#}
+            {#                        </tbody>#}
+            {#                    </table>#}
+            {#                    {{ system_assessment_viz|safe }}#}
+            {#                </div>#}
+            {#                {% for chart in charts %}#}
+            {#                    <div class="col mt-3">#}
+            {#                        {{ chart|safe }}#}
+            {#                    </div>#}
+            {##}
+            {#                {% endfor %}#}
+            {#                <div>#}
+            {#                    {{ all_dfs_viz|safe }}#}
+            {#                </div>#}
+            {##}
+            {#                {% if not yellow.empty %}#}
+            {#                    <div>#}
+            {#                        <a class="btn btn-warning mt-3" data-bs-toggle="collapse" href="#collapseyellowscores"#}
+            {#                           role="button"#}
+            {#                           aria-expanded="false" aria-controls="collapseyellowscores">#}
+            {#                            Details of the yellow scores#}
+            {#                            <span class="badge bg-secondary" data-bs-toggle="tooltip"#}
+            {#                                  title="Number of YELLOW scores. Click to view">{{ yellow|length }}</span>#}
+            {#                        </a>#}
+            {#                    </div>#}
+            {#                    <div class="collapse bg-light mt-2" id="collapseyellowscores">#}
+            {#                        <div>#}
+            {#                            {{ yellow_viz_comp|safe }}#}
+            {#                            {{ yellow_viz_quest|safe }}#}
+            {#                        </div>#}
+            {#                        <div>#}
+            {#                            <a class="btn btn-info mt-3" data-bs-toggle="collapse" href="#collapseyellowscoreslinelist"#}
+            {#                               role="button"#}
+            {#                               aria-expanded="false" aria-controls="collapseyellowscoreslinelist"#}
+            {#                               style="font-size: xx-small">#}
+            {#                                Linelist of yellow scores#}
+            {#                            </a>#}
+            {#                        </div>#}
+            {#                        <div class="collapse bg-light mt-2" id="collapseyellowscoreslinelist">#}
+            {#                            <div class="mt-3">#}
+            {#                                {% for keys, df in non_performance_df.items %}#}
+            {#                                    {% if keys == "yellow" %}#}
+            {#                                        <table class="table table-striped table-hover">#}
+            {#                                            <thead class="thead-dark">#}
+            {#                                            <th scope="col"></th>#}
+            {#                                            {% for col in df.columns %}#}
+            {#                                                <th scope="col">{{ col }}</th>#}
+            {#                                            {% endfor %}#}
+            {#                                            </thead>#}
+            {#                                            <tbody>#}
+            {#                                            </tr>#}
+            {#                                            {% for index, row in df.iterrows %}#}
+            {#                                                <tr>#}
+            {#                                                    <th scope="row">{{ index|add:"1" }}</th>#}
+            {#                                                    {% for cell in row %}#}
+            {#                                                        {% if cell == 2 %}#}
+            {#                                                            <td class="align-middle text-center"#}
+            {#                                                                style="background-color: {% if cell == 2 %}yellow{% else %}{% endif %}">#}
+            {#                                                                {% else %}#}
+            {#                                                            <td class="align-middle text-left">#}
+            {#                                                        {% endif %}#}
+            {#                                                    {{ cell }}#}
+            {#                                                    </td>#}
+            {#                                                    {% endfor %}#}
+            {#                                                </tr>#}
+            {#                                            {% endfor %}#}
+            {#                                            </tbody>#}
+            {#                                        </table>#}
+            {#                                    {% endif %}#}
+            {#                                {% endfor %}#}
+            {#                            </div>#}
+            {#                        </div>#}
+            {#                    </div>#}
+            {#                {% endif %}#}
+            {#                {% if not red.empty %}#}
+            {##}
+            {#                    <div>#}
+            {#                        <a class="btn btn-danger mt-3" data-bs-toggle="collapse" href="#collapseredscores" role="button"#}
+            {#                           aria-expanded="false" aria-controls="collapseredscores">#}
+            {#                            Details of the red scores <span class="badge bg-secondary" data-bs-toggle="tooltip"#}
+            {#                                                            title="Number of RED scores. Click to view">{{ red|length }} </span>#}
+            {#                        </a>#}
+            {#                    </div>#}
+            {#                    <div class="collapse bg-light mt-2" id="collapseredscores">#}
+            {#                        <div class="col-md-12">#}
+            {##}
+            {#                            {{ red_viz_comp|safe }}#}
+            {#                            {{ red_viz_quest|safe }}#}
+            {##}
+            {#                        </div>#}
+            {#                        <div>#}
+            {#                            <a class="btn btn-info mt-3" data-bs-toggle="collapse" href="#collapseredscoreslinelist"#}
+            {#                               role="button"#}
+            {#                               aria-expanded="false" aria-controls="collapseredscoreslinelist"#}
+            {#                               style="font-size: xx-small">#}
+            {#                                Linelist of red scores#}
+            {##}
+            {#                            </a>#}
+            {#                        </div>#}
+            {#                        <div class="collapse bg-light mt-2" id="collapseredscoreslinelist">#}
+            {#                            <div class="mt-3">#}
+            {#                                {% for keys, df in non_performance_df.items %}#}
+            {#                                    {% if keys == "red" %}#}
+            {#                                        <table class="table table-striped table-hover">#}
+            {#                                            <thead class="thead-dark">#}
+            {#                                            <th scope="col"></th>#}
+            {#                                            {% for col in df.columns %}#}
+            {#                                                <th scope="col"> {{ col }} </th>#}
+            {#                                            {% endfor %}#}
+            {#                                            </thead>#}
+            {#                                            <tbody>#}
+            {#                                            </tr>#}
+            {#                                            {% for index, row in df.iterrows %}#}
+            {#                                                <tr>#}
+            {#                                                    <th scope="row">{{ index|add:"1" }}</th>#}
+            {#                                                    {% for cell in row %}#}
+            {#                                                        {% if cell == 1 %}#}
+            {#                                                            <td class="align-middle text-center"#}
+            {#                                                                style="background-color: {% if cell == 1 %}red{% else %}{% endif %}">#}
+            {#                                                                {% else %}#}
+            {#                                                            <td class="align-middle text-left">#}
+            {#                                                        {% endif %}#}
+            {#                                                    {{ cell }}#}
+            {#                                                    </td>#}
+            {#                                                    {% endfor %}#}
+            {#                                                </tr>#}
+            {#                                            {% endfor %}#}
+            {#                                            </tbody>#}
+            {#                                        </table>#}
+            {#                                    {% endif %}#}
+            {#                                {% endfor %}#}
+            {#                            </div>#}
+            {#                        </div>#}
+            {#                    </div>#}
+            {#                {% endif %}#}
+            {#                {% if not na_df.empty %}#}
+            {#                    <div>#}
+            {#                        <a class="btn btn-secondary mt-3 mb-3" data-bs-toggle="collapse" href="#collapse_na_scores"#}
+            {#                           role="button"#}
+            {#                           aria-expanded="false" aria-controls="collapse_na_scores">#}
+            {#                            Details of the not applicable scores <span class="badge bg-primary"#}
+            {#                                                                       data-bs-toggle="tooltip"#}
+            {#                                                                       title="Number of not applicable scores. Click to view"> {{ na_df|length }} </span>#}
+            {#                        </a>#}
+            {#                    </div>#}
+            {#                    <div class="collapse bg-light mt-2" id="collapse_na_scores">#}
+            {#                        <div>#}
+            {#                            {{ na_viz_comp|safe }}#}
+            {#                            {{ na_viz_quest|safe }}#}
+            {#                        </div>#}
+            {#                        <div>#}
+            {#                            <a class="btn btn-info mt-3 justify-content-end" data-bs-toggle="collapse"#}
+            {#                               href="#collapse_na_scoreslist"#}
+            {#                               role="button"#}
+            {#                               aria-expanded="false" aria-controls="collapse_na_scoreslist"#}
+            {#                               style="font-size: xx-small">#}
+            {#                                Linelist of not applicable scores#}
+            {#                            </a>#}
+            {#                        </div>#}
+            {#                        <div class="collapse bg-light mt-2" id="collapse_na_scoreslist">#}
+            {#                            <div class="mt-3">#}
+            {#                                {% for keys, df in non_performance_df.items %}#}
+            {#                                    {% if keys == "na_df" %}#}
+            {#                                        <table class="table table-striped table-hover">#}
+            {#                                            <thead class="thead-dark">#}
+            {#                                            <th scope="col"></th>#}
+            {#                                            {% for col in df.columns %}#}
+            {#                                                <th scope="col"> {{ col }} </th>#}
+            {#                                            {% endfor %}#}
+            {#                                            </thead>#}
+            {#                                            <tbody>#}
+            {#                                            </tr>#}
+            {#                                            {% for index, row in df.iterrows %}#}
+            {#                                                <tr>#}
+            {#                                                    <th scope="row">{{ index|add:"1" }}</th>#}
+            {#                                                    {% for cell in row %}#}
+            {#                                                        {% if cell == 0 %}#}
+            {#                                                            <td class="align-middle text-center"#}
+            {#                                                                style="background-color: {% if cell == 0 %}grey{% else %}{% endif %}">#}
+            {#                                                                {% else %}#}
+            {#                                                            <td class="align-middle text-left">#}
+            {#                                                        {% endif %}#}
+            {#                                                    {{ cell }}#}
+            {#                                                    </td>#}
+            {#                                                    {% endfor %}#}
+            {#                                                </tr>#}
+            {#                                            {% endfor %}#}
+            {#                                            </tbody>#}
+            {#                                        </table>#}
+            {#                                    {% endif %}#}
+            {#                                {% endfor %}#}
+            {#                            </div>#}
+            {#                        </div>#}
+            {##}
+            {#                    </div>#}
+            {#                {% endif %}#}
+            {#            {% endif %}#}
+            {##}
+            {#            {% if dicts %}#}
+            {#                <hr>#}
+            {#                <h6 class="text-primary text-center">Data Verification</h6>#}
+            {#                <hr>#}
+            {#                {% if data_verification_viz %}#}
+            {##}
+            {##}
+            {#                    <div class="col mt-3">#}
+            {#                        <table class="table table-striped table-hover" style="font-size: x-small;">#}
+            {#                            <thead class="thead-dark text-center">#}
+            {#                            <tr>#}
+            {#                                <th colspan="2">COLOUR CODE KEY</th>#}
+            {#                            </tr>#}
+            {#                            <tr>#}
+            {#                                <th>Color code</th>#}
+            {#                                <th>Absolute difference proportion <span#}
+            {#                                        style="font-size: xx-small">(source: SIMS 4.1)</span></th>#}
+            {#                            </tr>#}
+            {#                            </thead>#}
+            {#                            <tbody>#}
+            {##}
+            {#                            <tr>#}
+            {#                                <td class="text-center text-black"#}
+            {#                                    style="background-color: green; border: 1px solid black;">#}
+            {#                                    <strong>Green <span class="text-info"> (Meets standard)</span></strong>#}
+            {#                                </td>#}
+            {#                                <td class="text-primary text-center">#}
+            {#                                    <strong> <= 5% </strong>#}
+            {#                                </td>#}
+            {#                            </tr>#}
+            {#                            <tr>#}
+            {#                                <td class="text-center text-black"#}
+            {#                                    style="background-color: yellow; border: 1px solid black;">#}
+            {#                                    <strong>Yellow <span class="text-info"> (Needs improvement)</span></strong>#}
+            {#                                </td>#}
+            {#                                <td class="text-primary text-center">#}
+            {#                                    <strong> > 5 % and <= 10 % </strong>#}
+            {#                                </td>#}
+            {##}
+            {#                            <tr>#}
+            {#                                <td class="text-center text-black"#}
+            {#                                    style="background-color: red; border: 1px solid black;">#}
+            {#                                    <strong>Red <span class="text-info"> (Needs urgent remediation)</span></strong>#}
+            {#                                </td>#}
+            {#                                <td class="text-primary text-center">#}
+            {#                                    <strong> > 10 % </strong>#}
+            {#                                </td>#}
+            {#                            </tr>#}
+            {#                            </tr>#}
+            {#                            </tbody>#}
+            {#                        </table>#}
+            {#                    </div>#}
+            {#                    <div>#}
+            {#                        {{ data_verification_viz|safe }}#}
+            {#                    </div>#}
+            {#                {% endif %}#}
+            {#                <div class="row">#}
+            {#                    {% if dicts %}#}
+            {#                        <p class="text-center text-primary">#}
+            {#                            The DQA summary charts below are ordered from the indicators with the greatest discrepancies#}
+            {#                            to the least.#}
+            {#                        </p>#}
+            {#                        {% for indicator,fig in dicts.items %}#}
+            {#                            <div class="col-md-4 mt-3">#}
+            {#                                <div class="card">#}
+            {#                                    <div class="col">#}
+            {#                                        <div class="text text-center">#}
+            {#                                            {{ indicator }}#}
+            {#                                        </div>#}
+            {#                                        <div class="row">#}
+            {#                                            <div class="chart-container"> {{ fig|safe }}</div>#}
+            {#                                        </div>#}
+            {#                                    </div>#}
+            {#                                </div>#}
+            {#                            </div>#}
+            {#                        {% endfor %}#}
+            {#                    {% endif %}#}
+            {#                </div>#}
+            {#            {% endif %}#}
+            {#            {% if audit_team %}#}
+            {#                <hr>#}
+            {#                <h6 class="text-primary text-center"> Audit Team </h6>#}
+            {#                <hr>#}
+            {#                <div>#}
+            {#                    {{ audit_viz|safe }}#}
+            {#                </div>#}
+            {#                {% if request.user.is_superuser %}#}
+            {#                    <div>#}
+            {#                        <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse" href="#collapseauditteam"#}
+            {#                           role="button" aria-expanded="false" aria-controls="collapseauditteam">#}
+            {#                            Distribution of audit team#}
+            {#                        </a>#}
+            {#                    </div>#}
+            {#                    <div class="collapse bg-light mt-2" id="collapseauditteam">#}
+            {#                        <div>#}
+            {#                            <table class="table table-striped table-hover">#}
+            {#                                <thead class="thead-dark">#}
+            {#                                <th scope="col"></th>#}
+            {#                                {% for col in audit_team_df.columns %}#}
+            {#                                    <th scope="col">{{ col }}</th>#}
+            {#                                {% endfor %}#}
+            {#                                </thead>#}
+            {#                                <tbody>#}
+            {#                                </tr>#}
+            {#                                {% for index, row in audit_team_df.iterrows %}#}
+            {#                                    <tr>#}
+            {#                                        <th scope="row">{{ index|add:"1" }}</th>#}
+            {#                                        {% for cell in row %}#}
+            {#                                            <td>#}
+            {#                                                {{ cell }}#}
+            {#                                            </td>#}
+            {#                                        {% endfor %}#}
+            {#                                    </tr>#}
+            {#                                {% endfor %}#}
+            {#                                </tbody>#}
+            {#                            </table>#}
+            {#                        </div>#}
+            {#                    </div>#}
+            {#                {% endif %}#}
+            {#            {% endif %}#}
+            {#            {% if dqa_workplan %}#}
+            {#                <hr>#}
+            {#                <h6 class="text-primary text-center">DQA work-plan</h6>#}
+            {#                <hr>#}
+            {#                <div>#}
+            {#                    {% if work_plan_facilities_viz %}#}
+            {#                        {{ work_plan_facilities_viz|safe }}#}
+            {#                        {{ work_plan_areas_reviewed_viz|safe }}#}
+            {#                        <div>#}
+            {#                            <div>#}
+            {#                                <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse" href="#chart-abstraction"#}
+            {#                                   role="button" aria-expanded="false" aria-controls="chart-abstraction">#}
+            {#                                    CHART ABSTRACTION#}
+            {#                                </a>#}
+            {#                            </div>#}
+            {#                            <div class="collapse bg-light mt-2" id="chart-abstraction">#}
+            {#                                <hr>#}
+            {#                                <div>#}
+            {#                                    {% with chart=facility_charts.CHART_ABSTRACTION %}#}
+            {#                                        {% if chart is not none %}#}
+            {#                                            {{ chart|safe }}#}
+            {#                                        {% endif %}#}
+            {#                                    {% endwith %}#}
+            {#                                    <table class="table table-striped table-hover">#}
+            {#                                        <thead class="thead-dark">#}
+            {#                                        <th scope="col"></th>#}
+            {#                                        <th scope="col">Facility</th>#}
+            {#                                        <th scope="col"> Gaps identified</th>#}
+            {#                                        <th scope="col"> Strengths Identified</th>#}
+            {#                                        <th scope="col"> Individuals Conducting DQA</th>#}
+            {#                                        <th scope="col"> Responsible person(s)</th>#}
+            {#                                        <th scope="col"> Recommendation</th>#}
+            {#                                        <th scope="col"> Comments</th>#}
+            {#                                        </thead>#}
+            {#                                        <tbody>#}
+            {#                                        {% for action_plan in dqa_workplan %}#}
+            {#                                            {% if action_plan.program_areas_reviewed == "CHART ABSTRACTION" %}#}
+            {#                                                <tr>#}
+            {#                                                    <th scope="row">{{ forloop.counter }}</th>#}
+            {#                                                    <th scope="row">{{ action_plan.facility_name.name }}#}
+            {#                                                    </th>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.gaps_identified }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Start date: {{ action_plan.dqa_date }}</span>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-info x-small">Due date: {{ action_plan.due_complete_by }}</span>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Program areas reviewed: {{ action_plan.program_areas_reviewed }}</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.strengths_identified }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Timeframe: {{ action_plan.timeframe|abs|add:"0" }} days</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.individuals_conducting_dqa }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-info">Percent completed: {{ action_plan.percent_completed }}%</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.individuals_responsible }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Last updated on: {{ action_plan.updated_at|date:"D j M Y H:i" }}</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.recommendation }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        {% if action_plan.progress >= 0 and action_plan.percent_completed != 100 %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-info">Remaining time: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                                        {% elif action_plan.progress < 0 and action_plan.percent_completed != 100 %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-danger">Overdue by: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                                        {% else %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-success">Achieved: {{ action_plan.progress|abs }} days ago</span>#}
+            {##}
+            {#                                                        {% endif %}#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.comments }}#}
+            {#                                                    </td>#}
+            {#                                                </tr>#}
+            {#                                            {% endif %}#}
+            {#                                        {% endfor %}#}
+            {#                                        </tbody>#}
+            {#                                    </table>#}
+            {#                                </div>#}
+            {#                                <hr>#}
+            {#                            </div>#}
+            {#                            <div>#}
+            {#                                <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse"#}
+            {#                                   href="#data-management-system"#}
+            {#                                   role="button" aria-expanded="false" aria-controls="data-management-system">#}
+            {#                                    Data Management Systems#}
+            {#                                </a>#}
+            {#                            </div>#}
+            {#                            <div class="collapse bg-light mt-2" id="data-management-system">#}
+            {#                                <hr>#}
+            {#                                <div>#}
+            {#                                    {% with chart=facility_charts.Data_Management_Systems %}#}
+            {#                                        {% if chart is not none %}#}
+            {#                                            {{ chart|safe }}#}
+            {#                                        {% endif %}#}
+            {#                                    {% endwith %}#}
+            {#                                    <table class="table table-striped table-hover">#}
+            {#                                        <thead class="thead-dark">#}
+            {#                                        <th scope="col"></th>#}
+            {#                                        <th scope="col">Facility</th>#}
+            {#                                        <th scope="col">Gaps identified</th>#}
+            {#                                        <th scope="col">Strengths Identified</th>#}
+            {#                                        <th scope="col">Individuals Conducting DQA</th>#}
+            {#                                        <th scope="col">Responsible person(s)</th>#}
+            {#                                        <th scope="col">Recommendation</th>#}
+            {#                                        <th scope="col">Comments</th>#}
+            {#                                        </thead>#}
+            {#                                        <tbody>#}
+            {#                                        {% for action_plan in dqa_workplan %}#}
+            {#                                            {% if action_plan.program_areas_reviewed == "Data Management Systems" %}#}
+            {#                                                <tr>#}
+            {#                                                    <th scope="row">{{ forloop.counter }}</th>#}
+            {#                                                    <th scope="row">{{ action_plan.facility_name.name }}</th>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.gaps_identified }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Start date: {{ action_plan.dqa_date }}</span>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-info x-small">Due date: {{ action_plan.due_complete_by }}</span>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Program areas reviewed: {{ action_plan.program_areas_reviewed }}</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.strengths_identified }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Timeframe: {{ action_plan.timeframe|abs|add:"0" }} days</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.individuals_conducting_dqa }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-info">Percent completed: {{ action_plan.percent_completed }}%</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.individuals_responsible }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Last updated on: {{ action_plan.updated_at|date:"D j M Y H:i" }}</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.recommendation }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        {% if action_plan.progress >= 0 and action_plan.percent_completed != 100 %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-info">Remaining time: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                                        {% elif action_plan.progress < 0 and action_plan.percent_completed != 100 %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-danger">Overdue by: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                                        {% else %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-success">Achieved: {{ action_plan.progress|abs }} days ago</span>#}
+            {##}
+            {#                                                        {% endif %}#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.comments }}#}
+            {#                                                    </td>#}
+            {#                                                </tr>#}
+            {#                                            {% endif %}#}
+            {#                                        {% endfor %}#}
+            {#                                        </tbody>#}
+            {#                                    </table>#}
+            {#                                </div>#}
+            {#                                <hr>#}
+            {#                            </div>#}
+            {#                            <div>#}
+            {#                                <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse"#}
+            {#                                   href="#hts-prevention-pmtct"#}
+            {#                                   role="button" aria-expanded="false" aria-controls="hts-prevention-pmtct">#}
+            {#                                    HTS/PREVENTION/PMTCT#}
+            {#                                </a>#}
+            {#                            </div>#}
+            {#                            <div class="collapse bg-light mt-2" id="hts-prevention-pmtct">#}
+            {#                                <hr>#}
+            {#                                <div>#}
+            {#                                    {% with chart=facility_charts.HTS_PREVENTION_PMTCT %}#}
+            {#                                        {% if chart is not none %}#}
+            {#                                            {{ chart|safe }}#}
+            {#                                        {% endif %}#}
+            {#                                    {% endwith %}#}
+            {##}
+            {#                                    <table class="table table-striped table-hover">#}
+            {#                                        <thead class="thead-dark">#}
+            {#                                        <th scope="col"></th>#}
+            {#                                        <th scope="col">Facility</th>#}
+            {#                                        <th scope="col">Gaps identified</th>#}
+            {#                                        <th scope="col">Strengths Identified</th>#}
+            {#                                        <th scope="col">Individuals Conducting DQA</th>#}
+            {#                                        <th scope="col">Responsible person(s)</th>#}
+            {#                                        <th scope="col">Recommendation</th>#}
+            {#                                        <th scope="col">Comments</th>#}
+            {#                                        </thead>#}
+            {#                                        <tbody>#}
+            {#                                        {% for action_plan in dqa_workplan %}#}
+            {#                                            {% if action_plan.program_areas_reviewed == "HTS/PREVENTION/PMTCT" %}#}
+            {#                                                <tr>#}
+            {#                                                    <th scope="row">{{ forloop.counter }}</th>#}
+            {#                                                    <th scope="row">{{ action_plan.facility_name.name }}</th>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.gaps_identified }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Start date: {{ action_plan.dqa_date }}</span>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-info x-small">Due date: {{ action_plan.due_complete_by }}</span>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Program areas reviewed: {{ action_plan.program_areas_reviewed }}</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.strengths_identified }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Timeframe: {{ action_plan.timeframe|abs|add:"0" }} days</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.individuals_conducting_dqa }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-info">Percent completed: {{ action_plan.percent_completed }}%</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.individuals_responsible }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Last updated on: {{ action_plan.updated_at|date:"D j M Y H:i" }}</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.recommendation }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        {% if action_plan.progress >= 0 and action_plan.percent_completed != 100 %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-info">Remaining time: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                                        {% elif action_plan.progress < 0 and action_plan.percent_completed != 100 %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-danger">Overdue by: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                                        {% else %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-success">Achieved: {{ action_plan.progress|abs }} days ago</span>#}
+            {##}
+            {#                                                        {% endif %}#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.comments }}#}
+            {#                                                    </td>#}
+            {#                                                </tr>#}
+            {#                                            {% endif %}#}
+            {#                                        {% endfor %}#}
+            {#                                        </tbody>#}
+            {#                                    </table>#}
+            {#                                </div>#}
+            {#                                <hr>#}
+            {#                            </div>#}
+            {##}
+            {#                            <div>#}
+            {#                                <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse" href="#me-systems"#}
+            {#                                   role="button" aria-expanded="false" aria-controls="me-systems">#}
+            {#                                    M&E SYSTEMS#}
+            {#                                </a>#}
+            {#                            </div>#}
+            {#                            <div class="collapse bg-light mt-2" id="me-systems">#}
+            {#                                <hr>#}
+            {#                                <div>#}
+            {#                                    {% with chart=facility_charts.M_E_SYSTEMS %}#}
+            {#                                        {% if chart is not none %}#}
+            {#                                            {{ chart|safe }}#}
+            {#                                        {% endif %}#}
+            {#                                    {% endwith %}#}
+            {#                                    <table class="table table-striped table-hover">#}
+            {#                                        <thead class="thead-dark">#}
+            {#                                        <th scope="col"></th>#}
+            {#                                        <th scope="col">Facility</th>#}
+            {#                                        <th scope="col">Gaps identified</th>#}
+            {#                                        <th scope="col">Strengths Identified</th>#}
+            {#                                        <th scope="col">Individuals Conducting DQA</th>#}
+            {#                                        <th scope="col">Responsible person(s)</th>#}
+            {#                                        <th scope="col">Recommendation</th>#}
+            {#                                        <th scope="col">Comments</th>#}
+            {#                                        </thead>#}
+            {#                                        <tbody>#}
+            {#                                        {% for action_plan in dqa_workplan %}#}
+            {#                                            {% if action_plan.program_areas_reviewed == "M&E SYSTEMS" %}#}
+            {#                                                <tr>#}
+            {#                                                    <th scope="row">{{ forloop.counter }}</th>#}
+            {#                                                    <th scope="row">{{ action_plan.facility_name.name }}</th>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.gaps_identified }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Start date: {{ action_plan.dqa_date }}</span>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-info x-small">Due date: {{ action_plan.due_complete_by }}</span>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Program areas reviewed: {{ action_plan.program_areas_reviewed }}</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.strengths_identified }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Timeframe: {{ action_plan.timeframe|abs|add:"0" }} days</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.individuals_conducting_dqa }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-info">Percent completed: {{ action_plan.percent_completed }}%</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.individuals_responsible }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        <span style="font-size: 8px"#}
+            {#                                                              class="badge alert-warning">Last updated on: {{ action_plan.updated_at|date:"D j M Y H:i" }}</span>#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.recommendation }}#}
+            {#                                                        <br>#}
+            {#                                                        <br>#}
+            {#                                                        {% if action_plan.progress >= 0 and action_plan.percent_completed != 100 %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-info">Remaining time: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                                        {% elif action_plan.progress < 0 and action_plan.percent_completed != 100 %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-danger">Overdue by: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                                        {% else %}#}
+            {#                                                            <span style="font-size: 8px"#}
+            {#                                                                  class="badge alert-success">Achieved: {{ action_plan.progress|abs }} days ago</span>#}
+            {##}
+            {#                                                        {% endif %}#}
+            {#                                                    </td>#}
+            {#                                                    <td>#}
+            {#                                                        {{ action_plan.comments }}#}
+            {#                                                    </td>#}
+            {#                                                </tr>#}
+            {#                                            {% endif %}#}
+            {#                                        {% endfor %}#}
+            {#                                        </tbody>#}
+            {#                                    </table>#}
+            {#                                </div>#}
+            {#                                <hr>#}
+            {#                            </div>#}
+            {#                        </div>#}
+            {#                        {{ work_plan_actionpoint_status_viz|safe }}#}
+            {#                        {{ work_plan_timeframe_viz|safe }}#}
+            {#                        {{ work_plan_trend_viz|safe }}#}
+            {#                    {% endif %}#}
+            {##}
+            {#                </div>#}
+            {#                <div class="mt-2 " style="display:inline-block;">#}
+            {#                    <a href="{% url 'download_dqa_workplan' quarter_year selected_level %}" class="btn btn-info mb-4"#}
+            {#                       role="button">Download CSV</a>#}
+            {#                </div>#}
+            {#                <table class="table table-striped table-hover">#}
+            {#                    <thead class="thead-dark">#}
+            {#                    <th scope="col"></th>#}
+            {#                    <th scope="col">Facility</th>#}
+            {#                    <th scope="col">Gaps identified</th>#}
+            {#                    <th scope="col">Strengths Identified</th>#}
+            {#                    <th scope="col">Individuals Conducting DQA</th>#}
+            {#                    <th scope="col">Responsible person(s)</th>#}
+            {#                    <th scope="col">Recommendation</th>#}
+            {#                    <th scope="col">Comments</th>#}
+            {#                    </thead>#}
+            {#                    <tbody>#}
+            {#                    {% for action_plan in dqa_workplan %}#}
+            {#                        <tr>#}
+            {#                            <th scope="row">{{ forloop.counter }}</th>#}
+            {#                            <th scope="row">{{ action_plan.facility_name.name }}</th>#}
+            {#                            <td>#}
+            {#                                {{ action_plan.gaps_identified }}#}
+            {#                                <br>#}
+            {#                                <br>#}
+            {#                                <span style="font-size: 8px"#}
+            {#                                      class="badge alert-warning">Start date: {{ action_plan.dqa_date }}</span>#}
+            {#                                <span style="font-size: 8px"#}
+            {#                                      class="badge alert-info x-small">Due date: {{ action_plan.due_complete_by }}</span>#}
+            {#                                <br>#}
+            {#                                <span style="font-size: 8px"#}
+            {#                                      class="badge alert-warning">Program areas reviewed: {{ action_plan.program_areas_reviewed }}</span>#}
+            {#                            </td>#}
+            {#                            <td>#}
+            {#                                {{ action_plan.strengths_identified }}#}
+            {#                                <br>#}
+            {#                                <br>#}
+            {#                                <span style="font-size: 8px"#}
+            {#                                      class="badge alert-warning">Timeframe: {{ action_plan.timeframe|abs|add:"0" }} days</span>#}
+            {#                            </td>#}
+            {#                            <td>#}
+            {#                                {{ action_plan.individuals_conducting_dqa }}#}
+            {#                                <br>#}
+            {#                                <br>#}
+            {#                                <span style="font-size: 8px"#}
+            {#                                      class="badge alert-info">Percent completed: {{ action_plan.percent_completed }}%</span>#}
+            {#                            </td>#}
+            {#                            <td>#}
+            {#                                {{ action_plan.individuals_responsible }}#}
+            {#                                <br>#}
+            {#                                <br>#}
+            {#                                <span style="font-size: 8px"#}
+            {#                                      class="badge alert-warning">Last updated on: {{ action_plan.updated_at|date:"D j M Y H:i" }}</span>#}
+            {#                            </td>#}
+            {#                            <td>#}
+            {#                                {{ action_plan.recommendation }}#}
+            {#                                <br>#}
+            {#                                <br>#}
+            {#                                {% if action_plan.progress >= 0 and action_plan.percent_completed != 100 %}#}
+            {#                                    <span style="font-size: 8px"#}
+            {#                                          class="badge alert-info">Remaining time: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                {% elif action_plan.progress < 0 and action_plan.percent_completed != 100 %}#}
+            {#                                    <span style="font-size: 8px"#}
+            {#                                          class="badge alert-danger">Overdue by: {{ action_plan.progress|add:"0" }} days</span>#}
+            {#                                {% else %}#}
+            {#                                    <span style="font-size: 8px"#}
+            {#                                          class="badge alert-success">Achieved: {{ action_plan.progress|abs }} days ago</span>#}
+            {##}
+            {#                                {% endif %}#}
+            {#                            </td>#}
+            {#                            <td>#}
+            {#                                {{ action_plan.comments }}#}
+            {#                            </td>#}
+            {#                        </tr>#}
+            {#                    {% endfor %}#}
+            {#                    </tbody>#}
+            {#                </table>#}
+            {#                <!--Display the pagination links-->#}
+            {#                <div class="mt-3">#}
+            {#                    {% if action_plans.has_other_pages %}#}
+            {#                        <ul class="pagination justify-content-end">#}
+            {#                            {% if action_plans.has_previous %}#}
+            {#                                <li class="page-item"><a class="page-link"#}
+            {#                                                         href="?page={{ action_plans.previous_page_number }}"> Prev </a>#}
+            {#                                </li>#}
+            {#                            {% else %}#}
+            {#                                <li class="disabled"><span class="page-link">Prev</span></li>#}
+            {#                            {% endif %}#}
+            {#                            {% for i in action_plans.paginator.page_range %}#}
+            {#                                {% if action_plans.number == i %}#}
+            {#                                    <li class="page-item active"><span class="page-link">{{ i }} <span class="sr-only"> (current) </span></span>#}
+            {#                                    </li>#}
+            {#                                {% else %}#}
+            {#                                    <li class="page-item"><a class="page-link " href="?page={{ i }}">{{ i }}</a></li>#}
+            {#                                {% endif %}#}
+            {#                            {% endfor %}#}
+            {#                            {% if action_plans.has_next %}#}
+            {#                                <li class="page-item"><a class="page-link"#}
+            {#                                                         href="?page={{ action_plans.next_page_number }}"> Next </a>#}
+            {#                                </li>#}
+            {#                            {% else %}#}
+            {#                                <li class="disabled page-item"><span class="page-link">Next</span></li>#}
+            {#                            {% endif %}#}
+            {#                        </ul>#}
+            {#                    {% endif %}#}
+            {#                </div>#}
+            {#            {% endif %}#}
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                // Get the select elements for year, quarter and facility
+                const yearSelect = document.getElementById("year-select");
+                const quarterSelect = document.getElementById("quarter-select");
+                const facilitySelect = document.getElementById("id_name");
+                const form = document.getElementById("dqa-form");
+
+                // Function to load facilities based on year and quarter
+                async function loadFacilities(year, quarter) {
+                    try {
+                        // Fetch facilities from the server
+                        const response = await fetch(`/get_filtered_facilities/?year=${year}&quarter=${quarter}`);
+                        const data = await response.json();
+
+                        // Clear the facility select element and add options
+                        facilitySelect.innerHTML = "<option value=\"\">Select facility</option>";
+                        data.forEach((facility) => {
+                            const option = document.createElement("option");
+                            option.value = facility.id;
+                            option.text = facility.name;
+                            facilitySelect.add(option);
+                        });
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+
+                // Function to submit the form
+                const submitForm = () => {
+                    form.submit();
+                };
+
+                // Event listener for year select change
+                yearSelect.addEventListener("change", () => {
+                    const year = yearSelect.value;
+                    const quarter = quarterSelect.value;
+
+                    if (year && quarter) {
+                        loadFacilities(year, quarter);
+                    }
+                    submitForm();
+                });
+
+                // Event listener for quarter select change
+                quarterSelect.addEventListener("change", () => {
+                    const year = yearSelect.value;
+                    const quarter = quarterSelect.value;
+
+                    if (year && quarter) {
+                        loadFacilities(year, quarter);
+                    }
+                    submitForm();
+                });
+
+                // Event listener for facility select change
+                facilitySelect.addEventListener("change", submitForm);
+            });
+        </script>
+    </main>
+
+
+{% endblock %}

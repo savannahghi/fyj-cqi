@@ -1,3 +1,5 @@
+import datetime
+
 from django.forms import ModelForm, Textarea
 from django import forms
 
@@ -108,6 +110,7 @@ class UnitSuppliedForm(BaseReportForm):
     class Meta(BaseReportForm.Meta):
         model = UnitSupplied
 
+
 class BeginningBalanceForm(BaseReportForm):
     class Meta(BaseReportForm.Meta):
         model = BeginningBalance
@@ -177,6 +180,7 @@ class WorkPlanForm(BaseForm):
         #            'expired', 'expiry_tracking', 's11_form_availability', 's11_form_endorsed',
         #            'stock_management']
 
+
 class PharmacyAuditTeamForm(ModelForm):
     class Meta:
         model = PharmacyAuditTeam
@@ -184,3 +188,60 @@ class PharmacyAuditTeamForm(ModelForm):
         labels = {
             'name': 'Name (First and Last name)',
         }
+
+
+class FacilityForm(forms.Form):
+    name = forms.ModelChoiceField(
+        queryset=Facilities.objects.none(),  # Start with an empty queryset
+        empty_label="All Facilities",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+        required=False,
+        initial=None,
+    )
+
+    def __init__(self, *args, selected_year=None, selected_quarter=None, **kwargs):
+        initial = kwargs.get('initial', {})
+        super().__init__(*args, **kwargs)
+        self.fields['name'].initial = initial.get('name')
+
+        # Only filter the queryset if both selected_year and selected_quarter are provided
+        if selected_year and selected_quarter:
+            models_to_check = [
+                StockCards, UnitSupplied, BeginningBalance, PositiveAdjustments, UnitIssued,
+                NegativeAdjustment, ExpiredUnits, Expired, ExpiryTracking, S11FormAvailability,
+                S11FormEndorsed, StockManagement,
+            ]
+
+            # Get the IDs of facilities that have related records in the models_to_check
+            facility_ids = set()
+            for model in models_to_check:
+                facility_ids.update(
+                    model.objects.filter(
+                        quarter_year__quarter_year=f"{selected_quarter}-{selected_year[-2:]}"
+                    ).values_list('facility_name_id', flat=True)
+                )
+
+            # Update the queryset with the filtered facilities
+            self.fields['name'].queryset = Facilities.objects.filter(id__in=facility_ids)
+
+
+class YearSelectForm(forms.Form):
+    current_year = datetime.datetime.now().year
+    YEAR_CHOICES = [(str(x), str(x)) for x in range(2021, current_year + 1)]
+    year = forms.ChoiceField(
+        choices=YEAR_CHOICES,
+        label="FY",
+        widget=forms.Select(attrs={'id': 'year-select'})
+    )
+
+
+class QuarterSelectForm(forms.Form):
+    quarter = forms.ChoiceField(
+        choices=[
+            ('Qtr1', 'Qtr1'),
+            ('Qtr2', 'Qtr2'),
+            ('Qtr3', 'Qtr3'),
+            ('Qtr4', 'Qtr4'),
+        ],
+        widget=forms.Select(attrs={'id': 'quarter-select'})
+    )

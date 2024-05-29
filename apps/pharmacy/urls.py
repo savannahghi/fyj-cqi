@@ -1,6 +1,7 @@
 from django.urls import path
 
-from apps.pharmacy.views import add_pharmacy_records, add_inventory, dqa_dashboard, show_work_plan, \
+from apps.pharmacy.views import add_pharmacy_records, add_inventory, dqa_dashboard,\
+    show_work_plan, \
     choose_facilities_inventory, choose_facilities_pharmacy, show_inventory, update_inventory, show_commodity_records, \
     update_pharmacy_records, create_inventory_work_plans, create_commodity_work_plans, update_workplan, \
     add_audit_team_pharmacy, show_audit_team_pharmacy, update_audit_team_pharmacy
@@ -25,4 +26,7 @@ urlpatterns = [
     path('audit-team/', show_audit_team_pharmacy, name='show_audit_team_pharmacy'),
     path('update-audit-team/<uuid:pk>', update_audit_team_pharmacy, name="update_audit_team_pharmacy"),
     path('pharmacy-dqa-dashboard/<str:dqa_type>', dqa_dashboard, name='pharmacy_dqa_dashboard'),
+    # path('pharmacy-dqa-dashboard/', dqa_dashboard, name='pharmacy_dqa_dashboard'),
+
+    # path('get_filtered_facilities/', get_filtered_facilities, name='get_filtered_facilities'),
 ]

@@ -91,6 +91,15 @@
                     </div>
                 {% endif %}
             </form>
+            <h4 class="fw-bold text-primary text-center"> Summary </h4>
+            <hr>
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        {{ quarterly_trend_fig|safe }}
+                    </div>
+                </div>
+            </div>
             {% if not supply_chain_target_100.empty %}
                 <hr>
                 <h6 class=" fw-bold text-primary text-center">Supply chain KPIs with a target of 100% </h6>
@@ -237,124 +246,124 @@
                 </table>
             {% endif %}
         </div>
-{#        <script>#}
-{#            // When the document is ready#}
-{#            $(document).ready(function () {#}
-{#                // Listen for changes or clears to the facility select element#}
-{#                $('#id_name').on('input change', function () {#}
-{#                    if ($(this).val() === '') {#}
-{#                        $('#dqa-form').submit();#}
-{#                    } else {#}
-{#                        $('#dqa-form').submit();#}
-{#                    }#}
-{#                });#}
-{#            });#}
-{#            // When the DOM is fully loaded#}
-{#            document.addEventListener("DOMContentLoaded", () => {#}
-{#                // Get references to the select elements#}
-{#                const yearSelect = document.getElementById("year-select");#}
-{#                const quarterSelect = document.getElementById("quarter-select");#}
-{#                const facilitySelect = document.getElementById("id_name");#}
-{#                const form = document.getElementById("dqa-form");#}
-{##}
-{#                // Function to populate the facilities select element#}
-{#                const populateFacilities = () => {#}
-{#                    // Get the selected year and quarter#}
-{#                    const year = yearSelect.value;#}
-{#                    const quarter = quarterSelect.value;#}
-{##}
-{#                    // If year and quarter are selected#}
-{#                    if (year && quarter) {#}
-{#                        // Make an AJAX request to get filtered facilities#}
-{#                        fetch(`/get_filtered_facilities/?year=${year}&quarter=${quarter}`)#}
-{#                            .then((response) => response.json())#}
-{#                            .then((data) => {#}
-{#                                // Clear the facilities select element#}
-{#                                facilitySelect.innerHTML = "<option value=\"\">Select facility</option>";#}
-{#                                // Add options for each facility#}
-{#                                data.forEach((facility) => {#}
-{#                                    const option = document.createElement("option");#}
-{#                                    option.value = facility.id;#}
-{#                                    option.text = facility.name;#}
-{#                                    facilitySelect.add(option);#}
-{#                                });#}
-{#                            });#}
-{#                    }#}
-{#                };#}
-{##}
-{#                // Listen for changes to the year and quarter selects#}
-{#                yearSelect.addEventListener("change", populateFacilities);#}
-{#                quarterSelect.addEventListener("change", populateFacilities);#}
-{##}
-{#                // Listen for changes to the facility select#}
-{#                facilitySelect.addEventListener("change", (event) => {#}
-{#                    // Submit the form#}
-{#                    form.submit();#}
-{#                });#}
-{##}
-{#                // Listen for changes to the year and quarter selects (submit form)#}
-{#                yearSelect.addEventListener("change", (event) => {#}
-{#                    form.submit();#}
-{#                });#}
-{#                quarterSelect.addEventListener("change", (event) => {#}
-{#                    form.submit();#}
-{#                });#}
-{#            });#}
-{#        </script>#}
-<script>
-    // When the document is ready
-    $(document).ready(function () {
-        // Listen for changes or clears to the facility select element
-        $('#id_name').on('input change', function () {
-            if ($(this).val() === '') {
-                $('#dqa-form').submit();
-            } else {
-                $('#dqa-form').submit();
-            }
-        });
-    });
-    // When the DOM is fully loaded
-    document.addEventListener("DOMContentLoaded", () => {
-        // Get references to the select elements
-        const yearSelect = document.getElementById("year-select");
-        const quarterSelect = document.getElementById("quarter-select");
-        const facilitySelect = document.getElementById("id_name");
-        const form = document.getElementById("dqa-form");
+        {#        <script>#}
+        {#            // When the document is ready#}
+        {#            $(document).ready(function () {#}
+        {#                // Listen for changes or clears to the facility select element#}
+        {#                $('#id_name').on('input change', function () {#}
+        {#                    if ($(this).val() === '') {#}
+        {#                        $('#dqa-form').submit();#}
+        {#                    } else {#}
+        {#                        $('#dqa-form').submit();#}
+        {#                    }#}
+        {#                });#}
+        {#            });#}
+        {#            // When the DOM is fully loaded#}
+        {#            document.addEventListener("DOMContentLoaded", () => {#}
+        {#                // Get references to the select elements#}
+        {#                const yearSelect = document.getElementById("year-select");#}
+        {#                const quarterSelect = document.getElementById("quarter-select");#}
+        {#                const facilitySelect = document.getElementById("id_name");#}
+        {#                const form = document.getElementById("dqa-form");#}
+        {##}
+        {#                // Function to populate the facilities select element#}
+        {#                const populateFacilities = () => {#}
+        {#                    // Get the selected year and quarter#}
+        {#                    const year = yearSelect.value;#}
+        {#                    const quarter = quarterSelect.value;#}
+        {##}
+        {#                    // If year and quarter are selected#}
+        {#                    if (year && quarter) {#}
+        {#                        // Make an AJAX request to get filtered facilities#}
+        {#                        fetch(`/get_filtered_facilities/?year=${year}&quarter=${quarter}`)#}
+        {#                            .then((response) => response.json())#}
+        {#                            .then((data) => {#}
+        {#                                // Clear the facilities select element#}
+        {#                                facilitySelect.innerHTML = "<option value=\"\">Select facility</option>";#}
+        {#                                // Add options for each facility#}
+        {#                                data.forEach((facility) => {#}
+        {#                                    const option = document.createElement("option");#}
+        {#                                    option.value = facility.id;#}
+        {#                                    option.text = facility.name;#}
+        {#                                    facilitySelect.add(option);#}
+        {#                                });#}
+        {#                            });#}
+        {#                    }#}
+        {#                };#}
+        {##}
+        {#                // Listen for changes to the year and quarter selects#}
+        {#                yearSelect.addEventListener("change", populateFacilities);#}
+        {#                quarterSelect.addEventListener("change", populateFacilities);#}
+        {##}
+        {#                // Listen for changes to the facility select#}
+        {#                facilitySelect.addEventListener("change", (event) => {#}
+        {#                    // Submit the form#}
+        {#                    form.submit();#}
+        {#                });#}
+        {##}
+        {#                // Listen for changes to the year and quarter selects (submit form)#}
+        {#                yearSelect.addEventListener("change", (event) => {#}
+        {#                    form.submit();#}
+        {#                });#}
+        {#                quarterSelect.addEventListener("change", (event) => {#}
+        {#                    form.submit();#}
+        {#                });#}
+        {#            });#}
+        {#        </script>#}
+        <script>
+            // When the document is ready
+            $(document).ready(function () {
+                // Listen for changes or clears to the facility select element
+                $('#id_name').on('input change', function () {
+                    if ($(this).val() === '') {
+                        $('#dqa-form').submit();
+                    } else {
+                        $('#dqa-form').submit();
+                    }
+                });
+            });
+            // When the DOM is fully loaded
+            document.addEventListener("DOMContentLoaded", () => {
+                // Get references to the select elements
+                const yearSelect = document.getElementById("year-select");
+                const quarterSelect = document.getElementById("quarter-select");
+                const facilitySelect = document.getElementById("id_name");
+                const form = document.getElementById("dqa-form");
 
-        // Function to populate the facilities select element
-        const populate_Facilities = () => {
-            // Get the selected year and quarter
-            const year = yearSelect.value;
-            const quarter = quarterSelect.value;
+                // Function to populate the facilities select element
+                const populate_Facilities = () => {
+                    // Get the selected year and quarter
+                    const year = yearSelect.value;
+                    const quarter = quarterSelect.value;
 
-            // If year and quarter are selected
-            if (year && quarter) {
-                // Clear the facilities select element
-                facilitySelect.innerHTML = "<option value=\"\">Select facility</option>";
-                // Add options for each facility
-                // TO DO: populate facilities select element
-            }
-        };
+                    // If year and quarter are selected
+                    if (year && quarter) {
+                        // Clear the facilities select element
+                        facilitySelect.innerHTML = "<option value=\"\">Select facility</option>";
+                        // Add options for each facility
+                        // TO DO: populate facilities select element
+                    }
+                };
 
-        // Listen for changes to the year and quarter selects
-        yearSelect.addEventListener("change", populate_Facilities);
-        quarterSelect.addEventListener("change", populate_Facilities);
+                // Listen for changes to the year and quarter selects
+                yearSelect.addEventListener("change", populate_Facilities);
+                quarterSelect.addEventListener("change", populate_Facilities);
 
-        // Listen for changes to the facility select
-        facilitySelect.addEventListener("change", () => {
-            // Submit the form
-            form.submit();
-        });
+                // Listen for changes to the facility select
+                facilitySelect.addEventListener("change", () => {
+                    // Submit the form
+                    form.submit();
+                });
 
-        // Listen for changes to the year and quarter selects (submit form)
-        yearSelect.addEventListener("change", () => {
-            form.submit();
-        });
-        quarterSelect.addEventListener("change", () => {
-            form.submit();
-        });
-    });
-</script>
+                // Listen for changes to the year and quarter selects (submit form)
+                yearSelect.addEventListener("change", () => {
+                    form.submit();
+                });
+                quarterSelect.addEventListener("change", () => {
+                    form.submit();
+                });
+            });
+        </script>
 
     </main>
 

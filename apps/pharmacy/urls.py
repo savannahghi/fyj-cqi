@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 
 from apps.pharmacy.views import add_pharmacy_records, add_inventory, dqa_dashboard,\
     show_work_plan, \
@@ -30,3 +30,4 @@ urlpatterns = [
 
     # path('get_filtered_facilities/', get_filtered_facilities, name='get_filtered_facilities'),
 ]
+# urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]

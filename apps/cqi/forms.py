@@ -51,7 +51,7 @@ class QI_ProjectsForm(ModelForm):
                    ]
         labels = {
             'measurement_frequency': 'Monitoring frequency',
-            'process_analysis':'Attach Root cause image here'
+            'process_analysis': 'Attach Root cause image here'
         }
         widgets = {
             'problem_background': forms.Textarea(attrs={
@@ -495,7 +495,7 @@ class FacilitiesForm(ModelForm):
     class Meta:
         model = Facilities
         fields = "__all__"
-        labels= {'name': "Facility Name",'mfl_code':"MFL CODE"}
+        labels = {'name': "Facility Name", 'mfl_code': "MFL CODE"}
 
 
 class CountiesForm(ModelForm):
@@ -518,6 +518,7 @@ class Qi_team_membersForm(ModelForm):
         label="Team Member",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
     class Meta:
         model = Qi_team_members
         fields = "__all__"
@@ -558,29 +559,67 @@ class StakeholderForm(ModelForm):
 
 
 class MilestoneForm(ModelForm):
+    start_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="From",
+        # required=False
+    )
+    end_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="To",
+        # required=False
+    )
+
     class Meta:
         model = Milestone
         fields = "__all__"
         exclude = ['facility', 'qi_project', 'created_by', 'program', 'program_qi_project', 'subcounty_qi_project',
                    'county_qi_project', 'hub_qi_project']
+
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Major tasks or phases of the cqi'}),
-
-            'description': forms.Textarea(attrs={
-                'placeholder': 'A more detailed explanation of the tasks or activities that are included in the milestone',
-                'style': 'font-size: 14px;', }),
-
             'notes': forms.Textarea(attrs={
-                'placeholder': 'The purpose of the notes field is to provide a place to include any additional context or '
-                               'details that might be relevant to the milestone but that do not fit in the other fields of '
-                               'the model. For example, you might use the notes field to include details about any '
-                               'dependencies or risks associated with the milestone or to provide instructions or guidance '
-                               'for completing the tasks in the milestone.',
+                'placeholder': 'The purpose of the notes field is to provide a place to include any additional '
+                               'context or details that might be relevant to the milestone but that do not fit in the '
+                               'other fields of the model. For example, you might use the notes field to include '
+                               'details about any dependencies or risks associated with the milestone or to provide '
+                               'instructions or guidance for completing the tasks in the milestone.',
                 'style': 'font-size: 14px;', }),
         }
+        labels = {
+
+            'description': 'Describe Activity',
+        }
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the MilestoneForm, renaming the 'description' field to 'description_name' and updating its attributes.
+        This method is called when a new instance of the form is created. It modifies the fields dictionary
+        to rename 'description' to 'description_name', and updates the label and attributes of the renamed field.
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
+        self.fields['description_name'] = self.fields.pop('description')
+        self.fields['description_name'].label = 'Describe Activity'
+        self.fields['description_name'].widget.attrs.update({
+            'placeholder': 'A more detailed explanation of the tasks or activities that are included in the milestone',
+            'style': 'font-size: 14px;',
+        })
 
 
 class ActionPlanForm(ModelForm):
+    start_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Start Date",
+        # required=False
+    )
+    due_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Due Date",
+        # required=False
+    )
     # Define the form fields and their properties
     class Meta:
         model = ActionPlan  # specify the model that the form is based on
@@ -814,6 +853,7 @@ class ShowTriggerForm(ModelForm):
         label="Trigger",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
     class Meta:
         model = Trigger
         fields = "__all__"

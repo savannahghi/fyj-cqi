@@ -12,7 +12,7 @@ from apps.dqa.models import Period
 
 class Registers(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    register_name = models.CharField(max_length=250, unique=True,blank=True, null=True)
+    register_name = models.CharField(max_length=250, unique=True, blank=True, null=True)
 
     def __str__(self):
         return self.register_name
@@ -32,7 +32,7 @@ def validate_currently_in_use(value):
 
 class TableNames(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    model_name = models.CharField(max_length=25,blank=True, null=True)
+    model_name = models.CharField(max_length=25, blank=True, null=True)
 
 
 class BaseModel(models.Model):
@@ -172,11 +172,6 @@ class UnitSupplied(BaseReportModel):
 class BeginningBalance(BaseReportModel):
     class Meta:
         verbose_name_plural = 'Beginning Balance'
-
-
-# class UnitReceived(BaseReportModel):
-#     class Meta:
-#         verbose_name_plural = 'Unit Received'
 
 
 class PositiveAdjustments(BaseReportModel):

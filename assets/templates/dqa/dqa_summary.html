@@ -38,8 +38,11 @@
 
                </ul>
            {% endif %}
+           <div>
+                {{ quarterly_trend_fig|safe }}
+            </div>
 
-           <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+           <form class="row g-3" id="dqa-form" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
             {% csrf_token %}
         <p> Please choose quarter, year, facility and then submit </p>
 
@@ -329,4 +332,58 @@
            </div>
            </div>
     </main>
+    <script>
+        // When the document is ready
+        $(document).ready(function () {
+            // Listen for changes or clears to the facility select element
+            $('#id_name').on('input change', function () {
+                if ($(this).val() === '') {
+                    $('#dqa-form').submit();
+                } else {
+                    $('#dqa-form').submit();
+                }
+            });
+        });
+        // When the DOM is fully loaded
+        document.addEventListener("DOMContentLoaded", () => {
+            // Get references to the select elements
+            const yearSelect = document.getElementById("year-select");
+            const quarterSelect = document.getElementById("quarter-select");
+            const facilitySelect = document.getElementById("id_name");
+            const form = document.getElementById("dqa-form");
+
+            // Function to populate the facilities select element
+            const populate_Facilities = () => {
+                // Get the selected year and quarter
+                const year = yearSelect.value;
+                const quarter = quarterSelect.value;
+
+                // If year and quarter are selected
+                if (year && quarter) {
+                    // Clear the facilities select element
+                    facilitySelect.innerHTML = "<option value=\"\">Select facility</option>";
+                    // Add options for each facility
+                    // TO DO: populate facilities select element
+                }
+            };
+
+            // Listen for changes to the year and quarter selects
+            yearSelect.addEventListener("change", populate_Facilities);
+            quarterSelect.addEventListener("change", populate_Facilities);
+
+            // Listen for changes to the facility select
+            facilitySelect.addEventListener("change", () => {
+                // Submit the form
+                form.submit();
+            });
+
+            // Listen for changes to the year and quarter selects (submit form)
+            yearSelect.addEventListener("change", () => {
+                form.submit();
+            });
+            quarterSelect.addEventListener("change", () => {
+                form.submit();
+            });
+        });
+    </script>
 {% endblock %}

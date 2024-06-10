@@ -10,6 +10,8 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Paragraph, Table, TableStyle
 
+from apps.labpulse.views import line_chart_median_mean
+
 matplotlib.use('Agg')
 matplotlib.rcParams['agg.path.chunksize'] = 10000
 
@@ -19,7 +21,7 @@ from datetime import timezone, timedelta
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from django.db.models import Case, When, IntegerField, DateField, ExpressionWrapper, Value, CharField, Sum
+from django.db.models import Case, Count, Q, When, IntegerField, DateField, ExpressionWrapper, Value, CharField, Sum
 from django.forms import modelformset_factory
 from django.urls import reverse
 
@@ -44,13 +46,20 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
-from apps.dqa.form import DataVerificationForm, PeriodForm, QuarterSelectionForm, YearSelectionForm, \
+from apps.dqa.form import CareTreatmentForm, CqiForm, DataVerificationForm, GbvForm, HtsForm, PeriodForm, PharmacyForm, \
+    PrepForm, \
+    QuarterSelectionForm, TbForm, \
+    VmmcForm, \
+    YearSelectionForm, \
     FacilitySelectionForm, DQAWorkPlanForm, SystemAssessmentForm, DateSelectionForm, AuditTeamForm, \
     UpdateButtonSettingsForm, HubSelectionForm, SubcountySelectionForm, CountySelectionForm, ProgramSelectionForm
-from apps.dqa.models import DataVerification, Period, Indicators, FyjPerformance, DQAWorkPlan, SystemAssessment, \
-    AuditTeam, KhisPerformance, UpdateButtonSettings
+from apps.dqa.models import CareTreatment, Cqi, DataVerification, Gbv, Hts, Period, Indicators, FyjPerformance, \
+    DQAWorkPlan, \
+    Pharmacy, \
+    Prep, SystemAssessment, \
+    AuditTeam, KhisPerformance, TableNames, Tb, UpdateButtonSettings, Vmmc
 # from apps.cqi.views import bar_chart
-from apps.cqi.models import Facilities, Sub_counties
+from apps.cqi.models import Counties, Facilities, Sub_counties
 
 from datetime import datetime
 import pytz
@@ -355,7 +364,7 @@ def load_data(request):
                               'tst_pos_a', 'tst_pos_t', 'tx_new_p', 'tx_new_a', 'tx_new_t', 'tx_curr_p', 'tx_curr_a',
                               'tx_curr_t', 'pmtct_stat_d', 'pmtct_stat_n', 'pmtct_pos', 'pmtct_arv', 'pmtct_inf_arv',
                               'pmtct_eid', 'hei_pos', 'hei_pos art', 'prep_new', 'gbv_sexual', 'gbv emotional/phy',
-                              'kp_anc','newpos_anc', 'on haart _anc', 'new on haart_anc', 'pos_l&d', 'pos_pnc',
+                              'kp_anc', 'newpos_anc', 'on haart _anc', 'new on haart_anc', 'pos_l&d', 'pos_pnc',
                               'cxca', 'tb_stat_d', 'ipt', 'tb_prev_n', 'tx_ml', 'tx_rtt']
 
             df = df[columns_to_use]
@@ -1007,7 +1016,23 @@ def show_data_verification(request):
     selected_facility = None
     quarters = {}
     request.session['selected_year_'] = ""
+    selected_quarter = "Qtr1"
+    selected_year = "2021"
+    if form.is_valid():
+        selected_quarter = form.cleaned_data['quarter']
 
+    if year_form.is_valid():
+        selected_year = year_form.cleaned_data['year']
+
+    facility_form = FacilitySelectionForm(request.POST or None,
+                                          selected_year=selected_year,
+                                          selected_quarter=selected_quarter,
+                                          model_to_check=DataVerification)
+
+    ##########################################
+    # Show quarterly trends
+    ##########################################
+    quarterly_trend_fig = show_quarterly_trends(request, DataVerification, "Data Verification")
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
         selected_year = year_form.cleaned_data['year']
@@ -1025,8 +1050,8 @@ def show_data_verification(request):
                 f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}', 'Total'
             ] if selected_quarter == 'Qtr1' else [
                 f'Jan-{year_suffix}', f'Feb-{year_suffix}', f'Mar-{year_suffix}', 'Total'
-            ] if selected_quarter == 'Qtr2' else [
-                f'Apr-{year_suffix}', f'May-{year_suffix}', f'Jun-{year_suffix}', 'Total'
+                                                                                  f'Apr-{year_suffix}',
+                f'May-{year_suffix}', f'Jun-{year_suffix}', 'Total'
             ] if selected_quarter == 'Qtr3' else [
                 f'Jul-{year_suffix}', f'Aug-{year_suffix}', f'Sep-{year_suffix}', 'Total'
             ]
@@ -1080,6 +1105,7 @@ def show_data_verification(request):
     display_dicts = display_data_verification(request, data_verification, selected_facility, quarter_year, year_suffix,
                                               quarters)
     context = {"form": form, "year_form": year_form, "facility_form": facility_form,
+               "quarterly_trend_fig": quarterly_trend_fig,
                } | display_dicts
     return render(request, 'dqa/show data verification.html', context)
 
@@ -2914,9 +2940,23 @@ def create_system_assessment_bar_charts(dataframe, chart_title, quarter_year, de
 def dqa_summary(request):
     if not request.user.first_name:
         return redirect("profile")
-    form = QuarterSelectionForm(request.POST or None)
-    year_form = YearSelectionForm(request.POST or None)
-    facility_form = FacilitySelectionForm(request.POST or None)
+    # Get the query parameters from the URL
+    quarter_form_initial = request.GET.get('quarter_form')
+    year_form_initial = request.GET.get('year_form')
+    facility_form_initial = request.GET.get('facility_form')
+
+    # Parse the string values into dictionary objects
+    quarter_form_initial = ast.literal_eval(quarter_form_initial) if quarter_form_initial else {}
+    year_form_initial = ast.literal_eval(year_form_initial) if year_form_initial else {}
+    facility_form_initial = ast.literal_eval(facility_form_initial) if facility_form_initial else {}
+
+    form = QuarterSelectionForm(request.POST or None, initial=quarter_form_initial)
+    year_form = YearSelectionForm(request.POST or None, initial=year_form_initial)
+    # facility_form = FacilitySelectionForm(request.POST or None, initial=facility_form_initial)
+
+    # form = QuarterSelectionForm(request.POST or None)
+    # year_form = YearSelectionForm(request.POST or None)
+    # facility_form = FacilitySelectionForm(request.POST or None)
     plot_div = None
 
     selected_quarter = "Qtr1"
@@ -2925,6 +2965,21 @@ def dqa_summary(request):
     average_dictionary = None
     site_avg = None
     audit_team = None
+    selected_quarter = "Qtr1"
+    selected_year = "2021"
+    if form.is_valid():
+        selected_quarter = form.cleaned_data['quarter']
+
+    if year_form.is_valid():
+        selected_year = year_form.cleaned_data['year']
+    facility_form = FacilitySelectionForm(request.POST or None,
+                                          selected_year=selected_year,
+                                          selected_quarter=selected_quarter,
+                                          model_to_check=DataVerification)
+    ##########################################
+    # Show quarterly trends
+    ##########################################
+    quarterly_trend_fig = show_quarterly_trends(request, DataVerification, "Data Verification")
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
@@ -2988,7 +3043,7 @@ def dqa_summary(request):
     dqa = None
     system_assessments = None
 
-    if "submit_data" in request.POST:
+    if selected_facility:
         dqa = DataVerification.objects.filter(facility_name__mfl_code=selected_facility.mfl_code,
                                               quarter_year__quarter_year=quarter_year)
         fyj_perf = FyjPerformance.objects.filter(mfl_code=selected_facility.mfl_code,
@@ -3115,7 +3170,7 @@ def dqa_summary(request):
         "plot_div": plot_div,
         "average_dictionary": average_dictionary,
         "site_avg": site_avg,
-        "audit_team": audit_team,
+        "audit_team": audit_team, "quarterly_trend_fig": quarterly_trend_fig,
         "system_assessments": system_assessments,
     }
     return render(request, 'dqa/dqa_summary.html', context)
@@ -3336,6 +3391,19 @@ def show_dqa_work_plan(request):
     work_plan = None
     work_plan_qs = None
     quarter_year = None
+    selected_quarter = "Qtr1"
+    selected_year = "2021"
+    if form.is_valid():
+        selected_quarter = form.cleaned_data['quarter']
+
+    if year_form.is_valid():
+        selected_year = year_form.cleaned_data['year']
+    facility_form = FacilitySelectionForm(request.POST or None,
+                                          selected_year=selected_year,
+                                          selected_quarter=selected_quarter,
+                                          model_to_check=DQAWorkPlan)
+
+    quarterly_trend_fig = show_quarterly_trends(request, DQAWorkPlan, "DQA Worplans")
 
     if form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = form.cleaned_data['quarter']
@@ -3344,7 +3412,7 @@ def show_dqa_work_plan(request):
         year_suffix = selected_year[-2:]
         quarter_year = f"{selected_quarter}-{year_suffix}"
 
-    if "submit_data" in request.POST:
+    if selected_facility:
         work_plan_qs = DQAWorkPlan.objects.filter(facility_name_id=selected_facility.id).order_by("quarter_year")
         work_plan = work_plan_qs.filter(quarter_year__quarter_year=quarter_year)
 
@@ -3360,7 +3428,7 @@ def show_dqa_work_plan(request):
             messages.error(request, f"No work plan for {selected_facility} ({quarter_year}) found.")
     context = {
         "work_plan": work_plan, "work_plan_qs": work_plan_qs, "form": form, "quarter_year": quarter_year,
-        "year_form": year_form, "facility_form": facility_form,
+        "year_form": year_form, "facility_form": facility_form, "quarterly_trend_fig": quarterly_trend_fig
     }
     return render(request, 'dqa/dqa_work_plan_list.html', context)
 
@@ -3522,6 +3590,783 @@ def add_system_verification(request):
 
 
 @login_required(login_url='login')
+def choose_facilities_sqa(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    quarter_form = QuarterSelectionForm(request.POST or None)
+    year_form = YearSelectionForm(request.POST or None)
+    facility_form = FacilitySelectionForm(request.POST or None)
+    # date_form = DateSelectionForm(request.POST or None)
+    if request.method == "POST":
+        if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
+            selected_quarter = quarter_form.cleaned_data['quarter']
+            selected_facility = facility_form.cleaned_data['name']
+            selected_year = year_form.cleaned_data['year']
+            # selected_date = date_form.cleaned_data['date']
+            # Generate the URL for the redirect
+            url = reverse('sqa',
+                          kwargs={"report_name": "None", 'quarter': selected_quarter, 'year': selected_year,
+                                  'pk': selected_facility.id,
+                                  # 'date': selected_date
+                                  })
+
+            return redirect(url)
+    context = {
+        "quarter_form": quarter_form,
+        "year_form": year_form,
+        "facility_form": facility_form,
+        # "date_form": date_form,
+        "title": "Service Quality Assessment (SQA)"
+    }
+    return render(request, 'dqa/add_facilities_data_inventory.html', context)
+
+
+def generate_descriptions(report_name):
+    if report_name == "gbv":
+        descriptions = [
+            'Are GBV services integrated in all other service delivery points',
+            'Are the staff offering GBV services trained on LIVES',
+            'Are GBV services offered in a private and confidential space',
+            'Does the facility have the GBV pathways job aid',
+            'Do the CHPs attached to the facility sensitized on available GBV response services',
+            'Does the facility have well utilized GBV registers that collect information about a patient’s experience '
+            'of GBV and the post-GBV care s/he received',
+        ]
+    elif report_name == "vmmc":
+        descriptions = [
+            'Are surgical guidelines and SOPs readily available to the clinicians? i) Conventional Surgical ii) EIMC'
+            'iii)DEVICES',
+            'Is TTCV administered as per the SOP?',
+            'Does the facility have the current local anesthesia dosing chart on site? (for EIMC and adult)',
+            'Is surgery performed as per guidelines and protocol? i) Conventional Surgical ii) EIMC'
+            'iii)DEVICES',
+            'Does the MC surgical room observe privacy and confidentiality to clients?',
+            'Are service delivery data completely and accurately collected and timely reported?',
+            'Are analyzed data used for the planning and improvement of service delivery?',
+            'Is VMMC data used to inform best practices at sub county, county or national level?',
+            'Randomly select 12 most recent entries in the VMMC client card within the past 6 months What proportion '
+            'of the clients were properly i)consented?',
+            'ii)What proportion of clients were circumcised',
+            'iii)using Dorsal slit method?',
+            'iv)What proportion of the clients were followed up as per guideline?',
+            'v)What proportion of clients who missed scheduled follow up were actively '
+            'followed?',
+            'vi)For sites implementing EIMC, how many clients had HEI screening?',
+        ]
+    elif report_name == "hts":
+        descriptions = [
+            'Has HTS services been integrated to other services?',
+            'If Yes for no 1: Where is hts  integrated? OPD, FP Clinic , ANC , CCC, Special Clinic, Other (Specify)',
+            'Have all HTS service providers undergone the approved NASCOP HTS training program?',
+            'Have all service HTS providers undergone refresher training/CME in the last one years? ',
+            'Have all HTS Pos clients been received confirmatory test befor initiation to ART',
+            'Is the HTS algorithm Adhered to?',
+            'Is safety and infection prevention adhered to in the HTS room?',
+            'If yes for number 8. What is present?  running water, soap, waste segregation (Yellow, Black, Red bins & '
+            'liners and a sharp box), room has adequate lighting. & PEP Protocol ',
+            'Is the HTS officer conversant with testing frequency for adolescent and young people? ',
+            'Does the HTS provider in ANC adhere to testing frequency for ANC/PNC clients? ',
+            'Does the HTS provider in MCH adhere to testing frequency for L&D clients?',
+            'Does the facility offer index testing services?',
+            'Is the facility HTS providers linking clients to combination prevent?',
+
+        ]
+    elif report_name == "prep":
+        descriptions = [
+            'Has PrEP services been integrated to other services ?',
+            'If Yes for no 1: Where is PrEP integrated? OPD, FP Clinic , ANC , CCC, Special Clinic, Other (Specify)',
+            'Have all the service providers offering PrEP received a refresher training in the last one year?',
+            'Does the facility have PrEP Clinical encounter cards? Are they appropriately documented',
+            'Does the facility routinely  carry out Rapid Assessment Screening using the RAST tool',
+            'Are client assessed for eligibility prior to PrEP initiation?',
+            'Are clients on followup for PrEP offered  HIV Testing ?',
+            'Are clients on followup for PrEP assessed for adverse drugs effects?',
+            'Are clients on followup for PrEP assessesd for adherence and offered adherence counselling?',
+            'Does the facility collect samples for drug resistance testing for clients who test HIV positive while on PrEP?',
+            'Does the facility follow up new initiations to come for 1 month refill',
+            'Does the facility provide testing at 1 month refill for PrEP',
+
+        ]
+    elif report_name == "tb":
+        descriptions = [
+            'Are clients screened for TB at every clinic visit? (Y/N)',
+            'Does the facility start clients on TPT/TB Rx? (Y/N)',
+            'Is documentation done for clients who have completed TPT? (Y/N)',
+            'Are the clients screened for baseline CD4 test? (Y/N)',
+
+        ]
+    elif report_name == "care_treatment":
+        descriptions = [
+            'Are the clients screened for baseline CD4 test? (Y/N)',
+            'Does the facility screen for NCDs in each visit? (BP,)',
+            'Does the facility have USHAURI? Is it active? (Y/N)',
+            'Does the facility have a system for assessment and management of clients with HVL? ',
+            'Do the clients undergo 3 consecutive EAC before the 2nd VL is done?',
+            'Does the facility assign a case manager for clients failing treatment?',
+        ]
+    elif report_name == "cqi":
+        descriptions = [
+            'Is there a quality committee that plans and oversees quality activities for the facility?',
+            'How is client feedback incorporated?',
+        ]
+    elif report_name == "pharmacy":
+        descriptions = [
+            'Does the facility have manual/electronic stock control cards/Bin cards for ARVs and OI medicines?',
+            'If Yes, are the bin cards upto date?',
+        ]
+    else:
+        descriptions = []
+    return descriptions
+
+
+def generate_verification(report_name):
+    if report_name == "gbv":
+        numerators = [
+            'Tick as appropriate',
+            'Tick as appropriate',
+            'Tick as appropriate',
+            'Check to confirm',
+            'Check training log',
+            'Check completion of MoH 363, 364, 365',
+
+        ]
+    elif report_name == "vmmc":
+        numerators = [
+            'Physical Verification of SOPs and guidelines',
+            'Check the TTCV administration SOP',
+            'Check dosing chart on the wall',
+            'Directly observe a procedure',
+            'Physical Verification',
+            'Verify on Minor Theatre Register & MOH 731',
+            'Availability of ‘talking wall’ charts',
+            'Check with in-charge on best practices documentation e.g. abstracts, newsletters and publications',
+            'Check definitions of numerators and denominators in the SOP',
+            'Check definitions of numerators and denominators in the SOP',
+            'Check definitions of numerators and denominators in the SOP',
+            'Check definitions of numerators and denominators in the SOP',
+            'Check definitions of numerators and denominators in the SOP',
+            'Check definitions of numerators and denominators in the SOP',
+        ]
+    elif report_name == "hts":
+        numerators = [
+            'Tick as appropriate',
+            'Tick all that apply',
+            'Confirm availability of certificates',
+            'Check HTS log file/folder if the HTS names appear.Partly if some, No if none',
+            'Sample 10 positive clients and crosscheck with retesting register. If 100% score if <100% score No',
+            "Verify on the HTS register (MOH 362) Score Yes if  -	HIV Negative clients should only have result "
+            "indicated under column for determine test,-	HIV positive client should have results indicated under "
+            "columns for Determine and First response if the above is not followed (IS BELOW TEXT NECESSARY?) Ask and "
+            "also check if test one is documented as determine and test two is documented as first response (confirm "
+            "from the HTS register). Check for negative results (only determine) and positive results (determine and "
+            "first response). If not followed score 'No' If followed but not always score 'partial' If algorithm "
+            "strictly followed score 'YES'",
+            'Check if the following are in place:',
+            'Tick all that apply',
+            'The answer is Yes if adhering to the HTS operational manual.   Ask and Check in MOH 362 AYP for next appointment. No if the TCA is longer',
+            'Sample 10 clients in ANC Register, If yes – Check HTS provider to explain and Check PNC register, no if not adhering. IF 100% SCORE Yes , if >100% score Partly',
+            'Sample 10 clients in Maternity Register, If yes – Check MAT register, no if not adhering. IF 100% SCORE Yes , if >100% score Partly',
+            'Check for 5 clients who tested HIV positive during the review period, verify if they were transferred into the aPNS register and if partner elicitation and follow up was done. If there is documentation of elicitation & follow-up - Score Yes If there is documentation of follow up on the aPNS register.',
+            'Sample 10 clients If yes verify in MOH 362 for linkage to prevention, Partial if some and No if none',
+        ]
+
+    elif report_name == "prep":
+        numerators = [
+            'Tick as appropriate',
+            'Tick all that apply',
+            'Calculate the proportion of service providers who have received a refresher training out of the total number offering PrEP. If 100% tick Yes , if <100% tick no ',
+            'Verify availability of clinical encounter card, , if available and well documented score Yes, If available and not well documented score partial If not available score No',
+            'Sample 5 encounter card for clients  for clients initiated on PrEP during the review period  verify documentation of risk assessment . Indicate the number clients with assessment done (numerator) total cards sampled (denominator)',
+            'Sample 10 encounter card for clients initiated on PrEP during the review period  verify documentation of eligibility status  at basesline. Indicate the number  with eligibility assessment done (numerator) total cards sampled (denominator) If all the parameters for eligibility  are indicated score Yes if any is missing score No Parameters for eligibility:  HIV Test Negative, Screening for Kidney/Liver disease / No Contraindication to TDF/FTC/3TC / Client willing to initiate PrEP ) ',
+            'Sample 10 client encounter cards, for clients who made a clinical  follow up visit during the review period.verify if they were tested for HIV Indicate the number  with documented HIV results (numerator) total cards sampled (denominator) If all the clients were tested indicate Yes , If some indicate Partial If none indicate No ',
+            'Sample 5 client encounter cards, for clients who made a   follow up visit during the review period.verify if they were assessed for adverse drugs events.Indicate the number  with documented screening for adverse effects (numerator) total cards sampled (denominator) If all the clients were assesed for adverse drug effects indicate Yes , If some indicate Partial If none indicate No  ',
+            'Sample 5 client encounter cards, for clients who made a   follow up visit during the review period.verify if they were assessed for adherence and offered adherence counselling. Indicate the number  with documented  adherence assessment (numerator) total cards sampled (denominator) If all the clients were assessed for adherence indicate Yes , If some indicate Partial If none indicate No  ',
+            'Verify from  the PrEP register if there has been  any client who tested positive while on PrEP. Verify if clients were offered DRT on the the specific client  encounter card or sample tracking  log. If sample collected or results available indicate Yes if no documentation score No If not client has ever tested positive while on PrEP indicate NA',
+            'Sample  5 client encounter cards of clients initiated for PrEP 1 month ago and assess whether they came for 1 month refill (What is the retention)',
+            'Sample  5 client encounter cards of clients initiated for PrEP 1 month ago  and who came for 1 month refill and check if they were tested for HIV (What Is the testing rate)',
+
+        ]
+    elif report_name == "tb":
+        numerators = [
+            'Sample  5 client encounter cards of clients who attended clinic 2, peads 3 adults and provide the proportion(num/den)',
+            'Sample  5 new on art  clients who attended clinic 2, peads 3 adults and provide the proportion(num/den)',
+            'Sample  5 client encounter cards of active clients and started HAART >6 months ago 2, peads 3 adults and provide the proportion(num/den)',
+        ]
+    elif report_name == "care_treatment":
+        numerators = [
+            'Sample 10  files for verification- Tease out 10 patients who have been newly enrolled most recently ',
+            'Sample 10 >15 client files and check for completeness of all the NCD parameters indicated in MOH257',
+            'Check if in the last 3 clinics  sms reminders were sent out',
+            'These are clients who have a 2nd VL of >1000 copies/ml after 3 consecutive EACs',
+            'check for MDT, SOPs, availability of trained adherence counsellors)',
+            'Check for EAC records and the dates',
+        ]
+
+    elif report_name == "cqi":
+        numerators = [
+            'Check for most recent available QI Meeting minutes, Member TOR',
+            'Observe for available feedback mechanisms. Eg. Suggestion box available and in use, Client exit interviews done',
+        ]
+    elif report_name == "pharmacy":
+        numerators = [
+            'Check for any 5 electronic or physical bincards',
+            "Choose the electronic or Physical TLD bin card and check if most recent delivery from KEMSA/MEDS or S11 from Central site is updated on the bin card).",
+
+        ]
+    else:
+        numerators = []
+    return numerators
+
+
+def generate_numerator(report_name):
+    if report_name == "gbv":
+        numerators = [
+            '# SDPs with GBV services intergrated',
+            '# of staffs offering GBV services are trained on LIVES',
+            '# of private and confidential spaces available for GBV services',
+            '# of facilities with the GBV pathways job aid',
+            '# of CHPs sensitized on GBV response services',
+            '# of well utilized GBV registers'
+
+        ]
+    elif report_name == "vmmc":
+        numerators = [
+            '# of surgical guidelines and SOPs available to clinicians',
+            '# of TTCV administrations adhering to SOP',
+            '1 (if chart is present) or 0 (if chart is absent)',
+            '# of surgeries performed as per guidelines',
+            '# of surgical rooms maintaining privacy/confidentiality',
+            '# of service delivery data entries accurate and timely',
+            "1 (if 'talking wall' charts are present) or 0 (if 'talking wall' charts are absent)",
+            '# of best practice documents informed by VMMC data',
+            '# of clients properly consented',
+            '# of clients circumcised',
+            '# of clients circumcised using Dorsal slit method',
+            '# of clients followed up as per guideline',
+            '# of clients who missed follow-up and were actively followed',
+            '# of clients with HEI screening',
+        ]
+    elif report_name == "hts":
+        numerators = [
+            '# HTS services intergrated',
+            '',
+            '# of HTS providers trained on NASCOP HTS training',
+            '# of HTS providers who have undergone refresher training/CME in the last one year',
+            '# of HTS positive clients who received confirmatory tests before initiation to ART',
+            '1 (HTS algorithm is followed) or 0 (if not)',
+            '# of HTS rooms where safety and infection prevention measures are adhered to',
+            '',
+            '# of HTS officers who are conversant with testing frequency for adolescents and young people',
+            '# of ANC/PNC clients tested as per guideline frequency',
+            '# of L&D clients tested as per guideline frequency',
+            '# of clients who tested HIV positive and received index testing services',
+            '# of clients linked to combination prevention by facility HTS providers',
+
+        ]
+    elif report_name == "prep":
+        numerators = [
+            '# HTS services intergrated',
+            '',
+            '# of service providers offering PrEP received a refresher training in the last one year',
+            '',
+            '# clients with assessment done',
+            '# with eligibility assessment done',
+            '# with documented HIV results',
+            '# with documented screening for adverse effects',
+            '# with documented  adherence assessment',
+            '# of DRT collected for clients who test HIV positive while on PrEP',
+            '# of PrEP clients who attended 1 month appointment',
+            '# of PrEP clients with HIV test at 1 month visit',
+
+        ]
+    elif report_name == "tb":
+        numerators = [
+            'Number of clients screened for TB',
+            'Number of clients started on TPT/TB Rx',
+            'Number of clients with documentation for completed TPT',
+
+        ]
+    elif report_name == "care_treatment":
+        numerators = [
+            'Number of clients screened for baseline CD4 test',
+            'Number of clients with completed NCD parameters',
+            '1 (if ushauri is present) or 0 (if  absent)',
+            '# documented in HVL register',
+            '# with 3 consecutive EACs',
+            '# of HVL clients with case managers',
+        ]
+    elif report_name == "cqi":
+        numerators = [
+            '1 (if most recent QI meeting minutes present) or 0 (if  absent)',
+            '1 (if client feedback is routinely collected) or 0 (if  absent)',
+
+        ]
+    elif report_name == "pharmacy":
+        numerators = [
+            '1 (if bin cards are present) or 0 (if  absent)',
+            '# with updated bin cards',
+        ]
+    else:
+        numerators = []
+    return numerators
+
+
+def generate_denominator(report_name):
+    if report_name == "gbv":
+        numerators = [
+            '# SDPs offering GBV services',
+            '# of staffs offering GBV services',
+            '# of GBV service delivery points',
+            '# of facilities assessed',
+            '# of CHPs attached to the facility',
+            '# of GBV registers required'
+        ]
+    elif report_name == "vmmc":
+        numerators = [
+            '# of required surgical guidelines and SOPs',
+            '# of TTCV administrations',
+            '1',
+            '# of surgeries observed',
+            '# of surgical rooms assessed',
+            '# of service delivery data entries checked',
+            '1',
+            '# of best practice documents reviewed',
+            '12',
+            '12',
+            '# of clients circumcised',
+            '12',
+            '# of clients who missed scheduled follow-up',
+            '# of clients eligible for HEI screening',
+        ]
+    elif report_name == "hts":
+        numerators = [
+            '# of SDPs',
+            '',
+            '# of HTS providers',
+            'Total # of HTS providers in the facility',
+            'Total # of HTS positive clients',
+            '1',
+            'Total # of HTS rooms in the facility',
+            '',
+            'Total # of HTS officers in the facility',
+            'Total sampled clients',
+            'Total sampled clients',
+            'Total # of clients who tested HIV positive during the review period',
+            'Total # of clients tested',
+
+        ]
+
+    elif report_name == "prep":
+        numerators = [
+            '# of SDPs',
+            '',
+            '# of service providers offering PrEP',
+            '',
+            'Total card sampled',
+            'Total card sampled',
+            'Total card sampled',
+            'Total card sampled',
+            'Total card sampled',
+            '# of clients who test HIV positive while on PrEP',
+            'Total client sampled',
+            'Total client sampled',
+
+        ]
+    elif report_name == "tb":
+        numerators = [
+            'Total clients sampled',
+            'Total clients sampled',
+            'Total clients sampled',
+        ]
+    elif report_name == "care_treatment":
+        numerators = [
+            'Total clients sampled',
+            'Total clients sampled',
+            '1',
+            '# of the client with HVL (Active on ART Patients Linelist)',
+            '# of the client with 2nd VL with HVL',
+            '# of the client with HVL (Active on ART Patients Linelist)',
+
+        ]
+
+    elif report_name == "cqi":
+        numerators = [
+            '1',
+            '1',
+
+        ]
+    elif report_name == "pharmacy":
+        numerators = [
+            '1',
+            'Total clients sampled',
+        ]
+    else:
+        numerators = []
+    return numerators
+
+
+def create_sqa_formset(report_name, request, initial_data):
+    # Define a dictionary mapping report names to model and form classes
+    report_mapping = {
+        "gbv": (Gbv, GbvForm),
+        "vmmc": (Vmmc, VmmcForm),
+        "hts": (Hts, HtsForm),
+        "prep": (Prep, PrepForm),
+        "tb": (Tb, TbForm),
+        "care_treatment": (CareTreatment, CareTreatmentForm),
+        "pharmacy": (Pharmacy, PharmacyForm),
+        "cqi": (Cqi, CqiForm),
+    }
+
+    if report_name in report_mapping:
+        model_class, form_class = report_mapping[report_name]
+    else:
+        model_class, form_class = report_mapping["gbv"]
+
+    inventory_form_set = modelformset_factory(
+        model_class,
+        form=form_class,
+        extra=len(initial_data)
+    )
+    formset = inventory_form_set(
+        request.POST or None,
+        queryset=model_class.objects.none(),
+        initial=initial_data
+    )
+
+    return formset, inventory_form_set, model_class, form_class
+
+
+@login_required(login_url='login')
+def sqa(request, report_name=None, quarter=None, year=None, pk=None):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    quarter_form = QuarterSelectionForm(request.POST or None)
+    year_form = YearSelectionForm(request.POST or None)
+    facility_form = FacilitySelectionForm(request.POST or None)
+    # date_form = DateSelectionForm(request.POST or None)
+    descriptions = generate_descriptions(report_name)
+    numerators = generate_numerator(report_name)
+    denominators = generate_denominator(report_name)
+    verifications = generate_verification(report_name)
+    request.session['descriptions'] = descriptions
+    request.session['numerators'] = numerators
+    request.session['denominators'] = numerators
+    request.session['verifications'] = verifications
+
+    # Combine descriptions and numerators into a single list of dictionaries
+    initial_data = [{'description': desc, 'numerator_description': num, 'denominator_description': den
+                        , 'verification': ver} for
+                    desc, num, den, ver in zip(descriptions, numerators, denominators, verifications)]
+
+    formset, inventory_form_set, model_class, form_class = create_sqa_formset(report_name, request, initial_data)
+    period_check, created = Period.objects.get_or_create(quarter=quarter, year=year)
+    quarter_year_id = period_check.id
+
+    facility, created = Facilities.objects.get_or_create(id=pk)
+    facility_name = facility
+
+    models_to_check = {
+        "gbv": Gbv,
+        "vmmc": Vmmc,
+        "hts": Hts,
+        "prep": Prep,
+        "tb": Tb,
+        "care_treatment": CareTreatment,
+        "pharmacy": Pharmacy,
+        "cqi": Cqi,
+    }
+    model_names = list(models_to_check.keys())
+
+    def get_data_entered():
+        # Create an empty list to store the filtered objects
+        filtered_data = []
+
+        # Iterate over the model names
+        for model_name_ in model_names:
+            # Get the model class from the models_to_check dictionary
+            model_class_ = models_to_check[model_name_]
+            # Filter the objects based on the conditions
+            objects = model_class_.objects.filter(
+                Q(facility_name_id=pk) &
+                Q(quarter_year__id=quarter_year_id)
+            )
+            if objects:
+                # Append the filtered objects to the list
+                filtered_data.append(model_name_)
+        return filtered_data
+
+    filtered_data = get_data_entered()
+    model_names = ['gbv', 'vmmc', 'hts', 'prep', 'tb', 'care_treatment', 'cqi', 'pharmacy']
+    missing = [item for item in model_names if item not in filtered_data]
+    if len(missing) == 0:
+        messages.success(request, f"All data for {facility_name} {period_check} is successfully saved! "
+                                  f"Please select a different facility.")
+        return redirect("choose_facilities_inventory")
+
+    if report_name == "None":
+        # Redirect to the URL with the first missing item as the report_name
+        url = reverse('sqa',
+                      kwargs={"report_name": missing[0], 'quarter': quarter, 'year': year, 'pk': pk,
+                              # 'date': date
+                              })
+        return redirect(url)
+
+    if request.method == "POST":
+        formset = inventory_form_set(request.POST, initial=initial_data)
+        if formset.is_valid():
+            # selected_date = date
+            instances = formset.save(commit=False)
+            context = {
+                "formset": formset, "quarter_form": quarter_form, "year_form": year_form,
+                "facility_form": facility_form,
+                # "date_form": date_form,
+                "descriptions": descriptions,
+                "page_from": request.session.get('page_from', '/'),
+                "report_name": missing[0],
+                "quarter": quarter,
+                "year": year,
+                "facility_id": pk,
+                # "date": date,
+                "filtered_data": filtered_data
+            }
+            #######################################
+            # CHECK IF USER SELECTION IS LOGICAL  #
+            #######################################
+            fields_to_validate = [
+                ('adult_arv_tdf_3tc_dtg', 'adult_arv_tdf_3tc_dtg'),
+                ('pead_arv_dtg_10mg', 'pead_arv_dtg_10mg'),
+                ('paed_arv_abc_3tc_120_60mg', 'paed_arv_abc_3tc_120_60mg'),
+                ('tb_3hp', 'tb_3hp'),
+                ('family_planning_rod', 'family_planning_rod'),
+                ('al_24', 'al_24'),
+            ]
+
+            # for field_to_validate, error_field in fields_to_validate:
+            #     if form_class == StockCardsForm:
+            #         question_1_value = formset.forms[0].cleaned_data.get(field_to_validate)
+            #         question_2_value = formset.forms[1].cleaned_data.get(field_to_validate)
+            #         if question_1_value == 'No' and question_2_value == 'Yes':
+            #             formset.forms[1].add_error(error_field,
+            #                                        f"Invalid selection. Can't select 'Yes' if above question is 'No'.")
+            #     elif form_class == ExpiredForm:
+            #         question_1_value = formset.forms[1].cleaned_data.get(field_to_validate)
+            #         question_2_value = formset.forms[2].cleaned_data.get(field_to_validate)
+            #         if question_1_value == 'No' and question_2_value == 'Yes':
+            #             formset.forms[2].add_error(error_field,
+            #                                        f"Invalid selection. Can't select 'Yes' if above question is 'No'.")
+            ############################################
+            # CHECK IF THERE ARE ERRORS IN THE FORMSET #
+            ############################################
+            if any(form.errors for form in formset.forms):
+                # There are form errors in the formset
+                return render(request, 'dqa/add_sqa.html', context)
+
+            #################################################
+            # CHECK IF ALL FORMS IN THE FORMSET ARE FILLED  #
+            #################################################
+            if not all([form.has_changed() for form in formset.forms]):
+                for form in formset.forms:
+                    if not form.has_changed():
+                        for field in form.fields:
+                            if field != "comments":
+                                form.add_error(field, "This field is required.")
+                return render(request, 'dqa/add_sqa.html', context)
+            try:
+                errors = False
+
+                ##############################################
+                # CHECK IF THERE IS A COMMENT FOR ANY 'NO'!  #
+                ##############################################
+                fields_to_check = [
+                    ('adult_arv_tdf_3tc_dtg', "TLD 90s"),
+                    ('pead_arv_dtg_10mg', "DTG 10mg"),
+                    ('paed_arv_abc_3tc_120_60mg', "ABC/3TC 120/60"),
+                    ('tb_3hp', "3HP"),
+                    ('family_planning_rod', "IMPLANT 1 ROD"),
+                    ('al_24', "AL 24"),
+                ]
+
+                for form in formset.forms:
+                    error_fields = []
+                    for field, field_name in fields_to_check:
+                        if report_name != "expiry_tracking":
+                            if report_name == "cqi":
+                                if form.cleaned_data.get(field) == 'Yes' and not form.cleaned_data.get('comments'):
+                                    errors = True
+                                    error_fields.append(field_name)
+                            else:
+                                if form.cleaned_data.get(field) == 'No' and not form.cleaned_data.get('comments'):
+                                    errors = True
+                                    error_fields.append(field_name)
+
+                    if error_fields:
+                        if report_name == "cqi":
+                            error_message = f"Please provide a comment for 'Yes' selection in the following fields: " \
+                                            f"{', '.join(error_fields)} "
+                            form.add_error('comments', error_message)
+
+                        else:
+                            error_message = f"Please provide a comment for 'No' selection in the following fields: " \
+                                            f"{', '.join(error_fields)} "
+                            form.add_error('comments', error_message)
+
+                if errors:
+                    return render(request, 'dqa/add_sqa.html', context)
+
+                #################################################
+                # CHECK IF ALREADY DATA EXIST IN THE DATABASE!  #
+                # 'MANUAL CHECK FOR UNIQUE TOGETHER'            #
+                #################################################
+                existing_data = model_class.objects.values_list('description', 'facility_name', 'quarter_year')
+                for form in formset.forms:
+                    description_check = form.cleaned_data.get('description')
+                    # facility_check, created = Facilities.objects.get_or_create(id=selected_facility)
+                    # facility_name_check = facility_check.id
+                    # period_check, created = Period.objects.get_or_create(quarter=selected_quarter, year=selected_year)
+                    # quarter_year_check = period_check.id
+
+                    if (description_check, facility_name, quarter_year_id) in existing_data:
+                        messages.error(request, f"Data for {facility_name} {period_check} already exists!")
+                        return render(request, 'dqa/add_sqa.html', context)
+
+                ###########################################################
+                # SAVE DATA IF IT DOES NOT EXIST AND THERE IS NO ERRORS!  #
+                ###########################################################
+                with transaction.atomic():
+                    for form, instance in zip(formset.forms, instances):
+                        facility_id = Facilities.objects.get(id=pk)
+                        # Get all related sub_counties using filter
+                        sub_counties_ids = Sub_counties.facilities.through.objects.filter(
+                            facilities_id=facility_id.id).values_list('sub_counties_id', flat=True)
+
+                        # Get the first sub_county_id (if exists) to use for filtering counties
+                        if sub_counties_ids:
+                            first_sub_county_id = sub_counties_ids[0]
+
+                            # Get the county related to the first sub_county_id
+                            county_id = Sub_counties.counties.through.objects.filter(
+                                sub_counties_id=first_sub_county_id).values_list('counties_id', flat=True).first()
+
+                            # Assign the county to the post
+                            if county_id:
+                                instance.county = Counties.objects.get(id=county_id)
+                            # Assign the first sub_county to the post
+                            instance.sub_county = Sub_counties.objects.get(id=first_sub_county_id)
+
+                        # Set instance fields from form data
+                        instance.dropdown_option = form.cleaned_data['dropdown_option']
+                        if instance.dropdown_option == 'Yes':
+                            instance.calculations = 3
+                        elif instance.dropdown_option == 'Partly':
+                            instance.calculations = 2
+                        elif instance.dropdown_option == 'No':
+                            instance.calculations = 1
+                        elif instance.dropdown_option == 'N/A':
+                            instance.calculations = None
+                        instance.numerator = form.cleaned_data['numerator']
+                        instance.denominator = form.cleaned_data['denominator']
+                        # Check if both numerator and denominator are >0
+                        if instance.numerator is not None and instance.denominator is not None:
+                            # Avoid division by zero error
+                            if instance.denominator != 0:
+                                instance.indicator_performance = round(
+                                    (instance.numerator / instance.denominator) * 100, 1)
+                            else:
+                                instance.indicator_performance = 0
+                        else:
+                            instance.indicator_performance = None
+                        # instance.dqa_date = selected_date
+                        instance.created_by = request.user
+                        instance.description = form.cleaned_data['description']
+                        instance.verification = form.cleaned_data['verification']
+                        instance.numerator_description = form.cleaned_data['numerator_description']
+                        instance.denominator_description = form.cleaned_data['denominator_description']
+                        # facility, created = Facilities.objects.get_or_create(id=selected_facility)
+                        instance.facility_name = facility
+                        # Get or create the Period instance
+                        # period, created = Period.objects.get_or_create(quarter=selected_quarter, year=selected_year)
+                        instance.quarter_year = period_check
+                        # Get or create the Table instance
+                        table_name, created = TableNames.objects.get_or_create(model_name=report_name)
+                        instance.model_name = table_name
+                        instance.save()
+
+                    filtered_data = get_data_entered()
+                    missing = [item for item in model_names if item not in filtered_data]
+                    if len(missing) != 0:
+                        messages.success(request, f"Data for {facility_name} {period_check} is successfully saved!")
+                        # Redirect to the URL with the first missing item as the report_name
+                        url = reverse('sqa',
+                                      kwargs={"report_name": missing[0], 'quarter': quarter, 'year': year, 'pk': pk,
+                                              # 'date': date
+                                              })
+                        return redirect(url)
+                    else:
+                        messages.success(request, f"All data for {facility_name} {period_check} is successfully saved! "
+                                                  f"Please select a different facility.")
+                        return redirect("choose_facilities_sqa")
+
+            except DatabaseError:
+                messages.error(request,
+                               f"Data for {facility_name} {period_check} already exists!")
+    context = {
+        "formset": formset, "facility_name": facility_name,
+        "report_name": report_name,
+        "quarter": quarter,
+        "year": year,
+        "facility_id": pk,
+        # "date": date,
+        "filtered_data": filtered_data
+    }
+    return render(request, 'dqa/add_sqa.html', context)
+
+
+def show_quarterly_trends(request, model, title):
+    """
+    Generate a line chart showing the quarterly trend of unique values in a given field of a given model.
+
+    Args:
+    model: The Django model to query.
+    field: The field of the model to count unique values for.
+    title: The title of the chart.
+
+    Returns:
+    A Plotly line chart.
+    """
+    # Get the number of unique facilities done per quarter_year
+    # unique_facilities_per_quarter = model.objects.select_related('quarter_year').values(
+    #     'quarter_year__quarter', 'quarter_year__year').annotate(
+    #     unique_facilities=Count('facility_name', distinct=True)).order_by('quarter_year__year',
+    #                                                                       'quarter_year__quarter')
+
+    unique_facilities_per_quarter = model.objects.values('quarter_year__quarter',
+                                                         'quarter_year__year').annotate(
+        unique_facilities=Count('facility_name', distinct=True)).order_by('quarter_year__year', 'quarter_year__quarter')
+
+    # Convert the queryset to a pandas DataFrame
+    df = pd.DataFrame(unique_facilities_per_quarter)
+
+    # Create a new column for the quarter and year
+    df['quarter_year'] = df['quarter_year__quarter'].astype(str) + '-' + df['quarter_year__year'].astype(str)
+    df = df.rename(columns={"unique_facilities": "Number of facilities"})
+    print("df::::::::::::::::::::::::::::::::")
+    print(df)
+
+    quarterly_trend_fig = line_chart_median_mean(df, "quarter_year", "Number of facilities",
+                                                 f"Number of Facilities with {title} Completed Per Quarter",
+                                                 time=104, xaxis_title=" FY Quarter - Year"
+                                                 )
+    return quarterly_trend_fig
+
+
+@login_required(login_url='login')
 def system_assessment_table(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -3537,7 +4382,7 @@ def system_assessment_table(request):
 
     quarter_form = QuarterSelectionForm(request.POST or None, initial=quarter_form_initial)
     year_form = YearSelectionForm(request.POST or None, initial=year_form_initial)
-    facility_form = FacilitySelectionForm(request.POST or None, initial=facility_form_initial)
+    # facility_form = FacilitySelectionForm(request.POST or None, initial=facility_form_initial)
 
     date_form = DateSelectionForm(request.POST or None)
     system_assessments = None
@@ -3579,6 +4424,25 @@ def system_assessment_table(request):
         "The facility carries out daily back up of EMR data (Ask to see the back up for the day of the DQA)",
         "The facility has conducted an RDQA of the EMR system in the last 3 months with documented action points,"
         "What is your main challenge regarding data management and reporting?"]
+    selected_quarter = "Qtr1"
+    selected_year = "2021"
+    if quarter_form.is_valid():
+        selected_quarter = quarter_form.cleaned_data['quarter']
+
+    if year_form.is_valid():
+        selected_year = year_form.cleaned_data['year']
+
+    facility_form = FacilitySelectionForm(request.POST or None,
+                                          selected_year=selected_year,
+                                          selected_quarter=selected_quarter,
+                                          model_to_check=SystemAssessment,
+                                          initial=facility_form_initial)
+
+    ##########################################
+    # Show quarterly trends
+    ##########################################
+
+    quarterly_trend_fig = show_quarterly_trends(request, SystemAssessment, "System Assessments")
 
     if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = quarter_form.cleaned_data['quarter']
@@ -3627,7 +4491,7 @@ def system_assessment_table(request):
         "date_form": date_form,
         'system_assessments': system_assessments,
         "average_dictionary": average_dictionary,
-        "expected_counts_dictionary": expected_counts_dictionary,
+        "expected_counts_dictionary": expected_counts_dictionary, "quarterly_trend_fig": quarterly_trend_fig,
     }
     return render(request, 'dqa/show_system_assessment.html', context)
 

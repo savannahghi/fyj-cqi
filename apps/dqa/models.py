@@ -19,7 +19,7 @@ from django.db import models
 #     def __str__(self):
 #         return self.quarter
 from apps.account.models import CustomUser
-from apps.cqi.models import Facilities
+from apps.cqi.models import Counties, Facilities, Sub_counties
 
 
 class Period(models.Model):
@@ -418,7 +418,7 @@ class KhisPerformance(models.Model):
 
     class Meta:
         unique_together = (('mfl_code', 'month'),)
-        ordering=['facility']
+        ordering = ['facility']
 
     def __str__(self):
         return f"{self.facility} - {self.month}"
@@ -468,3 +468,103 @@ class UpdateButtonSettings(models.Model):
 
     def __str__(self):
         return str(self.hide_button_time)
+
+
+class BaseModel(models.Model):
+    # TODO: REFACTOR THE MODELS
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                   on_delete=models.CASCADE)
+    modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+                                    on_delete=models.CASCADE, related_name='+')
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # the BaseModel won't create a separate database table
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            # Record is being created, set created_by and modified_by fields
+            self.created_by = get_current_user()
+            self.modified_by = self.created_by
+        else:
+            # Record is being updated, set modified_by field
+            self.modified_by = get_current_user()
+
+        return super().save(*args, **kwargs)
+
+
+class TableNames(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    model_name = models.CharField(max_length=25, blank=True, null=True)
+
+
+class BaseSqa(BaseModel):
+    CHOICES = [
+        ("Yes", "Yes - completely"),
+        ("Partly", "Partly"),
+        ("No", "No - not at all"),
+        ("N/A", "N/A")
+    ]
+    description = models.TextField()
+    dropdown_option = models.CharField(max_length=50, choices=CHOICES, blank=True, null=True)
+    verification = models.TextField()
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
+    sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
+    county = models.ForeignKey(Counties, null=True, blank=True, on_delete=models.CASCADE)
+    quarter_year = models.ForeignKey(Period, on_delete=models.CASCADE, blank=True, null=True)
+    dqa_date = models.DateTimeField(auto_now_add=True)
+    numerator_description = models.TextField(blank=True, null=True)
+    denominator_description = models.TextField(blank=True, null=True)
+    numerator = models.PositiveIntegerField(blank=True, null=True)
+    denominator = models.PositiveIntegerField(blank=True, null=True)
+    calculations = models.FloatField(null=True, blank=True)
+    indicator_performance = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return f"{self.facility_name} {self.description} ({self.date_created})"
+
+
+class Gbv(BaseSqa):
+    class Meta:
+        verbose_name_plural = 'GBV'
+
+
+class Vmmc(BaseSqa):
+    class Meta:
+        verbose_name_plural = 'VMMC'
+
+
+class Hts(BaseSqa):
+    class Meta:
+        verbose_name_plural = 'HTS'
+
+
+class Prep(BaseSqa):
+    class Meta:
+        verbose_name_plural = 'PrEP'
+
+
+class Tb(BaseSqa):
+    class Meta:
+        verbose_name_plural = 'TB'
+
+
+class CareTreatment(BaseSqa):
+    class Meta:
+        verbose_name_plural = 'Care and Treatment'
+
+
+class Pharmacy(BaseSqa):
+    class Meta:
+        verbose_name_plural = 'Pharmacy'
+
+
+class Cqi(BaseSqa):
+    class Meta:
+        verbose_name_plural = 'CQI'

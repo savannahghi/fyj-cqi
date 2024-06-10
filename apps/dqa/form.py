@@ -1,9 +1,12 @@
 import datetime
 
-from django.forms import ModelForm, Textarea
+from django.forms import ModelForm, NumberInput, Select, Textarea
 from django import forms
 
-from apps.dqa.models import DataVerification, Period, DQAWorkPlan, SystemAssessment, AuditTeam, UpdateButtonSettings
+from apps.dqa.models import CareTreatment, Cqi, DataVerification, Gbv, Hts, Period, DQAWorkPlan, Pharmacy, Prep, \
+    SystemAssessment, \
+    AuditTeam, \
+    Tb, UpdateButtonSettings, Vmmc
 from apps.cqi.models import Facilities, Hub, Sub_counties, Counties, Program
 
 
@@ -45,7 +48,8 @@ class QuarterSelectionForm(forms.Form):
             ('Qtr2', 'Qtr2'),
             ('Qtr3', 'Qtr3'),
             ('Qtr4', 'Qtr4'),
-        ]
+        ],
+        widget=forms.Select(attrs={'id': 'quarter-select'})
     )
 
 
@@ -54,7 +58,8 @@ class YearSelectionForm(forms.Form):
     YEAR_CHOICES = [(str(x), str(x)) for x in range(2021, current_year + 1)]
     year = forms.ChoiceField(
         choices=YEAR_CHOICES,
-        label="FY"
+        label="FY",
+        widget=forms.Select(attrs={'id': 'year-select'})
     )
 
 
@@ -68,15 +73,31 @@ class DateSelectionForm(forms.Form):
 class FacilitySelectionForm(forms.Form):
     name = forms.ModelChoiceField(
         queryset=Facilities.objects.all(),
-        empty_label="Select facility",
+        empty_label="Select Facility",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
+        required=False,
         initial=None  # Add this line to set the initial value to None
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, selected_year=None, selected_quarter=None, model_to_check=None, **kwargs):
         initial = kwargs.get('initial', {})
         super().__init__(*args, **kwargs)
         self.fields['name'].initial = initial.get('name')
+
+        # Only filter the queryset if both selected_year and selected_quarter are provided and model_to_check is
+        # provided
+        if selected_year and selected_quarter and model_to_check:
+            # Get the IDs of facilities that have related records in the model_to_check
+            facility_ids = model_to_check.objects.filter(
+                quarter_year__quarter_year=f"{selected_quarter}-{selected_year[-2:]}"
+            ).values_list('facility_name_id', flat=True)
+
+            # Update the queryset with the filtered facilities
+            self.fields['name'].queryset = Facilities.objects.filter(id__in=facility_ids)
+
+            # Preselect the first facility name if it exists
+            if self.fields['name'].queryset.exists():
+                self.fields['name'].initial = self.fields['name'].queryset.first()
 
 
 class DQAWorkPlanForm(ModelForm):
@@ -198,3 +219,73 @@ class ProgramSelectionForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control select2'}),
         initial=None  # Add this line to set the initial value to None
     )
+
+
+class BaseSqaForm(forms.ModelForm):
+    class Meta:
+        exclude = ['created_by', 'modified_by', 'quarter_year', 'facility_name']
+        abstract = True
+        widgets = {
+            'description': Textarea(attrs={'readonly': 'readonly', 'class': 'my-textarea', 'rows': '5'}),
+            'verification': Textarea(attrs={'readonly': 'readonly', 'class': 'my-textarea', 'rows': '4'}),
+            'numerator_description': Textarea(attrs={'readonly': 'readonly', 'class': 'my-textarea', 'rows': '5'}),
+            'denominator_description': Textarea(attrs={'readonly': 'readonly', 'class': 'my-textarea', 'rows': '5'}),
+
+            'numerator': NumberInput(attrs={'class': 'numerator-field', 'required': 'required'}),
+            'denominator': NumberInput(attrs={'class': 'denominator-field', 'required': 'required'}),
+            'dropdown_option': Select(attrs={'class': 'dropdown-option-field', 'required': 'required'}),
+        }
+
+
+class BaseForm(BaseSqaForm):
+    class Meta(BaseSqaForm.Meta):
+        abstract = True
+        # Common meta options go here
+
+    def __init__(self, *args, **kwargs):
+        # Call the parent constructor method
+        super().__init__(*args, **kwargs)
+        # Loop through all the fields in the form
+        for field in self.fields:
+            # Set the label of each field to False
+            self.fields[field].label = False
+
+
+class GbvForm(BaseForm):
+    class Meta(BaseForm.Meta):
+        model = Gbv
+
+
+class VmmcForm(BaseForm):
+    class Meta(BaseForm.Meta):
+        model = Vmmc
+
+
+class HtsForm(BaseForm):
+    class Meta(BaseForm.Meta):
+        model = Hts
+
+
+class PrepForm(BaseForm):
+    class Meta(BaseForm.Meta):
+        model = Prep
+
+
+class TbForm(BaseForm):
+    class Meta(BaseForm.Meta):
+        model = Tb
+
+
+class CareTreatmentForm(BaseForm):
+    class Meta(BaseForm.Meta):
+        model = CareTreatment
+
+
+class PharmacyForm(BaseForm):
+    class Meta(BaseForm.Meta):
+        model = Pharmacy
+
+
+class CqiForm(BaseForm):
+    class Meta(BaseForm.Meta):
+        model = Cqi

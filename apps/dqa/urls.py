@@ -2,10 +2,10 @@ from django.conf import settings
 from django.urls import include, path
 
 from apps.dqa.views import GeneratePDF, add_audit_team, add_data_verification, add_period, add_system_verification, \
-    delete_data_verification, dqa_dashboard, dqa_summary, dqa_work_plan_create, export_dqa_work_plan_csv, instructions, \
-    load_data, load_khis_data, load_system_data, show_audit_team, show_data_verification, show_dqa_work_plan, \
-    system_assessment_table, update_audit_team, update_button_settings, update_data_verification, update_dqa_workplan, \
-    update_system_assessment
+    choose_facilities_sqa, delete_data_verification, dqa_dashboard, dqa_summary, dqa_work_plan_create, \
+    export_dqa_work_plan_csv, instructions, load_data, load_khis_data, load_system_data, show_audit_team, \
+    show_data_verification, show_dqa_work_plan, sqa, system_assessment_table, update_audit_team, \
+    update_button_settings, update_data_verification, update_dqa_workplan, update_system_assessment
 
 urlpatterns = [
     path('add-data-verification/', add_data_verification, name="add_data_verification"),
@@ -36,6 +36,9 @@ urlpatterns = [
     path('generate-pdf/', GeneratePDF.as_view(), name='generate-pdf'),
     path('download-dqa-workplan/<str:quarter_year>/<str:selected_level>/', export_dqa_work_plan_csv,
          name='download_dqa_workplan'),
+
+    path('facility-sqa/', choose_facilities_sqa, name="choose_facilities_sqa"),
+    path('sqa/<str:report_name>/<str:quarter>/<str:year>/<uuid:pk>', sqa, name="sqa"),
 
 ]
 # Include debug toolbar URLs only in DEBUG mode

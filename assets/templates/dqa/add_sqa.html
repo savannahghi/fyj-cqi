@@ -1,0 +1,328 @@
+{% extends 'dqa/index_dqa.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+    <style>
+        .my-textarea {
+            height: auto !important;
+            width: 100%;
+            max-width: 600px;
+            background-color: #6c757d;
+            color: white;
+            resize: none;
+            padding: 8px;
+            border: none;
+            box-shadow: none;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-numerator-denominator {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .toggle-numerator-denominator:hover {
+            background-color: #3e8e41;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            width: 80px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 6px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+            -ms-transform: translateX(42px);
+            transform: translateX(42px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .on, .off {
+            color: white;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .on {
+            opacity: 0;
+        }
+
+        input:checked + .slider .on {
+            opacity: 1;
+        }
+
+        input:checked + .slider .off {
+            opacity: 0;
+        }
+
+        .on {
+            left: 25%;
+        }
+
+        .off {
+            left: 70%;
+        }
+
+    </style>
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h6 class="display-6 text-primary text-center">Service Quality Assessment (SQA)</h6>
+        <hr>
+        <div class="p-5 mb-4 bg-light rounded-3">
+            {% if messages %}
+                <!--group the messages by their text and display only one message for each unique text-->
+                {% regroup messages by message as message_list %}
+                {% for message in message_list %}
+                    <div class="alert alert-info col-12 animated fadeIn" role="alert">
+                        <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <div class="row">
+                <div class="row align-items-center border rounded mb-5">
+                    <div class="col-md-8">
+                        <div class="p-3 ">
+                            <h4 class="h5">Facility: {{ facility_name.name }}</h4>
+                            <h6 class="h6 mt-2">MFL Code: {{ facility_name.mfl_code }}</h6>
+                            <h6 class="h6 mt-2">Period: {{ quarter }}-{{ year }}</h6>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-right">
+                        <a href="{% url 'choose_facilities_sqa' %}" class="btn btn-secondary" role="button">Add SQA data
+                            for another facility</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container-fluid">
+                <div>
+                    <div class="d-flex justify-content-between mb-3">
+                        {% if "stock_cards" in filtered_data %}
+                        {% else %}
+                            {% if report_name == "gbv" %}
+                                <a href="{% url 'sqa' report_name='gbv' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-success">1.
+                                    GBV SQA</a>
+                            {% else %}
+                                <a href="{% url 'sqa' report_name='gbv' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-outline-success">1.
+                                    GBV SQA</a>
+                            {% endif %}
+                        {% endif %}
+                        {% if "vmmc" in filtered_data %}
+                        {% else %}
+                            {% if report_name == "vmmc" %}
+                                <a href="{% url 'sqa' report_name='vmmc' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-success">2.
+                                    VMMC SQA</a>
+                            {% else %}
+                                <a href="{% url 'sqa' report_name='vmmc' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-outline-success">2.
+                                    VMMC SQA</a>
+                            {% endif %}
+                        {% endif %}
+                        {% if "hts" in filtered_data %}
+                        {% else %}
+                            {% if report_name == "hts" %}
+                                <a href="{% url 'sqa' report_name='hts' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-success">3.
+                                    HTS SQA</a>
+                            {% else %}
+                                <a href="{% url 'sqa' report_name='hts' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-outline-success">3. HTS SQA</a>
+                            {% endif %}
+                        {% endif %}
+                        {% if "prep" in filtered_data %}
+                        {% else %}
+                            {% if report_name == "prep" %}
+                                <a href="{% url 'sqa' report_name='prep' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-success">
+                                    4. PrEP SQA</a>
+                            {% else %}
+                                <a href="{% url 'sqa' report_name='prep' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-outline-success">4. PrEP SQA</a>
+                            {% endif %}
+                        {% endif %}
+                        {% if "tb" in filtered_data %}
+                        {% else %}
+                            {% if report_name == "tb" %}
+                                <a href="{% url 'sqa' report_name='tb' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-success">5.
+                                    TB SQA</a>
+                            {% else %}
+                                <a href="{% url 'sqa' report_name='tb' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-outline-success">5.
+                                    TB SQA</a>
+                            {% endif %}
+                        {% endif %}
+                        {% if "care_treatment" in filtered_data %}
+                        {% else %}
+                            {% if report_name == "care_treatment" %}
+                                <a href="{% url 'sqa' report_name='care_treatment' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-success">6.
+                                    CARE & TREATMENT SQA</a>
+                            {% else %}
+                                <a href="{% url 'sqa' report_name='care_treatment' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-outline-success">6. CARE & TREATMENT SQA</a>
+                            {% endif %}
+                        {% endif %}
+                        {% if "pharmacy" in filtered_data %}
+                        {% else %}
+                            {% if report_name == "pharmacy" %}
+                                <a href="{% url 'sqa' report_name='pharmacy' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-success">7.
+                                    PHARMACY SQA</a>
+                            {% else %}
+                                <a href="{% url 'sqa' report_name='pharmacy' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-outline-success">7.
+                                    PHARMACY SQA</a>
+                            {% endif %}
+                        {% endif %}
+                        {% if "cqi" in filtered_data %}
+                        {% else %}
+                            {% if report_name == "cqi" %}
+                                <a href="{% url 'sqa' report_name='cqi' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-success">8.
+                                    CQI SQA</a>
+                            {% else %}
+                                <a href="{% url 'sqa' report_name='cqi' quarter=quarter year=year pk=facility_id %}"
+                                   class="btn btn-outline-success">8.
+                                    CQI SQA</a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    <table class="table table-striped table-hover table-bordered" style="font-size: x-small;">
+                        <thead class="thead-dark text-center">
+                        <tr>
+                            <th>Indicator / Question</th>
+                            <th>Probable Response</th>
+                            <th>Verification / Observation</th>
+                            <th>Numerator</th>
+                            <th>Denominator</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for form in formset %}
+                            <tr>
+                                <td class="fw-bold">
+                                    {{ form.description }}
+                                </td>
+                                <td>{{ form.dropdown_option|as_crispy_field }}</td>
+                                <td>{{ form.verification|as_crispy_field }}
+                                    <label class="switch">
+                                        <input type="checkbox" class="toggle-numerator-denominator"
+                                               data-index="{{ forloop.counter0 }}">
+                                        <span class="slider round">
+                                            <span class="on">Show</span>
+                                            <span class="off">Hide</span>
+                                        </span>
+                                    </label>
+                                </td>
+                                <td>{{ form.numerator_description }}
+                                    <div id="numerator-div-{{ forloop.counter0 }}">
+                                        {{ form.numerator|as_crispy_field }}
+                                    </div>
+                                </td>
+                                <td>{{ form.denominator_description }}
+                                    <div id="denominator-div-{{ forloop.counter0 }}">
+                                        {{ form.denominator|as_crispy_field }}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="col-md-2 mt-2 pt-3">
+                        <input class="btn btn-success mt-1" type="submit" value="Save">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+    <script>
+        $(document).ready(function () {
+            $('.toggle-numerator-denominator').click(function () {
+                var index = $(this).data('index');
+                var numeratorDiv = $('#numerator-div-' + index);
+                var denominatorDiv = $('#denominator-div-' + index);
+                if (numeratorDiv.is(':visible')) {
+                    numeratorDiv.find('.numerator-field').removeAttr('required');
+                    denominatorDiv.find('.denominator-field').removeAttr('required');
+                } else {
+                    numeratorDiv.find('.numerator-field').attr('required', 'required');
+                    denominatorDiv.find('.denominator-field').attr('required', 'required');
+                }
+                numeratorDiv.toggle();
+                denominatorDiv.toggle();
+            });
+        });
+    </script>
+{% endblock %}

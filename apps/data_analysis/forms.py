@@ -10,11 +10,18 @@ class DateFilterForm(forms.Form):
 
 
 class FileUploadForm(forms.Form):
-    file = forms.FileField()
+    file = forms.FileField(label="File")
+
+
+class EmrFileUploadForm(forms.Form):
+    file1 = forms.FileField(label="File")
+
+
 class MultipleUploadForm(forms.Form):
     files = MultiFileField(min_num=1, max_num=12,
                            # max_file_size=1024 * 1024 * 5
                            )  # Adjust max_num and max_file_size as needed
+
 
 class DataFilterForm(forms.Form):
     CHOICES = [

@@ -1,0 +1,279 @@
+{% extends 'data_analysis/index_dqa.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div>
+                <div class="container-fluid py-5">
+                    {% if messages %}
+                        {% for message in messages|slice:":1" %}
+                            <div class="alert alert-info col-12" role="alert">
+                                <h6 style="font-size: x-small">
+                                    {{ message|safe }}
+                                </h6>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="d-flex justify-content-around mb-3">
+                        {% if dqa_type == "tat" %}
+                            <a href="{% url 'tat' %}" class="btn btn-success">Turn Around Time (TAT)</a>
+                        {% else %}
+                            <a href="{% url 'tat' %}" class="btn btn-outline-success">Turn Around Time (TAT)</a>
+                        {% endif %}
+                        {% if dqa_type == "viral_load" %}
+                            <a href="{% url 'viral_load' %}" class="btn btn-success">VL Analyzer</a>
+                        {% else %}
+                            <a href="{% url 'viral_load' %}" class="btn btn-outline-success">VL Analyzer</a>
+                        {% endif %}
+                        {% if dqa_type == "viral track" %}
+                            <a href="{% url 'viral_track' %}" class="btn btn-success">Viral Track</a>
+                        {% else %}
+                            <a href="{% url 'viral_track' %}" class="btn btn-outline-success">Viral Track</a>
+                        {% endif %}
+                        {% if dqa_type == "rtk" %}
+                            <a href="{% url 'rtk_visualization' %}" class="btn btn-success">HCMP REPORT</a>
+                        {% else %}
+
+                            <a href="{% url 'rtk_visualization' %}" class="btn btn-outline-success">HCMP REPORT</a>
+                        {% endif %}
+                    </div>
+                    <form method="post" id="filter-form" enctype="multipart/form-data" class="mt-5">
+                        {% csrf_token %}
+                        <div class="container">
+                            <div class="row align-items-center">
+                                <div class="col-md-3 text-center">
+                                    <img class="img-fluid" src="{% static 'images/lab.png' %}" alt="Lab Image"
+                                         width="200">
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="row">
+                                        <div class="col mb-4">
+                                            <h3 class="text-primary">{{ target_text }} Viral Tracker</h3>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <p><strong>Instructions:</strong></p>
+                                            <ol class="mb-4">
+                                                <li>Log in to the <a href="https://eiddash.nascop.org/reports/VL"
+                                                                     target="_blank">NASCOP's website</a> and download
+                                                    the overall Detailed (Viral Load) CSV (one year ago data from the
+                                                    current month).
+                                                </li>
+                                                <li>Recreate tables in KenyaEMR and download the Active on ART Patients
+                                                    Line list.csv.
+                                                </li>
+                                                <li>Upload the overall Detailed (Viral Load) CSV file from NASCOP's
+                                                    website and the updated Active on ART Patients Linelist.csv from
+                                                    KenyaEMR.
+                                                </li>
+                                                <li>Click "Submit".</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="id_file1" class="form-label">KenyaEMR (Active on ART Patients
+                                                Linelist):</label>
+                                            <div class="input-group">
+                                                {{ form_emr.file1|as_crispy_field }}
+                                                {% if form_emr.file1.value %}
+                                                    <p class="form-text text-muted">Uploaded
+                                                        File: {{ form_emr.file1.value.name }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="id_file" class="form-label">NASCOP's (Overall Detailed VL
+                                                report):</label>
+                                            <div class="input-group">
+                                                {{ form.file|as_crispy_field }}
+                                                {% if form.file.value %}
+                                                    <p class="form-text text-muted">Uploaded
+                                                        File: {{ form.file.value.name }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col text-center">
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="row">
+                    <!-- Row with 4 buttons -->
+                    {% if not backlog_df.empty %}
+                        <div class="col-3 p-2">
+                            <a href="{% url 'download_csv' dictionary.backlog_df "vl_backlog" %}">
+                                <button type="button" class="btn btn-secondary btn-floating w-100"
+                                        data-mdb-ripple-color="dark">
+                                    VL backlog (All) <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if not discordant_results.empty %}
+                        <div class="col-3 p-2">
+                            <a href="{% url 'download_csv' dictionary.discordant_results "discordant_results" %}">
+                                <button type="button" class="btn btn-secondary btn-floating w-100"
+                                        data-mdb-ripple-color="dark">
+                                    Discordant VL report <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if not results_not_in_nascop_overall.empty %}
+                        <div class="col-3 p-2">
+                            <a href="{% url 'download_csv' dictionary.results_not_in_nascop_overall "results_not_in_nascop_overall" %}">
+                                <button type="button" class="btn btn-secondary btn-floating w-100"
+                                        data-mdb-ripple-color="dark">
+                                    VL results missing in NASCOP website <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if not missing_in_emr.empty %}
+                        <div class="col-3 p-2">
+                            <a href="{% url 'download_csv' dictionary.missing_in_emr "missing_in_emr" %}">
+                                <button type="button" class="btn btn-secondary btn-floating w-100"
+                                        data-mdb-ripple-color="dark">
+                                    VL Missing in EMR <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+        <hr>
+        <div class="container">
+            <div class="row">
+                {% if vl_backlog_fig %}
+                    <div class="col-12 mb-4">
+                        {{ vl_uptake_fig|safe }}
+                    </div>
+                    <hr>
+                {% endif %}
+                {% if vl_backlog_fig %}
+                    <div class="col-12 mb-4">
+                        {{ vl_backlog_fig|safe }}
+                    </div>
+                    <hr>
+                {% endif %}
+                {% if vl_backlog_detailed_fig %}
+                    <div class="col-12 mb-4">
+                        {{ vl_backlog_detailed_fig|safe }}
+                    </div>
+                    <div class="row">
+                        <!-- Row 1 -->
+                        {% if not no_vl_ever.empty %}
+                            <div class="col-3 p-2">
+                                <a href="{% url 'download_csv' dictionary.no_vl_ever "no_vl_ever" %}">
+                                    <button type="button" class="btn btn-secondary btn-floating w-100"
+                                            data-mdb-ripple-color="dark">
+                                        No VL ever <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {% if not missed_12mons_above_25yrs.empty %}
+                            <div class="col-3 p-2">
+                                <a href="{% url 'download_csv' dictionary.missed_12mons_above_25yrs "missed_12mons_above_25yrs" %}">
+                                    <button type="button" class="btn btn-secondary btn-floating w-100"
+                                            data-mdb-ripple-color="dark">
+                                        Missed 12 months VL (>= 25yrs) <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {% if not missed_6mons_zero_24yrs.empty %}
+                            <div class="col-3 p-2">
+                                <a href="{% url 'download_csv' dictionary.missed_6mons_zero_24yrs "missed_6mons_zero_24yrs" %}">
+                                    <button type="button" class="btn btn-secondary btn-floating w-100"
+                                            data-mdb-ripple-color="dark">
+                                        Missed 6 months VL (0-24 yrs) <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {% if not missed_6mons_pregnant.empty %}
+                            <div class="col-3 p-2">
+                                <a href="{% url 'download_csv' dictionary.missed_6mons_pregnant "missed 6months pg and bf" %}">
+                                    <button type="button" class="btn btn-secondary btn-floating w-100"
+                                            data-mdb-ripple-color="dark">
+                                        Missed 6 months VL (pg/bf) <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <!-- Row 2 -->
+                        {% if not hvl_df.empty %}
+                            <div class="col-3 p-2">
+                                <a href="{% url 'download_csv' dictionary.hvl_df "hvl" %}">
+                                    <button type="button" class="btn btn-secondary btn-floating w-100"
+                                            data-mdb-ripple-color="dark">
+                                        HVL (All) <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                        {% if not hvl_above_25yrs.empty %}
+                            <div class="col-3 p-2">
+                                <a href="{% url 'download_csv' dictionary.hvl_above_25yrs "hvl_above_25yrs" %}">
+                                    <button type="button" class="btn btn-secondary btn-floating w-100"
+                                            data-mdb-ripple-color="dark">
+                                        HVL (>=25 yrs) <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                        {% if not hvl_zero_24yrs.empty %}
+                            <div class="col-3 p-2">
+                                <a href="{% url 'download_csv' dictionary.hvl_zero_24yrs "hvl_zero_24yrs" %}">
+                                    <button type="button" class="btn btn-secondary btn-floating w-100"
+                                            data-mdb-ripple-color="dark">
+                                        HVL (0-24yrs) <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                        {% if not hvl_pregnant.empty %}
+                            <div class="col-3 p-2">
+                                <a href="{% url 'download_csv' dictionary.hvl_pregnant "hvl_pregnant" %}">
+                                    <button type="button" class="btn btn-secondary btn-floating w-100"
+                                            data-mdb-ripple-color="dark">
+                                        HVL (pg/bf) <i class="fas fa-download"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {% if vl_cascade_fig %}
+                    <div class="col-12">
+                        {{ vl_cascade_fig|safe }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

@@ -31,6 +31,12 @@
                     {% else %}
                         <a href="{% url 'viral_load' %}" class="btn btn-outline-success">VL Analyzer</a>
                     {% endif %}
+                    {% if dqa_type == "viral track" %}
+                        <a href="{% url 'viral_track' %}" class="btn btn-success">Viral Track</a>
+                    {% else %}
+
+                        <a href="{% url 'viral_track' %}" class="btn btn-outline-success">Viral Track</a>
+                    {% endif %}
                     {% if dqa_type == "rtk" %}
                         <a href="{% url 'rtk_visualization' %}" class="btn btn-success">HCMP: Opening vs Closing bal</a>
                     {% else %}

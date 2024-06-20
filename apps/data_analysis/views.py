@@ -19,12 +19,16 @@ from django.utils.datastructures import MultiValueDictKeyError
 from django.views.generic import FormView
 from plotly.offline import plot
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 # from silk.profiling.profiler import silk_profile
 
-from apps.data_analysis.forms import DataFilterForm, DateFilterForm, FileUploadForm, MultipleUploadForm
+from apps.data_analysis.forms import DataFilterForm, DateFilterForm, EmrFileUploadForm, FileUploadForm, \
+    MultipleUploadForm
 from apps.data_analysis.models import FYJHealthFacility, RTKData
 from .filters import RTKDataFilter, RTKInventoryFilter
 from ..cqi.models import Facilities, Sub_counties
+from ..cqi.views import bar_chart
 
 
 @login_required(login_url='login')
@@ -4172,3 +4176,670 @@ def rtk_inventory_viz(request):
 
     return rendered_view
     # return render(request, 'data_analysis/rtk_viz.html', context)
+
+def transform_nascop_data(df1, one_year_ago):
+    df1 = df1.drop_duplicates("Patient CCC No", keep="last")
+
+    # df1.loc[:, 'Date Collected'] = pd.to_datetime(df1['Date Collected'], dayfirst=True)
+    try:
+        df1.loc[:, 'Date Collected'] = pd.to_datetime(df1['Date Collected'], dayfirst=True)
+    except ValueError:
+        df1['Date Collected'] = pd.to_datetime(df1['Date Collected'])
+    # Filter the DataFrame to include only rows where 'Date Collected' more than 1 year ago
+    df1 = df1[df1['Date Collected'] > one_year_ago]
+
+    df1.loc[:, 'Date Collected'] = pd.to_datetime(df1['Date Collected'], dayfirst=True)
+
+    facility_code = \
+        df1.groupby(['Facility Code']).count()['Facilty'].reset_index().sort_values("Facilty", ascending=False).head(1)[
+            'Facility Code'].unique()[0]
+
+    df1 = df1[df1['Facility Code'] == facility_code]
+    df1['Date Collected'] = pd.to_datetime(df1['Date Collected'], errors='coerce')
+    df1.loc[:, "Patient CCC No"] = df1["Patient CCC No"].astype(str)
+    # df1['Patient CCC No'] = df1['Patient CCC No'].str.replace(".0", "")
+    return df1
+
+
+def age_buckets_pepfar(age):
+    """Convert age to age ranges."""
+    if age < 1:
+        return '< 1'
+    elif 1 <= age <= 4:
+        return '1-4'
+    elif 5 <= age <= 9:
+        return '5-9'
+    elif 10 <= age <= 14:
+        return '10-14'
+    elif 15 <= age <= 19:
+        return '15-19'
+    elif 20 <= age <= 24:
+        return '20-24'
+    elif 25 <= age <= 29:
+        return '25-29'
+    elif 30 <= age <= 34:
+        return '30-34'
+    elif 35 <= age <= 39:
+        return '35-39'
+    elif 40 <= age <= 44:
+        return '40-44'
+    elif 45 <= age <= 49:
+        return '45-49'
+    elif 50 <= age <= 54:
+        return '50-54'
+    elif 55 <= age <= 59:
+        return '55-59'
+    elif 60 <= age <= 64:
+        return '60-64'
+
+    else:
+        return '65+'
+
+
+def transform_emr_data(df):
+    df = df[df['Age at reporting'].notna()]
+    df.loc[:, "Last VL Result"] = df["Last VL Result"].replace("0", "LDL")
+    df['Last VL Date'] = pd.to_datetime(df['Last VL Date'], dayfirst=True)
+    df.loc[:, 'Art Start Date'] = pd.to_datetime(df['Art Start Date'], dayfirst=True)
+    df.loc[:, 'DOB'] = pd.to_datetime(df['DOB'], dayfirst=True)
+    df['age_band'] = df['Age at reporting'].apply(age_buckets_pepfar)
+    df.loc[:, "CCC No"] = df["CCC No"].astype(str)
+    # df['CCC No'] = df['CCC No'].str.replace(".0", "")
+    return df
+
+
+def rename_nascop_kenyaemr_cols(discordant_results):
+    return discordant_results.rename(
+        columns={'Last VL Result': 'Last VL Result (KenyaEMR)', 'Last VL Date': 'Last VL Date (KenyaEMR)',
+                 'Date Collected': "Date Collected (NASCOP's)",
+                 "Result": "Result (NASCOP's)"})
+
+
+def separate_dfs(df, df1, current_date):
+    merged_df_100 = pd.merge(df, df1, left_on=['CCC No', 'Last VL Date'], right_on=['Patient CCC No', 'Date Collected'])
+    merged_df_100 = merged_df_100[
+        ['CCC No', "Age at reporting", 'age_band', 'Sex', 'Last VL Date', 'Last VL Result', 'Date Collected', 'Result']]
+
+    set2 = set(merged_df_100['CCC No'].unique())
+    set1 = set(df['CCC No'].unique())
+
+    missing = list(sorted(set1 - set2))
+
+    not_merged = df[df['CCC No'].isin(missing)]
+
+    merged_df_ccc_only = pd.merge(not_merged, df1, left_on='CCC No', right_on='Patient CCC No')[
+        ['CCC No', "Age at reporting", 'age_band', 'Sex', 'Last VL Date', 'Last VL Result', 'Date Collected',
+         'Result', ]]
+    merged_df_ccc_only['date_difference'] = (
+            merged_df_ccc_only['Date Collected'] - merged_df_ccc_only['Last VL Date']).dt.days
+    merged_df_ccc_only_above0 = merged_df_ccc_only[merged_df_ccc_only['date_difference'] >= 0].sort_values(
+        "date_difference", ascending=False)
+    has_results_within_test_month_above0 = merged_df_ccc_only_above0[merged_df_ccc_only_above0['date_difference'] <= 30]
+
+    missing_results_outside_test_month = merged_df_ccc_only_above0[merged_df_ccc_only_above0['date_difference'] > 30]
+    merged_df_ccc_only_below0 = merged_df_ccc_only[
+        ~merged_df_ccc_only['CCC No'].isin(merged_df_ccc_only_above0['CCC No'].unique())].sort_values("date_difference",
+                                                                                                      ascending=False)
+
+    has_results_within_test_month_below0 = merged_df_ccc_only_below0[
+        merged_df_ccc_only_below0['date_difference'] >= -30]
+    results_not_in_nascop = merged_df_ccc_only_below0[merged_df_ccc_only_below0['date_difference'] < -30]
+
+    accountable_results_above0 = list(missing_results_outside_test_month['CCC No'].unique()) + list(
+        has_results_within_test_month_above0['CCC No'].unique())
+    missing_results_above0 = merged_df_ccc_only_above0[
+        ~merged_df_ccc_only_above0['CCC No'].isin(accountable_results_above0)].sort_values("date_difference",
+                                                                                           ascending=False)
+    accountable_results_below0 = list(results_not_in_nascop['CCC No'].unique()) + list(
+        has_results_within_test_month_below0['CCC No'].unique())
+
+    missing_results_below0 = merged_df_ccc_only_below0[
+        ~merged_df_ccc_only_below0['CCC No'].isin(accountable_results_below0)].sort_values("date_difference",
+                                                                                           ascending=False)
+
+    missing_results_ccc_only = pd.concat([missing_results_above0, missing_results_below0])
+
+    accountable_result_only_ccc = accountable_results_above0 + accountable_results_below0 + list(
+        missing_results_ccc_only['CCC No'].unique())
+
+    not_merged1 = not_merged[~not_merged['CCC No'].isin(accountable_result_only_ccc)]
+
+    # Calculate the date one year ago from the current date
+    one_year_ago = current_date - pd.DateOffset(years=1)
+
+    # Filter the DataFrame to include only rows where 'Date Collected' more than 1 year ago
+    not_merged1_one_year_ago = not_merged1[not_merged1['Last VL Date'] < one_year_ago]
+    return not_merged1_one_year_ago, not_merged1, has_results_within_test_month_above0, has_results_within_test_month_below0, merged_df_100, results_not_in_nascop, missing_results_outside_test_month, missing_results_below0
+
+
+def categorize_vl(df):
+    df = df.copy()
+    ldl_df = df[df['Last VL Result'] == "LDL"]
+    non_ldl_df = df[df['Last VL Result'] != "LDL"]
+    non_vl = non_ldl_df[non_ldl_df['Last VL Result'].isnull()]
+    non_vl = non_vl.copy()
+    if not non_vl.empty:
+        non_vl.loc[:, 'Last_VL_Category'] = "no vl"
+    non_null_df = non_ldl_df[non_ldl_df['Last VL Result'].notnull()]
+    non_null_df.loc[:, 'Last VL Result'] = non_null_df['Last VL Result'].astype(int)
+    new_ldl = non_null_df[non_null_df['Last VL Result'] <= 50]
+    hvl = non_null_df[non_null_df['Last VL Result'] > 50]
+    hvl = hvl.copy()
+    if not hvl.empty:
+        hvl.loc[:, 'Last_VL_Category'] = "HVL"
+    hvl_above_1000 = hvl[hvl['Last VL Result'] >= 1000]
+    hvl_above_200 = hvl[hvl['Last VL Result'] >= 200]
+    ldl_so_far = pd.concat([ldl_df, new_ldl])
+    if not ldl_so_far.empty:
+        ldl_so_far['Last_VL_Category'] = "LDL"
+    df = pd.concat([ldl_so_far, hvl, non_vl])
+    return df
+
+
+def split_by_eligibility(possible_invalid):
+    # Get the current date
+    current_date = pd.to_datetime(datetime.now().date())
+    possible_invalid['Art Start Date'] = pd.to_datetime(possible_invalid['Art Start Date'])
+    # Calculate the difference in days between 'current_date' and 'Last VL Date'
+    possible_invalid['days_since_last_vl'] = (current_date - possible_invalid['Last VL Date']).dt.days
+    possible_invalid['days_since_started_art'] = (current_date - possible_invalid['Art Start Date']).dt.days
+
+    last_6_months = possible_invalid[possible_invalid['days_since_started_art'] <= 180]
+    above_6_months = possible_invalid[possible_invalid['days_since_started_art'] > 180]
+    not_on_art = possible_invalid[possible_invalid['days_since_started_art'].isnull()]
+
+    pregnant = above_6_months[(above_6_months['Active in PMTCT'] == "Yes")]
+    non_pregnant = above_6_months[(above_6_months['Active in PMTCT'] != "Yes")]
+    zero_24yrs = non_pregnant[non_pregnant['Age at reporting'] < 25]
+    above_25yrs = non_pregnant[non_pregnant['Age at reporting'] >= 25]
+    return last_6_months, above_6_months, not_on_art, pregnant, zero_24yrs, above_25yrs
+
+
+def filter_hvl(above_25yrs):
+    return above_25yrs[
+        ~(above_25yrs["Last_VL_Category"].str.contains("ldl", case=False)) & (above_25yrs['days_since_last_vl'] >= 120)]
+
+
+def filter_ldl_eligible(above_25yrs):
+    return above_25yrs[
+        (above_25yrs["Last_VL_Category"].str.contains("ldl", case=False)) & (above_25yrs['days_since_last_vl'] >= 180)]
+
+
+def filter_missed_12__months_vl(pregnant):
+    missed_6mons_pregnant = pregnant[
+        (pregnant['days_since_last_vl'] > 365) & (pregnant["Last_VL_Category"].str.contains("ldl", case=False))]
+    return missed_6mons_pregnant
+
+
+def generate_duedates(above_25yrs, month_duedates, col):
+    patient_due_list = []
+
+    for i, (lower, upper) in enumerate(month_duedates, start=1):
+        patients_due = above_25yrs[(above_25yrs[col] > lower) & (above_25yrs[col] <= upper)].copy()
+        patients_due["Due in (n) months"] = i
+        patient_due_list.append(patients_due)
+
+    due_next_12_months_raw = pd.concat(patient_due_list)
+    due_next_12_months = due_next_12_months_raw.groupby('Due in (n) months').count()['CCC No'].reset_index()
+    due_next_12_months.columns = ["Due in (n) months", "Numbers"]
+    return due_next_12_months, due_next_12_months_raw, patient_due_list
+
+
+# def compute_month_year(n_months, current_date=None):
+#     month_index = (current_date.month + n_months - 1) % 12 + 1
+#     month_abbr = calendar.month_abbr[month_index]
+#     year = current_date.year + (current_date.month + n_months - 1) // 12
+#     return f"{month_abbr}-{year}"
+
+
+def filter_missed_6__months_vl(pregnant):
+    missed_6mons_pregnant = pregnant[
+        (pregnant['days_since_last_vl'] > 180) & (pregnant["Last_VL_Category"].str.contains("ldl", case=False))]
+    return missed_6mons_pregnant
+
+
+# Calculate the date 4 months ago from today
+def filter_tx_new_not_eligible(last_6_months):
+    no_vl_last_6_months = last_6_months[
+        (last_6_months['Last VL Date'].isnull()) & (last_6_months['days_since_last_vl'] < 120)]
+    return no_vl_last_6_months
+
+
+# Calculate the date 4 months ago from today
+def filter_no_vl_lastn_months(last_6_months):
+    no_vl_last_6_months = last_6_months[
+        (last_6_months['Last VL Date'].isnull()) & (last_6_months['days_since_last_vl'] >= 120)]
+    return no_vl_last_6_months
+
+
+def categorize_eligible_patients(last_6_months, pregnant, zero_24yrs, above_25yrs):
+    last_6_months_with_vl = last_6_months[
+        (last_6_months['Last VL Date'].notnull()) & (last_6_months['days_since_last_vl'] >= 120)]
+
+    no_vl_last_6_months = filter_no_vl_lastn_months(last_6_months)
+    # pregnant
+
+    no_vl_pregnant = filter_no_vl_lastn_months(pregnant)
+    # 0-24
+    no_vl_zero_24yrs = filter_no_vl_lastn_months(zero_24yrs)
+    # 25+
+    no_vl_above_25yrs = filter_no_vl_lastn_months(above_25yrs)
+    no_vl_ever = pd.concat([no_vl_above_25yrs, no_vl_zero_24yrs, no_vl_pregnant, no_vl_last_6_months])
+    no_vl_ever = no_vl_ever.copy()
+    if not no_vl_ever.empty:
+        no_vl_ever['eligibility criteria'] = "no vl ever"
+
+    # TX NEW NOT ELIGIBLE
+    tx_new_not_eligible = filter_tx_new_not_eligible(last_6_months)
+
+    missed_6mons_zero_24yrs = filter_missed_6__months_vl(zero_24yrs)
+    missed_6mons_zero_24yrs = missed_6mons_zero_24yrs.copy()
+    if not missed_6mons_zero_24yrs.empty:
+        missed_6mons_zero_24yrs['eligibility criteria'] = "missed 6 months vl (0-24yrs)"
+
+    no_vl_so_far = pd.concat([missed_6mons_zero_24yrs, no_vl_ever])
+
+    missed_6mons_pregnant = filter_missed_6__months_vl(pregnant)
+    missed_6mons_pregnant = missed_6mons_pregnant.copy()
+    if not missed_6mons_pregnant.empty:
+        missed_6mons_pregnant['eligibility criteria'] = "missed 6 months vl (pg/bf)"
+
+    missed_12mons_above_25yrs = filter_missed_12__months_vl(above_25yrs)
+    missed_12mons_above_25yrs = missed_12mons_above_25yrs.copy()
+    if not missed_12mons_above_25yrs.empty:
+        missed_12mons_above_25yrs.loc[:, 'eligibility criteria'] = "missed 12 months vl (>25yrs)"
+
+    no_vl_so_far = pd.concat([missed_6mons_zero_24yrs, no_vl_ever, missed_6mons_pregnant, missed_12mons_above_25yrs])
+
+    hvl_last_6_months = filter_hvl(last_6_months_with_vl)
+    hvl_last_6_months = hvl_last_6_months.copy()
+    if not hvl_last_6_months.empty:
+        hvl_last_6_months['eligibility criteria'] = "hvl within last 6 months"
+
+    hvl_above_25yrs = filter_hvl(above_25yrs)
+    hvl_above_25yrs = hvl_above_25yrs.copy()
+    if not hvl_above_25yrs.empty:
+        hvl_above_25yrs['eligibility criteria'] = "hvl (>25yrs)"
+
+    hvl_zero_24yrs = filter_hvl(zero_24yrs)
+    hvl_zero_24yrs = hvl_zero_24yrs.copy()
+    if not hvl_zero_24yrs.empty:
+        hvl_zero_24yrs['eligibility criteria'] = "hvl (0-24yrs)"
+
+    hvl_pregnant = filter_hvl(pregnant)
+    hvl_pregnant = hvl_pregnant.copy()
+    if not hvl_pregnant.empty:
+        hvl_pregnant['eligibility criteria'] = "hvl (pg/bf)"
+    hvl_df = pd.concat([hvl_pregnant, hvl_above_25yrs, hvl_zero_24yrs])
+
+    no_vl_so_far_ = pd.concat([no_vl_so_far, hvl_df])
+    no_vl_so_far_ = no_vl_so_far_.drop_duplicates("CCC No", keep="last")
+    return no_vl_so_far_, tx_new_not_eligible
+
+
+def process_vl_backlog(not_merged1_one_year_ago):
+    not_merged1_one_year_ago_ = categorize_vl(not_merged1_one_year_ago)
+    last_6_months, above_6_months, not_on_art, pregnant, zero_24yrs, above_25yrs = split_by_eligibility(
+        not_merged1_one_year_ago_)
+    no_vl_so_far, tx_new_not_eligible = categorize_eligible_patients(
+        last_6_months, pregnant, zero_24yrs, above_25yrs)
+    return no_vl_so_far, tx_new_not_eligible
+
+
+def generate_reports(no_vl_so_far, not_merged1, merged_df_100, has_results_within_test_month_above0,
+                     has_results_within_test_month_below0, facility_name, results_not_in_nascop,
+                     missing_results_outside_test_month, missing_results_below0):
+    no_vl_list = list(no_vl_so_far['CCC No'].unique())
+    missing_list = not_merged1[~not_merged1['CCC No'].isin(no_vl_list)]
+    no_vl_so_far_within_one_year, tx_new_not_eligible = process_vl_backlog(missing_list)
+    no_vl_list_1 = list(no_vl_so_far_within_one_year['CCC No'].unique())
+    with_results_no_ccc_merge = missing_list[~missing_list['CCC No'].isin(no_vl_list_1)]
+    no_vl_ever = with_results_no_ccc_merge[with_results_no_ccc_merge['Last VL Date'].isnull()].copy()
+    no_vl_ever.loc[:, 'eligibility criteria'] = "No VL ever"
+
+    results_not_in_nascop1 = with_results_no_ccc_merge[with_results_no_ccc_merge['Last VL Date'].notnull()]
+    # WITH RESULTS
+    with_results_df = pd.concat(
+        [merged_df_100, has_results_within_test_month_above0, has_results_within_test_month_below0])
+    # BACK LOG
+    backlog_df = pd.concat([no_vl_so_far_within_one_year, no_vl_so_far, no_vl_ever])
+
+
+    # No results in NASCOP
+    results_not_in_nascop1 = results_not_in_nascop1[
+        ['CCC No', 'Age at reporting', 'age_band', 'Sex', 'Last VL Date', 'Last VL Result']]
+    results_not_in_nascop_overall = pd.concat([results_not_in_nascop, results_not_in_nascop1]).copy()
+    results_not_in_nascop_overall['reason'] = "Result not in NASCOP's website"
+
+
+    # Missing Result in KenyaEMR
+    missing_in_emr = pd.concat([missing_results_outside_test_month, missing_results_below0])
+    missing_in_emr['reason'] = "Result Not in KenyaEMR"
+    missing_in_emr = pd.concat([missing_in_emr, results_not_in_nascop]).reset_index(drop=True)
+    missing_in_emr.index += 1
+    del missing_in_emr['date_difference']
+
+    missing_in_emr = rename_nascop_kenyaemr_cols(missing_in_emr)
+
+    with_results_df.loc[:, 'Last VL Result'] = with_results_df['Last VL Result'].replace(0, "LDL")
+    with_results_df.loc[:, 'Result'] = with_results_df['Result'].replace("< LDL copies/ml", "LDL")
+
+    # results discordance
+    discordant_results = with_results_df[with_results_df['Last VL Result'] != with_results_df['Result']]
+    discordant_results = rename_nascop_kenyaemr_cols(discordant_results)
+    del discordant_results['date_difference']
+    return discordant_results, with_results_df, missing_in_emr, results_not_in_nascop_overall, backlog_df, no_vl_ever
+
+
+def prep_categorical_columns(backlog_df, col):
+    dist_backlog = backlog_df.groupby([col]).count()['CCC No'].reset_index()
+    dist_backlog.columns = [col, 'TX_CURR']
+    dist_backlog['%'] = round(dist_backlog['TX_CURR'] / dist_backlog['TX_CURR'].sum() * 100, ).astype(int)
+    dist_backlog['%'] = dist_backlog['TX_CURR'].astype(str) + " (" + dist_backlog['%'].astype(str) + "%)"
+    return dist_backlog
+
+
+def sort_custom_agebands(df, col):
+    # Define the custom sorting order
+    custom_order = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
+                    '50-54', '55-59', '60-64', '65+']
+
+    # Convert the specified column to Categorical with custom ordering
+    df[col] = pd.Categorical(df[col], categories=custom_order, ordered=True)
+
+    # Get the unique values present in the specified column
+    available_age_bands = df[col].unique()
+
+    # Sort the DataFrame by the specified column
+    df = df.sort_values(col)
+
+    # Return the sorted DataFrame and the available custom order
+    return df, available_age_bands
+
+
+def create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake):
+    # Create subplots with secondary y-axis
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Add traces
+    fig.add_trace(
+        go.Bar(x=vl_uptake_df['Age band'], y=vl_uptake_df['TX_CURR'], name='TX_CURR',
+               # marker_color='blue',
+               marker={'color': 'blue'},
+               text=vl_uptake_df['TX_CURR'],  # Add text labels
+               texttemplate='<b><span style="color:blue">%{text:}</span></b>',
+               textposition='outside'  # Position the text outside the bars
+               ),
+        secondary_y=False,
+    )
+
+    fig.add_trace(
+        go.Bar(x=vl_uptake_df['Age band'], y=vl_uptake_df['valid results'], name='Valid results',
+               # marker_color='green',
+               marker={'color': 'green'},
+               text=vl_uptake_df['valid results'],  # Add text labels
+               texttemplate='<b><span style="color:green">%{text:}</span></b>',
+               textposition='outside'  # Position the text outside the bars
+               ),
+        secondary_y=False,
+    )
+
+    fig.add_trace(
+        go.Scatter(x=vl_uptake_df['Age band'], y=vl_uptake_df['vl_uptake'], name='VL Uptake', mode='lines+text',
+                   # marker_color='red',
+                   marker={'color': 'red'},
+                   text=vl_uptake_df['vl_uptake'],  # Add text labels
+                   texttemplate='<b><span style="color:black">%{text:}%</span></b>',
+                   # Format the text to be bold and red
+                   textposition='top center'  # Position the text above the markers
+                   ),
+        secondary_y=True,
+    )
+
+    # Add figure title
+    fig.update_layout(
+        title_text=f"VIRAL LOAD UPTAKE {overall_vl_uptake}%",
+        height=500,
+        legend=dict(
+            # title='Gender',  # Update legend title
+            orientation='h',  # Set legend orientation to horizontal
+            x=0,  # Set x to 0 for left-align, adjust as needed
+            y=1.1  # Set y to 1.1 for top position, adjust as needed
+        )
+    )
+
+    # Set x-axis title
+    fig.update_xaxes(title_text="Age band")
+
+    # Set y-axes titles
+    fig.update_yaxes(title_text="TX_CURR and Valid results", secondary_y=False)
+    fig.update_yaxes(title_text="VL Uptake (%)", secondary_y=True, range=[0, 110])
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def to_session_dict(df):
+    """Convert DataFrame to a dictionary of strings for session storage.
+
+    This function converts all the elements of the DataFrame to strings to handle
+    the TypeError "Object of type Timestamp is not JSON serializable".
+
+    Args:
+        df (pandas.DataFrame): The DataFrame to be converted.
+
+    Returns:
+        dict: The DataFrame converted to a dictionary with all elements as strings.
+    """
+    return df.astype(str).to_dict()
+
+
+def set_session_data(request, data_dict):
+    """Set multiple DataFrames in session after converting to dictionary of strings."""
+    for key, df in data_dict.items():
+        request.session[key] = to_session_dict(df)
+
+
+def filter_backlog_df(backlog_df, criteria, col):
+    """Filter backlog DataFrame based on given criteria."""
+    return backlog_df[backlog_df[col] == criteria]
+
+
+@login_required(login_url='login')
+def viral_track(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    vl_backlog_fig = vl_uptake_fig = vl_backlog_detailed_fig = vl_cascade_fig = None
+    df = df1 = discordant_results = results_not_in_nascop_overall = missing_in_emr = backlog_df = \
+        no_vl_ever = pd.DataFrame()
+
+    if request.method == 'POST':
+        form = FileUploadForm(request.POST, request.FILES)
+        form_emr = EmrFileUploadForm(request.POST, request.FILES)
+        # date_picker_form = DateFilterForm(request.POST)
+        # data_filter_form = DataFilterForm(request.POST)
+        if form.is_valid() and form_emr.is_valid():
+            # and date_picker_form.is_valid() and data_filter_form.is_valid():
+            # Read the first CSV file
+            df1 = pd.read_csv(form.cleaned_data['file'])
+
+            # Read the second CSV file
+            df = pd.read_csv(form_emr.cleaned_data['file1'])
+
+            # Check if df contains "NUPI" and "Baseline CD4"
+            df_has_nupi = "NUPI" in df.columns and "Baseline CD4" in df.columns
+
+            # Check if df1 contains "NUPI" and "Baseline CD4"
+            df1_has_nupi = "NUPI" in df1.columns and "Baseline CD4" in df1.columns
+
+            # Ensure df is the DataFrame with "NUPI" and "Baseline CD4"
+            if not df_has_nupi and df1_has_nupi:
+                df, df1 = df1, df
+
+        if "NUPI" not in df.columns:
+            messages.error(request, "Please Upload Update Active on ART Patients Linelist.csv from Kenya EMR")
+            return redirect("viral_track")
+        if "Batch" not in df1.columns:
+            messages.error(request, "Please Upload the correct dataset from NASCOP website. (See instructions below)")
+            return redirect("viral_track")
+
+        # Get the current date
+        current_date = pd.to_datetime(datetime.now().date())
+
+        # Calculate the date one year ago from the current date
+        one_year_ago = current_date - pd.DateOffset(years=1)
+
+        df1 = transform_nascop_data(df1, one_year_ago)
+        df = transform_emr_data(df)
+
+        facility_name = df1['Facilty'].unique()[0]
+
+        # current_month_abbr = calendar.month_abbr[current_date.month]
+        #
+        # vl_month_abbr = calendar.month_abbr[df1['Date Collected'].min().month]
+        # Get the current date
+        current_date = pd.to_datetime(datetime.now().date())
+
+        # # Example variables for current month abbreviation and VL month abbreviation
+        # current_month_abbr = current_date.strftime("%b")  # e.g., 'Jun' for June
+        # vl_month_abbr = one_year_ago.strftime("%b")  # e.g., 'Jun' for June of the previous year
+
+        not_merged1_one_year_ago, not_merged1, has_results_within_test_month_above0, \
+            has_results_within_test_month_below0, merged_df_100, results_not_in_nascop, \
+            missing_results_outside_test_month, missing_results_below0 = separate_dfs(
+            df, df1, current_date)
+        no_vl_so_far, tx_new_not_eligible = process_vl_backlog(not_merged1_one_year_ago)
+        discordant_results, with_results_df, missing_in_emr, results_not_in_nascop_overall, backlog_df, \
+            no_vl_ever = generate_reports(no_vl_so_far, not_merged1, merged_df_100,
+                                          has_results_within_test_month_above0,
+                                          has_results_within_test_month_below0, facility_name, results_not_in_nascop,
+                                          missing_results_outside_test_month, missing_results_below0)
+        vl_cascade = pd.DataFrame(
+            {
+                "With a valid VL": with_results_df.shape[0],
+                "VL backlog": backlog_df.shape[0],
+                f"Results missing in KenyaEMR": missing_in_emr.shape[0],
+                f"Results missing in NASCOP's website": results_not_in_nascop_overall.shape[0],
+                f"NASCOP_EMR discordance": discordant_results.shape[0],
+            }.items(), columns=['Variable', "TX_CURR"]
+        )
+        vl_cascade['%'] = round(vl_cascade['TX_CURR'] / vl_cascade['TX_CURR'].sum() * 100, )
+        vl_cascade['%'] = vl_cascade['TX_CURR'].astype(str) + " (" + vl_cascade['%'].astype(str) + "%)"
+        vl_cascade.index += 1
+        tx_curr_df = pd.DataFrame(
+            {"TX_CURR": df.shape[0],
+
+             }.items(), columns=['Variable', "TX_CURR"]
+        )
+        tx_curr_df['%'] = tx_curr_df['TX_CURR']
+
+        vl_cascade = pd.concat([tx_curr_df, vl_cascade])
+        vl_cascade.index += 1
+        dist_backlog = prep_categorical_columns(backlog_df, "eligibility criteria")
+
+        backlog_df_age_band = backlog_df.groupby(["age_band", "Sex"]).count()['CCC No'].reset_index()
+
+        result, custom_order = sort_custom_agebands(backlog_df_age_band, 'age_band')
+        result.columns = ['Age band', 'Sex', 'TX_CURR']
+        result['%'] = (result['TX_CURR'] / result['TX_CURR'].sum() * 100).round().astype(int)
+
+        result['%'] = result['TX_CURR'].astype(str) + " (" + result['%'].astype(str) + "%)"
+        vl_backlog_fig = bar_chart(result, "Age band", "TX_CURR", title=f"VL BACKLOG n={backlog_df.shape[0]}",
+                                   height=350, color="Sex",
+                                   background_shadow=False, xaxis_title="Age Bands",
+                                   text="%",
+                                   title_size=12, axis_text_size=10, yaxis_title=None, legend_title="Sex")
+
+        all_df = df.groupby("age_band").count()['CCC No'].reset_index()
+        all_df.columns = ['Age band', 'TX_CURR']
+        vl_results = with_results_df.groupby("age_band").count()['CCC No'].reset_index()
+        vl_results.columns = ['Age band', 'valid results']
+
+        vl_uptake_df = all_df.merge(vl_results, on="Age band", how="left")
+        vl_uptake_df['vl_uptake'] = round(vl_uptake_df['valid results'] / vl_uptake_df['TX_CURR'] * 100)
+
+        # Define the age categories
+        age_categories = ['< 1', '1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44',
+                          '45-49', '50-54', '55-59', '60-64', '65+']
+
+        # Convert 'Age band' to a categorical type with the specified order
+        vl_uptake_df['Age band'] = pd.Categorical(vl_uptake_df['Age band'], categories=age_categories, ordered=True)
+
+        # Sort the DataFrame by 'Age band'
+        vl_uptake_df = vl_uptake_df.sort_values('Age band')
+        vl_uptake_df['vl_uptake'] = vl_uptake_df['vl_uptake'].fillna(0).astype(int)
+        overall_vl_uptake = round(vl_uptake_df['valid results'].sum() / vl_uptake_df['TX_CURR'].sum() * 100)
+        vl_uptake_fig = create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake)
+
+        vl_backlog_detailed_fig = bar_chart(dist_backlog, "eligibility criteria", "TX_CURR",
+                                            title=f"VL BACKLOG n={backlog_df.shape[0]}",
+                                            height=350, background_shadow=False,
+                                            xaxis_title="hvl_df",
+                                            text="%",
+                                            title_size=12, axis_text_size=10, yaxis_title=None, legend_title=None)
+
+        vl_cascade_fig = bar_chart(vl_cascade, "Variable", "TX_CURR", title=f"VL CASCADE", height=350,
+                                   background_shadow=False,
+                                   xaxis_title="Variable",
+                                   text="%",
+                                   title_size=12, axis_text_size=10, yaxis_title="TX CURR", legend_title=None)
+    else:
+        form = FileUploadForm()
+        form_emr = EmrFileUploadForm()
+        # date_picker_form = DateFilterForm()
+        # data_filter_form = DataFilterForm()
+
+    # Convert DataFrames to dictionaries and store in session
+    session_data = {
+        'backlog_df': backlog_df,
+        'missing_in_emr': missing_in_emr,
+        'results_not_in_nascop_overall': results_not_in_nascop_overall.drop(columns=['date_difference'],
+                                                                            errors='ignore'),
+        'discordant_results': discordant_results,
+        'no_vl_ever': no_vl_ever
+    }
+    set_session_data(request, session_data)
+
+    # Filter backlog DataFrame based on criteria
+    criteria_filters = {
+        'hvl_pregnant': "hvl (pg/bf)",
+        'hvl_above_25yrs': "hvl (>25yrs)",
+        'hvl_zero_24yrs': "hvl (0-24yrs)",
+        'missed_6mons_zero_24yrs': "missed 6 months vl (0-24yrs)",
+        'missed_6mons_pregnant': "missed 6 months vl (pg/bf)",
+        'missed_12mons_above_25yrs': "missed 12 months vl (>25yrs)"
+    }
+    if backlog_df.empty:
+        backlog_df['eligibility criteria'] = ""
+    filtered_data = {key: filter_backlog_df(backlog_df, criteria, 'eligibility criteria') for key, criteria in
+                     criteria_filters.items()}
+
+    # Add hvl_df which contains all records with 'hvl' in 'eligibility criteria'
+    filtered_data['hvl_df'] = backlog_df[backlog_df['eligibility criteria'].str.contains("hvl")]
+
+    set_session_data(request, filtered_data)
+
+    # Convert dict_items into a list
+    dictionary = get_key_from_session_names(request)
+
+    context = {
+        "form": form, "form_emr": form_emr,
+        # "date_picker_form": date_picker_form, "data_filter_form": data_filter_form,
+        "vl_backlog_fig": vl_backlog_fig, "vl_uptake_fig": vl_uptake_fig,
+        "vl_backlog_detailed_fig": vl_backlog_detailed_fig, "vl_cascade_fig": vl_cascade_fig,
+        "dictionary": dictionary,
+        "backlog_df": backlog_df, "no_vl_ever": no_vl_ever,
+        "missed_6mons_zero_24yrs": filtered_data['missed_6mons_zero_24yrs'],
+        "missed_6mons_pregnant": filtered_data['missed_6mons_pregnant'],
+        "missed_12mons_above_25yrs": filtered_data['missed_12mons_above_25yrs'],
+        "missing_in_emr": missing_in_emr,
+        "hvl_pregnant": filtered_data['hvl_pregnant'],
+        "hvl_above_25yrs": filtered_data['hvl_above_25yrs'],
+        "hvl_zero_24yrs": filtered_data['hvl_zero_24yrs'],
+        "hvl_df": filtered_data['hvl_df'],
+        "results_not_in_nascop_overall": results_not_in_nascop_overall,
+        "discordant_results": discordant_results, "dqa_type": "viral track",
+    }
+
+    return render(request, 'data_analysis/viral_tracker.html', context)
+

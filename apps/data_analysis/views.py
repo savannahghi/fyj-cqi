@@ -4177,7 +4177,8 @@ def rtk_inventory_viz(request):
     return rendered_view
     # return render(request, 'data_analysis/rtk_viz.html', context)
 
-def transform_nascop_data(df1, one_year_ago):
+
+def transform_nascop_data(df1, one_year_ago, facility_code):
     df1 = df1.drop_duplicates("Patient CCC No", keep="last")
 
     # df1.loc[:, 'Date Collected'] = pd.to_datetime(df1['Date Collected'], dayfirst=True)
@@ -4190,9 +4191,9 @@ def transform_nascop_data(df1, one_year_ago):
 
     df1.loc[:, 'Date Collected'] = pd.to_datetime(df1['Date Collected'], dayfirst=True)
 
-    facility_code = \
-        df1.groupby(['Facility Code']).count()['Facilty'].reset_index().sort_values("Facilty", ascending=False).head(1)[
-            'Facility Code'].unique()[0]
+    # facility_code = \
+    #     df1.groupby(['Facility Code']).count()['Facilty'].reset_index().sort_values("Facilty", ascending=False).head(1)[
+    #         'Facility Code'].unique()[0]
 
     df1 = df1[df1['Facility Code'] == facility_code]
     df1['Date Collected'] = pd.to_datetime(df1['Date Collected'], errors='coerce')
@@ -4487,7 +4488,7 @@ def process_vl_backlog(not_merged1_one_year_ago):
 
 
 def generate_reports(no_vl_so_far, not_merged1, merged_df_100, has_results_within_test_month_above0,
-                     has_results_within_test_month_below0, facility_name, results_not_in_nascop,
+                     has_results_within_test_month_below0, results_not_in_nascop,
                      missing_results_outside_test_month, missing_results_below0):
     no_vl_list = list(no_vl_so_far['CCC No'].unique())
     missing_list = not_merged1[~not_merged1['CCC No'].isin(no_vl_list)]
@@ -4504,13 +4505,11 @@ def generate_reports(no_vl_so_far, not_merged1, merged_df_100, has_results_withi
     # BACK LOG
     backlog_df = pd.concat([no_vl_so_far_within_one_year, no_vl_so_far, no_vl_ever])
 
-
     # No results in NASCOP
     results_not_in_nascop1 = results_not_in_nascop1[
         ['CCC No', 'Age at reporting', 'age_band', 'Sex', 'Last VL Date', 'Last VL Result']]
     results_not_in_nascop_overall = pd.concat([results_not_in_nascop, results_not_in_nascop1]).copy()
     results_not_in_nascop_overall['reason'] = "Result not in NASCOP's website"
-
 
     # Missing Result in KenyaEMR
     missing_in_emr = pd.concat([missing_results_outside_test_month, missing_results_below0])
@@ -4660,6 +4659,17 @@ def viral_track(request):
         # data_filter_form = DataFilterForm(request.POST)
         if form.is_valid() and form_emr.is_valid():
             # and date_picker_form.is_valid() and data_filter_form.is_valid():
+            # Check if the uploaded files are CSV
+            if not form.cleaned_data['file'].name.endswith('.csv'):
+                messages.error(request,
+                               f"Please upload a CSV file. The file '{form.cleaned_data['file'].name}' is not a CSV file.")
+                return redirect('viral_track')
+
+            if not form_emr.cleaned_data['file1'].name.endswith('.csv'):
+                messages.error(request,
+                               f"Please upload a CSV file. The file '{form_emr.cleaned_data['file1'].name}' is not a CSV file.")
+                return redirect('viral_track')
+
             # Read the first CSV file
             df1 = pd.read_csv(form.cleaned_data['file'])
 
@@ -4686,13 +4696,16 @@ def viral_track(request):
         # Get the current date
         current_date = pd.to_datetime(datetime.now().date())
 
+        # Get facility mfl code
+        facility_mfl_code = df['MFL Code'].unique()[0]
+
         # Calculate the date one year ago from the current date
         one_year_ago = current_date - pd.DateOffset(years=1)
 
-        df1 = transform_nascop_data(df1, one_year_ago)
+        df1 = transform_nascop_data(df1, one_year_ago, facility_mfl_code)
         df = transform_emr_data(df)
 
-        facility_name = df1['Facilty'].unique()[0]
+        # facility_name = df1['Facilty'].unique()[0]
 
         # current_month_abbr = calendar.month_abbr[current_date.month]
         #
@@ -4712,7 +4725,7 @@ def viral_track(request):
         discordant_results, with_results_df, missing_in_emr, results_not_in_nascop_overall, backlog_df, \
             no_vl_ever = generate_reports(no_vl_so_far, not_merged1, merged_df_100,
                                           has_results_within_test_month_above0,
-                                          has_results_within_test_month_below0, facility_name, results_not_in_nascop,
+                                          has_results_within_test_month_below0, results_not_in_nascop,
                                           missing_results_outside_test_month, missing_results_below0)
         vl_cascade = pd.DataFrame(
             {
@@ -4842,4 +4855,3 @@ def viral_track(request):
     }
 
     return render(request, 'data_analysis/viral_tracker.html', context)
-

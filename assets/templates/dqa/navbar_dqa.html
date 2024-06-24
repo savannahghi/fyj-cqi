@@ -7,6 +7,7 @@
 {% url "show_dqa_work_plan" as show_dqa_work_plan %}
 {% url "show_audit_team" as show_audit_team %}
 {% url "system_assessment_table" as system_assessment_table %}
+{% url "sqa_table" as sqa_table %}
 {% url "instructions" as instructions %}
 {% url "comments" as comments %}
 {% url "resources" as resources %}
@@ -85,6 +86,12 @@
             <a class="nav-link {% if request.path == system_assessment_table %} active{% endif %}" href="{% url 'system_assessment_table' %}">
               <span data-feather="book-open" class="align-text-bottom"></span>
               System Assessment
+            </a>
+          </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.path == sqa_table %} active{% endif %}" href="{% url 'sqa_table' %}">
+              <span data-feather="book-open" class="align-text-bottom"></span>
+              SQA
             </a>
           </li>
             <hr>

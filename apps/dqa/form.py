@@ -70,27 +70,69 @@ class DateSelectionForm(forms.Form):
     )
 
 
-class FacilitySelectionForm(forms.Form):
+# class FacilitySelectionForm(forms.Form):
+#     name = forms.ModelChoiceField(
+#         queryset=Facilities.objects.all(),
+#         empty_label="Select Facility",
+#         widget=forms.Select(attrs={'class': 'form-control select2'}),
+#         required=False,
+#         initial=None  # Add this line to set the initial value to None
+#     )
+#
+#     def __init__(self, *args, selected_year=None, selected_quarter=None, model_to_check=None, **kwargs):
+#         initial = kwargs.get('initial', {})
+#         super().__init__(*args, **kwargs)
+#         self.fields['name'].initial = initial.get('name')
+#
+#         # Only filter the queryset if both selected_year and selected_quarter are provided and model_to_check is
+#         # provided
+#         if selected_year and selected_quarter and model_to_check:
+#             # Get the IDs of facilities that have related records in the model_to_check
+#             facility_ids = model_to_check.objects.filter(
+#                 quarter_year__quarter_year=f"{selected_quarter}-{selected_year[-2:]}"
+#             ).values_list('facility_name_id', flat=True)
+#
+#             # Update the queryset with the filtered facilities
+#             self.fields['name'].queryset = Facilities.objects.filter(id__in=facility_ids)
+#
+#             # Preselect the first facility name if it exists
+#             if self.fields['name'].queryset.exists():
+#                 self.fields['name'].initial = self.fields['name'].queryset.first()
+class BaseForm(forms.Form):
+    def __init__(self, *args, model_to_check=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model_to_check = model_to_check
+
+
+class FacilitySelectionForm(BaseForm):
     name = forms.ModelChoiceField(
         queryset=Facilities.objects.all(),
         empty_label="Select Facility",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
         required=False,
-        initial=None  # Add this line to set the initial value to None
+        initial=None
     )
 
-    def __init__(self, *args, selected_year=None, selected_quarter=None, model_to_check=None, **kwargs):
-        initial = kwargs.get('initial', {})
+    def __init__(self, *args, selected_year=None, selected_quarter=None, **kwargs):
         super().__init__(*args, **kwargs)
+        initial = kwargs.get('initial', {})
         self.fields['name'].initial = initial.get('name')
 
-        # Only filter the queryset if both selected_year and selected_quarter are provided and model_to_check is
-        # provided
-        if selected_year and selected_quarter and model_to_check:
-            # Get the IDs of facilities that have related records in the model_to_check
-            facility_ids = model_to_check.objects.filter(
-                quarter_year__quarter_year=f"{selected_quarter}-{selected_year[-2:]}"
-            ).values_list('facility_name_id', flat=True)
+        # Only filter the queryset if both selected_year and selected_quarter are provided and model_to_check is provided
+        if selected_year and selected_quarter and self.model_to_check:
+            # Check if model_to_check is a single model or a list of models
+            if isinstance(self.model_to_check, list):
+                # Get the IDs of facilities that have related records in any of the models_to_check
+                facility_ids = set()
+                for model in self.model_to_check:
+                    facility_ids.update(model.objects.filter(
+                        quarter_year__quarter_year=f"{selected_quarter}-{selected_year[-2:]}"
+                    ).values_list('facility_name_id', flat=True))
+            else:
+                # Get the IDs of facilities that have related records in the model_to_check
+                facility_ids = self.model_to_check.objects.filter(
+                    quarter_year__quarter_year=f"{selected_quarter}-{selected_year[-2:]}"
+                ).values_list('facility_name_id', flat=True)
 
             # Update the queryset with the filtered facilities
             self.fields['name'].queryset = Facilities.objects.filter(id__in=facility_ids)
@@ -98,6 +140,8 @@ class FacilitySelectionForm(forms.Form):
             # Preselect the first facility name if it exists
             if self.fields['name'].queryset.exists():
                 self.fields['name'].initial = self.fields['name'].queryset.first()
+
+
 
 
 class DQAWorkPlanForm(ModelForm):

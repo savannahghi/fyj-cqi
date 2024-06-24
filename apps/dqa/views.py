@@ -4,6 +4,7 @@ from collections import defaultdict
 
 import matplotlib
 import numpy as np
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db.models.functions import Cast, Concat
 from reportlab.lib.styles import ParagraphStyle
@@ -22,7 +23,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from django.db.models import Case, Count, Q, When, IntegerField, DateField, ExpressionWrapper, Value, CharField, Sum
-from django.forms import modelformset_factory
+from django.forms import modelform_factory, modelformset_factory
 from django.urls import reverse
 
 import pandas as pd
@@ -3727,9 +3728,9 @@ def generate_descriptions(report_name):
 def generate_verification(report_name):
     if report_name == "gbv":
         numerators = [
-            "",
-            "",
-            "",
+            ".",
+            ".",
+            ".",
             'Check to confirm',
             'Check training log',
             'Check completion of MoH 363, 364, 365 including EMR',
@@ -3756,7 +3757,7 @@ def generate_verification(report_name):
         numerators = [
             # 'Tick as appropriate',
             # 'Tick all that apply',
-            "",
+            ".",
             # "",
             'Confirm availability of certificates',
             'Check HTS log file/folder if the HTS names appear.Partly if some, No if none',
@@ -3769,7 +3770,7 @@ def generate_verification(report_name):
             "first response). If not followed score 'No' If followed but not always score 'partial' If algorithm "
             "strictly followed score 'YES'",
             'Check if the following are in place:',
-            '',
+            '.',
             'The answer is Yes if adhering to the HTS operational manual.   Ask and Check in MOH 362 AYP for next appointment. No if the TCA is longer',
             'Sample 10 clients in ANC Register, If yes – Check HTS provider to explain and Check PNC register, no if not adhering. IF 100% SCORE Yes , if >100% score Partly',
             'Sample 10 clients in Maternity Register, If yes – Check MAT register, no if not adhering. IF 100% SCORE Yes , if >100% score Partly',
@@ -3780,11 +3781,11 @@ def generate_verification(report_name):
     elif report_name == "prep":
         numerators = [
             # 'Tick as appropriate',
-            "",
+            ".",
             # 'Tick all that apply',
             'Calculate the proportion of service providers who have received a refresher training out of the total number offering PrEP. If 100% tick Yes , if <100% tick no ',
             'Verify availability of clinical encounter card, , if available and well documented score Yes, If available and not well documented score partial If not available score No',
-            "",
+            ".",
             'Sample 5 encounter card for clients  for clients initiated on PrEP during the review period  verify documentation of risk assessment . Indicate the number clients with assessment done (numerator) total cards sampled (denominator)',
             'Sample 10 encounter card for clients initiated on PrEP during the review period  verify documentation of eligibility status  at basesline. Indicate the number  with eligibility assessment done (numerator) total cards sampled (denominator) If all the parameters for eligibility  are indicated score Yes if any is missing score No Parameters for eligibility:  HIV Test Negative, Screening for Kidney/Liver disease / No Contraindication to TDF/FTC/3TC / Client willing to initiate PrEP ) ',
             # 'Sample 10 client encounter cards, for clients who made a clinical  follow up visit during the review period.verify if they were tested for HIV Indicate the number  with documented HIV results (numerator) total cards sampled (denominator) If all the clients were tested indicate Yes , If some indicate Partial If none indicate No ',
@@ -3806,7 +3807,7 @@ def generate_verification(report_name):
             'Sample 10  files for verification- Tease out 10 patients who have been newly enrolled most recently ',
             'Sample 10 >15 client files and check for completeness of all the NCD parameters indicated in MOH 257',
             'Check if in the last 3 clinics  sms reminders were sent out',
-            "",
+            ".",
             'These are clients who have a 2nd VL of >1000 copies/ml after 3 consecutive EACs',
             'check for MDT, SOPs, availability of trained adherence counsellors)',
             'Check for EAC records and the dates',
@@ -3878,7 +3879,7 @@ def generate_numerator(report_name):
             '# PrEP services intergrated',
             # '',
             '# of service providers offering PrEP received a refresher training in the last one year',
-            '',
+            '.',
             "",
             '# clients with assessment done',
 
@@ -3974,8 +3975,8 @@ def generate_denominator(report_name):
             '# of SDPs',
             # '',
             '# of service providers offering PrEP',
-            '',
-            "",
+            '.',
+            ".",
             'Total card sampled',
             'Total card sampled',
             # 'Total card sampled',
@@ -4368,8 +4369,6 @@ def show_quarterly_trends(request, model, title):
     # Create a new column for the quarter and year
     df['quarter_year'] = df['quarter_year__quarter'].astype(str) + '-' + df['quarter_year__year'].astype(str)
     df = df.rename(columns={"unique_facilities": "Number of facilities"})
-    print("df::::::::::::::::::::::::::::::::")
-    print(df)
 
     quarterly_trend_fig = line_chart_median_mean(df, "quarter_year", "Number of facilities",
                                                  f"Number of Facilities with {title} Completed Per Quarter",
@@ -4508,6 +4507,206 @@ def system_assessment_table(request):
     return render(request, 'dqa/show_system_assessment.html', context)
 
 
+def create_description_dict():
+    gbv = [
+        'Are GBV services integrated in all other service delivery points',
+        'Are the staff offering GBV services trained on LIVES',
+        'Are GBV services offered in a private and confidential space',
+        'Does the facility have the GBV pathways job aid',
+        'Do the CHPs attached to the facility sensitized on available GBV response services',
+        'Does the facility have well utilized GBV registers that collect information about a patient’s experience of GBV and the post-GBV care s/he received',
+    ]
+    vmmc = [
+        'Are surgical guidelines and SOPs readily available to the clinicians? i) Conventional Surgical ii) EIMC iii) DEVICES',
+        'Is TTCV administered as per the SOP?',
+        'Does the facility have the current local anesthesia dosing chart on site? (for EIMC and adult)',
+        'Is surgery performed as per guidelines and protocol? i) Conventional Surgical ii) EIMC iii) DEVICES',
+        'Does the MC surgical room observe privacy and confidentiality to clients?',
+        'Are service delivery data completely and accurately collected and timely reported?',
+        'Are analyzed data used for the planning and improvement of service delivery?',
+        'Is VMMC data used to inform best practices at sub county, county or national level?',
+        'Randomly select 12 most recent entries in the VMMC client card within the past 6 months What proportion of the clients were properly i) consented? ii) What proportion of clients were circumcised iii) Using Dorsal slit method? iv) What proportion of the clients were followed up as per guideline? v) What proportion of clients who missed scheduled follow up were actively followed? vi) For sites implementing EIMC, how many clients had HEI screening?',
+    ]
+    hts = [
+        'Has HTS services been integrated to other services?',
+        'Have all HTS service providers undergone the approved NASCOP HTS training program?',
+        'Have all service HTS providers undergone refresher training/CME in the last one years? ',
+        'Have all HTS Pos clients been received confirmatory test befor initiation to ART',
+        'Is the HTS algorithm Adhered to?',
+        'Is safety and infection prevention adhered to in the HTS room?',
+        'If yes (to safety and infection prevention adherence above). What is present?  running water, soap, waste segregation (Yellow, Black, Red bins & liners and a sharp box), room has adequate lighting. & PEP Protocol ',
+        'Is the HTS officer conversant with testing frequency for adolescent and young people? ',
+        'Does the HTS provider in ANC adhere to testing frequency for ANC/PNC clients? ',
+        'Does the HTS provider in MCH adhere to testing frequency for L&D clients?',
+        'Does the facility offer index testing services?',
+        'Is the facility HTS providers linking clients to combination prevent?',
+    ]
+    prep = [
+        'Has PrEP services been integrated to other services ?',
+        'Have all the service providers offering PrEP received a refresher training in the last one year?',
+        'Does the facility have PrEP Clinical encounter cards/EMR?',
+        'Are they (PrEP Clinical encounter cards/EMR) appropriately documented',
+        'Does the facility routinely  carry out Rapid Assessment Screening using the RAST tool',
+        'Are client assessed for eligibility prior to PrEP initiation?',
+        'Are clients on followup for PrEP assessed for adverse drugs effects?',
+        'Are clients on followup for PrEP assessesd for adherence and offered adherence counselling?',
+        'Does the facility collect samples for drug resistance testing for clients who test HIV positive while on PrEP?',
+        'Does the facility follow up new initiations to come for 1 month refill',
+        'Does the facility provide testing at 1 month refill for PrEP',
+    ]
+    tb = [
+        'Are clients screened for TB at every clinic visit?',
+        'Does the facility start clients on TPT/TB Rx?',
+        'Is documentation done for clients who have completed TPT?',
+        'Are the clients tested for baseline CD4 test?',
+    ]
+    care_rx = [
+        'Are the clients tested for baseline CD4 test?',
+        'Does the facility screen for NCDs in each visit? (BMI, RBS, BP, CaCx)',
+        'Does the facility have USHAURI?',
+        " Is it active?",
+        'Does the facility have a system for assessment and management of clients with HVL? ',
+        'Do the clients undergo 3 consecutive EAC before the 2nd VL is done?',
+        'Does the facility assign a case manager for clients failing treatment?',
+    ]
+    cqi = [
+        'Is there a quality committee that plans and oversees quality activities for the facility?',
+        'How is client feedback incorporated?',
+    ]
+    pharmacy = [
+        'Does the facility have manual/electronic stock control cards/Bin cards for ARVs and OI medicines?',
+        'If Yes, are the bin cards upto date?',
+    ]
+
+    description_dict = {
+        'gbv': gbv,
+        'vmmc': vmmc,
+        'hts': hts,
+        'prep': prep,
+        'tb': tb,
+        'caretreatment': care_rx,
+        'cqi': cqi,
+        'pharmacy': pharmacy,
+    }
+
+    return description_dict
+
+
+
+
+def calculate_averages_(request, model_data):
+    total_score = 0
+    num_assessments = 0
+    for assessment in model_data:
+        if assessment.calculations is not None:
+            total_score += assessment.calculations
+            num_assessments += 1
+    average = total_score / num_assessments if num_assessments > 0 else 0
+    return {
+        'average': average,
+        'total_score': int(total_score),
+        'num_assessments': num_assessments
+    }
+
+@login_required(login_url='login')
+def sqa_table(request):
+    if not request.user.first_name:
+        return redirect("profile")
+
+    # Get the query parameters from the URL
+    quarter_form_initial = request.GET.get('quarter_form')
+    year_form_initial = request.GET.get('year_form')
+    facility_form_initial = request.GET.get('facility_form')
+
+    # Parse the string values into dictionary objects
+    quarter_form_initial = ast.literal_eval(quarter_form_initial) if quarter_form_initial else {}
+    year_form_initial = ast.literal_eval(year_form_initial) if year_form_initial else {}
+    facility_form_initial = ast.literal_eval(facility_form_initial) if facility_form_initial else {}
+
+    quarter_form = QuarterSelectionForm(request.POST or None, initial=quarter_form_initial)
+    year_form = YearSelectionForm(request.POST or None, initial=year_form_initial)
+
+    date_form = DateSelectionForm(request.POST or None)
+    data = {}
+    description_dict = create_description_dict()
+
+    selected_quarter = "Qtr1"
+    selected_year = "2021"
+    if quarter_form.is_valid():
+        selected_quarter = quarter_form.cleaned_data['quarter']
+
+    if year_form.is_valid():
+        selected_year = year_form.cleaned_data['year']
+
+    facility_form = FacilitySelectionForm(request.POST or None,
+                                          selected_year=selected_year,
+                                          selected_quarter=selected_quarter,
+                                          model_to_check=[Gbv, Vmmc, Hts, Prep, Tb, CareTreatment, Pharmacy, Cqi],
+                                          initial=facility_form_initial)
+
+    if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
+        selected_quarter = quarter_form.cleaned_data['quarter']
+        selected_facility = facility_form.cleaned_data['name']
+        selected_year = year_form.cleaned_data['year']
+
+        year_suffix = selected_year[-2:]
+        quarter_year = f"{selected_quarter}-{year_suffix}"
+
+        # Loop through all models and retrieve data
+        for model in [Gbv, Vmmc, Hts, Prep, Tb, CareTreatment, Pharmacy, Cqi]:
+            model_data = model.objects.filter(
+                quarter_year__quarter_year=quarter_year,
+                facility_name=selected_facility
+            ).order_by(
+                Case(
+                    *[When(description=d, then=pos) for pos, d in enumerate(description_dict[model.__name__.lower()])],
+                    output_field=IntegerField()
+                )
+            )
+            if model_data:
+                # average_dictionary, expected_counts_dictionary = calculate_averages(model_data, description_dict[
+                #     model.__name__.lower()])
+                average_data = calculate_averages_(request, model_data)
+                data[model.__name__.lower()] = {
+                    'system_assessments': model_data,
+                    'average_data': average_data
+
+                }
+            else:
+                messages.error(request,
+                               f"Data was not found for {selected_facility} ({quarter_year}) in {model.__name__}")
+
+    if quarter_form_initial:
+        for model in [Gbv, Vmmc, Hts, Prep, Tb, CareTreatment, Pharmacy, Cqi]:
+            model_data = model.objects.filter(
+                quarter_year__quarter_year=quarter_form_initial['quarter'],
+                facility_name=Facilities.objects.get(name=facility_form_initial["name"])
+            ).order_by(
+                Case(
+                    *[When(description=d, then=pos) for pos, d in enumerate(description_dict[model.__name__.lower()])],
+                    output_field=IntegerField()
+                )
+            )
+            if model_data:
+                # average_dictionary, expected_counts_dictionary = calculate_averages(model_data, description_dict[
+                #     model.__name__.lower()])
+                average_data = calculate_averages_(model_data)
+                data[model.__name__.lower()] = {
+                    'system_assessments': model_data,
+                    'average_data': average_data
+
+                }
+
+    context = {
+        "quarter_form": quarter_form,
+        "year_form": year_form,
+        "facility_form": facility_form,
+        "date_form": date_form,
+        'data': data,
+    }
+    return render(request, 'dqa/show_sqa.html', context)
+
+
 @login_required(login_url='login')
 def instructions(request):
     if not request.user.first_name:
@@ -4563,6 +4762,91 @@ def update_system_assessment(request, pk):
         "title": "update"
     }
     return render(request, 'dqa/update_system_assessment.html', context)
+
+
+def update_sqa(request, model_name, pk):
+    if not request.user.first_name:
+        return redirect("profile")
+
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    model_names = {
+        "vmmc": "Vmmc",
+        "cqi": "Cqi",
+        "gbv": "Gbv",
+        "hts": "Hts",
+        "prep": "Prep",
+        "tb": "Tb",
+        "caretreatment": "CareTreatment",
+    }
+
+    modelName = model_names.get(model_name, "Pharmacy")
+
+    # Get the model class based on the model name
+    model = apps.get_model(app_label='dqa', model_name=modelName)
+    item = model.objects.get(id=pk)
+
+
+
+    if request.method == "POST":
+        # Get the form class based on the model name
+        form_class = modelform_factory(model, exclude=['created_by', 'dqa_date'])
+        form = form_class(request.POST, instance=item)
+
+        if form.is_valid():
+            instance = form.save(commit=False)
+            instance.dropdown_option = form.cleaned_data['dropdown_option']
+            instance.auditor_note = form.cleaned_data['auditor_note']
+            instance.verification = form.cleaned_data['verification']
+            instance.numerator = form.cleaned_data['numerator']
+            instance.denominator = form.cleaned_data['denominator']
+            instance.dqa_date = item.dqa_date
+            instance.created_by = request.user
+
+            if instance.dropdown_option == 'Yes':
+                instance.calculations = 3
+            elif instance.dropdown_option == 'Partly':
+                instance.calculations = 2
+            elif instance.dropdown_option == 'No':
+                instance.calculations = 1
+            elif instance.dropdown_option == 'N/A':
+                instance.calculations = None
+
+            item = model.objects.get(id=pk)
+            facility_id = Facilities.objects.get(name=item.facility_name)
+            instance.created_by = request.user
+            instance.facility_name_id = item.facility_name_id
+            instance.quarter_year_id = item.quarter_year_id
+            # https://stackoverflow.com/questions/14820579/how-to-query-directly-the-table-created-by-django-for-a-manytomany-relation
+            all_subcounties = Sub_counties.facilities.through.objects.all()
+            all_counties = Sub_counties.counties.through.objects.all()
+            # loop
+            sub_county_list = []
+            for sub_county in all_subcounties:
+                if facility_id.id == sub_county.facilities_id:
+                    # assign an instance to sub_county
+                    instance.sub_county = Sub_counties(id=sub_county.sub_counties_id)
+                    sub_county_list.append(sub_county.sub_counties_id)
+            for county in all_counties:
+                if sub_county_list[0] == county.sub_counties_id:
+                    instance.county = Counties.objects.get(id=county.counties_id)
+
+            instance.save()
+
+            messages.success(request, "Record successfully updated!")
+            return redirect(reverse('sqa_table'))
+
+    else:
+        # Get the form class based on the model name
+        form_class = modelform_factory(model, exclude=['created_by', 'dqa_date'])
+        form = form_class(instance=item)
+
+    context = {
+        "form": form,
+        "title": "update"
+    }
+    return render(request, 'dqa/update_sqa.html', context)
 
 
 @login_required(login_url='login')

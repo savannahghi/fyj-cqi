@@ -6,6 +6,7 @@
 
 {% block content %}
     <style>
+
         .my-textarea {
             height: auto !important;
             width: 100%;
@@ -19,6 +20,19 @@
             border-radius: 10px;
             margin-bottom: 20px;
         }
+
+        .auditor-textarea {
+            height: auto !important;
+            width: 100%;
+            max-width: 600px;
+            resize: none;
+            padding: 8px;
+            border: none;
+            box-shadow: none;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
 
         .toggle-numerator-denominator {
             background-color: #4CAF50;
@@ -267,6 +281,7 @@
                             <th>Verification / Observation</th>
                             <th>Numerator</th>
                             <th>Denominator</th>
+                            <th>Auditor's Note</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -296,6 +311,8 @@
                                         {{ form.denominator|as_crispy_field }}
                                     </div>
                                 </td>
+                                <td>{{ form.auditor_note }}
+                                </td>
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -322,6 +339,37 @@
                 }
                 numeratorDiv.toggle();
                 denominatorDiv.toggle();
+            });
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('.toggle-numerator-denominator').each(function () {
+                var index = $(this).data('index');
+                var numeratorDiv = $('#numerator-div-' + index);
+                var denominatorDiv = $('#denominator-div-' + index);
+                var denominatorDescription = $('#id_form-' + index + '-denominator_description').val();
+                var numeratorDescription = $('#id_form-' + index + '-numerator_description').val();
+                var verification = $('#id_form-' + index + '-verification').val();
+
+                if (denominatorDescription === '' && numeratorDescription === '' && verification === '') {
+                    $(this).closest('label').hide();
+                    numeratorDiv.hide();
+                    denominatorDiv.hide();
+                }
+            });
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('.dropdown-option-field').change(function () {
+                var row = $(this).closest('tr');
+                var auditorNote = row.find('.auditor-textarea');
+                if ($(this).val() === 'N/A' || $(this).val() === 'Yes') {
+                    auditorNote.prop('required', false);
+                } else {
+                    auditorNote.prop('required', true);
+                }
             });
         });
     </script>

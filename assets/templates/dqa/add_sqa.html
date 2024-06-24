@@ -342,24 +342,24 @@
             });
         });
     </script>
-    <script>
-        $(document).ready(function () {
-            $('.toggle-numerator-denominator').each(function () {
-                var index = $(this).data('index');
-                var numeratorDiv = $('#numerator-div-' + index);
-                var denominatorDiv = $('#denominator-div-' + index);
-                var denominatorDescription = $('#id_form-' + index + '-denominator_description').val();
-                var numeratorDescription = $('#id_form-' + index + '-numerator_description').val();
-                var verification = $('#id_form-' + index + '-verification').val();
-
-                if (denominatorDescription === '' && numeratorDescription === '' && verification === '') {
-                    $(this).closest('label').hide();
-                    numeratorDiv.hide();
-                    denominatorDiv.hide();
-                }
-            });
-        });
-    </script>
+{#    <script>#}
+{#        $(document).ready(function () {#}
+{#            $('.toggle-numerator-denominator').each(function () {#}
+{#                var index = $(this).data('index');#}
+{#                var numeratorDiv = $('#numerator-div-' + index);#}
+{#                var denominatorDiv = $('#denominator-div-' + index);#}
+{#                var denominatorDescription = $('#id_form-' + index + '-denominator_description').val();#}
+{#                var numeratorDescription = $('#id_form-' + index + '-numerator_description').val();#}
+{#                var verification = $('#id_form-' + index + '-verification').val();#}
+{##}
+{#                if (denominatorDescription === '' && numeratorDescription === '' && verification === '') {#}
+{#                    $(this).closest('label').hide();#}
+{#                    numeratorDiv.hide();#}
+{#                    denominatorDiv.hide();#}
+{#                }#}
+{#            });#}
+{#        });#}
+{#    </script>#}
     <script>
         $(document).ready(function () {
             $('.dropdown-option-field').change(function () {

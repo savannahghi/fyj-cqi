@@ -1,0 +1,778 @@
+{% extends 'dqa/index_dqa.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h6 class="display-6 text-primary text-center">Service Quality Assessment (SQA)</h6>
+        <hr>
+        <div class="p-5 mb-4 bg-light rounded-3">
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info col-12" role="alert">
+                        <h5 class="small">{{ message }}</h5>
+                    </div>
+                    {#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
+                {% endfor %}
+            {% endif %}
+
+            <div class="container-fluid">
+                {% if "facility" in title %}
+                    <h6 class="display-6 fw-bold text-primary">CREATE FACILITY QI</h6>
+                {% elif "program" in title %}
+                    <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
+                {% endif %}
+                <div>
+                    {{ quarterly_trend_fig|safe }}
+                </div>
+                <form class="row g-3" id="dqa-form" method="POST" class="mt-5" enctype='multipart/form-data'
+                      autocomplete="off">
+                    {% csrf_token %}
+                    <p> Please choose quarter, year, DQA date, facility and then submit </p>
+
+                    <div class="col-md-2 mt-2">
+                        {{ quarter_form.quarter|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-2 pr-5">
+                        {{ year_form.year|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4 mt-2">
+                        {{ facility_form.name|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 mt-2 pt-3">
+                        <input class="btn btn-success mt-1" type="submit" value="Submit">
+                    </div>
+                </form>
+                {#                {% if system_assessments %}#}
+                {#                    <table class="table table-striped table-hover" style="font-size: x-small;">#}
+                {#                        <thead class="thead-dark text-center">#}
+                {#                        <tr>#}
+                {#                            <th>#</th>#}
+                {#                            <th>Component of the M&E System <span class="text-warning">(I - GBV)</span>#}
+                {#                            </th>#}
+                {#                            <th>Answer</th>#}
+                {#                            <th>Calculations</th>#}
+                {#                            <th>Auditor Note</th>#}
+                {#                            <th></th>#}
+                {#                        </tr>#}
+                {#                        </thead>#}
+                {#                        <tbody>#}
+                {#                        {% for form in system_assessments|slice:":5" %}#}
+                {#                            <tr>#}
+                {#                                <td>{{ forloop.counter }}</td>#}
+                {#                                <td>{{ form.description }}</td>#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {##}
+                {#                                <td>{{ form.auditor_note }}</td>#}
+                {#                                <td class="text-center">{{ form.supporting_documentation_required }}</td>#}
+                {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+                {#                                {% if not form.hide_update_button or request.user.is_superuser %}#}
+                {#                                    <td class="text-center">#}
+                {#                                        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info"#}
+                {#                                           role="button">Update</a>#}
+                {#                                    </td>#}
+                {#                                {% endif %}#}
+                {#                            </tr>#}
+                {#                        {% endfor %}#}
+                {#                        <tr>#}
+                {#                            <td></td>#}
+                {#                            <td class="fw-bold">#}
+                {#                                Average#}
+                {#                            </td>#}
+                {#                            <td></td>#}
+                {#                            {% for key,value in average_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_5" %}#}
+                {#                                    {% if value >= 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: green">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value >= 1.5 and value < 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value < 1.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: red">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% else %}#}
+                {#                                        <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% endif %}#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {##}
+                {#                            <td></td>#}
+                {#                            <td><strong>Denominator: </strong></td>#}
+                {#                            <td>{% for key,value in expected_counts_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_5" %}#}
+                {#                                    <strong>{{ value }}</strong>#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {#                            </td>#}
+                {#                        </tr>#}
+                {#                        </tbody>#}
+                {#                        <thead class="thead-dark text-center">#}
+                {#                        <tr>#}
+                {#                            <th>#</th>#}
+                {#                            <th>Component of the M&E System <span#}
+                {#                                    class="text-warning">(II- Data Management Processes)</span></th>#}
+                {#                            <th>Answer</th>#}
+                {#                            <th>Calculations</th>#}
+                {#                            <th>Auditor Note</th>#}
+                {#                            <th></th>#}
+                {#                        </tr>#}
+                {#                        </thead>#}
+                {#                        <tbody>#}
+                {##}
+                {#                        {% for form in system_assessments|slice:"5:12" %}#}
+                {#                            <tr>#}
+                {#                                <td>{{ forloop.counter|add:5 }}</td>#}
+                {#                                <td>{{ form.description }}</td>#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {##}
+                {#                                <td>{{ form.auditor_note }}</td>#}
+                {#                                <td class="text-center">{{ form.supporting_documentation_required }}</td>#}
+                {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+                {#                                {% if not form.hide_update_button or request.user.is_superuser %}#}
+                {#                                    <td class="text-center">#}
+                {#                                        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info"#}
+                {#                                           role="button">Update</a>#}
+                {#                                    </td>#}
+                {#                                {% endif %}#}
+                {#                            </tr>#}
+                {#                        {% endfor %}#}
+                {#                        <tr>#}
+                {#                            <td></td>#}
+                {#                            <td class="fw-bold">Average</td>#}
+                {#                            <td></td>#}
+                {#                            {% for key,value in average_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_5_12" %}#}
+                {#                                    {% if value >= 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: green">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value >= 1.5 and value < 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value < 1.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: red">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% else %}#}
+                {#                                        <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% endif %}#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {##}
+                {#                            <td></td>#}
+                {#                            <td><strong>Denominator: </strong></td>#}
+                {#                            <td>{% for key,value in expected_counts_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_5_12" %}#}
+                {#                                    <strong>{{ value }}</strong>#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {#                            </td>#}
+                {#                        </tr>#}
+                {#                        </tbody>#}
+                {#                        <thead class="thead-dark text-center">#}
+                {#                        <tr>#}
+                {#                            <th>#</th>#}
+                {#                            <th>Component of the M&E System <span class="text-warning">(III- Indicator Definitions and Reporting Guidelines)</span>#}
+                {#                            </th>#}
+                {#                            <th>Answer</th>#}
+                {#                            <th>Calculations</th>#}
+                {#                            <th>Auditor Note</th>#}
+                {#                            <th>Supporting Documentation Required</th>#}
+                {#                            <th></th>#}
+                {#                        </tr>#}
+                {#                        </thead>#}
+                {##}
+                {#                        <tbody>#}
+                {##}
+                {#                        {% for form in system_assessments|slice:"12:17" %}#}
+                {#                            <tr>#}
+                {#                                <td>{{ forloop.counter|add:12 }}</td>#}
+                {#                                <td>{{ form.description }}</td>#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {##}
+                {#                                <td>{{ form.auditor_note }}</td>#}
+                {#                                <td class="text-center">{{ form.supporting_documentation_required }}</td>#}
+                {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+                {#                                {% if not form.hide_update_button or request.user.is_superuser %}#}
+                {#                                    <td class="text-center">#}
+                {#                                        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info"#}
+                {#                                           role="button">Update</a>#}
+                {#                                    </td>#}
+                {#                                {% endif %}#}
+                {#                            </tr>#}
+                {#                        {% endfor %}#}
+                {#                        <tr>#}
+                {#                            <td></td>#}
+                {#                            <td class="fw-bold">Average</td>#}
+                {#                            <td></td>#}
+                {#                            {% for key,value in average_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_12_17" %}#}
+                {#                                    {% if value >= 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: green">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value >= 1.5 and value < 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value < 1.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: red">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% else %}#}
+                {#                                        <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% endif %}#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {##}
+                {#                            <td></td>#}
+                {#                            <td><strong>Denominator: </strong></td>#}
+                {#                            <td>{% for key,value in expected_counts_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_12_17" %}#}
+                {#                                    <strong>{{ value }}</strong>#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {#                            </td>#}
+                {#                        </tr>#}
+                {#                        </tbody>#}
+                {#                        <thead class="thead-dark text-center">#}
+                {#                        <tr>#}
+                {#                            <th>#</th>#}
+                {#                            <th>Component of the M&E System <span class="text-warning">(IV- Data-collection and Reporting Forms / Tools)</span>#}
+                {#                            </th>#}
+                {#                            <th>Answer</th>#}
+                {#                            <th>Calculations</th>#}
+                {#                            <th>Auditor Note</th>#}
+                {#                            <th>Supporting Documentation Required</th>#}
+                {#                            <th></th>#}
+                {#                        </tr>#}
+                {#                        </thead>#}
+                {#                        <tbody>#}
+                {##}
+                {#                        {% for form in system_assessments|slice:"17:21" %}#}
+                {#                            <tr>#}
+                {#                                <td>{{ forloop.counter|add:17 }}</td>#}
+                {#                                <td>{{ form.description }}</td>#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {##}
+                {#                                <td>{{ form.auditor_note }}</td>#}
+                {#                                <td class="text-center">{{ form.supporting_documentation_required }}</td>#}
+                {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+                {#                                {% if not form.hide_update_button or request.user.is_superuser %}#}
+                {#                                    <td class="text-center">#}
+                {#                                        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info"#}
+                {#                                           role="button">Update</a>#}
+                {#                                    </td>#}
+                {#                                {% endif %}#}
+                {#                            </tr>#}
+                {#                        {% endfor %}#}
+                {#                        <tr>#}
+                {#                            <td></td>#}
+                {#                            <td class="fw-bold">Average</td>#}
+                {#                            <td></td>#}
+                {#                            {% for key,value in average_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_17_21" %}#}
+                {#                                    {% if value >= 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: green">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value >= 1.5 and value < 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value < 1.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: red">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% else %}#}
+                {#                                        <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% endif %}#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {#                            <td></td>#}
+                {#                            <td><strong>Denominator: </strong></td>#}
+                {#                            <td>{% for key,value in expected_counts_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_17_21" %}#}
+                {#                                    <strong>{{ value }}</strong>#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {#                            </td>#}
+                {#                        </tr>#}
+                {#                        </tbody>#}
+                {#                        <thead class="thead-dark text-center">#}
+                {#                        <tr>#}
+                {#                            <th>#</th>#}
+                {#                            <th>Component of the M&E System <span class="text-warning">(V- EMR Systems)</span></th>#}
+                {#                            <th>Answer</th>#}
+                {#                            <th>Calculations</th>#}
+                {#                            <th>Auditor Note</th>#}
+                {#                            <th>Supporting Documentation Required</th>#}
+                {#                            <th></th>#}
+                {#                        </tr>#}
+                {#                        </thead>#}
+                {#                        <tbody>#}
+                {#                        {% for form in system_assessments|slice:"21:25" %}#}
+                {#                            <tr>#}
+                {#                                <td>{{ forloop.counter|add:21 }}</td>#}
+                {#                                <td>{{ form.description }}</td>#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.dropdown_option }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {#                                {% if form.calculations == 3 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: green">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 2 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% elif form.calculations == 1 %}#}
+                {#                                    <td class="text-center text-black" style="background-color: red">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {#                                {% else %}#}
+                {#                                    <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                        <strong>{{ form.calculations|floatformat:"0" }}</strong>#}
+                {#                                    </td>#}
+                {##}
+                {#                                {% endif %}#}
+                {##}
+                {#                                <td>{{ form.auditor_note }}</td>#}
+                {#                                <td class="text-center">{{ form.supporting_documentation_required }}</td>#}
+                {#      <td><a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info" role="button">Update</a></td>#}
+                {#                                {% if not form.hide_update_button or request.user.is_superuser %}#}
+                {#                                    <td class="text-center">#}
+                {#                                        <a href="{% url 'update_system_assessment' form.id %}" class="btn btn-info"#}
+                {#                                           role="button">Update</a>#}
+                {#                                    </td>#}
+                {#                                {% endif %}#}
+                {#                            </tr>#}
+                {#                        {% endfor %}#}
+                {#                        <tr>#}
+                {#                            <td></td>#}
+                {#                            <td class="fw-bold">Average</td>#}
+                {#                            <td></td>#}
+                {#                            {% for key,value in average_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_21_25" %}#}
+                {#                                    {% if value >= 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: green">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value >= 1.5 and value < 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% elif value < 1.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: red">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% else %}#}
+                {#                                        <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                            <strong>{{ value }}</strong>#}
+                {#                                        </td>#}
+                {#                                    {% endif %}#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {#                            </td>#}
+                {##}
+                {#                            <td></td>#}
+                {#                            <td><strong>Denominator: </strong></td>#}
+                {#                            <td>{% for key,value in expected_counts_dictionary.items %}#}
+                {#                                {% if key == "average_calculations_21_25" %}#}
+                {#                                    <strong>{{ value }}</strong>#}
+                {#                                {% endif %}#}
+                {#                            {% endfor %}#}
+                {#                            </td>#}
+                {#                        </tr>#}
+                {##}
+                {#                        </tbody>#}
+                {##}
+                {#                    </table>#}
+                {#                {% endif %}#}
+
+                {#                {% if data %}#}
+                {#                    {% for model_name, model_data in data.items %}#}
+                {#                        <table class="table table-striped table-hover table-bordered" style="font-size: x-small;">#}
+                {#                            <thead class="thead-dark text-center">#}
+                {#                            <tr>#}
+                {#                                <th>#</th>#}
+                {#                                <th>Service Quality Assessment: <span class="text-warning">{{ model_name|upper }}</span>#}
+                {#                                </th>#}
+                {#                                <th>Answer</th>#}
+                {#                                <th>Calculation</th>#}
+                {#                                <th>Auditor Note</th>#}
+                {#                                <th></th>#}
+                {#                            </tr>#}
+                {#                            </thead>#}
+                {#                            <tbody>#}
+                {#                            {% for assessment in model_data.system_assessments %}#}
+                {#                                <tr>#}
+                {#                                    <td>{{ forloop.counter }}</td>#}
+                {#                                    <td>{{ assessment.description }}</td>#}
+                {#                                    <td>{{ assessment.dropdown_option }}</td>#}
+                {#                                    <td>{{ assessment.calculations }}</td>#}
+                {#                                    <td>{{ assessment.auditor_note }}</td>#}
+                {#                                   <td class="text-center">#}
+                {#                                       <a#}
+                {#                                               href="{% url 'update_system_assessment' form.id %}" #}
+                {#                                               class="btn btn-info"#}
+                {#                                          role="button">Update</a>#}
+                {#                                   </td>#}
+                {#                                </tr>#}
+                {#                            {% endfor %}#}
+                {#                            <tr>#}
+                {#                            <tr>#}
+                {#                                <td class="text-right"><strong>Average</strong></td>#}
+                {#                                <td></td>#}
+                {#                                <td></td>#}
+                {#                                {% with average=model_data.average_data.average %}#}
+                {#                                    {% if average >= 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: green">#}
+                {#                                            <strong>{{ average }}</strong></td>#}
+                {#                                    {% elif average >= 1.5 and average < 2.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: yellow">#}
+                {#                                            <strong>{{ average }}</strong></td>#}
+                {#                                    {% elif average < 1.5 %}#}
+                {#                                        <td class="text-center text-black" style="background-color: red">#}
+                {#                                            <strong>{{ average }}</strong></td>#}
+                {#                                    {% else %}#}
+                {#                                        <td class="text-center text-black" style="background-color: ghostwhite">#}
+                {#                                            <strong>{{ average }}</strong></td>#}
+                {#                                    {% endif %}#}
+                {#                                {% endwith %}#}
+                {#                                <td class="text-right"><strong>Denominator</strong></td>#}
+                {#                                <td>{{ model_data.average_data.total_score }}</td>#}
+                {#                            </tr>#}
+                {#                            </tbody>#}
+                {#                        </table>#}
+                {#                    {% endfor %}#}
+                {#                {% else %}#}
+                {#                    <p>No data available.</p>#}
+                {#                {% endif %}#}
+                {% if data %}
+                    {% for model_name, model_data in data.items %}
+                        <table class="table table-striped table-hover" style="font-size: x-small;">
+                            <colgroup>
+                                <col style="width: 5%;">
+                                <col style="width: 45%;">
+                                <col style="width: 10%;">
+                                <col style="width: 10%;">
+                                <col style="width: 20%;">
+                                <col style="width: 10%;">
+                            </colgroup>
+                            <thead class="thead-dark text-left">
+                            <tr>
+                                <th>#</th>
+                                <th>Service Quality Assessment: <span class="text-warning">{{ model_name|upper }}</span>
+                                </th>
+                                <th>Answer</th>
+                                <th>Calculation</th>
+                                <th>Auditor Note</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for assessment in model_data.system_assessments %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ assessment.description }}</td>
+                                    {% with option=assessment.calculations %}
+                                        {% if option >= 2.5 %}
+                                            <td class="text-center text-black" style="background-color: green">
+                                                <strong>{{ assessment.dropdown_option }}</strong></td>
+                                            <td class="text-center text-black" style="background-color: green">
+                                                <strong>{{ assessment.calculations }}</strong></td>
+                                        {% elif option >= 1.5 and option < 2.5 %}
+                                            <td class="text-center text-black" style="background-color: yellow">
+                                                <strong>{{ assessment.dropdown_option }}</strong></td>
+                                            <td class="text-center text-black" style="background-color: yellow">
+                                                <strong>{{ assessment.calculations }}</strong></td>
+                                        {% elif option < 1.5 %}
+                                            <td class="text-center text-black" style="background-color: red">
+                                                <strong>{{ assessment.dropdown_option }}</strong></td>
+                                            <td class="text-center text-black" style="background-color: red">
+                                                <strong>{{ assessment.calculations }}</strong></td>
+                                        {% else %}
+                                            <td class="text-center text-black" style="background-color: ghostwhite">
+                                                <strong>{{ average }}</strong></td>
+                                            <td class="text-center text-black" style="background-color: ghostwhite">
+                                                <strong>{{ assessment.calculations }}</strong></td>
+                                        {% endif %}
+                                    {% endwith %}
+                                    <td>{{ assessment.auditor_note }}</td>
+{#                                    <td class="text-center">#}
+{#                                        <a class="btn btn-info" role="button">Update {{ model_name }}</a>#}
+{#                                    </td>#}
+{#                                {% if not form.hide_update_button or request.user.is_superuser %}#}
+                                    <td class="text-center">
+                                        <a href="{% url 'update_sqa' model_name assessment.id  %}" class="btn btn-info"
+                                           role="button">Update</a>
+                                    </td>
+{#                                {% endif %}#}
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <td class="text-right"><strong>Average</strong></td>
+                            <td></td>
+                            <td></td>
+                                {% with average=model_data.average_data.average %}
+                                    {% if average >= 2.5 %}
+                                        <td class="text-center text-black" style="background-color: green">
+                                            <strong>{{ average }}</strong></td>
+                                    {% elif average >= 1.5 and average < 2.5 %}
+                                        <td class="text-center text-black" style="background-color: yellow">
+                                            <strong>{{ average }}</strong></td>
+                                    {% elif average < 1.5 %}
+                                        <td class="text-center text-black" style="background-color: red">
+                                            <strong>{{ average }}</strong></td>
+                                    {% else %}
+                                        <td class="text-center text-black" style="background-color: ghostwhite">
+                                            <strong>{{ average }}</strong></td>
+                                    {% endif %}
+                                {% endwith %}
+                                <td class="text-right"><strong>Denominator</strong></td>
+                                <td colspan="2"><strong>{{ model_data.average_data.total_score }}</strong></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    {% endfor %}
+                {% else %}
+                    <p>No data available.</p>
+                {% endif %}
+
+
+            </div>
+        </div>
+    </main>
+    <script>
+        // When the document is ready
+        $(document).ready(function () {
+            // Listen for changes or clears to the facility select element
+            $('#id_name').on('input change', function () {
+                if ($(this).val() === '') {
+                    $('#dqa-form').submit();
+                } else {
+                    $('#dqa-form').submit();
+                }
+            });
+        });
+        // When the DOM is fully loaded
+        document.addEventListener("DOMContentLoaded", () => {
+            // Get references to the select elements
+            const yearSelect = document.getElementById("year-select");
+            const quarterSelect = document.getElementById("quarter-select");
+            const facilitySelect = document.getElementById("id_name");
+            const form = document.getElementById("dqa-form");
+
+            // Function to populate the facilities select element
+            const populate_Facilities = () => {
+                // Get the selected year and quarter
+                const year = yearSelect.value;
+                const quarter = quarterSelect.value;
+
+                // If year and quarter are selected
+                if (year && quarter) {
+                    // Clear the facilities select element
+                    facilitySelect.innerHTML = "<option value=\"\">Select facility</option>";
+                    // Add options for each facility
+                    // TO DO: populate facilities select element
+                }
+            };
+
+            // Listen for changes to the year and quarter selects
+            yearSelect.addEventListener("change", populate_Facilities);
+            quarterSelect.addEventListener("change", populate_Facilities);
+
+            // Listen for changes to the facility select
+            facilitySelect.addEventListener("change", () => {
+                // Submit the form
+                form.submit();
+            });
+
+            // Listen for changes to the year and quarter selects (submit form)
+            yearSelect.addEventListener("change", () => {
+                form.submit();
+            });
+            quarterSelect.addEventListener("change", () => {
+                form.submit();
+            });
+
+
+        });
+    </script>
+
+
+
+
+{% endblock %}

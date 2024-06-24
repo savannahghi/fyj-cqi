@@ -522,6 +522,7 @@ class BaseSqa(BaseModel):
     denominator = models.PositiveIntegerField(blank=True, null=True)
     calculations = models.FloatField(null=True, blank=True)
     indicator_performance = models.FloatField(null=True, blank=True)
+    auditor_note = models.CharField(max_length=800, blank=True, null=True)
 
     class Meta:
         abstract = True

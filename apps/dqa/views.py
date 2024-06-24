@@ -3638,34 +3638,34 @@ def generate_descriptions(report_name):
     elif report_name == "vmmc":
         descriptions = [
             'Are surgical guidelines and SOPs readily available to the clinicians? i) Conventional Surgical ii) EIMC'
-            'iii)DEVICES',
+            ' iii) DEVICES',
             'Is TTCV administered as per the SOP?',
             'Does the facility have the current local anesthesia dosing chart on site? (for EIMC and adult)',
             'Is surgery performed as per guidelines and protocol? i) Conventional Surgical ii) EIMC'
-            'iii)DEVICES',
+            ' iii) DEVICES',
             'Does the MC surgical room observe privacy and confidentiality to clients?',
             'Are service delivery data completely and accurately collected and timely reported?',
             'Are analyzed data used for the planning and improvement of service delivery?',
             'Is VMMC data used to inform best practices at sub county, county or national level?',
             'Randomly select 12 most recent entries in the VMMC client card within the past 6 months What proportion '
-            'of the clients were properly i)consented?',
-            'ii)What proportion of clients were circumcised',
-            'iii)using Dorsal slit method?',
-            'iv)What proportion of the clients were followed up as per guideline?',
-            'v)What proportion of clients who missed scheduled follow up were actively '
+            'of the clients were properly i) consented?',
+            'ii) What proportion of clients were circumcised',
+            'iii) Using Dorsal slit method?',
+            'iv) What proportion of the clients were followed up as per guideline?',
+            'v) What proportion of clients who missed scheduled follow up were actively '
             'followed?',
-            'vi)For sites implementing EIMC, how many clients had HEI screening?',
+            'vi) For sites implementing EIMC, how many clients had HEI screening?',
         ]
     elif report_name == "hts":
         descriptions = [
             'Has HTS services been integrated to other services?',
-            'If Yes for no 1: Where is hts  integrated? OPD, FP Clinic , ANC , CCC, Special Clinic, Other (Specify)',
+            # 'If Yes for no 1: Where is hts  integrated? OPD, FP Clinic , ANC , CCC, Special Clinic, Other (Specify)',
             'Have all HTS service providers undergone the approved NASCOP HTS training program?',
             'Have all service HTS providers undergone refresher training/CME in the last one years? ',
             'Have all HTS Pos clients been received confirmatory test befor initiation to ART',
             'Is the HTS algorithm Adhered to?',
             'Is safety and infection prevention adhered to in the HTS room?',
-            'If yes for number 8. What is present?  running water, soap, waste segregation (Yellow, Black, Red bins & '
+            'If yes (to safety and infection prevention adherence above). What is present?  running water, soap, waste segregation (Yellow, Black, Red bins & '
             'liners and a sharp box), room has adequate lighting. & PEP Protocol ',
             'Is the HTS officer conversant with testing frequency for adolescent and young people? ',
             'Does the HTS provider in ANC adhere to testing frequency for ANC/PNC clients? ',
@@ -3677,12 +3677,13 @@ def generate_descriptions(report_name):
     elif report_name == "prep":
         descriptions = [
             'Has PrEP services been integrated to other services ?',
-            'If Yes for no 1: Where is PrEP integrated? OPD, FP Clinic , ANC , CCC, Special Clinic, Other (Specify)',
+            # 'If Yes for no 1: Where is PrEP integrated? OPD, FP Clinic , ANC , CCC, Special Clinic, Other (Specify)',
             'Have all the service providers offering PrEP received a refresher training in the last one year?',
-            'Does the facility have PrEP Clinical encounter cards? Are they appropriately documented',
+            'Does the facility have PrEP Clinical encounter cards/EMR?',
+            'Are they (PrEP Clinical encounter cards/EMR) appropriately documented',
             'Does the facility routinely  carry out Rapid Assessment Screening using the RAST tool',
             'Are client assessed for eligibility prior to PrEP initiation?',
-            'Are clients on followup for PrEP offered  HIV Testing ?',
+            # 'Are clients on followup for PrEP offered  HIV Testing ?',
             'Are clients on followup for PrEP assessed for adverse drugs effects?',
             'Are clients on followup for PrEP assessesd for adherence and offered adherence counselling?',
             'Does the facility collect samples for drug resistance testing for clients who test HIV positive while on PrEP?',
@@ -3692,17 +3693,18 @@ def generate_descriptions(report_name):
         ]
     elif report_name == "tb":
         descriptions = [
-            'Are clients screened for TB at every clinic visit? (Y/N)',
-            'Does the facility start clients on TPT/TB Rx? (Y/N)',
-            'Is documentation done for clients who have completed TPT? (Y/N)',
-            'Are the clients screened for baseline CD4 test? (Y/N)',
+            'Are clients screened for TB at every clinic visit?',
+            'Does the facility start clients on TPT/TB Rx?',
+            'Is documentation done for clients who have completed TPT?',
+            'Are the clients tested for baseline CD4 test?',
 
         ]
     elif report_name == "care_treatment":
         descriptions = [
-            'Are the clients screened for baseline CD4 test? (Y/N)',
-            'Does the facility screen for NCDs in each visit? (BP,)',
-            'Does the facility have USHAURI? Is it active? (Y/N)',
+            'Are the clients tested for baseline CD4 test?',
+            'Does the facility screen for NCDs in each visit? (BMI, RBS, BP, CaCx)',
+            'Does the facility have USHAURI?',
+            " Is it active?",
             'Does the facility have a system for assessment and management of clients with HVL? ',
             'Do the clients undergo 3 consecutive EAC before the 2nd VL is done?',
             'Does the facility assign a case manager for clients failing treatment?',
@@ -3725,12 +3727,12 @@ def generate_descriptions(report_name):
 def generate_verification(report_name):
     if report_name == "gbv":
         numerators = [
-            'Tick as appropriate',
-            'Tick as appropriate',
-            'Tick as appropriate',
+            "",
+            "",
+            "",
             'Check to confirm',
             'Check training log',
-            'Check completion of MoH 363, 364, 365',
+            'Check completion of MoH 363, 364, 365 including EMR',
 
         ]
     elif report_name == "vmmc":
@@ -3752,8 +3754,10 @@ def generate_verification(report_name):
         ]
     elif report_name == "hts":
         numerators = [
-            'Tick as appropriate',
-            'Tick all that apply',
+            # 'Tick as appropriate',
+            # 'Tick all that apply',
+            "",
+            # "",
             'Confirm availability of certificates',
             'Check HTS log file/folder if the HTS names appear.Partly if some, No if none',
             'Sample 10 positive clients and crosscheck with retesting register. If 100% score if <100% score No',
@@ -3765,7 +3769,7 @@ def generate_verification(report_name):
             "first response). If not followed score 'No' If followed but not always score 'partial' If algorithm "
             "strictly followed score 'YES'",
             'Check if the following are in place:',
-            'Tick all that apply',
+            '',
             'The answer is Yes if adhering to the HTS operational manual.   Ask and Check in MOH 362 AYP for next appointment. No if the TCA is longer',
             'Sample 10 clients in ANC Register, If yes – Check HTS provider to explain and Check PNC register, no if not adhering. IF 100% SCORE Yes , if >100% score Partly',
             'Sample 10 clients in Maternity Register, If yes – Check MAT register, no if not adhering. IF 100% SCORE Yes , if >100% score Partly',
@@ -3775,13 +3779,15 @@ def generate_verification(report_name):
 
     elif report_name == "prep":
         numerators = [
-            'Tick as appropriate',
-            'Tick all that apply',
+            # 'Tick as appropriate',
+            "",
+            # 'Tick all that apply',
             'Calculate the proportion of service providers who have received a refresher training out of the total number offering PrEP. If 100% tick Yes , if <100% tick no ',
             'Verify availability of clinical encounter card, , if available and well documented score Yes, If available and not well documented score partial If not available score No',
+            "",
             'Sample 5 encounter card for clients  for clients initiated on PrEP during the review period  verify documentation of risk assessment . Indicate the number clients with assessment done (numerator) total cards sampled (denominator)',
             'Sample 10 encounter card for clients initiated on PrEP during the review period  verify documentation of eligibility status  at basesline. Indicate the number  with eligibility assessment done (numerator) total cards sampled (denominator) If all the parameters for eligibility  are indicated score Yes if any is missing score No Parameters for eligibility:  HIV Test Negative, Screening for Kidney/Liver disease / No Contraindication to TDF/FTC/3TC / Client willing to initiate PrEP ) ',
-            'Sample 10 client encounter cards, for clients who made a clinical  follow up visit during the review period.verify if they were tested for HIV Indicate the number  with documented HIV results (numerator) total cards sampled (denominator) If all the clients were tested indicate Yes , If some indicate Partial If none indicate No ',
+            # 'Sample 10 client encounter cards, for clients who made a clinical  follow up visit during the review period.verify if they were tested for HIV Indicate the number  with documented HIV results (numerator) total cards sampled (denominator) If all the clients were tested indicate Yes , If some indicate Partial If none indicate No ',
             'Sample 5 client encounter cards, for clients who made a   follow up visit during the review period.verify if they were assessed for adverse drugs events.Indicate the number  with documented screening for adverse effects (numerator) total cards sampled (denominator) If all the clients were assesed for adverse drug effects indicate Yes , If some indicate Partial If none indicate No  ',
             'Sample 5 client encounter cards, for clients who made a   follow up visit during the review period.verify if they were assessed for adherence and offered adherence counselling. Indicate the number  with documented  adherence assessment (numerator) total cards sampled (denominator) If all the clients were assessed for adherence indicate Yes , If some indicate Partial If none indicate No  ',
             'Verify from  the PrEP register if there has been  any client who tested positive while on PrEP. Verify if clients were offered DRT on the the specific client  encounter card or sample tracking  log. If sample collected or results available indicate Yes if no documentation score No If not client has ever tested positive while on PrEP indicate NA',
@@ -3791,15 +3797,16 @@ def generate_verification(report_name):
         ]
     elif report_name == "tb":
         numerators = [
-            'Sample  5 client encounter cards of clients who attended clinic 2, peads 3 adults and provide the proportion(num/den)',
+            'Sample  5 green cards/EMR clients who attended clinic and check if TB screening was done at the last clinical visit. 2 peads and 3 adults and provide the proportion(num/den)',
             'Sample  5 new on art  clients who attended clinic 2, peads 3 adults and provide the proportion(num/den)',
-            'Sample  5 client encounter cards of active clients and started HAART >6 months ago 2, peads 3 adults and provide the proportion(num/den)',
+            'Sample  5 client encounter cards/TB4 register/ICF card of active clients and started HAART >6 months ago 2, peads 3 adults and provide the proportion(num/den)',
         ]
     elif report_name == "care_treatment":
         numerators = [
             'Sample 10  files for verification- Tease out 10 patients who have been newly enrolled most recently ',
-            'Sample 10 >15 client files and check for completeness of all the NCD parameters indicated in MOH257',
+            'Sample 10 >15 client files and check for completeness of all the NCD parameters indicated in MOH 257',
             'Check if in the last 3 clinics  sms reminders were sent out',
+            "",
             'These are clients who have a 2nd VL of >1000 copies/ml after 3 consecutive EACs',
             'check for MDT, SOPs, availability of trained adherence counsellors)',
             'Check for EAC records and the dates',
@@ -3852,7 +3859,7 @@ def generate_numerator(report_name):
     elif report_name == "hts":
         numerators = [
             '# HTS services intergrated',
-            '',
+            # '',
             '# of HTS providers trained on NASCOP HTS training',
             '# of HTS providers who have undergone refresher training/CME in the last one year',
             '# of HTS positive clients who received confirmatory tests before initiation to ART',
@@ -3868,13 +3875,15 @@ def generate_numerator(report_name):
         ]
     elif report_name == "prep":
         numerators = [
-            '# HTS services intergrated',
-            '',
+            '# PrEP services intergrated',
+            # '',
             '# of service providers offering PrEP received a refresher training in the last one year',
             '',
+            "",
             '# clients with assessment done',
+
             '# with eligibility assessment done',
-            '# with documented HIV results',
+            # '# with documented HIV results',
             '# with documented screening for adverse effects',
             '# with documented  adherence assessment',
             '# of DRT collected for clients who test HIV positive while on PrEP',
@@ -3891,9 +3900,10 @@ def generate_numerator(report_name):
         ]
     elif report_name == "care_treatment":
         numerators = [
-            'Number of clients screened for baseline CD4 test',
+            'Number of clients tested for baseline CD4 test',
             'Number of clients with completed NCD parameters',
             '1 (if ushauri is present) or 0 (if  absent)',
+            "",
             '# documented in HVL register',
             '# with 3 consecutive EACs',
             '# of HVL clients with case managers',
@@ -3917,7 +3927,7 @@ def generate_numerator(report_name):
 def generate_denominator(report_name):
     if report_name == "gbv":
         numerators = [
-            '# SDPs offering GBV services',
+            '# SDPs offering GBV services in the facility',
             '# of staffs offering GBV services',
             '# of GBV service delivery points',
             '# of facilities assessed',
@@ -3944,7 +3954,7 @@ def generate_denominator(report_name):
     elif report_name == "hts":
         numerators = [
             '# of SDPs',
-            '',
+            # '',
             '# of HTS providers',
             'Total # of HTS providers in the facility',
             'Total # of HTS positive clients',
@@ -3962,12 +3972,13 @@ def generate_denominator(report_name):
     elif report_name == "prep":
         numerators = [
             '# of SDPs',
-            '',
+            # '',
             '# of service providers offering PrEP',
             '',
+            "",
             'Total card sampled',
             'Total card sampled',
-            'Total card sampled',
+            # 'Total card sampled',
             'Total card sampled',
             'Total card sampled',
             '# of clients who test HIV positive while on PrEP',
@@ -3986,6 +3997,7 @@ def generate_denominator(report_name):
             'Total clients sampled',
             'Total clients sampled',
             '1',
+            "",
             '# of the client with HVL (Active on ART Patients Linelist)',
             '# of the client with 2nd VL with HVL',
             '# of the client with HVL (Active on ART Patients Linelist)',
@@ -4001,7 +4013,7 @@ def generate_denominator(report_name):
     elif report_name == "pharmacy":
         numerators = [
             '1',
-            'Total clients sampled',
+            '# of bin cards sampled',
         ]
     else:
         numerators = []

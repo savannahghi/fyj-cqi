@@ -233,7 +233,10 @@ class BaseSqaForm(forms.ModelForm):
 
             'numerator': NumberInput(attrs={'class': 'numerator-field', 'required': 'required'}),
             'denominator': NumberInput(attrs={'class': 'denominator-field', 'required': 'required'}),
-            'dropdown_option': Select(attrs={'class': 'dropdown-option-field', 'required': 'required'}),
+            'dropdown_option': Select(
+                attrs={'id': 'dropdown_option', 'class': 'dropdown-option-field', 'required': 'required'}),
+            'auditor_note': Textarea(attrs={'id': 'auditor_note', 'class': 'auditor-textarea', 'rows': '5'}),
+
         }
 
 

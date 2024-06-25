@@ -72,6 +72,7 @@ class PharmacyRecords(models.Model):
         ('', 'Select an option'),
         ("Yes", "Yes"),
         ("No", "No"),
+        ("N/A", "N/A"),
     ]
     date_of_interview = models.DateField(blank=True, null=True)
     # register_name = models.CharField(max_length=150)
@@ -79,7 +80,7 @@ class PharmacyRecords(models.Model):
     register_available = models.CharField(max_length=10,
                                           choices=CHOICES
                                           )
-    currently_in_use = models.CharField(max_length=10, choices=[("", "-"), ("Yes", "Yes"), ("No", "No")]
+    currently_in_use = models.CharField(max_length=10, choices=[("", "-"), ("Yes", "Yes"), ("No", "No"),("N/A", "N/A")]
                                         , blank=True, null=True,
                                         )
     last_month_copy = models.CharField(max_length=10,

@@ -1,5 +1,6 @@
 import ast
 import csv
+import re
 from collections import defaultdict
 
 import matplotlib
@@ -47,7 +48,8 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
-from apps.dqa.form import CareTreatmentForm, CqiForm, DataVerificationForm, GbvForm, HtsForm, PeriodForm, PharmacyForm, \
+from apps.dqa.form import BaseForm, CareTreatmentForm, CqiForm, DataVerificationForm, GbvForm, HtsForm, PeriodForm, \
+    PharmacyForm, \
     PrepForm, \
     QuarterSelectionForm, TbForm, \
     VmmcForm, \
@@ -4614,6 +4616,10 @@ def calculate_averages_(request, model_data):
     }
 
 
+def split_at_caps(s):
+    return re.findall('[A-Z][^A-Z]*', s)
+
+
 @login_required(login_url='login')
 def sqa_table(request):
     if not request.user.first_name:
@@ -4678,11 +4684,11 @@ def sqa_table(request):
                     'average_data': average_data
 
                 }
-            # else:
-            #     messages.error(request,
-            #                    f"Data was not found for {selected_facility} ({quarter_year}) in {model.__name__}")
             else:
-                missing_models.append(model.__name__)
+                split_name = split_at_caps(model.__name__)
+                upper_name = [part.upper() for part in split_name]
+                result = " ".join(upper_name)
+                missing_models.append(result)
 
         if missing_models:
             missing_models_str = ", ".join(missing_models)
@@ -4703,7 +4709,7 @@ def sqa_table(request):
             if model_data:
                 # average_dictionary, expected_counts_dictionary = calculate_averages(model_data, description_dict[
                 #     model.__name__.lower()])
-                average_data = calculate_averages_(model_data)
+                average_data = calculate_averages_(request, model_data)
                 data[model.__name__.lower()] = {
                     'system_assessments': model_data,
                     'average_data': average_data
@@ -4772,7 +4778,7 @@ def update_system_assessment(request, pk):
         form = SystemAssessmentForm(instance=item)
     context = {
         "form": form,
-        "title": "update"
+        "title": "Update Systems Assessment"
     }
     return render(request, 'dqa/update_system_assessment.html', context)
 
@@ -4800,11 +4806,11 @@ def update_sqa(request, model_name, pk):
     model = apps.get_model(app_label='dqa', model_name=modelName)
     item = model.objects.get(id=pk)
 
+    # Get the form class based on the model name
+    form_class = type(f'{modelName}Form', (BaseForm,), {'Meta': type(f'Meta', (BaseForm.Meta,), {'model': model})})
+    item = model.objects.get(id=pk)
     if request.method == "POST":
-        # Get the form class based on the model name
-        form_class = modelform_factory(model, exclude=['created_by', 'dqa_date'])
         form = form_class(request.POST, instance=item)
-
         if form.is_valid():
             instance = form.save(commit=False)
             instance.dropdown_option = form.cleaned_data['dropdown_option']
@@ -4845,17 +4851,25 @@ def update_sqa(request, model_name, pk):
 
             instance.save()
 
+            # messages.success(request, "Record successfully updated!")
+            # Set the initial values for the forms
+            quarter_form_initial = {'quarter': instance.quarter_year.quarter_year}
+            year_form_initial = {'year': instance.quarter_year.year}
+            facility_form_initial = {"name": instance.facility_name.name}
+
             messages.success(request, "Record successfully updated!")
-            return redirect(reverse('sqa_table'))
+            # Redirect to the system assessment table view with the initial values for the forms
+            url = reverse('sqa_table')
+            url = f'{url}?quarter_form={quarter_form_initial}&year_form={year_form_initial}&facility_form={facility_form_initial}'
+            return redirect(url)
+            # return redirect(reverse('sqa_table'))
 
     else:
-        # Get the form class based on the model name
-        form_class = modelform_factory(model, exclude=['created_by', 'dqa_date'])
         form = form_class(instance=item)
 
     context = {
         "form": form,
-        "title": "update"
+        "title": "Update SQA", "facility_data": item, "modelName": modelName.upper()
     }
     return render(request, 'dqa/update_sqa.html', context)
 

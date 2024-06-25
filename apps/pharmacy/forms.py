@@ -60,12 +60,13 @@ class BaseForm(forms.ModelForm):
         exclude = ['created_by', 'modified_by', 'quarter_year', 'facility_name']
         abstract = True
         widgets = {
-            'description': Textarea(attrs={'readonly': 'readonly', 'rows': '4',
+            'description': Textarea(attrs={'readonly': 'readonly', 'rows': '4','class': 'my-textarea',
                                            'style': 'width: 250px; font-weight: bold; background-color: #6c757d;color: '
                                                     'white; resize: none;padding: 8px; border: none; box-shadow: none;'
                                                     'border-radius: 10px;'}),
-            'comments': forms.Textarea(attrs={'size': '40', 'rows': '3'})
+            'comments': forms.Textarea(attrs={'size': '40', 'rows': '3','class': 'auditor-textarea',})
         }
+
 
 
 class PharmacyRecordsForm(forms.ModelForm):

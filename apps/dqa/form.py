@@ -173,8 +173,8 @@ class SystemAssessmentForm(ModelForm):
         model = SystemAssessment
         fields = ['description', 'dropdown_option', 'auditor_note', 'supporting_documentation_required']
         widgets = {
-            'description': Textarea(attrs={'readonly': 'readonly', 'rows': '5'}),
-            'auditor_note': forms.Textarea(attrs={'size': '40', 'rows': '5'})
+            'description': Textarea(attrs={'readonly': 'readonly', 'rows': '5','class': 'my-textarea',}),
+            'auditor_note': forms.Textarea(attrs={'size': '40', 'rows': '5','class': 'auditor-textarea',})
         }
 
     # This is the constructor method of the form

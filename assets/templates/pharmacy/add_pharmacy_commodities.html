@@ -88,40 +88,11 @@
                         {% endif %}
                     {% endif %}
                 </div>
-
-
-                {#                <div>#}
-                {#                    <a href="{% url 'choose_facilities_pharmacy' %}" class="btn btn-info mb-3" role="button">Clear#}
-                {#                        fields</a>#}
-                {#                </div>#}
-                {#                <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">#}
-                {#                    {% csrf_token %}#}
-                {#                    {% if not register_form_initial %}#}
-                {#                        <p> Please choose period of interest and then submit </p>#}
-                {#                    {% endif %}#}
-                {#                    <div class="col-md-2">#}
-                {#                        {{ quarter_form.quarter|as_crispy_field }}#}
-                {#                    </div>#}
-                {#                    <div class="col-md-2">#}
-                {#                        {{ year_form.year|as_crispy_field }}#}
-                {#                    </div>#}
-                {#                    {% if not register_form_initial %}#}
-                {#                        <div class="col-md-6">#}
-                {#                            {{ register_form.register_name|as_crispy_field }}#}
-                {#                        </div>#}
-                {#                        <div class="col-md-3 mt-4 pt-2">#}
-                {#                            <input class="btn btn-success mt-1" type="submit" value="Submit">#}
-                {#                        </div>#}
-                {#                    {% endif %}#}
-                {#                </form>#}
                 {% if register_name %}
                     {% for key,months in commodity_questions.items %}
                         <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data'
                               autocomplete="off">
                             {% csrf_token %}
-                            {#                            {% if not register_form_initial %}#}
-                            {#                                <p> Enter data below and then submit </p>#}
-                            {#                            {% endif %}#}
                             <hr>
                             <table class="table table-striped table-hover" style="font-size: small;">
                                 <thead class="thead-dark">
@@ -147,16 +118,6 @@
                             <div class="col-md-3 mt-4 pt-2">
                                 <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
                             </div>
-                            {#                            {% if form.errors %}#}
-                            {#                                <div class="alert alert-danger">#}
-                            {#                                    <strong> Please correct the following errors :</strong>#}
-                            {#                                    <ul>#}
-                            {#                                        {% for error in form.errors %}#}
-                            {#                                            <li> {{ error }} </li>#}
-                            {#                                        {% endfor %}#}
-                            {#                                    </ul>#}
-                            {#                                </div>#}
-                            {#                            {% endif %}#}
                         </form>
                     {% endfor %}
                 {% endif %}

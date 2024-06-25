@@ -4652,6 +4652,13 @@ def viral_track(request):
     df = df1 = discordant_results = results_not_in_nascop_overall = missing_in_emr = backlog_df = \
         no_vl_ever = pd.DataFrame()
 
+    # Get the current date
+    current_date = pd.to_datetime(datetime.now().date())
+    # Calculate the date one year ago from the current date
+    one_year_ago = current_date - pd.DateOffset(years=1)
+    print("one_year_ago:::::::::::::::::::::::::::::::::::::::::::")
+    print(one_year_ago)
+
     if request.method == 'POST':
         form = FileUploadForm(request.POST, request.FILES)
         form_emr = EmrFileUploadForm(request.POST, request.FILES)
@@ -4701,6 +4708,8 @@ def viral_track(request):
 
         # Calculate the date one year ago from the current date
         one_year_ago = current_date - pd.DateOffset(years=1)
+        print("one_year_ago:::::::::::::::::::::::::::::::::::::::::::")
+        print(one_year_ago)
 
         df1 = transform_nascop_data(df1, one_year_ago, facility_mfl_code)
         df = transform_emr_data(df)
@@ -4840,8 +4849,8 @@ def viral_track(request):
         # "date_picker_form": date_picker_form, "data_filter_form": data_filter_form,
         "vl_backlog_fig": vl_backlog_fig, "vl_uptake_fig": vl_uptake_fig,
         "vl_backlog_detailed_fig": vl_backlog_detailed_fig, "vl_cascade_fig": vl_cascade_fig,
-        "dictionary": dictionary,
-        "backlog_df": backlog_df, "no_vl_ever": no_vl_ever,
+        "dictionary": dictionary,"one_year_ago":one_year_ago.strftime('%d %B %Y'),
+        "backlog_df": backlog_df, "no_vl_ever": no_vl_ever,"current_date": current_date.strftime('%d %B %Y'),
         "missed_6mons_zero_24yrs": filtered_data['missed_6mons_zero_24yrs'],
         "missed_6mons_pregnant": filtered_data['missed_6mons_pregnant'],
         "missed_12mons_above_25yrs": filtered_data['missed_12mons_above_25yrs'],

@@ -69,22 +69,24 @@ class BaseForm(forms.ModelForm):
 
 
 class PharmacyRecordsForm(forms.ModelForm):
-    # facility_name = forms.ModelChoiceField(
-    #     queryset=Facilities.objects.all(),
-    #     empty_label="Select facility",
-    #     widget=forms.Select(attrs={'class': 'form-control select2'}),
-    #     initial=None  # Add this line to set the initial value to None
-    # )
-
     date_report_submitted = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
-        label="Date Report Was Submitted",
+        label="",
         required=False
     )
 
     class Meta(BaseForm.Meta):
         model = PharmacyRecords
         exclude = BaseForm.Meta.exclude + ['register_name']
+        labels = {
+            'date_of_interview': '',
+            'register_available': '',
+            'currently_in_use': '',
+            'last_month_copy': '',
+            'comments': '',
+            'facility_name': '',
+            'quarter_year': '',
+        }
 
 
 class BaseReportForm(BaseForm):

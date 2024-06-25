@@ -29,7 +29,7 @@ urlpatterns = [
     path('dqa-dashboard/<str:dqa_type>', dqa_dashboard, name='dqa_dashboard'),
 
     path('update-data-verification/<uuid:pk>', update_data_verification, name="update_data_verification"),
-    # path('update-system-assessment/<uuid:pk>', update_sqa, name="update_system_assessment"),
+    path('update-system-assessment/<uuid:pk>', update_system_assessment, name="update_system_assessment"),
     path('update/<str:model_name>/<uuid:pk>/', update_sqa, name='update_sqa'),
     path('update-audit-team/<uuid:pk>', update_audit_team, name="update_audit_team"),
     path('update-dqa-workplan/<uuid:pk>', update_dqa_workplan, name="update_dqa_workplan"),

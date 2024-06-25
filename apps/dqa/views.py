@@ -1046,17 +1046,24 @@ def show_data_verification(request):
             year_suffix = str(selected_year)[-2:]
         else:
             year_suffix = str(selected_year)[-2:]
-        quarters = {
-            selected_quarter: [
-                f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}', 'Total'
-            ] if selected_quarter == 'Qtr1' else [
-                f'Jan-{year_suffix}', f'Feb-{year_suffix}', f'Mar-{year_suffix}', 'Total'
-                                                                                  f'Apr-{year_suffix}',
-                f'May-{year_suffix}', f'Jun-{year_suffix}', 'Total'
-            ] if selected_quarter == 'Qtr3' else [
-                f'Jul-{year_suffix}', f'Aug-{year_suffix}', f'Sep-{year_suffix}', 'Total'
-            ]
-        }
+        if selected_quarter == 'Qtr1':
+            quarters = {
+                selected_quarter: [f'Oct-{year_suffix}', f'Nov-{year_suffix}', f'Dec-{year_suffix}', 'Total']
+            }
+        elif selected_quarter == 'Qtr2':
+            quarters = {
+                selected_quarter: [f'Jan-{year_suffix}', f'Feb-{year_suffix}', f'Mar-{year_suffix}', 'Total']
+            }
+        elif selected_quarter == 'Qtr3':
+            quarters = {
+                selected_quarter: [f'Apr-{year_suffix}', f'May-{year_suffix}', f'Jun-{year_suffix}', 'Total']
+            }
+        else:
+            quarters = {
+                selected_quarter: [f'Jul-{year_suffix}', f'Aug-{year_suffix}', f'Sep-{year_suffix}', 'Total']
+            }
+
+
     # else:
     #     quarters = {}
     elif quarter_form_initial:
@@ -4592,8 +4599,6 @@ def create_description_dict():
     return description_dict
 
 
-
-
 def calculate_averages_(request, model_data):
     total_score = 0
     num_assessments = 0
@@ -4603,10 +4608,11 @@ def calculate_averages_(request, model_data):
             num_assessments += 1
     average = total_score / num_assessments if num_assessments > 0 else 0
     return {
-        'average': average,
+        'average': round(average, 1),
         'total_score': int(total_score),
         'num_assessments': num_assessments
     }
+
 
 @login_required(login_url='login')
 def sqa_table(request):
@@ -4643,7 +4649,7 @@ def sqa_table(request):
                                           selected_quarter=selected_quarter,
                                           model_to_check=[Gbv, Vmmc, Hts, Prep, Tb, CareTreatment, Pharmacy, Cqi],
                                           initial=facility_form_initial)
-
+    missing_models = []
     if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = quarter_form.cleaned_data['quarter']
         selected_facility = facility_form.cleaned_data['name']
@@ -4672,9 +4678,16 @@ def sqa_table(request):
                     'average_data': average_data
 
                 }
+            # else:
+            #     messages.error(request,
+            #                    f"Data was not found for {selected_facility} ({quarter_year}) in {model.__name__}")
             else:
-                messages.error(request,
-                               f"Data was not found for {selected_facility} ({quarter_year}) in {model.__name__}")
+                missing_models.append(model.__name__)
+
+        if missing_models:
+            missing_models_str = ", ".join(missing_models)
+            messages.error(request,
+                           f"Data was not found for {selected_facility} ({quarter_year}) in the following section(s): {missing_models_str}")
 
     if quarter_form_initial:
         for model in [Gbv, Vmmc, Hts, Prep, Tb, CareTreatment, Pharmacy, Cqi]:
@@ -4786,8 +4799,6 @@ def update_sqa(request, model_name, pk):
     # Get the model class based on the model name
     model = apps.get_model(app_label='dqa', model_name=modelName)
     item = model.objects.get(id=pk)
-
-
 
     if request.method == "POST":
         # Get the form class based on the model name

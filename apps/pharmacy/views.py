@@ -694,10 +694,6 @@ def add_inventory(request, report_name=None, quarter=None, year=None, pk=None, d
                 existing_data = model_class.objects.values_list('description', 'facility_name', 'quarter_year')
                 for form in formset.forms:
                     description_check = form.cleaned_data.get('description')
-                    # facility_check, created = Facilities.objects.get_or_create(id=selected_facility)
-                    # facility_name_check = facility_check.id
-                    # period_check, created = Period.objects.get_or_create(quarter=selected_quarter, year=selected_year)
-                    # quarter_year_check = period_check.id
 
                     if (description_check, facility_name, quarter_year_id) in existing_data:
                         messages.error(request, f"Data for {facility_name} {period_check} already exists!")

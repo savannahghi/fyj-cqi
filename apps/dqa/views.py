@@ -3844,7 +3844,7 @@ def generate_numerator(report_name):
             '# SDPs with GBV services intergrated',
             '# of staffs offering GBV services are trained on LIVES',
             '# of private and confidential spaces available for GBV services',
-            '# of facilities with the GBV pathways job aid',
+            '# of SDPs with the GBV pathways job aid',
             '# of CHPs sensitized on GBV response services',
             '# of well utilized GBV registers'
 
@@ -3940,7 +3940,7 @@ def generate_denominator(report_name):
             '# SDPs offering GBV services in the facility',
             '# of staffs offering GBV services',
             '# of GBV service delivery points',
-            '# of facilities assessed',
+            '# of service delivery points assessed',
             '# of CHPs attached to the facility',
             '# of GBV registers required'
         ]

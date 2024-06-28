@@ -112,7 +112,7 @@
                     <!-- Row with 4 buttons -->
                     {% if not backlog_df.empty %}
                         <div class="col-3 p-2">
-                            <a href="{% url 'download_csv' dictionary.backlog_df "vl_backlog" %}">
+                            <a href="{% url 'download_csv' dictionary.backlog_df "vl_backlog "|add:facility_name_date %}">
                                 <button type="button" class="btn btn-secondary btn-floating w-100"
                                         data-mdb-ripple-color="dark">
                                     VL backlog (All) <i class="fas fa-download"></i>
@@ -123,7 +123,7 @@
 
                     {% if not discordant_results.empty %}
                         <div class="col-3 p-2">
-                            <a href="{% url 'download_csv' dictionary.discordant_results "discordant_results" %}">
+                            <a href="{% url 'download_csv' dictionary.discordant_results "discordant_results "|add:facility_name_date %}">
                                 <button type="button" class="btn btn-secondary btn-floating w-100"
                                         data-mdb-ripple-color="dark">
                                     Discordant VL report <i class="fas fa-download"></i>
@@ -134,7 +134,7 @@
 
                     {% if not results_not_in_nascop_overall.empty %}
                         <div class="col-3 p-2">
-                            <a href="{% url 'download_csv' dictionary.results_not_in_nascop_overall "results_not_in_nascop_overall" %}">
+                            <a href="{% url 'download_csv' dictionary.results_not_in_nascop_overall "results_not_in_nascop_overall "|add:facility_name_date %}">
                                 <button type="button" class="btn btn-secondary btn-floating w-100"
                                         data-mdb-ripple-color="dark">
                                     VL results missing in NASCOP website <i class="fas fa-download"></i>
@@ -145,7 +145,7 @@
 
                     {% if not missing_in_emr.empty %}
                         <div class="col-3 p-2">
-                            <a href="{% url 'download_csv' dictionary.missing_in_emr "missing_in_emr" %}">
+                            <a href="{% url 'download_csv' dictionary.missing_in_emr "missing_in_emr "|add:facility_name_date %}">
                                 <button type="button" class="btn btn-secondary btn-floating w-100"
                                         data-mdb-ripple-color="dark">
                                     VL Missing in EMR <i class="fas fa-download"></i>
@@ -180,7 +180,7 @@
                         <!-- Row 1 -->
                         {% if not no_vl_ever.empty %}
                             <div class="col-3 p-2">
-                                <a href="{% url 'download_csv' dictionary.no_vl_ever "no_vl_ever" %}">
+                                <a href="{% url 'download_csv' dictionary.no_vl_ever "no_vl_ever "|add:facility_name_date %}">
                                     <button type="button" class="btn btn-secondary btn-floating w-100"
                                             data-mdb-ripple-color="dark">
                                         No VL ever <i class="fas fa-download"></i>
@@ -191,7 +191,7 @@
 
                         {% if not missed_12mons_above_25yrs.empty %}
                             <div class="col-3 p-2">
-                                <a href="{% url 'download_csv' dictionary.missed_12mons_above_25yrs "missed_12mons_above_25yrs" %}">
+                                <a href="{% url 'download_csv' dictionary.missed_12mons_above_25yrs "missed_12mons_above_25yrs "|add:facility_name_date %}">
                                     <button type="button" class="btn btn-secondary btn-floating w-100"
                                             data-mdb-ripple-color="dark">
                                         Missed 12 months VL (>= 25yrs) <i class="fas fa-download"></i>
@@ -202,7 +202,7 @@
 
                         {% if not missed_6mons_zero_24yrs.empty %}
                             <div class="col-3 p-2">
-                                <a href="{% url 'download_csv' dictionary.missed_6mons_zero_24yrs "missed_6mons_zero_24yrs" %}">
+                                <a href="{% url 'download_csv' dictionary.missed_6mons_zero_24yrs "missed_6mons_zero_24yrs "|add:facility_name_date %}">
                                     <button type="button" class="btn btn-secondary btn-floating w-100"
                                             data-mdb-ripple-color="dark">
                                         Missed 6 months VL (0-24 yrs) <i class="fas fa-download"></i>
@@ -213,7 +213,7 @@
 
                         {% if not missed_6mons_pregnant.empty %}
                             <div class="col-3 p-2">
-                                <a href="{% url 'download_csv' dictionary.missed_6mons_pregnant "missed 6months pg and bf" %}">
+                                <a href="{% url 'download_csv' dictionary.missed_6mons_pregnant "missed 6months pg and bf "|add:facility_name_date %}">
                                     <button type="button" class="btn btn-secondary btn-floating w-100"
                                             data-mdb-ripple-color="dark">
                                         Missed 6 months VL (pg/bf) <i class="fas fa-download"></i>
@@ -227,7 +227,7 @@
                         <!-- Row 2 -->
                         {% if not hvl_df.empty %}
                             <div class="col-3 p-2">
-                                <a href="{% url 'download_csv' dictionary.hvl_df "hvl" %}">
+                                <a href="{% url 'download_csv' dictionary.hvl_df "hvl "|add:facility_name_date %}">
                                     <button type="button" class="btn btn-secondary btn-floating w-100"
                                             data-mdb-ripple-color="dark">
                                         HVL (All) <i class="fas fa-download"></i>
@@ -237,7 +237,7 @@
                         {% endif %}
                         {% if not hvl_above_25yrs.empty %}
                             <div class="col-3 p-2">
-                                <a href="{% url 'download_csv' dictionary.hvl_above_25yrs "hvl_above_25yrs" %}">
+                                <a href="{% url 'download_csv' dictionary.hvl_above_25yrs "hvl_above_25yrs "|add:facility_name_date%}">
                                     <button type="button" class="btn btn-secondary btn-floating w-100"
                                             data-mdb-ripple-color="dark">
                                         HVL (>=25 yrs) <i class="fas fa-download"></i>
@@ -247,7 +247,7 @@
                         {% endif %}
                         {% if not hvl_zero_24yrs.empty %}
                             <div class="col-3 p-2">
-                                <a href="{% url 'download_csv' dictionary.hvl_zero_24yrs "hvl_zero_24yrs" %}">
+                                <a href="{% url 'download_csv' dictionary.hvl_zero_24yrs "hvl_zero_24yrs "|add:facility_name_date %}">
                                     <button type="button" class="btn btn-secondary btn-floating w-100"
                                             data-mdb-ripple-color="dark">
                                         HVL (0-24yrs) <i class="fas fa-download"></i>
@@ -257,7 +257,7 @@
                         {% endif %}
                         {% if not hvl_pregnant.empty %}
                             <div class="col-3 p-2">
-                                <a href="{% url 'download_csv' dictionary.hvl_pregnant "hvl_pregnant" %}">
+                                <a href="{% url 'download_csv' dictionary.hvl_pregnant "hvl_pregnant "|add:facility_name_date %}">
                                     <button type="button" class="btn btn-secondary btn-floating w-100"
                                             data-mdb-ripple-color="dark">
                                         HVL (pg/bf) <i class="fas fa-download"></i>

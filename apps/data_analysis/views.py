@@ -4532,9 +4532,10 @@ def generate_reports(no_vl_so_far, not_merged1, merged_df_100, has_results_withi
 
 def prep_categorical_columns(backlog_df, col):
     dist_backlog = backlog_df.groupby([col]).count()['CCC No'].reset_index()
-    dist_backlog.columns = [col, 'TX_CURR']
-    dist_backlog['%'] = round(dist_backlog['TX_CURR'] / dist_backlog['TX_CURR'].sum() * 100, ).astype(int)
-    dist_backlog['%'] = dist_backlog['TX_CURR'].astype(str) + " (" + dist_backlog['%'].astype(str) + "%)"
+    dist_backlog.columns = [col, "TX_CURR (Eligible)"]
+    dist_backlog['%'] = round(
+        dist_backlog["TX_CURR (Eligible)"] / dist_backlog["TX_CURR (Eligible)"].sum() * 100, ).astype(int)
+    dist_backlog['%'] = dist_backlog["TX_CURR (Eligible)"].astype(str) + " (" + dist_backlog['%'].astype(str) + "%)"
     return dist_backlog
 
 
@@ -4562,10 +4563,10 @@ def create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake):
 
     # Add traces
     fig.add_trace(
-        go.Bar(x=vl_uptake_df['Age band'], y=vl_uptake_df['TX_CURR'], name='TX_CURR',
+        go.Bar(x=vl_uptake_df['Age band'], y=vl_uptake_df["TX_CURR (Eligible)"], name="TX_CURR (Eligible)",
                # marker_color='blue',
                marker={'color': 'blue'},
-               text=vl_uptake_df['TX_CURR'],  # Add text labels
+               text=vl_uptake_df["TX_CURR (Eligible)"],  # Add text labels
                texttemplate='<b><span style="color:blue">%{text:}</span></b>',
                textposition='outside'  # Position the text outside the bars
                ),
@@ -4648,7 +4649,7 @@ def filter_backlog_df(backlog_df, criteria, col):
 def viral_track(request):
     if not request.user.first_name:
         return redirect("profile")
-    vl_backlog_fig = vl_uptake_fig = vl_backlog_detailed_fig = vl_cascade_fig = None
+    vl_backlog_fig = vl_uptake_fig = vl_backlog_detailed_fig = vl_cascade_fig = facility_name = None
     df = df1 = discordant_results = results_not_in_nascop_overall = missing_in_emr = backlog_df = \
         no_vl_ever = pd.DataFrame()
 
@@ -4656,8 +4657,6 @@ def viral_track(request):
     current_date = pd.to_datetime(datetime.now().date())
     # Calculate the date one year ago from the current date
     one_year_ago = current_date - pd.DateOffset(years=1)
-    print("one_year_ago:::::::::::::::::::::::::::::::::::::::::::")
-    print(one_year_ago)
 
     if request.method == 'POST':
         form = FileUploadForm(request.POST, request.FILES)
@@ -4708,13 +4707,20 @@ def viral_track(request):
 
         # Calculate the date one year ago from the current date
         one_year_ago = current_date - pd.DateOffset(years=1)
-        print("one_year_ago:::::::::::::::::::::::::::::::::::::::::::")
-        print(one_year_ago)
 
         df1 = transform_nascop_data(df1, one_year_ago, facility_mfl_code)
+
+        # Calculate the date three months ago from the current date
+        three_months_ago = current_date - pd.DateOffset(months=3)
+        df['Art Start Date'] = pd.to_datetime(df['Art Start Date'])
+        df = df[df['Art Start Date'] < three_months_ago]
+
         df = transform_emr_data(df)
 
-        # facility_name = df1['Facilty'].unique()[0]
+        if len(list(df1['Facilty'].unique())) == 1:
+            facility_name = df1['Facilty'].unique()[0]
+        else:
+            facility_name = ""
 
         # current_month_abbr = calendar.month_abbr[current_date.month]
         #
@@ -4743,17 +4749,17 @@ def viral_track(request):
                 f"Results missing in KenyaEMR": missing_in_emr.shape[0],
                 f"Results missing in NASCOP's website": results_not_in_nascop_overall.shape[0],
                 f"NASCOP_EMR discordance": discordant_results.shape[0],
-            }.items(), columns=['Variable', "TX_CURR"]
+            }.items(), columns=['Variable', "TX_CURR (Eligible)"]
         )
-        vl_cascade['%'] = round(vl_cascade['TX_CURR'] / vl_cascade['TX_CURR'].sum() * 100, )
-        vl_cascade['%'] = vl_cascade['TX_CURR'].astype(str) + " (" + vl_cascade['%'].astype(str) + "%)"
+        vl_cascade['%'] = round(vl_cascade["TX_CURR (Eligible)"] / vl_cascade["TX_CURR (Eligible)"].sum() * 100, )
+        vl_cascade['%'] = vl_cascade["TX_CURR (Eligible)"].astype(str) + " (" + vl_cascade['%'].astype(str) + "%)"
         vl_cascade.index += 1
         tx_curr_df = pd.DataFrame(
-            {"TX_CURR": df.shape[0],
+            {"TX_CURR (Eligible)": df.shape[0],
 
-             }.items(), columns=['Variable', "TX_CURR"]
+             }.items(), columns=['Variable', "TX_CURR (Eligible)"]
         )
-        tx_curr_df['%'] = tx_curr_df['TX_CURR']
+        tx_curr_df['%'] = tx_curr_df["TX_CURR (Eligible)"]
 
         vl_cascade = pd.concat([tx_curr_df, vl_cascade])
         vl_cascade.index += 1
@@ -4762,23 +4768,24 @@ def viral_track(request):
         backlog_df_age_band = backlog_df.groupby(["age_band", "Sex"]).count()['CCC No'].reset_index()
 
         result, custom_order = sort_custom_agebands(backlog_df_age_band, 'age_band')
-        result.columns = ['Age band', 'Sex', 'TX_CURR']
-        result['%'] = (result['TX_CURR'] / result['TX_CURR'].sum() * 100).round().astype(int)
+        result.columns = ['Age band', 'Sex', "TX_CURR (Eligible)"]
+        result['%'] = (result["TX_CURR (Eligible)"] / result["TX_CURR (Eligible)"].sum() * 100).round().astype(int)
 
-        result['%'] = result['TX_CURR'].astype(str) + " (" + result['%'].astype(str) + "%)"
-        vl_backlog_fig = bar_chart(result, "Age band", "TX_CURR", title=f"VL BACKLOG n={backlog_df.shape[0]}",
+        result['%'] = result["TX_CURR (Eligible)"].astype(str) + " (" + result['%'].astype(str) + "%)"
+        vl_backlog_fig = bar_chart(result, "Age band", "TX_CURR (Eligible)",
+                                   title=f"VL BACKLOG n={backlog_df.shape[0]}",
                                    height=350, color="Sex",
                                    background_shadow=False, xaxis_title="Age Bands",
                                    text="%",
                                    title_size=12, axis_text_size=10, yaxis_title=None, legend_title="Sex")
 
         all_df = df.groupby("age_band").count()['CCC No'].reset_index()
-        all_df.columns = ['Age band', 'TX_CURR']
+        all_df.columns = ['Age band', "TX_CURR (Eligible)"]
         vl_results = with_results_df.groupby("age_band").count()['CCC No'].reset_index()
         vl_results.columns = ['Age band', 'valid results']
 
         vl_uptake_df = all_df.merge(vl_results, on="Age band", how="left")
-        vl_uptake_df['vl_uptake'] = round(vl_uptake_df['valid results'] / vl_uptake_df['TX_CURR'] * 100)
+        vl_uptake_df['vl_uptake'] = round(vl_uptake_df['valid results'] / vl_uptake_df["TX_CURR (Eligible)"] * 100)
 
         # Define the age categories
         age_categories = ['< 1', '1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44',
@@ -4790,17 +4797,17 @@ def viral_track(request):
         # Sort the DataFrame by 'Age band'
         vl_uptake_df = vl_uptake_df.sort_values('Age band')
         vl_uptake_df['vl_uptake'] = vl_uptake_df['vl_uptake'].fillna(0).astype(int)
-        overall_vl_uptake = round(vl_uptake_df['valid results'].sum() / vl_uptake_df['TX_CURR'].sum() * 100)
+        overall_vl_uptake = round(vl_uptake_df['valid results'].sum() / vl_uptake_df["TX_CURR (Eligible)"].sum() * 100)
         vl_uptake_fig = create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake)
 
-        vl_backlog_detailed_fig = bar_chart(dist_backlog, "eligibility criteria", "TX_CURR",
+        vl_backlog_detailed_fig = bar_chart(dist_backlog, "eligibility criteria", "TX_CURR (Eligible)",
                                             title=f"VL BACKLOG n={backlog_df.shape[0]}",
                                             height=350, background_shadow=False,
-                                            xaxis_title="hvl_df",
+                                            xaxis_title="Eligibility Criteria",
                                             text="%",
                                             title_size=12, axis_text_size=10, yaxis_title=None, legend_title=None)
 
-        vl_cascade_fig = bar_chart(vl_cascade, "Variable", "TX_CURR", title=f"VL CASCADE", height=350,
+        vl_cascade_fig = bar_chart(vl_cascade, "Variable", "TX_CURR (Eligible)", title=f"VL CASCADE", height=350,
                                    background_shadow=False,
                                    xaxis_title="Variable",
                                    text="%",
@@ -4849,8 +4856,8 @@ def viral_track(request):
         # "date_picker_form": date_picker_form, "data_filter_form": data_filter_form,
         "vl_backlog_fig": vl_backlog_fig, "vl_uptake_fig": vl_uptake_fig,
         "vl_backlog_detailed_fig": vl_backlog_detailed_fig, "vl_cascade_fig": vl_cascade_fig,
-        "dictionary": dictionary,"one_year_ago":one_year_ago.strftime('%d %B %Y'),
-        "backlog_df": backlog_df, "no_vl_ever": no_vl_ever,"current_date": current_date.strftime('%d %B %Y'),
+        "dictionary": dictionary, "one_year_ago": one_year_ago.strftime('%d %B %Y'),
+        "backlog_df": backlog_df, "no_vl_ever": no_vl_ever, "current_date": current_date.strftime('%d %B %Y'),
         "missed_6mons_zero_24yrs": filtered_data['missed_6mons_zero_24yrs'],
         "missed_6mons_pregnant": filtered_data['missed_6mons_pregnant'],
         "missed_12mons_above_25yrs": filtered_data['missed_12mons_above_25yrs'],
@@ -4860,6 +4867,7 @@ def viral_track(request):
         "hvl_zero_24yrs": filtered_data['hvl_zero_24yrs'],
         "hvl_df": filtered_data['hvl_df'],
         "results_not_in_nascop_overall": results_not_in_nascop_overall,
+        "facility_name_date": f"{facility_name} {current_date.strftime('%Y-%m-%d')}",
         "discordant_results": discordant_results, "dqa_type": "viral track",
     }
 

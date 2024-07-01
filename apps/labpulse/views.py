@@ -2135,8 +2135,6 @@ def show_results(request):
     if cached_view is not None:
         return cached_view
 
-
-
     ######################
     # Hide update button #
     ######################
@@ -4658,14 +4656,43 @@ def extract_text_between_markers(text):
     return result_dict
 
 
-def extract_text_after_keyword(data, keyword1, keyword2):
+# def extract_text_after_keyword(data, keyword1, keyword2):
+#     """
+#     Extract text occurring after the specified keywords in each sentence.
+#
+#     Parameters:
+#     - data (list): List of strings representing sentences.
+#     - keyword1 (str): The first keyword to look for in each sentence.
+#     - keyword2 (str): The second keyword to stop appending sentences.
+#
+#     Returns:
+#     - dict: Dictionary with the keywords as keys and lists of text occurring after each keyword in each sentence (including the sentence with the keyword) as the values.
+#     """
+#     result = {}
+#     current_keyword = None
+#
+#     for sentence in data:
+#         match1 = re.search(f'{keyword1}', sentence)
+#         match2 = re.search(f'{keyword2}', sentence)
+#
+#         if match1:
+#             current_keyword = re.sub(r'\W+', '', match1.group(0))
+#             result[current_keyword] = [sentence]
+#         elif match2:
+#             current_keyword = re.sub(r'\W+', '', match2.group(0))
+#             result[current_keyword] = [sentence]
+#         elif current_keyword is not None:
+#             if current_keyword in result:
+#                 result[current_keyword].append(sentence)
+#
+#     return result
+def extract_text_after_keyword(data, keywords):
     """
     Extract text occurring after the specified keywords in each sentence.
 
     Parameters:
     - data (list): List of strings representing sentences.
-    - keyword1 (str): The first keyword to look for in each sentence.
-    - keyword2 (str): The second keyword to stop appending sentences.
+    - keywords (list): List of keywords to look for in each sentence.
 
     Returns:
     - dict: Dictionary with the keywords as keys and lists of text occurring after each keyword in each sentence (including the sentence with the keyword) as the values.
@@ -4674,18 +4701,18 @@ def extract_text_after_keyword(data, keyword1, keyword2):
     current_keyword = None
 
     for sentence in data:
-        match1 = re.search(f'{keyword1}', sentence)
-        match2 = re.search(f'{keyword2}', sentence)
-
-        if match1:
-            current_keyword = re.sub(r'\W+', '', match1.group(0))
-            result[current_keyword] = [sentence]
-        elif match2:
-            current_keyword = re.sub(r'\W+', '', match2.group(0))
-            result[current_keyword] = [sentence]
-        elif current_keyword is not None:
-            if current_keyword in result:
+        keyword_found = False
+        for keyword in keywords:
+            if re.search(re.escape(keyword), sentence):
+                current_keyword = re.sub(r'\W+', '', keyword)
+                if current_keyword not in result:
+                    result[current_keyword] = []
                 result[current_keyword].append(sentence)
+                keyword_found = True
+                break
+
+        if not keyword_found and current_keyword:
+            result[current_keyword].append(sentence)
 
     return result
 
@@ -4762,7 +4789,7 @@ def extract_non_intergrase_text(pdf_text):
     #############################################################################################
     # Extract text after "Major" and "Accessory"
     text_after_major = extract_text_after_keyword(pi_mutation_comments,
-                                                  'Major', 'Accessory')
+                                                  ['Major', 'Accessory'])
     if "Major" in text_after_major:
         pi_mutation_comments_major = text_after_major.get('Major')[1:]
     else:
@@ -5136,13 +5163,36 @@ def extract_intergrase_text(pdf_text):
     insti_evg = extract_text(pdf_text, "nelvitegravir", "\n")
     insti_ral = extract_text(pdf_text, "raltegravir", "\n")
     intergrase_resistance_mutations = insti_bic + insti_cab + insti_dtg + insti_evg + insti_ral
+    intergrase_comments = extract_text(pdf_text, "IN comments", "\nMutation scoring")
 
-    intergrase_comments = extract_text(pdf_text, "IN comments", "Accessory")
+    text_after_major = extract_text_after_keyword(intergrase_comments,
+                                                  ['Major', 'Other', 'Accessory', 'Dosage'])
+
+    if "Major" in text_after_major:
+        intergrase_comments_major = text_after_major.get('Major')[1:]
+    else:
+        intergrase_comments_major = []
+
+    if "Other" in text_after_major:
+        intergrase_comments_other = text_after_major.get('Other')[1:]
+    else:
+        intergrase_comments_other = []
+    if "Accessory" in text_after_major:
+        intergrase_accessory_comments = text_after_major.get('Accessory')[1:]
+    else:
+        intergrase_accessory_comments = []
+
+    if "Dosage" in text_after_major:
+        intergrase_comments_dosage = text_after_major.get('Dosage')[1:]
+    else:
+        intergrase_comments_dosage = []
     intergrase_comments = [x for x in intergrase_comments if "IN comments" not in x]
 
-    intergrase_accessory_comments = extract_text(pdf_text, "\nAccessory", "Mutation scoring: IN")
-    intergrase_accessory_comments = [x.replace("Accessory", "").strip() for x in intergrase_accessory_comments]
-    return intergrase_resistance_mutation_profile, intergrase_resistance_mutations, intergrase_comments, intergrase_accessory_comments, ccc_num
+    # intergrase_accessory_comments = extract_text(pdf_text, "\nAccessory", "Mutation scoring: IN")
+    # intergrase_accessory_comments = [x.replace("Accessory", "").strip() for x in intergrase_accessory_comments]
+    return intergrase_resistance_mutation_profile, intergrase_resistance_mutations, intergrase_comments, \
+        intergrase_accessory_comments, ccc_num, intergrase_comments_major, intergrase_comments_other, \
+        intergrase_comments_dosage
 
 
 def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_mutation_profile=None, nrtis_list=None,
@@ -5153,7 +5203,8 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
                         date_test_reviewed=None, sex=None, age=None, age_unit=None, contact=None, specimen_type=None,
                         request_from=None, requesting_clinician=None, performed_by=None, reviewed_by=None,
                         date_collected=None, date_received=None, date_reported=None, pi_mutation_comments_major=None,
-                        pi_mutation_comments_accessory=None, sequence_summary=None):
+                        pi_mutation_comments_accessory=None, sequence_summary=None, integrase_comments_major=None,
+                        intergrase_comments_other=None, intergrase_comments_dosage=None):
     # Initialize page_info
     page_info = {'page_count': 0}
 
@@ -5246,9 +5297,10 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
                                        start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
             y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-            y = write_comments(pdf, y, "PI MUTATION COMMENTS:", "", start_x, x_value,
+            if len(pi_mutation_comments_major) != 0 or len(pi_mutation_comments_accessory) != 0 or len(other_pi_mutation_comments) != 0:
+                y = write_comments(pdf, y, "PI MUTATION COMMENTS:", "", start_x, x_value,
                                patient_name, ccc_num, todays_date, page_info, width)
-            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+                y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
             if len(pi_mutation_comments_major) != 0:
                 y = write_comments(pdf, y, "MAJOR:", pi_mutation_comments_major, start_x, x_value,
@@ -5258,9 +5310,10 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
                 y = write_comments(pdf, y, "ACCESORY:", pi_mutation_comments_accessory, start_x, x_value,
                                    patient_name, ccc_num, todays_date, page_info, width)
                 y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-            y = write_comments(pdf, y, "OTHERS:", other_pi_mutation_comments, start_x, x_value,
+            if len(other_pi_mutation_comments) != 0:
+                y = write_comments(pdf, y, "OTHERS:", other_pi_mutation_comments, start_x, x_value,
                                patient_name, ccc_num, todays_date, page_info, width)
-            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+                y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
         if intergrase_resistance_mutation_profile != "":
             ######################################
@@ -5271,19 +5324,42 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
                                      ccc_num, todays_date, page_info)
 
             y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
-
+            y -= 10
             y = draw_section_with_list(pdf, y, intergrase_resistance_mutations,
                                        "INTERGRASE INHIBITORS (INSTIs) DRUG RESISTANCE INTERPRETATION", start_x,
                                        x_value,
                                        width, patient_name, ccc_num, todays_date, page_info)
-            y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-            y = write_comments(pdf, y, "INSTI MUTATION COMMENTS:", intergrase_comments, start_x, x_value,
-                               patient_name, ccc_num, todays_date, page_info, width)
+            y -= 10
+            if len(intergrase_comments) != 0:
+                draw_text(pdf, start_x, y, "INSTI MUTATION COMMENTS", "", bold=True)
+            y -= 10
             y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            if len(integrase_comments_major) != 0:
+                # y = write_comments(pdf, y, "MAJOR:", integrase_comments_major)
+                y = write_comments(pdf, y, "MAJOR:", integrase_comments_major, start_x, x_value,
+                                   patient_name, ccc_num, todays_date, page_info, width)
+                y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            # y=create_new_page(pdf, start_x,y,patient_name,ccc_num,todays_date,page_info)
+            if len(intergrase_accessory_comments) != 0:
+                # y = write_comments(pdf, y, "Accesory MUTATION COMMENTS:", intergrase_accessory_comments)
+                y = write_comments(pdf, y, "Accesory MUTATION COMMENTS:", intergrase_accessory_comments, start_x,
+                                   x_value,
+                                   patient_name, ccc_num, todays_date, page_info, width)
+                y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            if len(intergrase_comments_other) != 0:
+                # y = write_comments(pdf, y, "OTHERS:", intergrase_comments_other)
+                y = write_comments(pdf, y, "OTHERS:", intergrase_comments_other, start_x,
+                                   x_value,
+                                   patient_name, ccc_num, todays_date, page_info, width)
+                y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
+            if len(intergrase_comments_dosage) != 0:
+                # y = write_comments(pdf, y, "Dosage:", intergrase_comments_dosage)
+                y = write_comments(pdf, y, "Dosage:", intergrase_comments_dosage, start_x,
+                                   x_value,
+                                   patient_name, ccc_num, todays_date, page_info, width)
+                y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-            y = write_comments(pdf, y, "Accesory MUTATION COMMENTS:", intergrase_accessory_comments, start_x,
-                               x_value, patient_name, ccc_num, todays_date, page_info, width)
             y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
     else:
         ######################################
@@ -5395,6 +5471,9 @@ class GenerateDrtPDF(LoginRequiredMixin, View):
             drt_values.get("pi_mutation_comments_major", ""),
             drt_values.get("pi_mutation_comments_accessory", ""),
             drt_values.get("sequence_summary", ""),
+            drt_values.get("intergrase_comments_major", ""),
+            drt_values.get("intergrase_comments_other", ""),
+            drt_values.get("intergrase_comments_dosage", ""),
         )
         return response
 
@@ -5503,13 +5582,17 @@ def generate_drt_results(request):
                 pdf_text = [i for i in extracted_pdf_text if "Reverse transcriptase (RT)" not in i]
                 if pdf_text:
                     intergrase_resistance_mutation_profile, intergrase_resistance_mutations, intergrase_comments, \
-                        intergrase_accessory_comments, ccc_num_intergrase = extract_intergrase_text(pdf_text[0])
+                        intergrase_accessory_comments, ccc_num_intergrase, intergrase_comments_major, \
+                        intergrase_comments_other, intergrase_comments_dosage = extract_intergrase_text(pdf_text[0])
                 else:
                     intergrase_resistance_mutation_profile = ""
                     intergrase_resistance_mutations = ""
                     intergrase_comments = ""
                     intergrase_accessory_comments = ""
                     ccc_num_intergrase = ""
+                    intergrase_comments_major = ""
+                    intergrase_comments_dosage = ""
+                    intergrase_comments_other = ""
 
                 if ccc_num_intergrase == "":
                     drt_values_dict = {
@@ -5537,6 +5620,9 @@ def generate_drt_results(request):
                         'date_collected': date_collected,
                         'date_received': date_received,
                         'date_reported': date_reported,
+                        'intergrase_comments_major': intergrase_comments_major,
+                        'intergrase_comments_other': intergrase_comments_other,
+                        'intergrase_comments_dosage': intergrase_comments_dosage,
                         'pi_mutation_comments_major': pi_mutation_comments_major,
                         'pi_mutation_comments_accessory': pi_mutation_comments_accessory,
                     }
@@ -5579,6 +5665,9 @@ def generate_drt_results(request):
                         'date_collected': date_collected,
                         'date_received': date_received,
                         'date_reported': date_reported,
+                        'intergrase_comments_major': intergrase_comments_major,
+                        'intergrase_comments_other': intergrase_comments_other,
+                        'intergrase_comments_dosage': intergrase_comments_dosage,
                         'pi_mutation_comments_major': pi_mutation_comments_major,
                         'pi_mutation_comments_accessory': pi_mutation_comments_accessory,
                     }

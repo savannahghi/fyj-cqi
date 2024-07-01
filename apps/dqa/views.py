@@ -158,7 +158,7 @@ def export_sqa_csv(request, quarter_year, selected_level):
     for model_name, model in models_to_check.items():
         sqa_data = model.objects.all().values_list('dqa_date', 'county__county_name',
                                                    'sub_county__sub_counties', 'sub_county__hub__hub',
-                                                   'facility_name__name','quarter_year__quarter_year',
+                                                   'facility_name__name', 'quarter_year__quarter_year',
                                                    'description', 'dropdown_option', 'verification',
                                                    'numerator_description', 'numerator',
                                                    'denominator_description', 'denominator',
@@ -5839,6 +5839,9 @@ def dqa_dashboard(request, dqa_type=None):
                 merged_df[i] = merged_df[i].astype(int)
             merged_df = merged_df.groupby(['indicator', 'quarter_year']).sum(numeric_only=True).reset_index()
             dicts, merged_viz_df = compare_data_verification(merged_df, 'DATIM', description_list)
+            indicator_list = ['TB_PREV', 'Gend_GBV_Physical and Emotional','CXCA_SCRN',
+                              'TB_PREV_N',  'Total Infant prophylaxis','Gend_GBV Sexual Violence']
+            merged_viz_df = merged_viz_df[~merged_viz_df['indicator'].isin(indicator_list)]
             data_verification_viz = bar_chart_dqa(merged_viz_df, "indicator",
                                                   "Absolute difference proportion (Difference/Source*100)",
                                                   pepfar_col="DATIM", color='Score',

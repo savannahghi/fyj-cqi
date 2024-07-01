@@ -139,6 +139,40 @@ def export_dqa_work_plan_csv(request, quarter_year, selected_level):
     return response
 
 
+def export_sqa_csv(request, quarter_year, selected_level):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{selected_level} {quarter_year} sqa_data.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['DQA Date', 'County', 'Sub-County', 'Hub', 'Facility Name', 'Quarter Year',
+                     'Program Areas Reviewed', 'Description', 'Probable Response',
+                     'Verification', 'Numerator Description', 'Numerator',
+                     'Denominator Description', 'Denominator', "Auditor's Note",
+                     'Created At', 'Date Modified', 'Created By'])
+
+    models_to_check = {
+        "GBV": Gbv, "VMMC": Vmmc, "HTS": Hts, "PrEP": Prep, "TB": Tb,
+        "CARE & RX": CareTreatment, "PHARMACY": Pharmacy, "CQI": Cqi,
+    }
+
+    for model_name, model in models_to_check.items():
+        sqa_data = model.objects.all().values_list('dqa_date', 'county__county_name',
+                                                   'sub_county__sub_counties', 'sub_county__hub__hub',
+                                                   'facility_name__name','quarter_year__quarter_year',
+                                                   'description', 'dropdown_option', 'verification',
+                                                   'numerator_description', 'numerator',
+                                                   'denominator_description', 'denominator',
+                                                   'auditor_note', 'date_created',
+                                                   'date_modified', 'created_by__email')
+        for data in sqa_data:
+            # Insert the model name into the appropriate position in the data
+            row = list(data)
+            row.insert(5, model_name)  # Index 5 is the position for 'Program Areas Reviewed'
+            writer.writerow(row)
+
+    return response
+
+
 def khis_data_prep(df):
     df['month'] = pd.to_datetime(df['month'])
     df['month'] = df['month'].dt.strftime('%b %Y')

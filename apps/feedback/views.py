@@ -14,6 +14,8 @@ from ..cqi.views import bar_chart
 
 @login_required(login_url='login')
 def feedback_list(request):
+    if not request.user.first_name:
+        return redirect("profile")
     response_distribution_fig = app_summary_fig = None
 
     # Get all feedbacks and annotate with the number of responses
@@ -73,12 +75,16 @@ def feedback_list(request):
 
 @login_required(login_url='login')
 def apps_list(request):
+    if not request.user.first_name:
+        return redirect("profile")
     apps = App.objects.all()
     return render(request, 'feedback/apps_list.html', {'apps': apps})
 
 
 @login_required(login_url='login')
 def app_detail(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     app = get_object_or_404(App, id=pk)
     feedbacks = Feedback.objects.filter(app=app)
     return render(request, 'feedback/app_detail.html', {'app': app, 'feedbacks': feedbacks})
@@ -86,6 +92,8 @@ def app_detail(request, pk):
 
 @login_required(login_url='login')
 def create_app(request):
+    if not request.user.first_name:
+        return redirect("profile")
     apps = App.objects.all()
     if request.method == 'POST':
         form = AppForm(request.POST)
@@ -100,6 +108,8 @@ def create_app(request):
 
 @login_required(login_url='login')
 def update_app(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     app = get_object_or_404(App, id=pk)
     if request.method == 'POST':
         form = AppForm(request.POST, instance=app)
@@ -114,6 +124,8 @@ def update_app(request, pk):
 
 @login_required(login_url='login')
 def delete_app(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     app = get_object_or_404(App, id=pk)
     if request.method == 'POST':
         form = AppForm(request.POST, instance=app)
@@ -139,6 +151,8 @@ class AppDeleteView(LoginRequiredMixin, DeleteView):
 
 @login_required(login_url='login')
 def feedback_detail(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     # Retrieve the feedback object with the given primary key (pk)
     feedback = get_object_or_404(Feedback, id=pk)
 
@@ -150,6 +164,8 @@ def feedback_detail(request, pk):
 
 @login_required(login_url='login')
 def submit_feedback(request):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == 'POST':
         form = FeedbackForm(request.POST)
         if form.is_valid():
@@ -166,6 +182,8 @@ def submit_feedback(request):
 
 @login_required(login_url='login')
 def update_feedback(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     feedback = get_object_or_404(Feedback, id=pk)
 
     if request.method == 'POST':
@@ -183,6 +201,8 @@ def update_feedback(request, pk):
 
 @login_required(login_url='login')
 def feedback_with_response(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # Query all feedback objects that have associated responses
     feedback_with_responses = Feedback.objects.filter(response__isnull=False).distinct()
     # Create a context dictionary to store feedbacks and their responses
@@ -196,6 +216,8 @@ def feedback_with_response(request):
 
 @login_required(login_url='login')
 def feedback_without_response(request):
+    if not request.user.first_name:
+        return redirect("profile")
     # Query all feedback objects that do not have associated responses
     feedback_without_responses = Feedback.objects.filter(response__isnull=True)
 
@@ -205,6 +227,8 @@ def feedback_without_response(request):
 
 @login_required(login_url='login')
 def respond_to_feedback(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     feedback = get_object_or_404(Feedback, id=pk)
     try:
         response = Response.objects.get(feedback_id=feedback.id)
@@ -229,6 +253,8 @@ def respond_to_feedback(request, pk):
 
 @login_required(login_url='login')
 def update_response(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     response = get_object_or_404(Response, id=pk)

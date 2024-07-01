@@ -3,7 +3,8 @@ from django.urls import include, path
 
 from apps.dqa.views import GeneratePDF, add_audit_team, add_data_verification, add_period, add_system_verification, \
     choose_facilities_sqa, delete_data_verification, dqa_dashboard, dqa_summary, dqa_work_plan_create, \
-    export_dqa_work_plan_csv, instructions, load_data, load_khis_data, load_system_data, show_audit_team, \
+    export_dqa_work_plan_csv, export_sqa_csv, instructions, load_data, load_khis_data, load_system_data, \
+    show_audit_team, \
     show_data_verification, show_dqa_work_plan, sqa, sqa_table, system_assessment_table, update_audit_team, \
     update_button_settings, update_data_verification, update_dqa_workplan, update_sqa, update_system_assessment
 
@@ -38,6 +39,7 @@ urlpatterns = [
     path('generate-pdf/', GeneratePDF.as_view(), name='generate-pdf'),
     path('download-dqa-workplan/<str:quarter_year>/<str:selected_level>/', export_dqa_work_plan_csv,
          name='download_dqa_workplan'),
+    path('download-sqa-data/<str:quarter_year>/<str:selected_level>/', export_sqa_csv, name='download_sqa_data'),
 
     path('facility-sqa/', choose_facilities_sqa, name="choose_facilities_sqa"),
     path('sqa/<str:report_name>/<str:quarter>/<str:year>/<uuid:pk>', sqa, name="sqa"),

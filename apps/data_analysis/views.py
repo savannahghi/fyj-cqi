@@ -29,6 +29,7 @@ from apps.data_analysis.models import FYJHealthFacility, RTKData
 from .filters import RTKDataFilter, RTKInventoryFilter
 from ..cqi.models import Facilities, Sub_counties
 from ..cqi.views import bar_chart
+from ..labpulse.models import Cd4traker
 
 
 @login_required(login_url='login')
@@ -4557,7 +4558,7 @@ def sort_custom_agebands(df, col):
     return df, available_age_bands
 
 
-def create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake):
+def create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake, title, secondary_text):
     # Create subplots with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
@@ -4585,7 +4586,7 @@ def create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake):
     )
 
     fig.add_trace(
-        go.Scatter(x=vl_uptake_df['Age band'], y=vl_uptake_df['vl_uptake'], name='VL Uptake', mode='lines+text',
+        go.Scatter(x=vl_uptake_df['Age band'], y=vl_uptake_df['vl_uptake'], name=secondary_text, mode='lines+text',
                    # marker_color='red',
                    marker={'color': 'red'},
                    text=vl_uptake_df['vl_uptake'],  # Add text labels
@@ -4598,7 +4599,7 @@ def create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake):
 
     # Add figure title
     fig.update_layout(
-        title_text=f"VIRAL LOAD UPTAKE {overall_vl_uptake}%",
+        title_text=f"{title} {overall_vl_uptake}%",
         height=500,
         legend=dict(
             # title='Gender',  # Update legend title
@@ -4613,7 +4614,7 @@ def create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake):
 
     # Set y-axes titles
     fig.update_yaxes(title_text="TX_CURR and Valid results", secondary_y=False)
-    fig.update_yaxes(title_text="VL Uptake (%)", secondary_y=True, range=[0, 110])
+    fig.update_yaxes(title_text=f"{secondary_text} (%)", secondary_y=True, range=[0, 110])
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=False)
     return plot(fig, include_plotlyjs=False, output_type="div")
@@ -4645,12 +4646,294 @@ def filter_backlog_df(backlog_df, criteria, col):
     return backlog_df[backlog_df[col] == criteria]
 
 
+def prepare_df_cd4(list_of_projects):
+    column_names = [
+        "County", "Sub-county", "Testing Laboratory", "Facility", "MFL CODE", "CCC NO.", "Age", "Sex",
+        "Collection Date", "Testing date", "Received date", "Date Dispatch", "Justification", "CD4 Count",
+        "Serum CRAG date", "Serum Crag", "TB LAM date", "TB LAM", "Received status", "Rejection reason", "TAT",
+        "age_unit",
+    ]
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    list_of_projects.columns = column_names
+
+    list_of_projects_fac = list_of_projects.copy()
+    # convert to datetime with UTC
+    date_columns = ['Testing date', 'Collection Date', 'Received date', 'Date Dispatch']
+    list_of_projects_fac[date_columns] = list_of_projects_fac[date_columns].astype("datetime64[ns, UTC]")
+
+    return list_of_projects_fac
+
+
+def calculate_vl_uptake(last_one_year_df, cd4_results):
+    """
+    Calculate VL uptake for different age bands within the preprocessed data.
+
+    Parameters:
+    last_one_year_df (pd.DataFrame): The preprocessed DataFrame containing patient information.
+
+    Returns:
+    pd.DataFrame: A DataFrame with VL uptake calculations for different age bands.
+    float: The overall VL uptake percentage.
+    """
+
+    # Calculate TX_CURR (Eligible)
+    all_df = last_one_year_df.groupby("age_band").count()['CCC No'].reset_index()
+    all_df.columns = ['Age band', 'TX_CURR (Eligible)']
+
+    # Calculate valid results
+    vl_results = cd4_results.groupby("age_band").count()['CCC No'].reset_index()
+    vl_results.columns = ['Age band', 'valid results']
+
+    # Merge and calculate VL uptake
+    vl_uptake_df = all_df.merge(vl_results, on="Age band", how="left")
+    vl_uptake_df['vl_uptake'] = round(vl_uptake_df['valid results'] / vl_uptake_df['TX_CURR (Eligible)'] * 100)
+
+    # Define the age categories
+    age_categories = ['< 1', '1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44',
+                      '45-49', '50-54', '55-59', '60-64', '65+']
+
+    # Convert 'Age band' to a categorical type with the specified order
+    vl_uptake_df['Age band'] = pd.Categorical(vl_uptake_df['Age band'], categories=age_categories, ordered=True)
+
+    # Sort the DataFrame by 'Age band'
+    vl_uptake_df = vl_uptake_df.sort_values('Age band')
+    vl_uptake_df['vl_uptake'] = vl_uptake_df['vl_uptake'].fillna(0).astype(int)
+
+    # Calculate overall VL uptake
+    overall_vl_uptake = round(vl_uptake_df['valid results'].sum() / vl_uptake_df['TX_CURR (Eligible)'].sum() * 100)
+
+    return vl_uptake_df, overall_vl_uptake
+
+
+def process_cd4_data(cd4_df, df, facility_mfl_code, one_year_ago):
+    """
+    Process CD4 data to find missing and discordant results between KenyaEMR and Labpulse data.
+
+    Parameters:
+    cd4_df (pd.DataFrame): The DataFrame containing CD4 count information.
+    df (pd.DataFrame): The DataFrame containing patient information.
+    facility_mfl_code (int): The MFL code of the facility.
+    one_year_ago (datetime): A datetime object representing one year ago from the current date.
+
+    Returns:
+    tuple: A tuple containing DataFrames for missing in Labpulse, missing in EMR, and discordant results.
+    """
+    # Identify date columns
+    date_cols = [col for col in cd4_df.columns if "date" in col.lower()]
+
+    for col in date_cols:
+        # Convert identified date columns to datetime format, ensuring they are in UTC
+        cd4_df[col] = pd.to_datetime(cd4_df[col], utc=True, format='ISO8601')
+        # Format datetime columns to 'YYYY-MM-DD' and ensure they are in datetime format
+        cd4_df[col] = cd4_df[col].dt.strftime('%Y-%m-%d')
+        # Convert back to datetime without time part
+        cd4_df[col] = pd.to_datetime(cd4_df[col])
+
+    # Sort and remove duplicates
+    cd4_df = cd4_df.sort_values("Collection Date")
+    cd4_df = cd4_df.drop_duplicates(subset=['CCC NO.'], keep="last")
+
+    # Ensure relevant columns in `df` are in datetime format
+    df['Latest CD4 Count Date '] = pd.to_datetime(df['Latest CD4 Count Date '])
+    df["Art Start Date"] = pd.to_datetime(df["Art Start Date"])
+
+    # Ensure CD4 counts are in string format
+    df['Latest CD4 Count'] = df['Latest CD4 Count'].astype(str)
+    cd4_df['CD4 Count'] = cd4_df['CD4 Count'].astype(str)
+
+    # Merge DataFrames
+    merged_cd4 = df.merge(cd4_df[cd4_df['MFL CODE'] == facility_mfl_code], left_on="CCC No", right_on="CCC NO.")
+    merged_cd4 = merged_cd4[[
+        'CCC No', 'Age at reporting', 'age_band', 'Sex_x', 'Art Start Date', 'Current Regimen',
+        'Latest CD4 Count', 'Latest CD4 Count Date ',
+        'Collection Date', 'Justification', 'CD4 Count', 'Serum CRAG date', 'Serum Crag', 'TB LAM date', 'TB LAM'
+    ]]
+
+    merged_cd4.columns = [
+        'CCC No', 'Age at reporting', 'age_band', 'Sex', 'Art Start Date', 'Current Regimen',
+        'Latest CD4 Count (KenyaEMR)',
+        'Latest CD4 Count Date (KenyaEMR)', 'Collection Date (Labpulse)', 'Justification (Labpulse)',
+        'CD4 Count (Labpulse)', 'Serum CRAG date (Labpulse)', 'Serum Crag (Labpulse)', 'TB LAM date (Labpulse)',
+        'TB LAM (Labpulse)'
+    ]
+
+    # Convert CD4 counts to numeric
+    merged_cd4.loc[:, 'CD4 Count (Labpulse)'] = pd.to_numeric(merged_cd4['CD4 Count (Labpulse)'], errors='coerce')
+    merged_cd4.loc[:, 'Latest CD4 Count (KenyaEMR)'] = pd.to_numeric(merged_cd4['Latest CD4 Count (KenyaEMR)'],
+                                                                     errors='coerce')
+
+    # Find matching and possible missing records
+    cd4_results = merged_cd4[merged_cd4['Latest CD4 Count (KenyaEMR)'] == merged_cd4['CD4 Count (Labpulse)']]
+    possible_missing_in_emr = merged_cd4[
+        merged_cd4['Latest CD4 Count (KenyaEMR)'] != merged_cd4['CD4 Count (Labpulse)']].copy()
+
+    possible_missing_in_emr.loc[:, 'date_diff'] = (possible_missing_in_emr['Collection Date (Labpulse)'] -
+                                                   possible_missing_in_emr[
+                                                       'Latest CD4 Count Date (KenyaEMR)']).dt.days.copy()
+
+    possible_missing_in_emr = possible_missing_in_emr.sort_values("date_diff")
+
+    discordant_results_cd4 = possible_missing_in_emr[(possible_missing_in_emr["date_diff"] <= 35) &
+                                                     (possible_missing_in_emr["date_diff"] > -35)]
+    if "date_diff" in discordant_results_cd4.columns:
+        del discordant_results_cd4['date_diff']
+
+    missing_in_emr_1 = possible_missing_in_emr[
+        possible_missing_in_emr['Latest CD4 Count Date (KenyaEMR)'].isnull()].sort_values("Collection Date (Labpulse)")
+    missing_in_emr_2 = possible_missing_in_emr[(possible_missing_in_emr["date_diff"] > 35)].sort_values(
+        "Collection Date (Labpulse)")
+    missing_in_emr = pd.concat([missing_in_emr_1, missing_in_emr_2])
+    missing_in_labpulse = possible_missing_in_emr[(possible_missing_in_emr["date_diff"] < -35)].sort_values("date_diff")
+    if "date_diff" in missing_in_labpulse.columns:
+        del missing_in_labpulse['date_diff']
+    if "date_diff" in missing_in_emr.columns:
+        del missing_in_emr['date_diff']
+    if "date_diff" in discordant_results_cd4.columns:
+        del discordant_results_cd4['date_diff']
+
+    return missing_in_labpulse, missing_in_emr, discordant_results_cd4, merged_cd4
+
+
+def filter_and_preprocess_cd4(df, missing_in_labpulse, current_date):
+    """
+    Filter data for the last year, exclude records missing in Labpulse, and prepare the data for further analysis.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing patient information.
+    missing_in_labpulse (pd.DataFrame): The DataFrame containing records missing in Labpulse.
+    current_date (datetime): The current date to calculate the days since ART start.
+
+    Returns:
+    pd.DataFrame: The filtered and preprocessed DataFrame.
+    """
+    # Calculate days since ART start
+    df['days_since_start_ART'] = (current_date - df['Art Start Date']).dt.days
+
+    # Filter data for the last year and exclude records missing in Labpulse
+    last_one_year_df = df[df['days_since_start_ART'] <= 365].sort_values("Art Start Date")
+    last_one_year_df = last_one_year_df[~last_one_year_df['CCC No'].isin(missing_in_labpulse['CCC No'].unique())]
+
+    return last_one_year_df
+
+
+def sort_month_year(df, col):
+    """
+    Sort the DataFrame by the specified month_year column chronologically.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to be sorted.
+    col (str): The column name containing month and year in 'MMM-YYYY' format.
+
+    Returns:
+    pd.DataFrame: The sorted DataFrame.
+    """
+    # Convert 'month_year' to datetime
+    df.loc[:, 'month_year_datetime'] = pd.to_datetime(df[col], format='%b-%Y')
+    # Sort the DataFrame by the new datetime column
+    df = df.sort_values(by='month_year_datetime')
+    # Drop the auxiliary datetime column if no longer needed
+    df = df.drop(columns='month_year_datetime')
+    # Reset index for clean DataFrame
+    df = df.reset_index(drop=True)
+    return df
+
+
+def analyze_cd4_reflex_test_uptake(merged_cd4, one_year_ago):
+    """
+    Analyze CD4 testing data and generate a plot showing the relationship
+    between CD4 count <200, Serum Crag, and TB LAM testing over time.
+
+    Parameters:
+    merged_cd4 (pd.DataFrame): The DataFrame containing the merged CD4 testing data.
+    one_year_ago (datetime): The datetime object representing one year ago from the current date.
+
+    Returns:
+    plotly line chart
+    """
+    # Filter the DataFrame based on the conditions specified
+    cd4_scrag = merged_cd4[(merged_cd4["Art Start Date"] > one_year_ago) &
+                           ((merged_cd4["Latest CD4 Count (KenyaEMR)"] <= 200) |
+                            (merged_cd4["CD4 Count (Labpulse)"] <= 200))].copy()
+
+    # Add the month_year column
+    cd4_scrag.loc[:, 'month_year'] = pd.to_datetime(cd4_scrag['Collection Date (Labpulse)']).dt.strftime('%b-%Y')
+
+    # Group by month_year and count the relevant columns
+    cd4_ = cd4_scrag.groupby("month_year").count()["CCC No"].reset_index()
+    tb_lam_ = cd4_scrag.groupby("month_year").count()["TB LAM (Labpulse)"].reset_index()
+    s_crag_ = cd4_scrag.groupby("month_year").count()["Serum Crag (Labpulse)"].reset_index()
+
+    # Sort the DataFrames
+    cd4_ = sort_month_year(cd4_, "month_year")
+    tb_lam_ = sort_month_year(tb_lam_, "month_year")
+    s_crag_ = sort_month_year(s_crag_, "month_year")
+
+    # Merge the DataFrames
+    cd4_cascade = cd4_.merge(s_crag_, on="month_year").merge(tb_lam_, on="month_year")
+    cd4_cascade.columns = ['month_year', 'CD4 <200', 'Serum Crag', 'TB LAM']
+
+    # Calculate totals and uptakes
+    total_cd4_less_200 = cd4_cascade['CD4 <200'].sum()
+    total_crag = cd4_cascade['Serum Crag'].sum()
+    total_tb_lam = cd4_cascade['TB LAM'].sum()
+    s_crag_uptake = round((total_crag / total_cd4_less_200 * 100), 1)
+    tb_lam_uptake = round((total_tb_lam / total_cd4_less_200 * 100), 1)
+
+    # Melt the DataFrame for plotting
+    melted_df = pd.melt(cd4_cascade, id_vars=['month_year'], var_name='Test Type', value_name='Count')
+    # filter missing reflex tests
+    missing_tb_lam = cd4_scrag[(cd4_scrag['TB LAM (Labpulse)'].isnull())]
+    if "month_year" in missing_tb_lam.columns:
+        del missing_tb_lam['month_year']
+    missing_scrag = cd4_scrag[(cd4_scrag['Serum Crag (Labpulse)'].isnull())]
+    if "month_year" in missing_scrag.columns:
+        del missing_scrag['month_year']
+    return missing_tb_lam, missing_scrag, melted_df, s_crag_uptake, tb_lam_uptake
+
+
+def compare_reflex_tests(melted_df, s_crag_uptake, tb_lam_uptake):
+    # Create and show the plot
+    fig = px.line(melted_df, x="month_year", y="Count", color="Test Type", text="Count",
+                  title=f"Relationship Between CD4 Count <200, Serum Crag ({s_crag_uptake}%) and TB LAM Testing ({tb_lam_uptake}%)")
+    fig.update_traces(textposition='top center')
+    fig.update_layout(legend=dict(
+        yanchor="top",
+        y=0.99,
+        xanchor="left",
+        x=0.01
+    ))
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
 @login_required(login_url='login')
 def viral_track(request):
     if not request.user.first_name:
         return redirect("profile")
-    vl_backlog_fig = vl_uptake_fig = vl_backlog_detailed_fig = vl_cascade_fig = facility_name = None
-    df = df1 = discordant_results = results_not_in_nascop_overall = missing_in_emr = backlog_df = \
+    #####################################
+    # Pull CD4 data
+    #####################################
+    cd4_df = pd.DataFrame()
+    cd4_qs = Cd4traker.objects.all()
+    if cd4_qs.exists():
+        # Use select_related to fetch related objects in a single query
+        queryset = cd4_qs.select_related('facility_name', 'testing_laboratory', 'sub_county',
+                                         'county').order_by('-date_of_collection')
+
+        # Retrieve data as a list of dictionaries
+        data = list(queryset.values(
+            'county__county_name', 'sub_county__sub_counties', 'testing_laboratory__testing_lab_name',
+            'facility_name__name', 'facility_name__mfl_code', 'patient_unique_no', 'age', 'sex',
+            'date_of_collection', 'date_of_testing', 'date_sample_received', 'date_dispatched', 'justification',
+            'cd4_count_results', 'date_serum_crag_results_entered', 'serum_crag_results', 'date_tb_lam_results_entered',
+            'tb_lam_results', 'received_status', 'reason_for_rejection', 'tat_days', 'age_unit'
+        ))
+        cd4_df = prepare_df_cd4(data)
+
+    vl_backlog_fig = vl_uptake_fig = cd4_uptake_fig = vl_backlog_detailed_fig = cd4_scrag_tblam_fig = vl_cascade_fig \
+        = facility_name = None
+    df = df1 = discordant_results = missing_in_labpulse = cd4_missing_in_emr = discordant_results_cd4 = \
+        cd4_scrag = results_not_in_nascop_overall = missing_tb_lam = missing_scrag = missing_in_emr = backlog_df = \
         no_vl_ever = pd.DataFrame()
 
     # Get the current date
@@ -4779,26 +5062,9 @@ def viral_track(request):
                                    text="%",
                                    title_size=12, axis_text_size=10, yaxis_title=None, legend_title="Sex")
 
-        all_df = df.groupby("age_band").count()['CCC No'].reset_index()
-        all_df.columns = ['Age band', "TX_CURR (Eligible)"]
-        vl_results = with_results_df.groupby("age_band").count()['CCC No'].reset_index()
-        vl_results.columns = ['Age band', 'valid results']
-
-        vl_uptake_df = all_df.merge(vl_results, on="Age band", how="left")
-        vl_uptake_df['vl_uptake'] = round(vl_uptake_df['valid results'] / vl_uptake_df["TX_CURR (Eligible)"] * 100)
-
-        # Define the age categories
-        age_categories = ['< 1', '1-4', '5-9', '10-14', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44',
-                          '45-49', '50-54', '55-59', '60-64', '65+']
-
-        # Convert 'Age band' to a categorical type with the specified order
-        vl_uptake_df['Age band'] = pd.Categorical(vl_uptake_df['Age band'], categories=age_categories, ordered=True)
-
-        # Sort the DataFrame by 'Age band'
-        vl_uptake_df = vl_uptake_df.sort_values('Age band')
-        vl_uptake_df['vl_uptake'] = vl_uptake_df['vl_uptake'].fillna(0).astype(int)
-        overall_vl_uptake = round(vl_uptake_df['valid results'].sum() / vl_uptake_df["TX_CURR (Eligible)"].sum() * 100)
-        vl_uptake_fig = create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake)
+        vl_uptake_df, overall_vl_uptake = calculate_vl_uptake(df, with_results_df)
+        vl_uptake_fig = create_barchart_with_secondary_axis(vl_uptake_df, overall_vl_uptake, "VIRAL LOAD UPTAKE",
+                                                            "VL Uptake")
 
         vl_backlog_detailed_fig = bar_chart(dist_backlog, "eligibility criteria", "TX_CURR (Eligible)",
                                             title=f"VL BACKLOG n={backlog_df.shape[0]}",
@@ -4812,6 +5078,22 @@ def viral_track(request):
                                    xaxis_title="Variable",
                                    text="%",
                                    title_size=12, axis_text_size=10, yaxis_title="TX CURR", legend_title=None)
+        ##########################################
+        # CD4 REPORT
+        ##########################################
+        missing_in_labpulse, cd4_missing_in_emr, discordant_results_cd4, merged_cd4 = process_cd4_data(cd4_df, df,
+                                                                                                       facility_mfl_code,
+                                                                                                       one_year_ago)
+        last_one_year_df = filter_and_preprocess_cd4(df, missing_in_labpulse, current_date)
+        # Filter data for valid CD4 results
+        cd4_results = last_one_year_df[~last_one_year_df['Latest CD4 Count Date '].isnull()]
+        cd4_uptake_df, overall_cd4_uptake = calculate_vl_uptake(last_one_year_df, cd4_results)
+        cd4_uptake_fig = create_barchart_with_secondary_axis(cd4_uptake_df, overall_cd4_uptake,
+                                                             "CD4 UPTAKE (TX_NEW past 12 months)",
+                                                             "CD4 Uptake")
+        missing_tb_lam, missing_scrag, melted_df, s_crag_uptake, tb_lam_uptake = analyze_cd4_reflex_test_uptake(
+            merged_cd4, one_year_ago)
+        cd4_scrag_tblam_fig = compare_reflex_tests(melted_df, s_crag_uptake, tb_lam_uptake)
     else:
         form = FileUploadForm()
         form_emr = EmrFileUploadForm()
@@ -4825,7 +5107,11 @@ def viral_track(request):
         'results_not_in_nascop_overall': results_not_in_nascop_overall.drop(columns=['date_difference'],
                                                                             errors='ignore'),
         'discordant_results': discordant_results,
-        'no_vl_ever': no_vl_ever
+        'no_vl_ever': no_vl_ever,
+        'discordant_results_cd4': discordant_results_cd4,
+        'cd4_missing_in_emr': cd4_missing_in_emr,
+        'missing_in_labpulse': missing_in_labpulse,
+        'missing_tb_lam': missing_tb_lam, "missing_scrag": missing_scrag,
     }
     set_session_data(request, session_data)
 
@@ -4852,20 +5138,20 @@ def viral_track(request):
     dictionary = get_key_from_session_names(request)
 
     context = {
-        "form": form, "form_emr": form_emr,
+        "form": form, "form_emr": form_emr, "cd4_scrag_tblam_fig": cd4_scrag_tblam_fig,
         # "date_picker_form": date_picker_form, "data_filter_form": data_filter_form,
-        "vl_backlog_fig": vl_backlog_fig, "vl_uptake_fig": vl_uptake_fig,
+        "vl_backlog_fig": vl_backlog_fig, "vl_uptake_fig": vl_uptake_fig, "cd4_uptake_fig": cd4_uptake_fig,
         "vl_backlog_detailed_fig": vl_backlog_detailed_fig, "vl_cascade_fig": vl_cascade_fig,
         "dictionary": dictionary, "one_year_ago": one_year_ago.strftime('%d %B %Y'),
         "backlog_df": backlog_df, "no_vl_ever": no_vl_ever, "current_date": current_date.strftime('%d %B %Y'),
-        "missed_6mons_zero_24yrs": filtered_data['missed_6mons_zero_24yrs'],
+        "missed_6mons_zero_24yrs": filtered_data['missed_6mons_zero_24yrs'], "cd4_scrag": cd4_scrag,
         "missed_6mons_pregnant": filtered_data['missed_6mons_pregnant'],
         "missed_12mons_above_25yrs": filtered_data['missed_12mons_above_25yrs'],
-        "missing_in_emr": missing_in_emr,
-        "hvl_pregnant": filtered_data['hvl_pregnant'],
-        "hvl_above_25yrs": filtered_data['hvl_above_25yrs'],
+        "missing_in_emr": missing_in_emr, "discordant_results_cd4": discordant_results_cd4,
+        "hvl_pregnant": filtered_data['hvl_pregnant'], "missing_in_labpulse": missing_in_labpulse,
+        "hvl_above_25yrs": filtered_data['hvl_above_25yrs'], "cd4_missing_in_emr": cd4_missing_in_emr,
         "hvl_zero_24yrs": filtered_data['hvl_zero_24yrs'],
-        "hvl_df": filtered_data['hvl_df'],
+        "hvl_df": filtered_data['hvl_df'], 'missing_tb_lam': missing_tb_lam, "missing_scrag": missing_scrag,
         "results_not_in_nascop_overall": results_not_in_nascop_overall,
         "facility_name_date": f"{facility_name} {current_date.strftime('%Y-%m-%d')}",
         "discordant_results": discordant_results, "dqa_type": "viral track",

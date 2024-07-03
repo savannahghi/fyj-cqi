@@ -61,7 +61,8 @@
                                             <ol class="mb-4">
                                                 <li>Log in to the <a href="https://eiddash.nascop.org/reports/VL"
                                                                      target="_blank">NASCOP's website</a> and download
-                                                    the overall Detailed (Viral Load) CSV <strong>(from {{ one_year_ago }} to {{ current_date }})</strong>.
+                                                    the overall Detailed (Viral Load) CSV
+                                                    <strong>(from {{ one_year_ago }} to {{ current_date }})</strong>.
                                                 </li>
                                                 <li>Recreate tables in KenyaEMR and download the Active on ART Patients
                                                     Line list.csv.
@@ -108,56 +109,59 @@
                         </div>
                     </form>
                 </div>
-                <div class="row">
-                    <!-- Row with 4 buttons -->
-                    {% if not backlog_df.empty %}
-                        <div class="col-3 p-2">
-                            <a href="{% url 'download_csv' dictionary.backlog_df "vl_backlog "|add:facility_name_date %}">
-                                <button type="button" class="btn btn-secondary btn-floating w-100"
-                                        data-mdb-ripple-color="dark">
-                                    VL backlog (All) <i class="fas fa-download"></i>
-                                </button>
-                            </a>
-                        </div>
-                    {% endif %}
-
-                    {% if not discordant_results.empty %}
-                        <div class="col-3 p-2">
-                            <a href="{% url 'download_csv' dictionary.discordant_results "discordant_results "|add:facility_name_date %}">
-                                <button type="button" class="btn btn-secondary btn-floating w-100"
-                                        data-mdb-ripple-color="dark">
-                                    Discordant VL report <i class="fas fa-download"></i>
-                                </button>
-                            </a>
-                        </div>
-                    {% endif %}
-
-                    {% if not results_not_in_nascop_overall.empty %}
-                        <div class="col-3 p-2">
-                            <a href="{% url 'download_csv' dictionary.results_not_in_nascop_overall "results_not_in_nascop_overall "|add:facility_name_date %}">
-                                <button type="button" class="btn btn-secondary btn-floating w-100"
-                                        data-mdb-ripple-color="dark">
-                                    VL results missing in NASCOP website <i class="fas fa-download"></i>
-                                </button>
-                            </a>
-                        </div>
-                    {% endif %}
-
-                    {% if not missing_in_emr.empty %}
-                        <div class="col-3 p-2">
-                            <a href="{% url 'download_csv' dictionary.missing_in_emr "missing_in_emr "|add:facility_name_date %}">
-                                <button type="button" class="btn btn-secondary btn-floating w-100"
-                                        data-mdb-ripple-color="dark">
-                                    VL Missing in EMR <i class="fas fa-download"></i>
-                                </button>
-                            </a>
-                        </div>
-                    {% endif %}
-                </div>
-
             </div>
         </div>
-        <hr>
+        {% if vl_backlog_fig %}
+            <div class="col-md-12 alert alert-primary text-center">
+                <h4>Viral Load Data Sync</h4>
+            </div>
+        {% endif %}
+        <div class="row">
+            <!-- Row with 4 buttons -->
+            {% if not backlog_df.empty %}
+                <div class="col-3 p-2">
+                    <a href="{% url 'download_csv' dictionary.backlog_df "vl_backlog "|add:facility_name_date %}">
+                        <button type="button" class="btn btn-secondary btn-floating w-100"
+                                data-mdb-ripple-color="dark">
+                            VL backlog (All) <i class="fas fa-download"></i>
+                        </button>
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if not discordant_results.empty %}
+                <div class="col-3 p-2">
+                    <a href="{% url 'download_csv' dictionary.discordant_results "discordant_results "|add:facility_name_date %}">
+                        <button type="button" class="btn btn-secondary btn-floating w-100"
+                                data-mdb-ripple-color="dark">
+                            Discordant VL report <i class="fas fa-download"></i>
+                        </button>
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if not results_not_in_nascop_overall.empty %}
+                <div class="col-3 p-2">
+                    <a href="{% url 'download_csv' dictionary.results_not_in_nascop_overall "results_not_in_nascop_overall "|add:facility_name_date %}">
+                        <button type="button" class="btn btn-secondary btn-floating w-100"
+                                data-mdb-ripple-color="dark">
+                            VL results missing in NASCOP website <i class="fas fa-download"></i>
+                        </button>
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if not missing_in_emr.empty %}
+                <div class="col-3 p-2">
+                    <a href="{% url 'download_csv' dictionary.missing_in_emr "missing_in_emr "|add:facility_name_date %}">
+                        <button type="button" class="btn btn-secondary btn-floating w-100"
+                                data-mdb-ripple-color="dark">
+                            VL Missing in EMR <i class="fas fa-download"></i>
+                        </button>
+                    </a>
+                </div>
+            {% endif %}
+        </div>
         <div class="container">
             <div class="row">
                 {% if vl_backlog_fig %}
@@ -237,7 +241,7 @@
                         {% endif %}
                         {% if not hvl_above_25yrs.empty %}
                             <div class="col-3 p-2">
-                                <a href="{% url 'download_csv' dictionary.hvl_above_25yrs "hvl_above_25yrs "|add:facility_name_date%}">
+                                <a href="{% url 'download_csv' dictionary.hvl_above_25yrs "hvl_above_25yrs "|add:facility_name_date %}">
                                     <button type="button" class="btn btn-secondary btn-floating w-100"
                                             data-mdb-ripple-color="dark">
                                         HVL (>=25 yrs) <i class="fas fa-download"></i>
@@ -270,6 +274,82 @@
                 {% if vl_cascade_fig %}
                     <div class="col-12">
                         {{ vl_cascade_fig|safe }}
+                    </div>
+                {% endif %}
+                {% if cd4_uptake_fig %}
+                    <div class="col-md-12 alert alert-primary text-center">
+                        <h4>CD4 Data Sync</h4>
+                    </div>
+                {% endif %}
+
+                <div class="row">
+                    <!-- Row with 4 buttons -->
+                    {% if not cd4_missing_in_emr.empty %}
+                        <div class="col-3 p-2">
+                            <a href="{% url 'download_csv' dictionary.cd4_missing_in_emr "cd4_missing_in_emr "|add:facility_name_date %}">
+                                <button type="button" class="btn btn-secondary btn-floating w-100"
+                                        data-mdb-ripple-color="dark">
+                                    CD4 results Missing in EMR <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if not discordant_results_cd4.empty %}
+                        <div class="col-3 p-2">
+                            <a href="{% url 'download_csv' dictionary.discordant_results_cd4 "discordant_results_cd4 "|add:facility_name_date %}">
+                                <button type="button" class="btn btn-secondary btn-floating w-100"
+                                        data-mdb-ripple-color="dark">
+                                    Discordant VL report <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if not missing_in_labpulse.empty %}
+                        <div class="col-3 p-2">
+                            <a href="{% url 'download_csv' dictionary.missing_in_labpulse "missing_in_labpulse "|add:facility_name_date %}">
+                                <button type="button" class="btn btn-secondary btn-floating w-100"
+                                        data-mdb-ripple-color="dark">
+                                    Results Missing in LabPulse <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                {% if cd4_uptake_fig %}
+                    <div class="col-12">
+                        {{ cd4_uptake_fig|safe }}
+                    </div>
+                {% endif %}
+                <hr>
+                <div class="row">
+                    <!-- Row with 4 buttons -->
+                    {% if not missing_tb_lam.empty %}
+                        <div class="col-3 p-2">
+                            <a href="{% url 'download_csv' dictionary.missing_tb_lam "missing_tb_lam "|add:facility_name_date %}">
+                                <button type="button" class="btn btn-secondary btn-floating w-100"
+                                        data-mdb-ripple-color="dark">
+                                    CD4 <200 without TB LAM <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if not missing_scrag.empty %}
+                        <div class="col-3 p-2">
+                            <a href="{% url 'download_csv' dictionary.missing_scrag "missing_scrag "|add:facility_name_date %}">
+                                <button type="button" class="btn btn-secondary btn-floating w-100"
+                                        data-mdb-ripple-color="dark">
+                                    CD4 <200 without sCrAg <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                {% if cd4_scrag_tblam_fig %}
+                    <div class="col-12">
+                        {{ cd4_scrag_tblam_fig|safe }}
                     </div>
                 {% endif %}
             </div>

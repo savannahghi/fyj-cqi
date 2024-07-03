@@ -1511,30 +1511,28 @@ def create_age_sex_df(dataframe, age_bins, age_labels):
     return age_sex_df
 
 
+# @silk_profile(name='prepare_df_cd4')
+def prepare_df_cd4(list_of_projects):
+    column_names = [
+        "County", "Sub-county", "Testing Laboratory", "Facility", "MFL CODE", "CCC NO.", "Age", "Sex",
+        "Collection Date", "Testing date", "Received date", "Date Dispatch", "Justification", "CD4 Count",
+        "Serum CRAG date", "Serum Crag", "TB LAM date", "TB LAM", "Received status", "Rejection reason", "TAT",
+        "age_unit",
+    ]
+    # convert data from database to a dataframe
+    list_of_projects = pd.DataFrame(list_of_projects)
+    list_of_projects.columns = column_names
+
+    list_of_projects_fac = list_of_projects.copy()
+    # convert to datetime with UTC
+    date_columns = ['Testing date', 'Collection Date', 'Received date', 'Date Dispatch']
+    list_of_projects_fac[date_columns] = list_of_projects_fac[date_columns].astype("datetime64[ns, UTC]")
+
+    return list_of_projects_fac
+
+
 # @silk_profile(name='generate_results_df')
 def generate_results_df(list_of_projects):
-    # @silk_profile(name='prepare_df_cd4')
-    def prepare_df_cd4(list_of_projects):
-        column_names = [
-            "County", "Sub-county", "Testing Laboratory", "Facility", "MFL CODE", "CCC NO.", "Age", "Sex",
-            "Collection Date", "Testing date", "Received date", "Date Dispatch", "Justification", "CD4 Count",
-            "Serum CRAG date", "Serum Crag", "TB LAM date", "TB LAM", "Received status", "Rejection reason", "TAT",
-            "age_unit",
-        ]
-        # convert data from database to a dataframe
-        list_of_projects = pd.DataFrame(list_of_projects)
-        list_of_projects.columns = column_names
-
-        list_of_projects_fac = list_of_projects.copy()
-
-        # Convert Timestamp objects to strings
-        # list_of_projects_fac = list_of_projects_fac.sort_values('Collection Date').reset_index(drop=True)
-        # convert to datetime with UTC
-        date_columns = ['Testing date', 'Collection Date', 'Received date', 'Date Dispatch']
-        list_of_projects_fac[date_columns] = list_of_projects_fac[date_columns].astype("datetime64[ns, UTC]")
-
-        return list_of_projects_fac
-
     list_of_projects_fac = prepare_df_cd4(list_of_projects)
 
     # @silk_profile(name='check_conditions')
@@ -5160,7 +5158,7 @@ def extract_intergrase_text(pdf_text):
     insti_bic = extract_text(pdf_text, "bictegravir", "\n")
     insti_cab = extract_text(pdf_text, "cabotegravir", "\n")
     insti_dtg = extract_text(pdf_text, "dolutegravir", "\n")
-    insti_evg = extract_text(pdf_text, "nelvitegravir", "\n")
+    insti_evg = extract_text(pdf_text, "elvitegravir", "\n")
     insti_ral = extract_text(pdf_text, "raltegravir", "\n")
     intergrase_resistance_mutations = insti_bic + insti_cab + insti_dtg + insti_evg + insti_ral
     intergrase_comments = extract_text(pdf_text, "IN comments", "\nMutation scoring")
@@ -5297,9 +5295,10 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
                                        start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)
             y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
-            if len(pi_mutation_comments_major) != 0 or len(pi_mutation_comments_accessory) != 0 or len(other_pi_mutation_comments) != 0:
+            if len(pi_mutation_comments_major) != 0 or len(pi_mutation_comments_accessory) != 0 or len(
+                    other_pi_mutation_comments) != 0:
                 y = write_comments(pdf, y, "PI MUTATION COMMENTS:", "", start_x, x_value,
-                               patient_name, ccc_num, todays_date, page_info, width)
+                                   patient_name, ccc_num, todays_date, page_info, width)
                 y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
             if len(pi_mutation_comments_major) != 0:
@@ -5312,7 +5311,7 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
                 y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
             if len(other_pi_mutation_comments) != 0:
                 y = write_comments(pdf, y, "OTHERS:", other_pi_mutation_comments, start_x, x_value,
-                               patient_name, ccc_num, todays_date, page_info, width)
+                                   patient_name, ccc_num, todays_date, page_info, width)
                 y = create_new_page(pdf, start_x, y, patient_name, ccc_num, todays_date, page_info, width, x_value)
 
         if intergrase_resistance_mutation_profile != "":

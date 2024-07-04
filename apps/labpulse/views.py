@@ -3736,13 +3736,14 @@ def get_mutation_counts(df_initial, mutation_type, ccc_num):
     mutation_counts.columns = ['mutations', 'count']
 
     # Add HAART class column
-    mutation_counts.insert(0, "haart_class", df['haart_class'].unique()[0])
-    mutation_counts["haart_class"] = mutation_counts["haart_class"].str.strip()
+    if not mutation_counts.empty:
+        mutation_counts.insert(0, "haart_class", df['haart_class'].unique()[0])
+        mutation_counts["haart_class"] = mutation_counts["haart_class"].str.strip()
 
-    mutation_counts.insert(0, "mutation_type", mutation_type)
-    mutation_counts["mutation_type"] = mutation_counts["mutation_type"].str.strip()
-    mutation_counts.insert(0, "age", int(df['age'].unique()[0]))
-    mutation_counts.insert(0, "patient_id", ccc_num)
+        mutation_counts.insert(0, "mutation_type", mutation_type)
+        mutation_counts["mutation_type"] = mutation_counts["mutation_type"].str.strip()
+        mutation_counts.insert(0, "age", int(df['age'].unique()[0]))
+        mutation_counts.insert(0, "patient_id", ccc_num)
 
     return mutation_counts
 

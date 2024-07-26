@@ -6858,11 +6858,11 @@ def home_page(request):
     # Use a dictionary to track roles for each project
     project_roles = defaultdict(set)
     for project in created_projects:
-        project_roles[project].add('creator')
+        project_roles[project].add('Creator')
     for project in managed_projects:
-        project_roles[project].add('manager')
+        project_roles[project].add('Manager')
     for project in team_member_projects:
-        project_roles[project].add('team_member')
+        project_roles[project].add('Stakeholder')
 
     all_projects = list(project_roles.keys())
 

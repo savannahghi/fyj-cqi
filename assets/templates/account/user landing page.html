@@ -1,0 +1,510 @@
+{% extends 'project/index_empty_page.html' %}
+{% block content %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0A255C;
+            --secondary-color: #B10023;
+            --text-color: #333;
+            --bg-color: #f4f4f4;
+            --white: #ffffff;
+            --light-gray: #e0e0e0;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        header {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 1rem;
+        }
+
+        nav a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--secondary-color);
+        }
+
+        main {
+            margin-top: 80px;
+            padding: 2rem 0;
+        }
+
+        .welcome-banner {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: var(--white);
+            padding: 3rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .welcome-banner h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .quick-link-card {
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .quick-link-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .quick-link-card i {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .quick-link-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .quick-link-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .recent-activity {
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 3rem;
+            margin-top: 1rem;
+        }
+
+        .recent-activity h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .activity-list {
+            list-style: none;
+        }
+
+        .activity-item {
+            border-bottom: 1px solid var(--light-gray);
+            padding: 1rem 0;
+            transition: background-color 0.3s ease;
+        }
+
+        .activity-item:hover {
+            background-color: var(--light-gray);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-date {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        footer {
+            background: var(--primary-color);
+            color: var(--white);
+            text-align: center;
+            padding: 1rem 0;
+            margin-top: 2rem;
+        }
+
+        .project-summary {
+            background-color: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .project-count {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .project-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card {
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .project-card h2 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .project-status {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .status-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .project-role {
+            font-style: italic;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+
+        .project-gaps {
+            background: var(--light-gray);
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 15px;
+        }
+
+        .project-gaps h3 {
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+
+        .gap-list {
+            list-style-type: none;
+        }
+
+        .gap-list li {
+            margin-bottom: 5px;
+        }
+
+        .gap-list li::before {
+            content: "•";
+            color: var(--secondary-color);
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+
+        @media (max-width: 768px) {
+            .quick-links, .project-list {
+                grid-template-columns: 1fr;
+            }
+
+            .welcome-banner {
+                padding: 2rem;
+            }
+
+            .welcome-banner h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+    <main>
+        <div class="container">
+            <section class="welcome-banner">
+                <h1>Welcome back, {{ user.first_name|title }}! Coming soon</h1>
+                <p>Ready to continue improving HIV services? Here's what's new since your last visit.</p>
+            </section>
+
+            <section class="quick-links">
+                <div class="quick-link-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>View Dashboard</h3>
+                    <p>Check your facility's performance metrics and CQI progress</p>
+                </div>
+                <div class="quick-link-card">
+                    <i class="fas fa-tasks"></i>
+                    <h3>Manage Projects</h3>
+                    <p>Update or create new CQI projects for your facility</p>
+                </div>
+                <div class="quick-link-card">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>Generate Reports</h3>
+                    <p>Create custom reports for your HIV services and CQI initiatives</p>
+                </div>
+                <div class="quick-link-card">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h3>Learning Center</h3>
+                    <p>Access the latest HIV care guidelines and CQI methodologies</p>
+                </div>
+            </section>
+
+            <section class="quick-links">
+                <div class="quick-link-card">
+                    <h3>My Active QI Projects</h3>
+                </div>
+            </section>
+
+            <div class="project-summary">
+                <p>You are currently involved in <span class="project-count">{{ total_projects_count }}</span> active
+                    QI projects. <span class="project-count">{{ created_projects|length }}</span> as a creator,
+                    <span class="project-count">{{ team_member_projects|length }}</span> stakeholder and
+                    <span class="project-count">{{ managed_projects|length }}</span> QI manager.
+                    <span class="project-count">{{ projects_with_gaps_count }}</span> projects with gaps.
+                </p>
+            </div>
+            <div class="project-list">
+                {% for project in created_projects %}
+                    <div class="project-card">
+                        <h6>{{ project.project_title|safe }}</h6>
+                        <p class="project-role">Role: Creator</p>
+                        <div class="project-status">
+                            <div class="status-item">
+                                <div class="status-label">Progress</div>
+                                <div class="status-value">60%</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">Days Left</div>
+                                <div class="status-value">45</div>
+                            </div>
+                        </div>
+                        {% if project.missing_details.missing_baseline or project.missing_details.missing_root_cause_analysis or project.missing_details.missing_qi_team_members or project.missing_details.missing_action_plan or project.missing_details.missing_milestones or project.missing_details.missing_tested_change %}
+                            <div class="project-gaps">
+                                <h3>Gaps:</h3>
+                                <ul class="gap-list">
+                                    {% if project.missing_details.missing_baseline %}
+                                        <li>Missing Baseline</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_root_cause_analysis %}
+                                        <li>Missing Root Cause Analysis</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_qi_team_members %}
+                                        <li>Missing QI Team Members</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_action_plan %}
+                                        <li>Missing Action Plan</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_milestones %}
+                                        <li>Missing Milestones</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_tested_change %}
+                                        <li>Missing Tested Change</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% for project in team_member_projects %}
+                    <div class="project-card">
+                        <h6>{{ project.project_title|safe }}</h6>
+                        <p class="project-role">Role: Stakeholder</p>
+                        <div class="project-status">
+                            <div class="status-item">
+                                <div class="status-label">Progress</div>
+                                <div class="status-value">60%</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">Days Left</div>
+                                <div class="status-value">45</div>
+                            </div>
+                        </div>
+                        {% if project.missing_details.missing_baseline or project.missing_details.missing_root_cause_analysis or project.missing_details.missing_qi_team_members or project.missing_details.missing_action_plan or project.missing_details.missing_milestones or project.missing_details.missing_tested_change %}
+                            <div class="project-gaps">
+                                <h3>Gaps:</h3>
+                                <ul class="gap-list">
+                                    {% if project.missing_details.missing_baseline %}
+                                        <li>Missing Baseline</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_root_cause_analysis %}
+                                        <li>Missing Root Cause Analysis</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_qi_team_members %}
+                                        <li>Missing QI Team Members</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_action_plan %}
+                                        <li>Missing Action Plan</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_milestones %}
+                                        <li>Missing Milestones</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_tested_change %}
+                                        <li>Missing Tested Change</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% for project in managed_projects %}
+                    <div class="project-card">
+                        <h6>{{ project.project_title|safe }}</h6>
+                        <p class="project-role">Role: QI Manager</p>
+                        <div class="project-status">
+                            <div class="status-item">
+                                <div class="status-label">Progress</div>
+                                <div class="status-value">60%</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">Days Left</div>
+                                <div class="status-value">45</div>
+                            </div>
+                        </div>
+                        {% if project.missing_details.missing_baseline or project.missing_details.missing_root_cause_analysis or project.missing_details.missing_qi_team_members or project.missing_details.missing_action_plan or project.missing_details.missing_milestones or project.missing_details.missing_tested_change %}
+                            <div class="project-gaps">
+                                <h3>Gaps:</h3>
+                                <ul class="gap-list">
+                                    {% if project.missing_details.missing_baseline %}
+                                        <li>Missing Baseline</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_root_cause_analysis %}
+                                        <li>Missing Root Cause Analysis</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_qi_team_members %}
+                                        <li>Missing QI Team Members</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_action_plan %}
+                                        <li>Missing Action Plan</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_milestones %}
+                                        <li>Missing Milestones</li>
+                                    {% endif %}
+                                    {% if project.missing_details.missing_tested_change %}
+                                        <li>Missing Tested Change</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <section class="recent-activity">
+                <h2>Recent Activity</h2>
+                <ul class="activity-list">
+                    <li class="activity-item">
+                        <p><strong>Project Update:</strong> "Improving ART Adherence" milestone achieved</p>
+                        <span class="activity-date">2 hours ago</span>
+                    </li>
+                    <li class="activity-item">
+                        <p><strong>Data Quality Alert:</strong> Inconsistency detected in VL testing data</p>
+                        <span class="activity-date">Yesterday</span>
+                    </li>
+                    <li class="activity-item">
+                        <p><strong>New Resource:</strong> Updated WHO HIV Treatment Guidelines available</p>
+                        <span class="activity-date">2 days ago</span>
+                    </li>
+                    <li class="activity-item">
+                        <p><strong>Collaboration Invite:</strong> Join the "PMTCT Best Practices" workgroup</p>
+                        <span class="activity-date">3 days ago</span>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </main>
+{% endblock %}
+
+<script>
+    document.querySelectorAll('.quick-link-card').forEach(card => {
+        card.addEventListener('click', function () {
+            const action = this.querySelector('h3').textContent;
+            switch (action) {
+                case 'View Dashboard':
+                    window.location.href = 'https://cqi.health.go.ke/dashboard';
+                    break;
+                case 'Manage Projects':
+                    window.location.href = 'https://cqi.health.go.ke/projects';
+                    break;
+                case 'Generate Reports':
+                    window.location.href = 'https://cqi.health.go.ke/reports';
+                    break;
+                case 'Learning Center':
+                    window.location.href = 'https://cqi.health.go.ke/learning-center';
+                    break;
+            }
+        });
+    });
+
+    document.querySelectorAll('.project-card').forEach(card => {
+        card.addEventListener('click', function () {
+            const projectTitle = this.querySelector('h2').textContent;
+            window.location.href = `https://cqi.health.go.ke/project-details?title=${encodeURIComponent(projectTitle)}`;
+        });
+    });
+
+    document.querySelectorAll('.activity-item').forEach(item => {
+        item.addEventListener('click', function () {
+            const activityText = this.querySelector('p').textContent;
+            window.location.href = `https://cqi.health.go.ke/activity-details?activity=${encodeURIComponent(activityText)}`;
+        });
+    });
+</script>

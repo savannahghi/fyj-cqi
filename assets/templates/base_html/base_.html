@@ -25,19 +25,6 @@
     <script type="text/javascript" src="{% static "ckeditor/ckeditor-init.js" %}"></script>
     <script type="text/javascript" src="{% static "ckeditor/ckeditor/ckeditor.js" %}"></script>
     <style>
-        main {
-            flex: 1 0 auto;
-            padding-top: 80px; /* Adjust this value based on your header height */
-            padding-bottom: 2rem;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-        }
-        html, body {
-        height: 100%;
-    }
         .bd-placeholder-img {
             font-size: 1.125rem;
             text-anchor: middle;
@@ -271,14 +258,11 @@
 {% block top_nav %}{% endblock %}
 <body>
 <!-- BODY -->
-<main>
-    <div class="container-fluid">
-        <div class="row">
-            {% block content %} {% endblock %}
-        </div>
+<div class="container-fluid">
+    <div class="row">
+        {% block content %} {% endblock %}
     </div>
-</main>
-
+</div>
 <!-- JS SCRIPTS -->
 <script src="{% static 'assets/dist/js/bootstrap.bundle.min.js' %}"></script>
 

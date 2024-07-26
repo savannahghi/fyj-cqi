@@ -2601,6 +2601,12 @@ def prepare_age_sex_df(df, newdf_HVL):
 
 
 def calculate_overall_resuppression_rate(confirm_rx_failure, newdf_HVL, newdf_llv, df):
+    # Ensure 'Patient CCC No' columns are of string type
+    confirm_rx_failure["Patient CCC No"] = confirm_rx_failure["Patient CCC No"].astype(str)
+    newdf_HVL["Patient CCC No"] = newdf_HVL["Patient CCC No"].astype(str)
+    newdf_llv["Patient CCC No"] = newdf_llv["Patient CCC No"].astype(str)
+    df["Patient CCC No"] = df["Patient CCC No"].astype(str)
+
     confirm_rx_failure_list = list(confirm_rx_failure["Patient CCC No"].unique())
     hvl_list = list(newdf_HVL["Patient CCC No"].unique())
     llv_list = list(newdf_llv["Patient CCC No"].unique())
@@ -2767,6 +2773,8 @@ def compile_pmp_report(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
 def prepare_to_send_via_sessions(llv_linelist):
     llv_linelist = llv_linelist.applymap(
         lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if isinstance(x, pd.Timestamp) else x)
+    # Handle NaT values by replacing them with None
+    llv_linelist = llv_linelist.where(pd.notnull(llv_linelist), None)
     if "HVL" in llv_linelist.columns:
         del llv_linelist["V.L"]
     llv_linelist = llv_linelist.reset_index(drop=True)

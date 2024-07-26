@@ -6533,3 +6533,130 @@ def qiteam_member_filter_project(request, pk):
 #                       html_message=message)
 #
 #     return HttpResponse("Emails sent successfully")
+
+# @login_required(login_url='login')
+# def home_page(request):
+#     user = request.user.email
+#
+#     # Count projects where the user is the creator
+#     created_projects_count = QI_Projects.objects.filter(created_by__email=user).count() + \
+#                              Subcounty_qi_projects.objects.filter(created_by__email=user).count() + \
+#                              County_qi_projects.objects.filter(created_by__email=user).count() + \
+#                              Hub_qi_projects.objects.filter(created_by__email=user).count() + \
+#                              Program_qi_projects.objects.filter(created_by__email=user).count()
+#
+#     # # Count projects where the user is the qi_manager
+#     managed_projects_count = QI_Projects.objects.filter(qi_manager__email=user).count() + \
+#                              Subcounty_qi_projects.objects.filter(qi_manager__email=user).count() + \
+#                              County_qi_projects.objects.filter(qi_manager__email=user).count() + \
+#                              Hub_qi_projects.objects.filter(qi_manager__email=user).count() + \
+#                              Program_qi_projects.objects.filter(qi_manager__email=user).count()
+#     #
+#     # # Count projects where the user is a qi_team_member
+#     team_member_projects_count = Qi_team_members.objects.filter(user__email=user).count()
+#     print(f"I have created  {created_projects_count} projects")
+#     total_projects_count = created_projects_count + managed_projects_count + team_member_projects_count
+#     print(f"I have created total_projects_count {total_projects_count} projects")
+#
+#     context = {
+#         'created_projects_count': created_projects_count,
+#         'managed_projects_count': managed_projects_count,
+#         'team_member_projects_count': team_member_projects_count,
+#         'total_projects_count': total_projects_count,
+#     }
+#     return render(request, "account/user landing page.html", context)
+@login_required(login_url='login')
+def home_page(request):
+    user = request.user.email
+
+    # Projects where the user is the creator
+    created_projects = list(QI_Projects.objects.filter(created_by__email=user)) + \
+                       list(Subcounty_qi_projects.objects.filter(created_by__email=user)) + \
+                       list(County_qi_projects.objects.filter(created_by__email=user)) + \
+                       list(Hub_qi_projects.objects.filter(created_by__email=user)) + \
+                       list(Program_qi_projects.objects.filter(created_by__email=user))
+
+    # Projects where the user is the qi_manager
+    managed_projects = list(QI_Projects.objects.filter(qi_manager__email=user)) + \
+                       list(Subcounty_qi_projects.objects.filter(qi_manager__email=user)) + \
+                       list(County_qi_projects.objects.filter(qi_manager__email=user)) + \
+                       list(Hub_qi_projects.objects.filter(qi_manager__email=user)) + \
+                       list(Program_qi_projects.objects.filter(qi_manager__email=user))
+
+    # Projects where the user is a qi_team_member
+    team_member_entries = Qi_team_members.objects.filter(user__email=user)
+    team_member_projects = []
+    for entry in team_member_entries:
+        if entry.qi_project:
+            team_member_projects.append(entry.qi_project)
+        elif entry.program_qi_project:
+            team_member_projects.append(entry.program_qi_project)
+        elif entry.subcounty_qi_project:
+            team_member_projects.append(entry.subcounty_qi_project)
+        elif entry.hub_qi_project:
+            team_member_projects.append(entry.hub_qi_project)
+        elif entry.county_qi_project:
+            team_member_projects.append(entry.county_qi_project)
+
+    # Function to check for missing details
+    def check_missing_details(project):
+        # Check for missing baseline
+        if isinstance(project, QI_Projects):
+            missing_baseline = not Baseline.objects.filter(qi_project=project).exists()
+            missing_tested_change = not TestedChange.objects.filter(project=project).exists()
+            missing_action_plan = not ActionPlan.objects.filter(qi_project=project).exists()
+        elif isinstance(project, Program_qi_projects):
+            missing_baseline = not Baseline.objects.filter(program_qi_project=project).exists()
+            missing_tested_change = not TestedChange.objects.filter(program_project=project).exists()
+            missing_action_plan = not ActionPlan.objects.filter(program_qi_project=project).exists()
+        elif isinstance(project, Subcounty_qi_projects):
+            missing_baseline = not Baseline.objects.filter(subcounty_qi_project=project).exists()
+            missing_tested_change = not TestedChange.objects.filter(subcounty_project=project).exists()
+            missing_action_plan = not ActionPlan.objects.filter(subcounty_qi_project=project).exists()
+        elif isinstance(project, Hub_qi_projects):
+            missing_baseline = not Baseline.objects.filter(hub_qi_project=project).exists()
+            missing_tested_change = not TestedChange.objects.filter(hub_project=project).exists()
+            missing_action_plan = not ActionPlan.objects.filter(hub_qi_project=project).exists()
+        elif isinstance(project, County_qi_projects):
+            missing_baseline = not Baseline.objects.filter(county_qi_project=project).exists()
+            missing_tested_change = not TestedChange.objects.filter(county_project=project).exists()
+            missing_action_plan = not ActionPlan.objects.filter(county_qi_project=project).exists()
+        else:
+            missing_baseline = True  # Default to missing if project type is unrecognized
+            missing_tested_change = True
+            missing_action_plan = True
+        return {
+            'missing_root_cause_analysis': not project.process_analysis,
+            'missing_tested_change': missing_tested_change,
+            'missing_qi_team_members': not project.qi_team_members.exists(),
+            'missing_baseline': missing_baseline,
+            'missing_action_plan': missing_action_plan,
+        }
+
+    # Add missing details information to each project
+    # for project in created_projects + managed_projects + team_member_projects:
+    #     project.missing_details = check_missing_details(project)
+    # Add missing details information to each project
+    all_projects = created_projects + managed_projects + team_member_projects
+    for project in all_projects:
+        project.missing_details = check_missing_details(project)
+
+    # Count projects with gaps
+    def count_projects_with_gaps(projects):
+        return sum(
+            1 for project in projects
+            if any(detail for detail in project.missing_details.values())
+        )
+
+    projects_with_gaps_count = count_projects_with_gaps(all_projects)
+
+    total_projects_count = len(created_projects) + len(managed_projects) + len(team_member_projects)
+
+    context = {
+        'created_projects': created_projects,
+        'managed_projects': managed_projects,
+        'team_member_projects': team_member_projects,
+        'total_projects_count': total_projects_count,
+        "projects_with_gaps_count":projects_with_gaps_count,
+    }
+    return render(request, "account/user landing page.html", context)

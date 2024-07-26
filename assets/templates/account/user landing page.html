@@ -316,129 +316,82 @@
 
             <div class="project-summary">
                 <p>You are currently involved in <span class="project-count">{{ total_projects_count }}</span> active
-                    QI projects. <span class="project-count">{{ created_projects|length }}</span> as a creator,
-                    <span class="project-count">{{ team_member_projects|length }}</span> stakeholder and
-                    <span class="project-count">{{ managed_projects|length }}</span> QI manager.
-                    <span class="project-count">{{ projects_with_gaps_count }}</span> projects with gaps.
-                </p>
+                    QI projects.
+                    <span class="project-count">{{ created_count }}</span> as a creator,
+                    <span class="project-count">{{ team_member_count }}</span> as a stakeholder and
+                    <span class="project-count">{{ managed_count }}</span> as a QI manager.
+                    <span class="project-count">{{ projects_with_gaps_count }}</span> projects have gaps.
+                    <span class="project-count">{{ overdue_projects_count }}</span> projects are overdue.</p>
             </div>
             <div class="project-list">
-                {% for project in created_projects %}
+                {% for project_info in all_projects %}
                     <div class="project-card">
-                        <h6>{{ project.project_title|safe }}</h6>
-                        <p class="project-role">Role: Creator</p>
-                        <div class="project-status">
-                            <div class="status-item">
-                                <div class="status-label">Progress</div>
-                                <div class="status-value">60%</div>
-                            </div>
-                            <div class="status-item">
-                                <div class="status-label">Days Left</div>
-                                <div class="status-value">45</div>
-                            </div>
-                        </div>
-                        {% if project.missing_details.missing_baseline or project.missing_details.missing_root_cause_analysis or project.missing_details.missing_qi_team_members or project.missing_details.missing_action_plan or project.missing_details.missing_milestones or project.missing_details.missing_tested_change %}
-                            <div class="project-gaps">
-                                <h3>Gaps:</h3>
-                                <ul class="gap-list">
-                                    {% if project.missing_details.missing_baseline %}
-                                        <li>Missing Baseline</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_root_cause_analysis %}
-                                        <li>Missing Root Cause Analysis</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_qi_team_members %}
-                                        <li>Missing QI Team Members</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_action_plan %}
-                                        <li>Missing Action Plan</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_milestones %}
-                                        <li>Missing Milestones</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_tested_change %}
-                                        <li>Missing Tested Change</li>
-                                    {% endif %}
-                                </ul>
-                            </div>
+                        {% if project_info.type == 'QI_Projects' %}
+                            <a href="{% url 'single_project' pk=project_info.project.id %}">
+                                <h6>{{ project_info.project.project_title|safe }}</h6>
+                            </a>
+                        {% elif project_info.type == 'Program_qi_projects' %}
+                            <a href="{% url 'single_project_program' pk=project_info.project.id %}">
+                                <h6>{{ project_info.project.project_title|safe }}</h6>
+                            </a>
+                        {% elif project_info.type == 'Subcounty_qi_projects' %}
+                            <a href="{% url 'single_project_subcounty' pk=project_info.project.id %}">
+                                <h6>{{ project_info.project.project_title|safe }}</h6>
+                            </a>
+                        {% elif project_info.type == 'County_qi_projects' %}
+                            <a href="{% url 'single_project_county' pk=project_info.project.id %}">
+                                <h6>{{ project_info.project.project_title|safe }}</h6>
+                            </a>
+                        {% elif project_info.type == 'Hub_qi_projects' %}
+                            <a href="{% url 'single_project_hub' pk=project_info.project.id %}">
+                                <h6>{{ project_info.project.project_title|safe }}</h6>
+                            </a>
                         {% endif %}
-                    </div>
-                {% endfor %}
-                {% for project in team_member_projects %}
-                    <div class="project-card">
-                        <h6>{{ project.project_title|safe }}</h6>
-                        <p class="project-role">Role: Stakeholder</p>
+
+                        <p class="project-role">Role: {{ project_info.roles|join:", " }}</p>
+                        {{ project_info.project.id }}
                         <div class="project-status">
                             <div class="status-item">
                                 <div class="status-label">Progress</div>
-                                <div class="status-value">60%</div>
+                                {% if project_info.project.missing_details.missing_tested_change %}
+                                    <div class="status-value">0%</div>
+                                {% elif project_info.project.missing_details.most_recent_achievement %}
+                                    <div class="status-value">{{ project_info.project.missing_details.most_recent_achievement|floatformat:1 }}%</div>
+                                {% endif %}
                             </div>
                             <div class="status-item">
-                                <div class="status-label">Days Left</div>
-                                <div class="status-value">45</div>
+                                <div class="status-label">Days
+                                    {% if project_info.project.missing_details.days_info.1 == "overdue" %}
+                                        Overdue{% else %}Left{% endif %}</div>
+                                {% if project_info.project.missing_details.days_info %}
+                                    <div class="status-value {% if project_info.project.missing_details.days_info.1 == 'overdue' %}text-danger{% endif %}">
+                                        {{ project_info.project.missing_details.days_info.0 }}
+                                    </div>
+                                {% else %}
+                                    <div class="status-value text-danger">Project not started</div>
+                                {% endif %}
                             </div>
                         </div>
-                        {% if project.missing_details.missing_baseline or project.missing_details.missing_root_cause_analysis or project.missing_details.missing_qi_team_members or project.missing_details.missing_action_plan or project.missing_details.missing_milestones or project.missing_details.missing_tested_change %}
+                        {% if project_info.project.missing_details.missing_baseline or project_info.project.missing_details.missing_root_cause_analysis or project_info.project.missing_details.missing_qi_team_members or project_info.project.missing_details.missing_action_plan or project_info.project.missing_details.missing_milestones or project_info.project.missing_details.missing_tested_change %}
                             <div class="project-gaps">
                                 <h3>Gaps:</h3>
                                 <ul class="gap-list">
-                                    {% if project.missing_details.missing_baseline %}
+                                    {% if project_info.project.missing_details.missing_baseline %}
                                         <li>Missing Baseline</li>
                                     {% endif %}
-                                    {% if project.missing_details.missing_root_cause_analysis %}
+                                    {% if project_info.project.missing_details.missing_root_cause_analysis %}
                                         <li>Missing Root Cause Analysis</li>
                                     {% endif %}
-                                    {% if project.missing_details.missing_qi_team_members %}
+                                    {% if project_info.project.missing_details.missing_qi_team_members %}
                                         <li>Missing QI Team Members</li>
                                     {% endif %}
-                                    {% if project.missing_details.missing_action_plan %}
+                                    {% if project_info.project.missing_details.missing_action_plan %}
                                         <li>Missing Action Plan</li>
                                     {% endif %}
-                                    {% if project.missing_details.missing_milestones %}
+                                    {% if project_info.project.missing_details.missing_milestones %}
                                         <li>Missing Milestones</li>
                                     {% endif %}
-                                    {% if project.missing_details.missing_tested_change %}
-                                        <li>Missing Tested Change</li>
-                                    {% endif %}
-                                </ul>
-                            </div>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-                {% for project in managed_projects %}
-                    <div class="project-card">
-                        <h6>{{ project.project_title|safe }}</h6>
-                        <p class="project-role">Role: QI Manager</p>
-                        <div class="project-status">
-                            <div class="status-item">
-                                <div class="status-label">Progress</div>
-                                <div class="status-value">60%</div>
-                            </div>
-                            <div class="status-item">
-                                <div class="status-label">Days Left</div>
-                                <div class="status-value">45</div>
-                            </div>
-                        </div>
-                        {% if project.missing_details.missing_baseline or project.missing_details.missing_root_cause_analysis or project.missing_details.missing_qi_team_members or project.missing_details.missing_action_plan or project.missing_details.missing_milestones or project.missing_details.missing_tested_change %}
-                            <div class="project-gaps">
-                                <h3>Gaps:</h3>
-                                <ul class="gap-list">
-                                    {% if project.missing_details.missing_baseline %}
-                                        <li>Missing Baseline</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_root_cause_analysis %}
-                                        <li>Missing Root Cause Analysis</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_qi_team_members %}
-                                        <li>Missing QI Team Members</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_action_plan %}
-                                        <li>Missing Action Plan</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_milestones %}
-                                        <li>Missing Milestones</li>
-                                    {% endif %}
-                                    {% if project.missing_details.missing_tested_change %}
+                                    {% if project_info.project.missing_details.missing_tested_change %}
                                         <li>Missing Tested Change</li>
                                     {% endif %}
                                 </ul>
@@ -452,7 +405,7 @@
                 <h2>Recent Activity</h2>
                 <ul class="activity-list">
                     <li class="activity-item">
-                        <p><strong>Project Update:</strong> "Improving ART Adherence" milestone achieved</p>
+                        <p><strong> Project Update:</strong> "Improving ART Adherence" milestone achieved</p>
                         <span class="activity-date">2 hours ago</span>
                     </li>
                     <li class="activity-item">
@@ -508,3 +461,37 @@
         });
     });
 </script>
+{#<script>#}
+{#document.addEventListener('DOMContentLoaded', function() {#}
+{#    const projectCards = document.querySelectorAll('.project-card');#}
+{#    projectCards.forEach(card => {#}
+{#        card.addEventListener('click', function() {#}
+{#            const projectType = this.getAttribute('data-project-type');#}
+{#            const projectId = this.getAttribute('data-project-id');#}
+{#            let url;#}
+{##}
+{#            switch(projectType) {#}
+{#                case 'QI_Projects':#}
+{#                    url = "{% url 'single_project' pk=projectId %}".replace('0', projectId);#}
+{#                    break;#}
+{#                case 'Program_qi_projects':#}
+{#                    url = "{% url 'single_project_program' pk=projectId %}".replace('0', projectId);#}
+{#                    break;#}
+{#                case 'Subcounty_qi_projects':#}
+{#                    url = "{% url 'single_project_subcounty' pk=projectId %}".replace('0', projectId);#}
+{#                    break;#}
+{#                case 'County_qi_projects':#}
+{#                    url = "{% url 'single_project_county' pk=projectId %}".replace('0', projectId);#}
+{#                    break;#}
+{#                case 'Hub_qi_projects':#}
+{#                    url = "{% url 'single_project_hub' pk=projectId %}".replace('0', projectId);#}
+{#                    break;#}
+{#            }#}
+{##}
+{#            if (url) {#}
+{#                window.location.href = url;#}
+{#            }#}
+{#        });#}
+{#    });#}
+{#});#}
+{#</script>#}

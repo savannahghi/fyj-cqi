@@ -1,45 +1,41 @@
 # import os.path
 import csv
-import itertools
+from collections import defaultdict
 from datetime import datetime
-from itertools import tee, chain
+from io import BytesIO
+from itertools import chain, tee
 
 import inflect
 import pandas as pd
-# from django.contrib.auth import get_user_model
-from django.apps import apps
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
+import plotly.express as px
 # from django.core.files.storage import FileSystemStorage
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+# from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
 # from django.db.models import Count, Q
 # from django.forms import forms
-from django.db.models import Count, Q, F, Sum
+from django.db.models import Count, F, Q
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.http import HttpResponseRedirect, HttpResponse, Http404
-from django.shortcuts import render, redirect, get_object_or_404
-from django.utils.html import strip_tags
+from plotly.offline import plot
+from reportlab.pdfgen import canvas
 
 from apps.account.forms import UpdateUserForm
-# from config import settings
-
-from .forms import QI_ProjectsForm, TestedChangeForm, ProjectCommentsForm, ProjectResponsesForm, \
-    QI_ProjectsSubcountyForm, QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, \
-    DepartmentForm, CategoryForm, Sub_countiesForm, FacilitiesForm, CountiesForm, ResourcesForm, Qi_team_membersForm, \
-    ArchiveProjectForm, QI_ProjectsConfirmForm, StakeholderForm, MilestoneForm, ActionPlanForm, Lesson_learnedForm, \
-    BaselineForm, CommentForm, HubForm, SustainmentPlanForm, ProgramForm, RootCauseImagesForm, TriggerForm, \
-    BestPerformingForm, ShowTriggerForm
 from .filters import *
+from .forms import ActionPlanForm, ArchiveProjectForm, BaselineForm, BestPerformingForm, CategoryForm, CommentForm, \
+    CountiesForm, DepartmentForm, FacilitiesForm, HubForm, Lesson_learnedForm, MilestoneForm, ProgramForm, \
+    ProjectCommentsForm, ProjectResponsesForm, QI_ProjectsConfirmForm, QI_ProjectsForm, QI_ProjectsSubcountyForm, \
+    QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, Qi_team_membersForm, \
+    ResourcesForm, RootCauseImagesForm, ShowTriggerForm, StakeholderForm, Sub_countiesForm, SustainmentPlanForm, \
+    TestedChangeForm, TriggerForm
 
-import plotly.express as px
-from plotly.offline import plot
-from io import BytesIO
-from reportlab.pdfgen import canvas
+
+# from config import settings
 
 
 @transaction.atomic
@@ -6565,98 +6561,362 @@ def qiteam_member_filter_project(request, pk):
 #         'total_projects_count': total_projects_count,
 #     }
 #     return render(request, "account/user landing page.html", context)
+
+# def extract_date_and_calculate_days_left(text):
+#     # Regular expression to find dates in the format "Month Year" or "Month YYYY"
+#     date_pattern = r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}'
+#
+#     match = re.search(date_pattern, text)
+#     if match:
+#         target_date_str = match.group()
+#         target_date = datetime.strptime(target_date_str, "%B %Y")
+#
+#         # Calculate days left
+#         days_left = (target_date - datetime.now()).days
+#         return max(0, days_left)  # Ensure we don't return negative days
+#     return None
+
+
+# def extract_date_and_calculate_days_left(text):
+#     # Regular expression to find dates in the format "Month Year" or "Month YYYY"
+#     date_pattern = r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}'
+#
+#     match = re.search(date_pattern, text)
+#     if match:
+#         target_date_str = match.group()
+#         target_date = datetime.strptime(target_date_str, "%B %Y")
+#
+#         # Calculate days left
+#         days_difference = (target_date - datetime.now()).days
+#
+#         if days_difference >= 0:
+#             return (days_difference, "active")  # Project is still active
+#         else:
+#             return (abs(days_difference), "overdue")  # Project is overdue
+#     return None
+# import re
+# from datetime import datetime
+#
+#
+# def extract_date_and_calculate_days_left(text):
+#     # Regular expressions for different date formats
+#     patterns = [
+#         r'(\d{1,2}/\d{1,2}/\d{4})',  # DD/MM/YYYY or D/M/YYYY
+#         r'(\d{1,2}-\d{1,2}-\d{4})',  # DD-MM-YYYY or D-M-YYYY
+#         # Month YYYY
+#         r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}',
+#         # DD Month YYYY
+#         r'(\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})'
+#     ]
+#
+#     for pattern in patterns:
+#         match = re.search(pattern, text)
+#         if match:
+#             date_str = match.group()
+#             try:
+#                 if '/' in date_str:
+#                     target_date = datetime.strptime(date_str, "%d/%m/%Y")
+#                 elif '-' in date_str:
+#                     target_date = datetime.strptime(date_str, "%d-%m-%Y")
+#                 elif len(date_str.split()) == 2:
+#                     target_date = datetime.strptime(date_str, "%B %Y")
+#                 else:
+#                     target_date = datetime.strptime(date_str, "%d %B %Y")
+#
+#                 # Calculate days left
+#                 days_difference = (target_date - datetime.now()).days
+#
+#                 if days_difference >= 0:
+#                     return (days_difference, "active")  # Project is still active
+#                 else:
+#                     return (abs(days_difference), "overdue")  # Project is overdue
+#             except ValueError:
+#                 continue  # If parsing fails, try the next pattern
+#
+#     return None  # If no valid date is found
+#
+#
+# @login_required(login_url='login')
+# def home_page(request):
+#     user = request.user.email
+#
+#     # Projects where the user is the creator
+#     created_projects = list(
+#         QI_Projects.objects.filter(created_by__email=user).exclude(measurement_status="Completed-or-Closed")) + \
+#                        list(Subcounty_qi_projects.objects.filter(created_by__email=user).exclude(
+#                            measurement_status="Completed-or-Closed")) + \
+#                        list(County_qi_projects.objects.filter(created_by__email=user).exclude(
+#                            measurement_status="Completed-or-Closed")) + \
+#                        list(Hub_qi_projects.objects.filter(created_by__email=user).exclude(
+#                            measurement_status="Completed-or-Closed")) + \
+#                        list(Program_qi_projects.objects.filter(created_by__email=user).exclude(
+#                            measurement_status="Completed-or-Closed"))
+#
+#     # Projects where the user is the qi_manager
+#     managed_projects = list(
+#         QI_Projects.objects.filter(qi_manager__email=user).exclude(measurement_status="Completed-or-Closed")) + \
+#                        list(Subcounty_qi_projects.objects.filter(qi_manager__email=user).exclude(
+#                            measurement_status="Completed-or-Closed")) + \
+#                        list(County_qi_projects.objects.filter(qi_manager__email=user).exclude(
+#                            measurement_status="Completed-or-Closed")) + \
+#                        list(Hub_qi_projects.objects.filter(qi_manager__email=user).exclude(
+#                            measurement_status="Completed-or-Closed")) + \
+#                        list(Program_qi_projects.objects.filter(qi_manager__email=user).exclude(
+#                            measurement_status="Completed-or-Closed"))
+#
+#     # Projects where the user is a qi_team_member
+#     team_member_entries = Qi_team_members.objects.filter(user__email=user)
+#     team_member_projects = []
+#     for entry in team_member_entries:
+#         if entry.qi_project and entry.qi_project.measurement_status !="Completed-or-Closed":
+#             team_member_projects.append(entry.qi_project)
+#         elif entry.program_qi_project and entry.program_qi_project.measurement_status !="Completed-or-Closed":
+#             team_member_projects.append(entry.program_qi_project)
+#         elif entry.subcounty_qi_project and entry.subcounty_qi_project.measurement_status !="Completed-or-Closed":
+#             team_member_projects.append(entry.subcounty_qi_project)
+#         elif entry.hub_qi_project and entry.hub_qi_project.measurement_status !="Completed-or-Closed":
+#             team_member_projects.append(entry.hub_qi_project)
+#         elif entry.county_qi_project and entry.county_qi_project.measurement_status !="Completed-or-Closed":
+#             team_member_projects.append(entry.county_qi_project)
+#
+#     # Function to check for missing details
+#     def check_missing_details(project):
+#         # Check for missing baseline
+#         if isinstance(project, QI_Projects):
+#             missing_baseline = not Baseline.objects.filter(qi_project=project).exists()
+#             missing_tested_change = not TestedChange.objects.filter(project=project).exists()
+#             missing_action_plan = not ActionPlan.objects.filter(qi_project=project).exists()
+#             missing_milestones = not Milestone.objects.filter(qi_project=project).exists()
+#         elif isinstance(project, Program_qi_projects):
+#             missing_baseline = not Baseline.objects.filter(program_qi_project=project).exists()
+#             missing_tested_change = not TestedChange.objects.filter(program_project=project).exists()
+#             missing_action_plan = not ActionPlan.objects.filter(program_qi_project=project).exists()
+#             missing_milestones = not Milestone.objects.filter(program_qi_project=project).exists()
+#         elif isinstance(project, Subcounty_qi_projects):
+#             missing_baseline = not Baseline.objects.filter(subcounty_qi_project=project).exists()
+#             missing_tested_change = not TestedChange.objects.filter(subcounty_project=project).exists()
+#             missing_action_plan = not ActionPlan.objects.filter(subcounty_qi_project=project).exists()
+#             missing_milestones = not Milestone.objects.filter(subcounty_qi_project=project).exists()
+#         elif isinstance(project, Hub_qi_projects):
+#             missing_baseline = not Baseline.objects.filter(hub_qi_project=project).exists()
+#             missing_tested_change = not TestedChange.objects.filter(hub_project=project).exists()
+#             missing_action_plan = not ActionPlan.objects.filter(hub_qi_project=project).exists()
+#             missing_milestones = not Milestone.objects.filter(hub_qi_project=project).exists()
+#         elif isinstance(project, County_qi_projects):
+#             missing_baseline = not Baseline.objects.filter(county_qi_project=project).exists()
+#             missing_tested_change = not TestedChange.objects.filter(county_project=project).exists()
+#             missing_action_plan = not ActionPlan.objects.filter(county_qi_project=project).exists()
+#             missing_milestones = not Milestone.objects.filter(county_qi_project=project).exists()
+#         else:
+#             missing_baseline = True  # Default to missing if project type is unrecognized
+#             missing_tested_change = True
+#             missing_action_plan = True
+#             missing_milestones = True
+#
+#         # Get the most recent achievement
+#         most_recent_achievement = tested_change = None
+#         if isinstance(project, QI_Projects):
+#             tested_change = TestedChange.objects.filter(project=project).order_by('-month_year').first()
+#         elif isinstance(project, Program_qi_projects):
+#             tested_change = TestedChange.objects.filter(program_project=project).order_by('-month_year').first()
+#         elif isinstance(project, Subcounty_qi_projects):
+#             tested_change = TestedChange.objects.filter(subcounty_project=project).order_by('-month_year').first()
+#         elif isinstance(project, Hub_qi_projects):
+#             tested_change = TestedChange.objects.filter(hub_project=project).order_by('-month_year').first()
+#         elif isinstance(project, County_qi_projects):
+#             tested_change = TestedChange.objects.filter(county_project=project).order_by('-month_year').first()
+#
+#         if tested_change:
+#             most_recent_achievement = tested_change.achievements
+#
+#         # Extract days left from project title or objective
+#         days_info = None
+#         if hasattr(project, 'project_title'):
+#             days_info = extract_date_and_calculate_days_left(project.project_title)
+#         if days_info is None and hasattr(project, 'objective'):
+#             days_info = extract_date_and_calculate_days_left(project.objective)
+#         return {
+#             'missing_root_cause_analysis': not project.process_analysis,
+#             'missing_tested_change': missing_tested_change,
+#             'missing_qi_team_members': not project.qi_team_members.exists(),
+#             'missing_baseline': missing_baseline,
+#             'missing_action_plan': missing_action_plan,
+#             'missing_milestones': missing_milestones,
+#             'most_recent_achievement': most_recent_achievement,
+#             'days_info': days_info,
+#         }
+#
+#     # Add missing details information to each project
+#     all_projects = created_projects + managed_projects + team_member_projects
+#     for project in all_projects:
+#         project.missing_details = check_missing_details(project)
+#
+#     # Count projects with gaps
+#     def count_projects_with_gaps(projects):
+#         return sum(
+#             1 for project in projects
+#             if any(detail for detail in project.missing_details.values())
+#         )
+#
+#     projects_with_gaps_count = count_projects_with_gaps(all_projects)
+#
+#     total_projects_count = len(created_projects) + len(managed_projects) + len(team_member_projects)
+#
+#     context = {
+#         'created_projects': created_projects,
+#         'managed_projects': managed_projects,
+#         'team_member_projects': team_member_projects,
+#         'total_projects_count': total_projects_count,
+#         "projects_with_gaps_count": projects_with_gaps_count,
+#     }
+#     return render(request, "account/user landing page.html", context)
+def extract_date_and_calculate_days_left(text):
+    patterns = [
+        (r'(\d{1,2}/\d{1,2}/\d{4})', "%d/%m/%Y"),
+        (r'(\d{1,2}-\d{1,2}-\d{4})', "%d-%m-%Y"),
+        (r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}', "%B %Y"),
+        (r'(\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})',
+         "%d %B %Y")
+    ]
+
+    for pattern, date_format in patterns:
+        match = re.search(pattern, text)
+        if match:
+            try:
+                target_date = datetime.strptime(match.group(), date_format)
+                days_difference = (target_date - datetime.now()).days
+                return (abs(days_difference), "active" if days_difference >= 0 else "overdue")
+            except ValueError:
+                continue
+
+    return None
+
+
+def get_projects(user_email, model, role_field):
+    return model.objects.filter(**{role_field: user_email}).exclude(measurement_status="Completed-or-Closed")
+
+
+def get_team_member_projects(user_email):
+    team_member_entries = Qi_team_members.objects.filter(user__email=user_email)
+    return [
+        entry.qi_project or entry.program_qi_project or entry.subcounty_qi_project or
+        entry.hub_qi_project or entry.county_qi_project
+        for entry in team_member_entries
+        if (entry.qi_project and entry.qi_project.measurement_status != "Completed-or-Closed") or
+        (entry.program_qi_project and entry.program_qi_project.measurement_status != "Completed-or-Closed") or
+        (entry.subcounty_qi_project and entry.subcounty_qi_project.measurement_status != "Completed-or-Closed") or
+        (entry.hub_qi_project and entry.hub_qi_project.measurement_status != "Completed-or-Closed") or
+        (entry.county_qi_project and entry.county_qi_project.measurement_status != "Completed-or-Closed")
+    ]
+
+
+def check_missing_details(project):
+    project_type_mapping = {
+        QI_Projects: 'qi_project',
+        Program_qi_projects: 'program_qi_project',
+        Subcounty_qi_projects: 'subcounty_qi_project',
+        Hub_qi_projects: 'hub_qi_project',
+        County_qi_projects: 'county_qi_project'
+    }
+    project_field = project_type_mapping.get(type(project), '')
+
+    missing_baseline = not Baseline.objects.filter(**{project_field: project}).exists()
+    missing_tested_change = not TestedChange.objects.filter(**{project_field.replace('qi_', ''): project}).exists()
+    missing_action_plan = not ActionPlan.objects.filter(**{project_field: project}).exists()
+    missing_milestones = not Milestone.objects.filter(**{project_field: project}).exists()
+
+    tested_change = TestedChange.objects.filter(**{project_field.replace('qi_', ''): project}).order_by(
+        '-month_year').first()
+    most_recent_achievement = tested_change.achievements if tested_change else None
+
+    days_info = extract_date_and_calculate_days_left(project.project_title) or \
+                extract_date_and_calculate_days_left(project.objective)
+
+    return {
+        'missing_root_cause_analysis': not project.process_analysis,
+        'missing_tested_change': missing_tested_change,
+        'missing_qi_team_members': not project.qi_team_members.exists(),
+        'missing_baseline': missing_baseline,
+        'missing_action_plan': missing_action_plan,
+        'missing_milestones': missing_milestones,
+        'most_recent_achievement': most_recent_achievement,
+        'days_info': days_info,
+    }
+
+
 @login_required(login_url='login')
 def home_page(request):
-    user = request.user.email
+    user_email = request.user.email
+    project_models = [QI_Projects, Subcounty_qi_projects, County_qi_projects, Hub_qi_projects, Program_qi_projects]
 
-    # Projects where the user is the creator
-    created_projects = list(QI_Projects.objects.filter(created_by__email=user)) + \
-                       list(Subcounty_qi_projects.objects.filter(created_by__email=user)) + \
-                       list(County_qi_projects.objects.filter(created_by__email=user)) + \
-                       list(Hub_qi_projects.objects.filter(created_by__email=user)) + \
-                       list(Program_qi_projects.objects.filter(created_by__email=user))
+    created_projects = set(
+        chain.from_iterable(get_projects(user_email, model, 'created_by__email') for model in project_models))
+    managed_projects = set(
+        chain.from_iterable(get_projects(user_email, model, 'qi_manager__email') for model in project_models))
+    team_member_projects = set(get_team_member_projects(user_email))
 
-    # Projects where the user is the qi_manager
-    managed_projects = list(QI_Projects.objects.filter(qi_manager__email=user)) + \
-                       list(Subcounty_qi_projects.objects.filter(qi_manager__email=user)) + \
-                       list(County_qi_projects.objects.filter(qi_manager__email=user)) + \
-                       list(Hub_qi_projects.objects.filter(qi_manager__email=user)) + \
-                       list(Program_qi_projects.objects.filter(qi_manager__email=user))
+    # Use a dictionary to track roles for each project
+    project_roles = defaultdict(set)
+    for project in created_projects:
+        project_roles[project].add('creator')
+    for project in managed_projects:
+        project_roles[project].add('manager')
+    for project in team_member_projects:
+        project_roles[project].add('team_member')
 
-    # Projects where the user is a qi_team_member
-    team_member_entries = Qi_team_members.objects.filter(user__email=user)
-    team_member_projects = []
-    for entry in team_member_entries:
-        if entry.qi_project:
-            team_member_projects.append(entry.qi_project)
-        elif entry.program_qi_project:
-            team_member_projects.append(entry.program_qi_project)
-        elif entry.subcounty_qi_project:
-            team_member_projects.append(entry.subcounty_qi_project)
-        elif entry.hub_qi_project:
-            team_member_projects.append(entry.hub_qi_project)
-        elif entry.county_qi_project:
-            team_member_projects.append(entry.county_qi_project)
+    all_projects = list(project_roles.keys())
 
-    # Function to check for missing details
-    def check_missing_details(project):
-        # Check for missing baseline
-        if isinstance(project, QI_Projects):
-            missing_baseline = not Baseline.objects.filter(qi_project=project).exists()
-            missing_tested_change = not TestedChange.objects.filter(project=project).exists()
-            missing_action_plan = not ActionPlan.objects.filter(qi_project=project).exists()
-        elif isinstance(project, Program_qi_projects):
-            missing_baseline = not Baseline.objects.filter(program_qi_project=project).exists()
-            missing_tested_change = not TestedChange.objects.filter(program_project=project).exists()
-            missing_action_plan = not ActionPlan.objects.filter(program_qi_project=project).exists()
-        elif isinstance(project, Subcounty_qi_projects):
-            missing_baseline = not Baseline.objects.filter(subcounty_qi_project=project).exists()
-            missing_tested_change = not TestedChange.objects.filter(subcounty_project=project).exists()
-            missing_action_plan = not ActionPlan.objects.filter(subcounty_qi_project=project).exists()
-        elif isinstance(project, Hub_qi_projects):
-            missing_baseline = not Baseline.objects.filter(hub_qi_project=project).exists()
-            missing_tested_change = not TestedChange.objects.filter(hub_project=project).exists()
-            missing_action_plan = not ActionPlan.objects.filter(hub_qi_project=project).exists()
-        elif isinstance(project, County_qi_projects):
-            missing_baseline = not Baseline.objects.filter(county_qi_project=project).exists()
-            missing_tested_change = not TestedChange.objects.filter(county_project=project).exists()
-            missing_action_plan = not ActionPlan.objects.filter(county_qi_project=project).exists()
-        else:
-            missing_baseline = True  # Default to missing if project type is unrecognized
-            missing_tested_change = True
-            missing_action_plan = True
-        return {
-            'missing_root_cause_analysis': not project.process_analysis,
-            'missing_tested_change': missing_tested_change,
-            'missing_qi_team_members': not project.qi_team_members.exists(),
-            'missing_baseline': missing_baseline,
-            'missing_action_plan': missing_action_plan,
-        }
+    projects_with_gaps = []
+    overdue_projects_count = 0
 
-    # Add missing details information to each project
-    # for project in created_projects + managed_projects + team_member_projects:
-    #     project.missing_details = check_missing_details(project)
-    # Add missing details information to each project
-    all_projects = created_projects + managed_projects + team_member_projects
+    gap_fields = [
+        'missing_root_cause_analysis',
+        'missing_tested_change',
+        'missing_qi_team_members',
+        'missing_baseline',
+        'missing_action_plan',
+        'missing_milestones'
+    ]
+
     for project in all_projects:
         project.missing_details = check_missing_details(project)
+        project_gaps = [field for field in gap_fields if project.missing_details[field]]
 
-    # Count projects with gaps
-    def count_projects_with_gaps(projects):
-        return sum(
-            1 for project in projects
-            if any(detail for detail in project.missing_details.values())
-        )
+        if project_gaps:
+            projects_with_gaps.append({
+                'id': project.id,
+                'title': project.project_title,
+                'gaps': project_gaps,
+                'roles': list(project_roles[project])
+            })
 
-    projects_with_gaps_count = count_projects_with_gaps(all_projects)
+        if project.missing_details['days_info'] and project.missing_details['days_info'][1] == "overdue":
+            overdue_projects_count += 1
 
-    total_projects_count = len(created_projects) + len(managed_projects) + len(team_member_projects)
+    all_projects_with_roles = [
+        {
+            'project': project,
+            'roles': list(project_roles[project]),
+            'type': project.__class__.__name__  # Add this line to include the project type
+        } for project in all_projects
+    ]
+
+    # Calculate role counts based on the deduplicated project list
+    created_count = sum(1 for project in all_projects_with_roles if 'creator' in project['roles'])
+    managed_count = sum(1 for project in all_projects_with_roles if 'manager' in project['roles'])
+    team_member_count = sum(1 for project in all_projects_with_roles if 'team_member' in project['roles'])
+
+    total_projects_count = len(all_projects)
+    projects_with_gaps_count = len(projects_with_gaps)
 
     context = {
-        'created_projects': created_projects,
-        'managed_projects': managed_projects,
-        'team_member_projects': team_member_projects,
+        'all_projects': all_projects_with_roles,
         'total_projects_count': total_projects_count,
-        "projects_with_gaps_count":projects_with_gaps_count,
+        'projects_with_gaps_count': projects_with_gaps_count,
+        'overdue_projects_count': overdue_projects_count,
+        'created_count': created_count,
+        'managed_count': managed_count,
+        'team_member_count': team_member_count,
     }
+
     return render(request, "account/user landing page.html", context)

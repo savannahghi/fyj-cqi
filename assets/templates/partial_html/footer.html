@@ -1,12 +1,19 @@
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-    <div class="container">
-        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
-            <p class="col-md-4 mb-0 text-muted">&copy;2022 - {% now "Y" %} USAID UON FYJ</p>
-
-            <ul class="nav col-md-4 justify-content-end">
-                <li class="nav-item"><a href="{% url 'dashboard' %}" class="nav-link px-2 text-muted">Home</a></li>
-                <li class="nav-item"><a href="#" class="nav-link px-2 text-muted">About</a></li>
-            </ul>
-        </footer>
-    </div>
-</main>
+<style>
+  {#  footer {#}
+  {#  background-color: var(--primary-color);#}
+  {#  color: var(--white);#}
+  {#  text-align: center;#}
+  {#  padding: 2rem 0;#}
+  {#  margin-top: 2rem;#}
+  {#}#}
+    footer {
+        background-color: var(--primary-color);
+        color: var(--white);
+        text-align: center;
+        padding: 2rem 0;
+        flex-shrink: 0;
+    }
+</style>
+<footer>
+    <p>USAID UON FYJ &copy; 2022 - {% now "Y" %} | Empowering Quality Improvement</p>
+</footer>

@@ -1,0 +1,390 @@
+<html><head><base href="https://cqi.health.go.ke/"><title>CQI Platform - HIV Services</title>
+<style>
+  :root {
+    --primary-color: #0A255C;
+    --secondary-color: #B10023;
+    --text-color: #333;
+    --bg-color: #f4f4f4;
+    --white: #ffffff;
+    --light-gray: #e0e0e0;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Roboto', Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+  }
+
+  .container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  header {
+    background: var(--primary-color);
+    color: var(--white);
+    padding: 1rem 0;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+
+  header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  header #branding h1 {
+    font-size: 1.5rem;
+  }
+
+  header nav ul {
+    display: flex;
+    list-style: none;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  header nav ul li {
+    margin-left: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  header a {
+    color: var(--white);
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: color 0.3s ease;
+  }
+
+  header .highlight, header .current a {
+    color: var(--secondary-color);
+  }
+
+  header a:hover {
+    color: var(--secondary-color);
+  }
+
+  #showcase {
+    min-height: 100vh;
+    background: linear-gradient(rgba(10, 37, 92, 0.8), rgba(177, 0, 35, 0.8)), url('https://images.unsplash.com/photo-1584118624012-df056829fbd0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80') no-repeat center center/cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: var(--white);
+    padding-top: 60px;
+  }
+
+  #showcase h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+
+  #showcase p {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    max-width: 600px;
+    text-align: center;
+  }
+
+  #main-features, #cqi-tools, #whats-new, #about-us {
+    padding: 4rem 0;
+  }
+
+  .section-title {
+    text-align: center;
+    color: var(--primary-color);
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+  }
+
+  .card {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  }
+
+  .card h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+  }
+
+  .card p {
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+  }
+
+  .btn {
+    display: inline-block;
+    background: var(--secondary-color);
+    color: var(--white);
+    padding: 0.8rem 1.5rem;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 700;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    align-self: flex-start;
+  }
+
+  .btn:hover {
+    background: var(--primary-color);
+    transform: translateY(-2px);
+  }
+
+  #whats-new, #about-us {
+    background-color: var(--light-gray);
+  }
+
+  .news-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 20px;
+    margin-bottom: 2rem;
+  }
+
+  .news-item {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  }
+
+  .news-item h3 {
+    color: var(--secondary-color);
+    margin-bottom: 0.5rem;
+  }
+
+  #about-us p {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto 1.5rem;
+  }
+
+  footer {
+    background-color: var(--primary-color);
+    color: var(--white);
+    text-align: center;
+    padding: 2rem 0;
+    margin-top: 2rem;
+  }
+
+  /* Custom scrollbar styles */
+  .news-container::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .news-container::-webkit-scrollbar-track {
+    background: var(--light-gray);
+    border-radius: 10px;
+  }
+
+  .news-container::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 10px;
+  }
+
+  .news-container::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+  }
+
+  @media (max-width: 768px) {
+    header .container {
+      flex-direction: column;
+    }
+
+    header nav ul {
+      margin-top: 1rem;
+      justify-content: center;
+    }
+
+    header nav ul li {
+      margin: 0 0.5rem;
+    }
+
+    #showcase h1 {
+      font-size: 2.5rem;
+    }
+
+    #showcase p {
+      font-size: 1.2rem;
+    }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div id="branding">
+        <h1><span class="highlight">CQI</span> Platform</h1>
+      </div>
+      <nav>
+        <ul>
+          <li class="current"><a href="https://cqi.health.go.ke/">Home</a></li>
+          <li><a href="https://cqi.health.go.ke/projects">Projects</a></li>
+          <li><a href="https://cqi.health.go.ke/analysis">Data Analysis</a></li>
+          <li><a href="https://cqi.health.go.ke/dqa">DQA</a></li>
+          <li><a href="https://cqi.health.go.ke/resources">Resources</a></li>
+          <li><a href="https://cqi.health.go.ke/feedback">Feedback</a></li>
+          <li><a href="https://cqi.health.go.ke/dac">Analysis Center</a></li>
+          <li><a href="https://cqi.health.go.ke/research">Research</a></li>
+          <li><a href="https://cqi.health.go.ke/membership">Membership</a></li>
+          <li><a href="https://cqi.health.go.ke/membership">Login</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <section id="showcase">
+    <div class="container">
+      <h1>UON Fahari Ya Jamii (FYJ) CQI Platform</h1>
+      <p>Empowering healthcare providers with data-driven insights and collaborative tools</p>
+      <a href="#main-features" class="btn">Explore Our Features</a>
+    </div>
+  </section>
+
+  <section id="main-features">
+    <div class="container">
+      <h2 class="section-title">Core CQI Features</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h3>CQI Project Hub</h3>
+          <p>Create, manage, and collaborate on Continuous Quality Improvement projects across HIV service delivery points. Share best practices, track progress, and drive meaningful improvements in patient care.</p>
+          <a href="https://cqi.health.go.ke/projects" class="btn">Explore Projects</a>
+        </div>
+
+        <div class="card">
+          <h3>Automated Data Analysis</h3>
+          <p>Access powerful, automated analysis tools designed specifically for HIV services. Our platform offers streamlined insights across laboratory, pharmacy, and data quality domains.</p>
+          <a href="https://cqi.health.go.ke/analysis" class="btn">Access Analysis Tools</a>
+        </div>
+
+        <div class="card">
+          <h3>Data Quality Assessment</h3>
+          <p>Ensure the accuracy, completeness, and reliability of your HIV service data with our comprehensive DQA tools. Identify areas for improvement and maintain high data quality standards.</p>
+          <a href="https://cqi.health.go.ke/dqa" class="btn">Perform DQA</a>
+        </div>
+
+        <div class="card">
+          <h3>LabPulse Integration</h3>
+          <p>Empower frontline healthcare workers with real-time access to CD4 testing results. LabPulse seamlessly integrates with our platform, ensuring quick and efficient patient care decisions.</p>
+          <a href="https://cqi.health.go.ke/labpulse" class="btn">Learn About LabPulse</a>
+        </div>
+        <div class="card">
+          <h3>Research Pillar</h3>
+          <p>Access the latest research and contribute to the growing body of knowledge in HIV care. Stay informed about cutting-edge developments in the field.</p>
+          <a href="https://cqi.health.go.ke/research" class="btn">Explore Research</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- <section id="cqi-tools">
+    <div class="container">
+      <h2 class="section-title">Specialized CQI Tools</h2>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Research Pillar</h3>
+          <p>Access the latest research and contribute to the growing body of knowledge in HIV care. Stay informed about cutting-edge developments in the field.</p>
+          <a href="https://cqi.health.go.ke/research" class="btn">Explore Research</a>
+        </div>
+
+        <div class="card">
+          <h3>PMTCT Resources</h3>
+          <p>Discover comprehensive resources and tools specific to Prevention of Mother-to-Child Transmission of HIV. Enhance your PMTCT program effectiveness.</p>
+          <a href="https://cqi.health.go.ke/pmtct" class="btn">Access PMTCT Resources</a>
+        </div>
+
+        <div class="card">
+          <h3>HIV Testing Services</h3>
+          <p>Access HIV Testing Services (HTS) tools and guidelines to improve testing strategies and linkage to care. Optimize your HTS processes for better outcomes.</p>
+          <a href="https://cqi.health.go.ke/hts" class="btn">Explore HTS Resources</a>
+        </div>
+
+        <div class="card">
+          <h3>TB/HIV Integration</h3>
+          <p>Find resources for TB screening, diagnosis, and treatment in the context of HIV care. Improve your integrated TB/HIV services for better patient management.</p>
+          <a href="https://cqi.health.go.ke/tb" class="btn">Access TB/HIV Resources</a>
+        </div>
+      </div>
+    </div>
+  </section> -->
+
+  <section id="whats-new">
+    <div class="container">
+      <h2 class="section-title">What's New</h2>
+      <div class="news-container">
+        <div class="news-item">
+          <h3>Latest LabPulse Integration Update</h3>
+          <p>We're excited to announce the latest update to our LabPulse integration, providing even faster access to CD4 testing results. This update includes improved data synchronization and a more user-friendly interface.</p>
+        </div>
+        <div class="news-item">
+          <h3>New PMTCT Resources Available</h3>
+          <p>Our team has recently added a comprehensive set of resources for Prevention of Mother-to-Child Transmission (PMTCT) of HIV. These materials include the latest guidelines, best practices, and training modules.</p>
+        </div>
+        <div class="news-item">
+          <h3>Upcoming Webinar: Data Quality in HIV Care</h3>
+          <p>Join us on July 15th for an insightful webinar on maintaining data quality in HIV care services. Our expert panel will discuss common challenges and innovative solutions. Registration is now open!</p>
+        </div>
+        <div class="news-item">
+          <h3>CQI Project Hub Enhancement</h3>
+          <p>We've rolled out new features in our CQI Project Hub, including improved collaboration tools and project tracking capabilities. These enhancements will help teams work more efficiently and effectively on their quality improvement initiatives.</p>
+        </div>
+        <div class="news-item">
+          <h3>Updated HIV Testing Guidelines</h3>
+          <p>Our HTS resources section now includes the latest WHO guidelines for HIV testing. These updates reflect the most current recommendations for testing strategies and algorithms.</p>
+        </div>
+        <div class="news-item">
+          <h3>New TB/HIV Integration Dashboard</h3>
+          <p>We've launched a new dashboard specifically for TB/HIV integrated services. This tool provides a comprehensive overview of key indicators and helps identify areas for improvement in TB screening and treatment among HIV patients.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about-us">
+    <div class="container">
+      <h2 class="section-title">About Us</h2>
+      <p>The CQI Platform for HIV Services is a collaborative initiative developed by USAID and the Ministry of Health to enhance the quality of HIV care across Kenya. Our mission is to empower healthcare providers with cutting-edge tools, resources, and data-driven insights to improve patient outcomes and drive continuous quality improvement in HIV services.</p>
+      <p>Since our inception in 2018, we've been working closely with healthcare facilities, NGOs, and government agencies to streamline HIV care processes, enhance data quality, and foster a culture of continuous improvement. Our platform serves as a central hub for CQI projects, data analysis, and knowledge sharing, connecting thousands of healthcare professionals across the country.</p>
+      <p>We are committed to innovation, evidence-based practice, and the relentless pursuit of excellence in HIV care. Join us in our mission to make quality HIV services accessible to all who need</p>
+      </div>
+      </section>
+      <footer>
+        <p>CQI Platform for HIV Services &copy; 2023 | Empowering Quality Improvement</p>
+      </footer>

@@ -3,7 +3,7 @@ from django.urls import include, path
 from django.contrib.auth import views as auth_views
 
 from apps.account.views import update_profile
-from apps.cqi.views import dashboard, deep_dive_facilities, load_data, monthly_data_review, deep_dive_chmt, \
+from apps.cqi.views import dashboard, deep_dive_facilities, home_page, load_data, monthly_data_review, deep_dive_chmt, \
     qi_team_members_view, qi_managers_view, archived, audit_trail, show_all_comments, comments_no_response, \
     comments_with_response, single_project_comments, update_comments, comments_response, update_response, \
     untracked_projects, resources, sub_counties_list, single_project, single_project_program, facility_project, \
@@ -325,6 +325,7 @@ urlpatterns = [
     path('delete-lesson-learnt/<uuid:pk>/', delete_lesson_learnt, name="delete_lesson_learnt"),
     path('delete-comments/<uuid:pk>/', delete_comments, name="delete_comments"),
     path('delete-sustainable-plan/<uuid:pk>/', delete_sustainable_plan, name="delete_sustainable_plan"),
+    path('home-page/', home_page, name="home_page"),
 
     # DOWNLOADS
 

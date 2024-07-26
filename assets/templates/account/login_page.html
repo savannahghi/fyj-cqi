@@ -1,151 +1,182 @@
-<!DOCTYPE html>
 <html>
-
 <head>
-    <title>Login</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.1/css/all.css"
-          integrity="sha384-gfdkjb5BdAXd+lj+gudLWI+BXq4IuLW5IT+brZEZsLFm++aCMlF1V92rMkPaX4PP" crossorigin="anonymous">
-    <!-- Add this to the head of your HTML document -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-
-
+{#    <base href="https://cqi.health.go.ke/login">#}
+    <base href="#">
+    <title>CQI Platform - Login</title>
     <style>
-        body,
-        html {
+        :root {
+            --primary-color: #0A255C;
+            --secondary-color: #B10023;
+            --text-color: #333;
+            --bg-color: #f4f4f4;
+            --white: #ffffff;
+            --light-gray: #e0e0e0;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            height: 100%;
-            background: #7abecc !important;
         }
 
-        .user_card {
-            width: 450px;
-            margin-top: auto;
-            margin-bottom: auto;
-            background: #74cfbf;
-            position: relative;
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
             display: flex;
             justify-content: center;
-            flex-direction: column;
-            padding: 10px;
-            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-            -webkit-box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-            -moz-box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-            border-radius: 5px;
-
+            align-items: center;
+            height: 100vh;
         }
 
-        .form_container {
-            margin-top: 20px;
-        }
-
-        #form-title {
-            color: #fff;
-        }
-
-        .login_btn {
+        .login-container {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             width: 100%;
-            background: #33ccff !important;
-            color: white !important;
+            max-width: 400px;
         }
 
-        .login_btn:focus {
-            box-shadow: none !important;
-            outline: 0px !important;
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
         }
 
-        .login_container {
-            padding: 0 2rem;
+        .login-header h1 {
+            color: var(--primary-color);
+            font-size: 2rem;
         }
 
-        .input-group-text {
-            background: #f7ba5b !important;
-            color: white !important;
-            border: 0 !important;
-            border-radius: 0.25rem 0 0 0.25rem !important;
+        .login-form {
+            display: flex;
+            flex-direction: column;
         }
 
-        .input_user,
-        .input_pass:focus {
-            box-shadow: none !important;
-            outline: 0px !important;
+        .form-group {
+            margin-bottom: 1rem;
         }
 
-        #messages {
-            background-color: grey;
-            color: #fff;
-            padding: 10px;
-            margin-top: 10px;
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--light-gray);
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--primary-color);
+        }
+
+        .login-button {
+            background: var(--secondary-color);
+            color: var(--white);
+            padding: 0.8rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .login-button:hover {
+            background: var(--primary-color);
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .forgot-password a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .register-link a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
         }
     </style>
-
 </head>
 <body>
-<div class="container h-100">
-    <div class="d-flex justify-content-center h-100">
-        <div class="user_card">
-            <div class="d-flex justify-content-center">
-                <h3 id="form-title">LOGIN</h3>
-            </div>
-            <div class="d-flex justify-content-center form_container">
-                <form method="POST" action="" onsubmit="return preventDoubleSubmission()">
-                    {% csrf_token %}
-                    <div class="input-group mb-3">
-                        <div class="input-group-append">
-                            <span class="input-group-text"><i class="fas fa-user"></i></span>
-                        </div>
-                        <input type="text" name="username" placeholder="Username in lower case..." class="form-control"
-                               autocomplete="off">
-                    </div>
-                    <div class="input-group mb-2">
-                        <div class="input-group-append">
-                            <span class="input-group-text"><i class="fas fa-key"></i></span>
-                        </div>
-                        <input type="password" name="password" id="passwordInput" placeholder="Password..."
-                               class="form-control" autocomplete="off">
-                        <div class="input-group-append">
-                            <span class="input-group-text" onclick="togglePasswordVisibility()">
-                                <i id="passwordIcon" class="fas fa-eye"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-center mt-3 login_container">
-                        <input class="btn login_btn" type="submit" value="Login" id="submitButton">
-                    </div>
-                    <div id="submitButtonMessage" style="margin-left: 10px;"></div>
-                </form>
-            </div>
-
-
-            <div class="mt-4">
-                {% for mess in messages %}
-                    {{ mess }}
-                {% endfor %}
-                {#					<div class="d-flex justify-content-center links">#}
-                {#						Don't have an account? <a href="{% url 'register' %}" class="ml-2">Sign Up</a>#}
-                {#					</div>#}
-
+<div class="login-container">
+    <div class="login-header">
+        <h1>FYJ CQI Platform Login</h1>
+    </div>
+    <form class="login-form" method="POST" action="" onsubmit="return preventDoubleSubmission()">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="username">Username or Email</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <div class="password-container">
+                <input type="password" id="password" name="password" required>
+                <span class="toggle-password" onclick="togglePassword()">👁️</span>
             </div>
         </div>
+        <button type="submit" class="login-button">Log In</button>
+        <div id="submitButtonMessage" style="margin-left: 10px;"></div>
+    </form>
+    <div class="forgot-password">
+        <a href="#">Forgot Password?</a>
+    </div>
+    <div class="register-link">
+{#        <p>Don't have an account? <a href="https://cqi.health.go.ke/register">Register here</a></p>#}
+        <p>Don't have an account? <a href="#">Register here</a></p>
+
     </div>
 </div>
-</body>
+
 <script>
-    function togglePasswordVisibility() {
-        const passwordInput = document.getElementById('passwordInput');
-        const passwordIcon = document.getElementById('passwordIcon');
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleButton = document.querySelector('.toggle-password');
 
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
-            passwordIcon.classList.remove('fa-eye');
-            passwordIcon.classList.add('fa-eye-slash');
+            toggleButton.textContent = '🔒';
         } else {
             passwordInput.type = 'password';
-            passwordIcon.classList.remove('fa-eye-slash');
-            passwordIcon.classList.add('fa-eye');
+            toggleButton.textContent = '👁️';
         }
     }
 
@@ -154,12 +185,11 @@
         const submitButtonMessage = document.getElementById("submitButtonMessage");
 
         submitButton.disabled = true; // Disable the submit button
-        {#submitButtonMessage.innerHTML = "Login button is disabled. Please wait for the submission to complete.";#}
         submitButtonMessage.innerHTML = '<i class="fas fa-spinner fa-spin">' +
             '</i> Please wait while we process your login or reload the page to start a fresh login.';
         // Ensure the form is submitted only once
         return true;
     }
 </script>
-
+</body>
 </html>

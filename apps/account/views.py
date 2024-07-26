@@ -95,11 +95,14 @@ def login_page(request):
             elif user.groups.filter(name='repository_readers').exists():
                 return redirect("manuscript_list")
             elif user.groups.filter(name='subcounty_staffs_labpulse').exists():
-                return redirect("facilities_landing_page", project_type="facility")
+                # return redirect("facilities_landing_page", project_type="facility")
+                return redirect("home_page")
             else:
                 # Redirect to CQI app
-                return redirect("facilities_landing_page", project_type="facility")
+                # return redirect("facilities_landing_page", project_type="facility")
+                return redirect("home_page")
     return render(request, "account/login_page.html", {})
+
 
 # Identify and delete sessions that are expired
 def delete_expired_sessions():
@@ -111,6 +114,7 @@ def delete_expired_sessions():
 
     # Delete expired sessions
     expired_sessions.delete()
+
 
 def logout_page(request):
     # Clear the session

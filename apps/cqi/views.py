@@ -6860,7 +6860,7 @@ def home_page(request):
     for project in created_projects:
         project_roles[project].add('Creator')
     for project in managed_projects:
-        project_roles[project].add('Manager')
+        project_roles[project].add('QI Manager')
     for project in team_member_projects:
         project_roles[project].add('Stakeholder')
 
@@ -6902,9 +6902,9 @@ def home_page(request):
     ]
 
     # Calculate role counts based on the deduplicated project list
-    created_count = sum(1 for project in all_projects_with_roles if 'creator' in project['roles'])
-    managed_count = sum(1 for project in all_projects_with_roles if 'manager' in project['roles'])
-    team_member_count = sum(1 for project in all_projects_with_roles if 'team_member' in project['roles'])
+    created_count = sum(1 for project in all_projects_with_roles if 'Creator' in project['roles'])
+    managed_count = sum(1 for project in all_projects_with_roles if 'QI Manager' in project['roles'])
+    team_member_count = sum(1 for project in all_projects_with_roles if 'Stakeholder' in project['roles'])
 
     total_projects_count = len(all_projects)
     projects_with_gaps_count = len(projects_with_gaps)

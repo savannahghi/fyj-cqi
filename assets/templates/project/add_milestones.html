@@ -21,28 +21,28 @@
                     <h4 class="display-6">PROGRAM: {{ qi_project.program }}</h4>
                 {% elif "profile" in profile %}
                     <h4 class="display-6">UPDATE PROFILE</h4>
-                     <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
-                    {% csrf_token %}
-                    {% for field in form %}
-                        {% if "note" in field.html_name or "descrip" in field.html_name %}
-                            <div class="col-md-6 mt-4">
-                                {{ field|as_crispy_field }}
-                            </div>
-                        {% else %}
-                            <div class="col-md-4 mt-4">
-                                {{ field|as_crispy_field }}
+                    <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            {% if "note" in field.html_name or "descrip" in field.html_name %}
+                                <div class="col-md-6 mt-4">
+                                    {{ field|as_crispy_field }}
+                                </div>
+                            {% else %}
+                                <div class="col-md-4 mt-4">
+                                    {{ field|as_crispy_field }}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        <div class="col-md-4 mt-4">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        </div>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
                             </div>
                         {% endif %}
-                    {% endfor %}
-                    <div class="col-md-4 mt-4">
-                        <input class="btn btn-success mt-1" type="submit" value="Submit">
-                    </div>
-                    {% if form.errors %}
-                        <div class="alert alert-danger mt-4">
-                            {{ form.errors }}
-                        </div>
-                    {% endif %}
-                </form>
+                    </form>
                 {% endif %}
                 {% if not profile %}
                     <h6 class="mb-4 mt-4">CQI PROJECT: {{ qi_project.project_title|upper }}</h6>
@@ -61,33 +61,38 @@
                         </div>
                     </div>
                     <form class="row" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
-                    {% csrf_token %}
-                    <div class="col-md-4 mt-4">
-                        {{ form.name|as_crispy_field }}
-                    </div>
-                    <div class="col-md-4 mt-4">
-                        {{ form.start_date|as_crispy_field }}
-                    </div>
-                    <div class="col-md-4 mt-4">
-                        {{ form.end_date|as_crispy_field }}
-                    </div>
-                    <div class="col-md-6 mt-4" name="description_name">
-                        {{ form.description_name|as_crispy_field }}
-                    </div>
-                    <div class="col-md-6 mt-4">
-                        {{ form.notes|as_crispy_field }}
-                    </div>
-                    <div class="col-md-4 mt-4">
-                        <input class="btn btn-success mt-1" type="submit" value="Submit">
-                    </div>
-                    {% if form.errors %}
-                        <div class="alert alert-danger mt-4">
-                            {{ form.errors }}
+                        {% csrf_token %}
+                        {% if "milestone" in title|lower %}
+                            <div class="col-md-4 mt-4">
+                                {{ form.name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4 mt-4">
+                                {{ form.start_date|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4 mt-4">
+                                {{ form.end_date|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mt-4" name="description_name">
+                                {{ form.description_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mt-4">
+                                {{ form.notes|as_crispy_field }}
+                            </div>
+                        {% elif "baseline" in title|lower %}
+                            <div class="col-md-6 mt-4">
+                                {{ form.baseline_status|as_crispy_field }}
+                            </div>
+                        {% endif %}
+                        <div class="col-md-4 mt-4">
+                            <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
-                    {% endif %}
-                </form>
+                        {% if form.errors %}
+                            <div class="alert alert-danger mt-4">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                    </form>
                 {% endif %}
-
             </div>
         </div>
     </main>

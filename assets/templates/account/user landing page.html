@@ -263,20 +263,6 @@
             width: 1em;
             margin-left: -1em;
         }
-
-        @media (max-width: 768px) {
-            .quick-links, .project-list {
-                grid-template-columns: 1fr;
-            }
-
-            .welcome-banner {
-                padding: 2rem;
-            }
-
-            .welcome-banner h1 {
-                font-size: 2rem;
-            }
-        }
     </style>
     <main>
         <div class="container">
@@ -391,7 +377,7 @@
                                         <li>Missing Milestones</li>
                                     {% endif %}
                                     {% if project_info.project.missing_details.missing_tested_change %}
-                                        <li>Missing Tested Change</li>
+                                        <li>Missing Tested Changes</li>
                                     {% endif %}
                                 </ul>
                             </div>

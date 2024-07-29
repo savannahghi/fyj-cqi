@@ -59,19 +59,19 @@
                             {% if user.id == facility_project.created_by.id or request.user.is_superuser %}
                                 {% if facility_name %}
                                     <a href="{% url 'update_project_facility' facility_project.id facility_project.facility_name.name %}"
-                                       class="btn btn-warning">Update project</a>
+                                       class="btn btn-secondary">Update project</a>
                                 {% elif program_name %}
                                     <a href="{% url 'update_project_program' facility_project.id facility_project.program.program %}"
-                                       class="btn btn-warning">Update project</a>
+                                       class="btn btn-secondary">Update project</a>
                                 {% elif subcounty_name %}
                                     <a href="{% url 'update_project_subcounty' facility_project.id facility_project.sub_county %}"
-                                       class="btn btn-warning">Update project</a>
+                                       class="btn btn-secondary">Update project</a>
                                 {% elif county_name %}
                                     <a href="{% url 'update_project_county' facility_project.id facility_project.county.county_name %}"
-                                       class="btn btn-warning">Update project</a>
+                                       class="btn btn-secondary">Update project</a>
                                 {% elif hub_name %}
                                     <a href="{% url 'update_project_hub' facility_project.id facility_project.hub %}"
-                                       class="btn btn-warning">Update project</a>
+                                       class="btn btn-secondary">Update project</a>
                                 {% endif %}
                                 {% if all_archived %}
                                     {% if facility_project.id in all_archived %}
@@ -307,13 +307,13 @@
                     {% endif %}
                 {% endif %}
             </div>
-{#            <div class="container-fluid mt-2">#}
-{#                <div class="row">#}
-{#                    <div class="col-12">#}
-{##}
-{#                    </div>#}
-{#                </div>#}
-{#            </div>#}
+            {#            <div class="container-fluid mt-2">#}
+            {#                <div class="row">#}
+            {#                    <div class="col-12">#}
+            {##}
+            {#                    </div>#}
+            {#                </div>#}
+            {#            </div>#}
             <div class="bg-image hover-zoom magnify">
                 <img class="img-fluid" src="{{ baseline.baseline_status.url }}" alt="">
             </div>
@@ -599,7 +599,7 @@
                 </p>
 
             </div>
-            <p>{{ facility_project.objective|safe  }}</p>
+            <p>{{ facility_project.objective|safe }}</p>
             <div class="d-flex justify-content-between">
                 {% if facility_project.measurement_status != "Completed-or-Closed" %}
                     <div>

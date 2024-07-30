@@ -6,7 +6,7 @@ from multiupload.fields import MultiFileField
 
 from apps.cqi.models import Facilities
 from apps.labpulse.models import Cd4traker, Cd4TestingLabs, Commodities, DrtPdfFile, DrtResults, \
-    LabPulseUpdateButtonSettings, \
+    HistologyPdfFile, HistologyResults, LabPulseUpdateButtonSettings, \
     ReagentStock
 
 
@@ -355,3 +355,122 @@ class DrtPdfFileForm(ModelForm):
 
 class BiochemistryForm(MultipleUploadForm):
     performed_by = forms.CharField(max_length=100, label="Test Performed by")
+
+
+class HistologyResultsForm(ModelForm):
+    facility_name = forms.ModelChoiceField(
+        queryset=Facilities.objects.all(),
+        empty_label="Select Facility ...",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    SPECIMEN_CHOICES = [("", "Select ..."), ("cervical biopsy", "Cervical Biopsy"),
+                        ("breast tissue biopsy", "Breast Tissue Biopsy"),
+                        ("liver biopsy", "Liver biopsy"),("lymph node biopsy", "Lymph Node biopsy")
+                        ]
+    specimen_type = forms.ChoiceField(choices=SPECIMEN_CHOICES)
+
+    # result = MultiFileField(min_num=1, max_num=12, max_file_size=1024 * 1024 * 5)
+    class Meta:
+        model = HistologyResults
+        fields = ["facility_name"]
+
+
+class HistologyForm(MultipleUploadForm):
+    patient_name = forms.CharField(max_length=150)
+    sex = forms.ChoiceField(
+        choices=[
+            ('', 'Select gender'),
+            ("M", "M"),
+            ("F", "F"),
+        ]
+    )
+    # sequence_summary = forms.ChoiceField(
+    #     choices=[
+    #         ('', 'Select Sequence Summary'),
+    #         ("PASSED", "PASSED"),
+    #         ("FAILED", "FAILED"),
+    #     ]
+    # )
+    # files = forms.FileField(required=False)
+    patient_unique_no = forms.IntegerField(
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(9999999999),  # Assuming you want an 10-digit number
+        ],
+        required=False
+    )
+
+    # AGE_UNIT_CHOICES = [("", "Select ..."), ("years", "Years"), ("months", "Months"), ("days", "Days")]
+    age = forms.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(150)]
+    )
+    # age_unit = forms.ChoiceField(choices=AGE_UNIT_CHOICES)
+    # contact = forms.CharField(max_length=150, required=False)
+    # specimen_type = forms.CharField(max_length=150)
+    # request_from = forms.CharField(max_length=150)
+    # requesting_clinician = forms.CharField(max_length=150)
+    performed_by = forms.CharField(max_length=150)
+    reviewed_by = forms.CharField(max_length=150)
+    date_collected = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Collected"
+    )
+    date_received = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Received"
+    )
+    date_reported = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Reported"
+    )
+    date_tested = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Tested"
+    )
+    date_reviewed = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Reviewed"
+    )
+
+    def clean_performed_by(self):
+        performed_by = self.cleaned_data['performed_by']
+        validate_name(performed_by)
+        return performed_by
+
+    def clean_reviewed_by(self):
+        reviewed_by = self.cleaned_data['reviewed_by']
+        validate_name(reviewed_by)
+        return reviewed_by
+
+    def clean_patient_name(self):
+        patient_name = self.cleaned_data['patient_name']
+        validate_name(patient_name)
+        return patient_name
+
+    # Override clean method to conditionally set files field required
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Set files field as not required initially
+        self.fields['files'].required = False
+
+    # def clean(self):
+    #     cleaned_data = super().clean()
+    #     sequence_summary = cleaned_data.get('sequence_summary')
+    #
+    #     if sequence_summary == 'FAILED':
+    #         # If sequence summary is 'FAILED', mark files field as not required
+    #         self.fields['files'].required = False
+    #
+    #     return cleaned_data
+
+class MultipleUploadForm(forms.Form):
+    files = MultiFileField(min_num=1, max_num=12, max_file_size=1024 * 1024 * 5)
+
+class HistologyPdfFileForm(forms.ModelForm):
+    class Meta:
+        model = HistologyPdfFile
+        fields = ['result']
+        labels = {
+            'result': 'HISTOLOGY Results',
+        }

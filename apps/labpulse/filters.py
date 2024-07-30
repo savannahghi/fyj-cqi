@@ -4,7 +4,8 @@ from django.forms import DateInput
 from django_filters import CharFilter, ChoiceFilter, DateFilter, NumberFilter
 
 from apps.cqi.models import Counties, Facilities, Sub_counties
-from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtPdfFile, DrtResults
+from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtPdfFile, DrtResults, \
+    HistologyPdfFile, HistologyResults
 
 
 class Cd4trakerFilter(django_filters.FilterSet):
@@ -96,9 +97,9 @@ class BiochemistryResultFilter(django_filters.FilterSet):
                                            widget=forms.Select(attrs={'class': 'form-control select2'}))
 
     sub_county = django_filters.ChoiceFilter(choices=[], label='Sub-County',
-                                           widget=forms.Select(attrs={'class': 'form-control select2'}))
+                                             widget=forms.Select(attrs={'class': 'form-control select2'}))
     county = django_filters.ChoiceFilter(choices=[], label='County',
-                                           widget=forms.Select(attrs={'class': 'form-control select2'}))
+                                         widget=forms.Select(attrs={'class': 'form-control select2'}))
     result_gte = NumberFilter(field_name="result", lookup_expr="gte", label='Test result >=')
     result_lte = NumberFilter(field_name="result", lookup_expr="lte", label='Test result <=')
 
@@ -150,7 +151,7 @@ class BiochemistryResultFilter(django_filters.FilterSet):
         ##########################
         # Get unique 'facility' values from the database, considering only those with related BiochemistryResult entries
         unique_sub_county = BiochemistryResult.objects.exclude(sub_county__isnull=True).values_list('sub_county__id',
-                                                                                                  'sub_county__sub_counties').distinct()
+                                                                                                    'sub_county__sub_counties').distinct()
 
         # Create the choices for the 'facility' field
         unique_sub_county_choices = [(str(uuid), name) for uuid, name in unique_sub_county]
@@ -159,12 +160,13 @@ class BiochemistryResultFilter(django_filters.FilterSet):
         unique_sub_county_choices = list(set(unique_sub_county_choices))
 
         # Sort the choices and set them in the filter
-        self.filters['sub_county'].extra['choices'] = sorted(unique_sub_county_choices, key=lambda x: x[1] if x[1] else '')
+        self.filters['sub_county'].extra['choices'] = sorted(unique_sub_county_choices,
+                                                             key=lambda x: x[1] if x[1] else '')
 
         ##########################
         # Get unique 'facility' values from the database, considering only those with related BiochemistryResult entries
         unique_county = BiochemistryResult.objects.exclude(sub_county__isnull=True).values_list('county__id',
-                                                                                                    'county__county_name').distinct()
+                                                                                                'county__county_name').distinct()
 
         # Create the choices for the 'facility' field
         unique_county_choices = [(str(uuid), name) for uuid, name in unique_county]
@@ -174,21 +176,22 @@ class BiochemistryResultFilter(django_filters.FilterSet):
 
         # Sort the choices and set them in the filter
         self.filters['county'].extra['choices'] = sorted(unique_county_choices,
-                                                             key=lambda x: x[1] if x[1] else '')
-
+                                                         key=lambda x: x[1] if x[1] else '')
 
     class Meta:
         model = BiochemistryResult
-        fields = ['sample_id','patient_id','test','full_name','collection_date','result_time','mfl_code',]
+        fields = ['sample_id', 'patient_id', 'test', 'full_name', 'collection_date', 'result_time', 'mfl_code', ]
 
 
 class DrtResultFilter(django_filters.FilterSet):
-    collection_date_lte = DateFilter(field_name="drt_results__collection_date", lookup_expr="lte", label='To (Collection Date)')
-    collection_date_gte = DateFilter(field_name="drt_results__collection_date", lookup_expr="gte", label='From (Collection Date)')
+    collection_date_lte = DateFilter(field_name="drt_results__collection_date", lookup_expr="lte",
+                                     label='To (Collection Date)')
+    collection_date_gte = DateFilter(field_name="drt_results__collection_date", lookup_expr="gte",
+                                     label='From (Collection Date)')
     age_lte = CharFilter(field_name="drt_results__age", lookup_expr="lte",
-                                     label='Age <=')
+                         label='Age <=')
     age_gte = CharFilter(field_name="drt_results__age", lookup_expr="gte",
-                                     label='Age >=')
+                         label='Age >=')
     patient_id = CharFilter(field_name="drt_results__patient_id", lookup_expr="icontains", label='Patient Unique No.')
     facility_names = django_filters.ModelChoiceFilter(
         queryset=Facilities.objects.all(),
@@ -212,21 +215,22 @@ class DrtResultFilter(django_filters.FilterSet):
         label='Sub-County',
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
-    sequence_summary = django_filters.ChoiceFilter(choices=[("", ""),],field_name='drt_results__sequence_summary',
+    sequence_summary = django_filters.ChoiceFilter(choices=[("", ""), ], field_name='drt_results__sequence_summary',
                                                    label='Sequence Summary'
                                                    )
     resistance_level = django_filters.ChoiceFilter(choices=[("", ""), ], field_name='drt_results__resistance_level',
                                                    label='Resistant Level'
                                                    )
     haart_class = django_filters.ChoiceFilter(choices=[("", ""), ], field_name='drt_results__haart_class',
-                                                   label='HAART Class'
-                                                   )
-    sex = django_filters.ChoiceFilter(choices=[("", ""), ], field_name='drt_results__sex',
-                                              label='Sex'
+                                              label='HAART Class'
                                               )
+    sex = django_filters.ChoiceFilter(choices=[("", ""), ], field_name='drt_results__sex',
+                                      label='Sex'
+                                      )
+
     class Meta:
         model = DrtResults
-        fields = ['patient_id','collection_date_gte','county','sub_county','facility_name','sequence_summary']
+        fields = ['patient_id', 'collection_date_gte', 'county', 'sub_county', 'facility_name', 'sequence_summary']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -249,36 +253,74 @@ class DrtResultFilter(django_filters.FilterSet):
         choices = [(value, value) for value in sorted(unique_values) if "nan" not in value]
         self.filters[field_name].extra['choices'] = choices
 
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     # Get unique 'sequence_summary' values from the related model 'DrtPdfFile'
-    #     unique_sequence_summary = DrtPdfFile.objects.values_list('drt_results__sequence_summary', flat=True).distinct()
-    #
-    #     # Create the choices for the 'sequence_summary' field
-    #     sequence_summary_choices = [(summary, summary) for summary in unique_sequence_summary]
-    #     self.filters['sequence_summary'].extra['choices'] = sequence_summary_choices
-    #
-    #     # Get unique 'sequence_summary' values from the related model 'DrtPdfFile'
-    #     unique_resistance_level = DrtPdfFile.objects.values_list('drt_results__resistance_level', flat=True).distinct()
-    #
-    #     # Create the choices for the 'sequence_summary' field
-    #     resistance_level_choices = [(unique_level, unique_level) for unique_level in sorted(unique_resistance_level)
-    #                                 if "nan" not in unique_level]
-    #     self.filters['resistance_level'].extra['choices'] = resistance_level_choices
-    #
-    #     # Get unique 'sequence_summary' values from the related model 'DrtPdfFile'
-    #     unique_haart_class = DrtPdfFile.objects.values_list('drt_results__haart_class', flat=True).distinct()
-    #
-    #     # Create the choices for the 'sequence_summary' field
-    #     haart_class_choices = [(unique_class, unique_class) for unique_class in sorted(unique_haart_class)
-    #                                 if "nan" not in unique_class]
-    #     self.filters['haart_class'].extra['choices'] = haart_class_choices
-    #
-    #     # Get unique 'sequence_summary' values from the related model 'DrtPdfFile'
-    #     unique_sex = DrtPdfFile.objects.values_list('drt_results__sex', flat=True).distinct()
-    #
-    #     # Create the choices for the 'sequence_summary' field
-    #     haart_class_choices = [(unique_sex, unique_sex) for unique_sex in sorted(unique_sex)
-    #                            if "nan" not in unique_sex]
-    #     self.filters['sex'].extra['choices'] = haart_class_choices
 
+class HistologyResultFilter(django_filters.FilterSet):
+    collection_date_lte = DateFilter(field_name="histology_results__collection_date", lookup_expr="lte",
+                                     label='To (Collection Date)')
+    collection_date_gte = DateFilter(field_name="histology_results__collection_date", lookup_expr="gte",
+                                     label='From (Collection Date)')
+    age_lte = CharFilter(field_name="histology_results__age", lookup_expr="lte",
+                         label='Age <=')
+    age_gte = CharFilter(field_name="histology_results__age", lookup_expr="gte",
+                         label='Age >=')
+    patient_id = CharFilter(field_name="histology_results__patient_id", lookup_expr="icontains",
+                            label='Patient Unique No.')
+    facility_names = django_filters.ModelChoiceFilter(
+        queryset=Facilities.objects.all(),
+        field_name='histology_results__facility_name__name',
+        empty_label="Select Facility ...",
+        label='Facility Name',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+
+    county = django_filters.ModelChoiceFilter(
+        queryset=Counties.objects.all(),
+        field_name='histology_results__county__county_name',
+        empty_label="Select County ...",
+        label='County',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    sub_county = django_filters.ModelChoiceFilter(
+        queryset=Sub_counties.objects.all(),
+        field_name='histology_results__sub_county__sub_counties',
+        empty_label="Select Sub-County ...",
+        label='Sub-County',
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    # sequence_summary = django_filters.ChoiceFilter(choices=[("", ""),],field_name='histology_results__sequence_summary',
+    #                                                label='Sequence Summary'
+    #                                                )
+    # resistance_level = django_filters.ChoiceFilter(choices=[("", ""), ], field_name='histology_results__resistance_level',
+    #                                                label='Resistant Level'
+    #                                                )
+    # haart_class = django_filters.ChoiceFilter(choices=[("", ""), ], field_name='histology_results__haart_class',
+    #                                                label='HAART Class'
+    #                                                )
+    sex = django_filters.ChoiceFilter(choices=[("", ""), ], field_name='histology_results__sex',
+                                      label='Sex'
+                                      )
+
+    class Meta:
+        model = HistologyResults
+        fields = ['patient_id', 'collection_date_gte', 'county', 'sub_county', 'facility_name']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Define fields to optimize
+        fields_to_optimize = [
+            # ('sequence_summary', 'drt_results__sequence_summary'),
+            # ('resistance_level', 'drt_results__resistance_level'),
+            # ('haart_class', 'drt_results__haart_class'),
+            ('sex', 'histology_results__sex'),
+        ]
+
+        for field_name, lookup_expr in fields_to_optimize:
+            self.optimize_field_choices(field_name, lookup_expr)
+
+    def optimize_field_choices(self, field_name, lookup_expr):
+        unique_values = HistologyPdfFile.objects.values_list(lookup_expr, flat=True).distinct()
+
+        # Create choices for the field
+        choices = [(value, value) for value in sorted(unique_values) if "nan" not in value]
+        self.filters[field_name].extra['choices'] = choices

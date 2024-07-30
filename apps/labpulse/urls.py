@@ -3,13 +3,14 @@ from django.urls import include, path
 
 # from apps.data_analysis.views import download_csv
 from apps.labpulse.views import GenerateBioChemistryPDF, GenerateDrtPDF, add_commodities, add_drt_results, add_facility, \
-    choose_lab, \
+    add_histology_results, choose_lab, \
     choose_testing_lab, \
     add_cd4_count, \
-    delete_drt_result, download_csv, generate_drt_results, instructions_lab, \
+    delete_drt_result, delete_histology_result, download_csv, generate_drt_results, instructions_lab, \
     load_biochemistry_results, reload_page_without_cache, update_cd4_results, show_results, \
     GeneratePDF, \
-    add_testing_lab, update_drt_results, update_reagent_stocks, update_testing_labs, lab_pulse_update_button_settings, \
+    add_testing_lab, update_drt_results, update_reagent_stocks, update_testing_labs, \
+    lab_pulse_update_button_settings, \
     choose_testing_lab_manual
 
 urlpatterns = [
@@ -33,8 +34,10 @@ urlpatterns = [
     path('update-button-settings/', lab_pulse_update_button_settings, name='lab_pulse_update_button_settings'),
     path('biochemistry-results/', load_biochemistry_results, name='load_biochemistry_results'),
     path('drt-results/', add_drt_results, name='add_drt_results'),
+    path('histology-results/', add_histology_results, name='add_histology_results'),
     path('update-drt-results/<uuid:pk>/', update_drt_results, name='update_drt_results'),
     path('delete-drt-results/<uuid:pk>/', delete_drt_result, name='delete_drt_result'),
+    path('delete-histology-results/<uuid:pk>/', delete_histology_result, name='delete_histology_result'),
     path('generate-drt-results/', generate_drt_results, name='generate_drt_results'),
     path('generate-drt-report/', GenerateDrtPDF.as_view(), name='generate_drt_pdf'),
     path('download/<str:filter_type>', download_csv, name='download_biochem_lab'),

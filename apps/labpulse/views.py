@@ -29,7 +29,6 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
-from django.views.decorators.cache import cache_page
 from plotly.offline import plot
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -42,13 +41,15 @@ from apps.cqi.models import Counties, Facilities, Sub_counties
 from apps.cqi.views import bar_chart
 from apps.data_analysis.views import get_key_from_session_names
 from apps.labpulse.decorators import group_required
-from apps.labpulse.filters import BiochemistryResultFilter, Cd4trakerFilter, DrtResultFilter
+from apps.labpulse.filters import BiochemistryResultFilter, Cd4trakerFilter, DrtResultFilter, HistologyResultFilter
 from apps.labpulse.forms import BiochemistryForm, Cd4TestingLabForm, Cd4TestingLabsForm, Cd4trakerForm, \
     Cd4trakerManualDispatchForm, \
-    DrtForm, DrtPdfFileForm, DrtResultsForm, LabPulseUpdateButtonSettingsForm, ReagentStockForm, facilities_lab_Form
+    DrtForm, DrtPdfFileForm, DrtResultsForm, HistologyResultsForm, \
+    LabPulseUpdateButtonSettingsForm, MultipleUploadForm, ReagentStockForm, \
+    facilities_lab_Form
 from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtPdfFile, DrtProfile, DrtResults, \
     EnableDisableCommodities, \
-    LabPulseUpdateButtonSettings, ReagentStock
+    HistologyPdfFile, HistologyResults, LabPulseUpdateButtonSettings, ReagentStock
 from config.settings.base import BASE_DIR
 
 
@@ -4415,6 +4416,23 @@ def delete_drt_result(request, pk):
     }
     return render(request, 'project/delete_test_of_change.html', context)
 
+@login_required(login_url='login')
+def delete_histology_result(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = HistologyPdfFile.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+
+    }
+    return render(request, 'project/delete_test_of_change.html', context)
+
 
 def read_pdf_file(file):
     """
@@ -6005,3 +6023,247 @@ def create_specific_dfs(pdf_df, col):
             drug_data['Mutations'] = ""
         drug_data = drug_data[drug_data['Mutation Type'].notnull()]
     return drug_data
+
+
+def extract_and_clean_text(pdf_text, start_marker, end_marker, delimiter=":"):
+    text = extract_text(pdf_text, start_marker, end_marker)
+    if text:
+        return text[0].split(delimiter)[-1].strip()
+    return ""
+
+
+def extract_and_clean_section(pdf_text, start_marker, end_marker, keyword):
+    text = extract_text(pdf_text, start_marker, end_marker)
+    cleaned_text = ' '.join([x for x in text if keyword not in x])
+    return cleaned_text
+
+
+def extract_pdf_details(pdf_text):
+    """
+    Extracts and cleans various sections from the provided PDF text.
+    """
+    details = {
+        "lab_name": extract_and_clean_text(pdf_text, "\nMolecular", "\nP.O"),
+        "lab_phone": extract_and_clean_text(pdf_text, "\nPhone:", "Email"),
+        "lab_email": extract_and_clean_text(pdf_text, "Email:", "\nPatient Name"),
+        "lab_post_address": extract_and_clean_text(pdf_text, "P.O. Box", "\nPhone"),
+        "patient_name": extract_and_clean_text(pdf_text, "\nPatient Name", "Referring Doctor"),
+        "referring_doctor": extract_and_clean_text(pdf_text, "Referring Doctor", "\nPatient IP"),
+        "patient_no": extract_and_clean_text(pdf_text, "\nPatient IP", "Lab Request Date"),
+        "request_date": extract_and_clean_text(pdf_text, "Lab Request Date", "\nGender/Address"),
+        "gender": extract_and_clean_text(pdf_text, "\nGender/Address", "Sample Collection Date"),
+        "collection_date": extract_and_clean_text(pdf_text, "Sample Collection Date", "\nAge"),
+        "authorization_date": extract_and_clean_text(pdf_text, "Authorization Date", "\nFacility"),
+        "facility_name": extract_and_clean_text(pdf_text, "\nFacility", "Dispatch Date").split("Facility")[-1].strip(),
+        "dispatch_date": extract_and_clean_text(pdf_text, "Dispatch Date", "\nHISTOPATHOLOGY")
+    }
+
+    # Handle age extraction separately
+    age_text = extract_text(pdf_text, "\nAge", "Authorization Date")
+    ages = [int(age) for text in age_text for age in re.findall(r'\d+', text)]
+    details["age"] = ages[0] if ages else None
+
+    # Extracting and cleaning detailed report sections
+    details["gross_description"] = extract_and_clean_section(pdf_text, "Gross Description", "Microscopy",
+                                                             "Gross Description")
+    details["clinical_summary"] = extract_and_clean_section(pdf_text, "Clinical Summary", "Gross Description",
+                                                            "Clinical Summary")
+    details["microscopy"] = extract_and_clean_section(pdf_text, "Microscopy", "Diagnosis", "Microscopy")
+    details["diagnosis"] = extract_and_clean_section(pdf_text, "Diagnosis", "Comment", "Diagnosis")
+    details["comments"] = extract_and_clean_section(pdf_text, "Comment", "Report by", "Comment")
+    details["reported_by"] = extract_and_clean_section(pdf_text, "Report by", "SOP", "Report by")
+
+    return details
+
+
+def parse_date(date_string):
+    if date_string:
+        try:
+            return timezone.make_aware(datetime.strptime(date_string.strip(), '%d-%m-%Y'))
+        except ValueError:
+            # If parsing fails, return None or handle the error as appropriate
+            return None
+    return None
+
+
+def save_histology_data(request, model_class, pdf_details, facility_id, all_subcounties, all_counties,
+                        histology_pdf_results_instance,specimen_type):
+    try:
+        with transaction.atomic():
+            collection_date = parse_date(pdf_details['collection_date'])
+            authorization_date = parse_date(pdf_details['authorization_date'])
+            dispatch_date = parse_date(pdf_details['dispatch_date'])
+
+            histology_result = model_class(
+                result=histology_pdf_results_instance,
+                lab_name=pdf_details['lab_name'],
+                lab_phone=pdf_details['lab_phone'],
+                lab_email=pdf_details['lab_email'],
+                lab_post_address=pdf_details['lab_post_address'],
+                referring_doctor=pdf_details['referring_doctor'],
+                patient_id=pdf_details['patient_no'],
+                sex=pdf_details['gender'],
+                collection_date=collection_date,
+                authorization_date=authorization_date,
+                dispatch_date=dispatch_date,
+                age=pdf_details['age'],
+                gross_description=pdf_details['gross_description'],
+                clinical_summary=pdf_details['clinical_summary'],
+                microscopy=pdf_details['microscopy'],
+                diagnosis=pdf_details['diagnosis'],
+                comments=pdf_details['comments'],
+                reported_by=pdf_details['reported_by'],
+                specimen_type=specimen_type,
+            )
+            histology_result.facility_name = facility_id
+            histology_result.sub_county = Sub_counties.objects.get(id=all_subcounties[0].sub_counties_id)
+            histology_result.county = Counties.objects.get(id=all_counties[0].counties_id)
+
+            # Save the instances
+            histology_pdf_results_instance.save()
+            histology_result.save()
+
+        return True, "Record successfully saved"
+    except Exception as e:
+        return False, str(e)
+
+
+@login_required(login_url='login')
+def add_histology_results(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    title = "Add Histology Results"
+    template_name = "lab_pulse/add_histology.html"
+    #####################################
+    # Display existing data
+    #####################################
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+        # record_count = int(request.GET.get('record_count', 10))  # Get the selected record count (default: 10)
+        record_count = request.GET.get('record_count', '10')
+    else:
+        record_count = request.GET.get('record_count', '100')
+
+    results_qs = HistologyPdfFile.objects.all().prefetch_related('histology_results').order_by('-date_created')
+    record_count_options = [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50]] + [("all", "All"), ]
+    my_filters = HistologyResultFilter(request.GET, queryset=results_qs)
+
+    if "current_page_url" in request.session:
+        del request.session['current_page_url']
+    request.session['current_page_url'] = request.path
+
+    # Apply distinct on specific fields to ensure unique combinations
+    filtered_qs = my_filters.qs.distinct('histology_results__patient_id', 'histology_results__collection_date',
+                                         'histology_results__facility_name', 'date_created')
+
+    results_list = pagination_(request, filtered_qs, record_count)
+    qi_list = results_list
+
+    # Control number of DRT results to display
+    if len(results_list) > 500:
+        results_list = []
+
+    # check the page user is from
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+    if my_filters.qs:
+        # fields to extract
+        fields = ['histology_results__patient_id', 'histology_results__collection_date',
+                  'histology_results__county__county_name','histology_results__sub_county__sub_counties',
+                  'histology_results__facility_name__name','histology_results__facility_name__mfl_code',
+                  'histology_results__age','histology_results__sex','histology_results__authorization_date',
+                  'histology_results__dispatch_date','histology_results__clinical_summary',
+                  'histology_results__referring_doctor','histology_results__microscopy','histology_results__diagnosis',
+                  'histology_results__gross_description','histology_results__comments','histology_results__tat_days',
+                  ]
+
+        # Extract the data from the queryset using values()
+        data = my_filters.qs.values(*fields)
+        df_histology = pd.DataFrame(data)
+        # df_histology.to_csv("df_histology.csv", index=False)
+
+    if request.method == "POST":
+        histology_pdf_file_form = MultipleUploadForm(request.POST, request.FILES)
+        form = HistologyResultsForm(request.POST)
+        if form.is_valid() and histology_pdf_file_form.is_valid():
+            context = {"form": form, "histology_pdf_file_form": histology_pdf_file_form, "title": title,
+                       "results": results_list,}
+
+            # Validate date
+            date_fields_to_validate = ['collection_date']
+            if not validate_date_fields(form, date_fields_to_validate):
+                return render(request, template_name, context)
+
+            uploaded_files = request.FILES.getlist('files')
+            success_count = 0
+            error_count = 0
+            error_messages = set()  # Using a set to avoid duplicate messages
+
+            for uploaded_file in uploaded_files:
+                if not uploaded_file.name.lower().endswith('.pdf'):
+                    histology_pdf_file_form.add_error('files', 'Please upload a PDF file.')
+                    messages.error(request, "Upload a PDF report compiled using this platform")
+                    return render(request, template_name, context)
+                else:
+                    pdf_text = read_pdf_file(uploaded_file)
+                    if "SOP.UON.MMID.LAB.GEN.12" in pdf_text:
+                        pdf_details = extract_pdf_details(pdf_text)
+                        facility_name = form.cleaned_data['facility_name']
+                        specimen_type = form.cleaned_data['specimen_type']
+                        facility_obj = Facilities.objects.get(name=facility_name)
+                        patient_id = pdf_details['patient_no']
+                        if pdf_details['facility_name'].split(" ")[0].lower() in str(facility_obj.name).split(" ")[
+                            0].lower():
+                            # facility_id = Facilities.objects.get(name=facility_name)
+                            all_subcounties = Sub_counties.facilities.through.objects.filter(
+                                facilities_id=facility_obj.id)
+                            all_counties = Sub_counties.counties.through.objects.filter(
+                                sub_counties_id__in=[sub_county.sub_counties_id for sub_county in all_subcounties])
+
+                            # Check for existing record before creating HistologyPdfFile instance
+                            if HistologyResults.objects.filter(
+                                    Q(patient_id=patient_id) &
+                                    Q(collection_date=parse_date(pdf_details['collection_date']))
+                            ).exists():
+                                error_messages.add(
+                                    f"A record for Patient ID {patient_id} collected on "
+                                    f"{parse_date(pdf_details['collection_date']).strftime('%Y-%m-%d')} already exists."
+                                )
+                                error_count += 1
+                            else:
+                                histology_results_instance = HistologyPdfFile(result=uploaded_file)
+                                success, message = save_histology_data(request, HistologyResults, pdf_details,
+                                                                       facility_obj,
+                                                                       all_subcounties, all_counties,
+                                                                       histology_results_instance,specimen_type)
+                                if success:
+                                    success_count += 1
+                                else:
+                                    error_count += 1
+                                    error_messages.add(message)
+                        else:
+                            error_messages.add(
+                                f"Facility name ({pdf_details['facility_name']}) in the PDF {patient_id} does not match the "
+                                f"facility name ({str(facility_obj.name)}) provided in the form."
+                            )
+                            error_count += 1
+                    else:
+                        error_count += 1
+                        error_messages.add(
+                            "Invalid PDF Format. Please ensure the uploaded file is a valid Histology report from UON "
+                            "MMID lab."
+                        )
+
+            if success_count > 0:
+                messages.success(request, f"{success_count} record(s) successfully saved")
+            if error_count > 0:
+                for error in error_messages:
+                    messages.error(request, error)
+
+            return redirect("add_histology_results")
+    else:
+        form = HistologyResultsForm()
+        histology_pdf_file_form = MultipleUploadForm()
+
+    context = {"form": form, "histology_pdf_file_form": histology_pdf_file_form, "title": title,"results": results_list,}
+    return render(request, template_name, context)

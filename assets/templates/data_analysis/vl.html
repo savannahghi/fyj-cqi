@@ -1,4 +1,5 @@
 {% extends 'data_analysis/index_dqa.html' %}
+{% load crispy_forms_filters %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -6,128 +7,148 @@
 {% block content %}
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
         <div class="p-5 mb-4 bg-light rounded-3">
-            <div>
-                <div class="container-fluid py-5">
-                    {% if messages %}
-                        {% for message in messages|slice:":1" %}
-                            <div class="alert alert-info col-12" role="alert">
-                                <h6 style="font-size: x-small">
-                                    {{ message|safe }}
-                                </h6>
-                            </div>
-                        {% endfor %}
+            {#            <div>#}
+            <div class="container-fluid py-5">
+                {% if messages %}
+                    {% for message in messages|slice:":1" %}
+                        <div class="alert alert-info col-12" role="alert">
+                            <h6 style="font-size: x-small">
+                                {{ message|safe }}
+                            </h6>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <div class="d-flex justify-content-around mb-3">
+                    {% if dqa_type == "tat" %}
+                        <a href="{% url 'tat' %}" class="btn btn-success">Turn Around Time (TAT)</a>
+                    {% else %}
+                        <a href="{% url 'tat' %}" class="btn btn-outline-success">Turn Around Time (TAT)</a>
                     {% endif %}
-                    <div class="d-flex justify-content-around mb-3">
-                        {% if dqa_type == "tat" %}
-                            <a href="{% url 'tat' %}" class="btn btn-success">Turn Around Time (TAT)</a>
-                        {% else %}
-                            <a href="{% url 'tat' %}" class="btn btn-outline-success">Turn Around Time (TAT)</a>
-                        {% endif %}
-                        {% if dqa_type == "viral_load" %}
-                            <a href="{% url 'viral_load' %}" class="btn btn-success">VL Analyzer</a>
-                        {% else %}
-                            <a href="{% url 'viral_load' %}" class="btn btn-outline-success">VL Analyzer</a>
-                        {% endif %}
-                        {% if dqa_type == "viral track" %}
-                            <a href="{% url 'viral_track' %}" class="btn btn-success">Viral Track</a>
-                        {% else %}
+                    {% if dqa_type == "viral_load" %}
+                        <a href="{% url 'viral_load' %}" class="btn btn-success">VL Analyzer</a>
+                    {% else %}
+                        <a href="{% url 'viral_load' %}" class="btn btn-outline-success">VL Analyzer</a>
+                    {% endif %}
+                    {% if dqa_type == "viral track" %}
+                        <a href="{% url 'viral_track' %}" class="btn btn-success">Viral Track</a>
+                    {% else %}
 
-                            <a href="{% url 'viral_track' %}" class="btn btn-outline-success">Viral Track</a>
-                        {% endif %}
-                        {% if dqa_type == "rtk" %}
-                            <a href="{% url 'rtk_visualization' %}" class="btn btn-success">HCMP REPORT</a>
-                        {% else %}
+                        <a href="{% url 'viral_track' %}" class="btn btn-outline-success">Viral Track</a>
+                    {% endif %}
+                    {% if dqa_type == "rtk" %}
+                        <a href="{% url 'rtk_visualization' %}" class="btn btn-success">HCMP REPORT</a>
+                    {% else %}
 
-                            <a href="{% url 'rtk_visualization' %}" class="btn btn-outline-success">HCMP REPORT</a>
-                        {% endif %}
+                        <a href="{% url 'rtk_visualization' %}" class="btn btn-outline-success">HCMP REPORT</a>
+                    {% endif %}
 
-                    </div>
-                    <form method="post" id="filter-form" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="row d-flex">
-                            <div class="col-md-3">
-                                <img class="img-fluid" src="{% static 'images/lab.png' %}" alt="" width="200">
-                            </div>
-                            <div class="col-md-9">
-                                <div class="row">
-                                    {% if "_tat_" in facility_c_r_filename|lower %}
-                                        <div class="mb-1">
-                                            <h3 class="text-primary text-center">{{ target_text }} Turn Around Time
-                                                (TAT)</h3>
-                                        </div>
-                                    {% endif %}
-                                    <p>To begin, you will need to upload the overall Detailed (Viral Load) CSV file from
-                                        <a
-                                                href="https://eiddash.nascop.org/reports">NASCOP's website
-                                        </a>.
-                                        Once you have uploaded the desired file, you can filter the dataset by selecting
-                                        a
-                                        specific date
-                                        range (Date collected) for which you would like to view data. This will allow
-                                        you to
-                                        narrow down
-                                        the dataset and focus on the relevant information that you need.</p>
-                                    {#                                    <div class="form-group col-md-12">#}
-                                    {#                                        {{ form.as_p }}#}
-                                    {#                                        {% if form.is_bound %}#}
-                                    {#                                            <p>Uploaded file: {{ form.cleaned_data.file.name }}</p>#}
-                                    {#                                        {% endif %}#}
-                                    {#                                    </div>#}
-                                    <div class="form-group col-md-12">
-                                        <div id="files-input" class="mt-4">
-                                            {{ form.files }}
-                                        </div>
-                                        <!-- Conditionally display uploaded files label -->
-                                        <label id="uploaded-files-label" for="{{ form.files.id_for_label }}"
-                                               style="display: none;">Uploaded
-                                            Files:</label>
-                                        <!-- Display uploaded file names dynamically -->
-                                        <ul id="uploaded-files-list"></ul>
-                                        <!-- Hidden input field to store files for server-side processing -->
-                                        {#                                <input type="hidden" name="uploaded_files" value="">#}
-                                        {#                                <div class="col-12 col-md-6 col-lg-2">#}
-                                        {#                                    <button type="submit" class="btn btn-primary mt-4">Compile PDF</button>#}
-                                        {#                                </div>#}
+                </div>
+                <form method="post" id="filter-form" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row d-flex">
+                        <div class="col-md-3">
+                            <img class="img-fluid" src="{% static 'images/lab.png' %}" alt="" width="200">
+                        </div>
+                        <div class="col-md-9">
+                            <div class="row">
+                                {% if "_tat_" in facility_c_r_filename|lower %}
+                                    <div class="mb-1">
+                                        <h3 class="text-primary text-center">{{ target_text }} Turn Around Time
+                                            (TAT)</h3>
                                     </div>
-                                    <div class="col-md-4">
-                                        {{ date_picker_form.from_date|as_crispy_field }}
+                                {% endif %}
+                                <p>To begin, you will need to upload the overall Detailed (Viral Load) CSV file from
+                                    <a
+                                            href="https://eiddash.nascop.org/reports">NASCOP's website
+                                    </a>.
+                                    Once you have uploaded the desired file, you can filter the dataset by selecting
+                                    a
+                                    specific date
+                                    range (Date collected) for which you would like to view data. This will allow
+                                    you to
+                                    narrow down
+                                    the dataset and focus on the relevant information that you need.</p>
+                                <div class="form-group col-md-12">
+                                    <div id="files-input" class="mt-4">
+                                        {{ form.files }}
                                     </div>
-                                    <div class="col-md-4">
-                                        {{ date_picker_form.to_date|as_crispy_field }}
-                                    </div>
-                                    <div class="col-md-4">
-                                        {{ data_filter_form.filter_option|as_crispy_field }}
-                                    </div>
-                                    <div class="col-md-3 mb-2">
-                                        <button type="submit" class="btn btn-primary mt-4">Submit</button>
-                                    </div>
+                                    <!-- Conditionally display uploaded files label -->
+                                    <label id="uploaded-files-label" for="{{ form.files.id_for_label }}"
+                                           style="display: none;">Uploaded
+                                        Files:</label>
+                                    <!-- Display uploaded file names dynamically -->
+                                    <ul id="uploaded-files-list"></ul>
+                                </div>
+                                <div class="col-md-4">
+                                    {{ date_picker_form.from_date|as_crispy_field }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ date_picker_form.to_date|as_crispy_field }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ data_filter_form.filter_option|as_crispy_field }}
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <button type="submit" class="btn btn-primary mt-4">Submit</button>
                                 </div>
                             </div>
                         </div>
-                        {% if facility_c_r_filename %}
-                            <hr>
-                            <div>
-                                <h6 class="text-primary text-center">Download csv below </h6>
-                            </div>
-                            <hr>
-                        {% endif %}
-                    </form>
-                </div>
-                {% if weekly_trend_fig %}
-                    <div class="alert alert-info col-12" role="alert">
-                        <h5 class="text-center" style="font-size: small">
-                            {{ facility_analyzed_text }}
-                        </h5>
                     </div>
-                {% endif %}
-                {% for keys,df in dfs_vl_uptake.items %}
-                    {% if not df.empty %}
+                    {% if facility_c_r_filename %}
                         <hr>
-                        <h6 class="text-primary text-center">{{ keys }}</h6>
+                        <div>
+                            <h6 class="text-primary text-center"> Download csv below </h6>
+                        </div>
                         <hr>
+                    {% endif %}
+                </form>
+            </div>
+            {% if weekly_trend_fig %}
+                <div class="alert alert-info col-12" role="alert">
+                    <h5 class="text-center" style="font-size: small">
+                        {{ facility_analyzed_text }}
+                    </h5>
+                </div>
+            {% endif %}
+            {% for keys,df in dfs_vl_uptake.items %}
+                {% if not df.empty %}
+                    <hr>
+                    <h6 class="text-primary text-center">{{ keys }}</h6>
+                    <hr>
+                    {% if "All VL Results by sex and age" == keys %}
                         <div class="table-fixed-header">
                             <table class="table table-striped table-hover">
                                 <thead class="thead-dark mb-5">
+                                <tr>
+                                    <th scope="col"></th>
+                                    {% for col in df.columns %}
+                                        <th scope="col"> {{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                                </thead>
+                                <tbody class="mt-5">
+                                {% for index, row in df.iterrows %}
+                                    <tr>
+                                        {% if index == "Total" %}
+                                            <th scope="row" class="fw-bold">{{ index }}</th>
+                                            {% for cell in row %}
+                                                <td class="fw-bold">{{ cell }}</td>
+                                            {% endfor %}
+                                        {% else %}
+                                            <th scope="row">{{ index }}</th>
+                                            {% for cell in row %}
+                                                <td>{{ cell }}</td>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div style="height: 500px; overflow-y: auto;">
+                            <table class="table table-striped table-hover table-responsive">
+                                <thead class="thead-dark mb-5" style="position: sticky; top: 0; z-index: 1;">
                                 <tr>
                                     <th scope="col"></th>
                                     {% for col in df.columns %}
@@ -154,145 +175,143 @@
                                 </tbody>
                             </table>
                         </div>
+                    {% endif %}
+
+                    <!--DOWNLOAD BUTTON-->
+                    <div class="mt-3 mb-3">
+                        {% if keys == "All VL Results by sex and age" %}
+                            <a href="{% url 'download_csv' dictionary.all_results_df keys %}">
+                        {% elif keys == "All VL Results by sub county" %}
+                            <a href="{% url 'download_csv' dictionary.subcounty_ keys %}">
+                        {% elif keys == "DSD: TX _PVLS (NUMERATOR)" %}
+                            <a href="{% url 'download_csv' dictionary.facility_less_1000_df keys %}">
+                        {% elif keys == "DSD: TX _PVLS (DENOMINATOR)" %}
+                            <a href="{% url 'download_csv' dictionary.vl_done_df keys %}">
+                        {% endif %}
+                        <button type="button" class="btn btn-success btn-floating mr-2"
+                                data-mdb-ripple-color="dark">
+                            Download <i class="fas fa-download"></i>
+                        </button>
+                        </a>
+                    </div>
+                {% endif %}
+            {% endfor %}
+            {% if not weekly_trend_fig is None %}
+                <div>
+                    {{ subcounty_fig|safe }}
+                    {{ monthly_trend_fig|safe }}
+                    {{ weekly_trend_fig|safe }}
+                </div>
+                <hr>
+                <h6 class="text-primary text-center">VIRAL LOAD SUPPRESSION</h6>
+                <div class="alert alert-info col-12" role="alert">
+                    <h6 style="font-size: small">
+                        {{ vs_text }}
+                    </h6>
+                    <div class="mt-3">
+                        {{ monthly_hvl_trend_fig|safe }}
+                        {{ hvl_sex_age_fig|safe }}
+                        {{ period_hvl_box_plot_fig|safe }}
+                        {{ monthly_llv_trend_fig|safe }}
+                        {{ llv_sex_age_fig|safe }}
+                    </div>
+                </div>
+                <hr>
+            {% endif %}
+            {% if vs_text %}
+                <div>
+                    <h6 class="text-primary text-center"> Download csv below </h6>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col d-flex justify-content-between">
                         <!--DOWNLOAD BUTTON-->
-                        <div class="mt-3 mb-3">
-                            {% if keys == "All VL Results by sex and age" %}
-                                <a href="{% url 'download_csv' dictionary.all_results_df keys %}">
-                            {% elif keys == "All VL Results by sub county" %}
-                                <a href="{% url 'download_csv' dictionary.subcounty_ keys %}">
-                            {% elif keys == "DSD: TX _PVLS (NUMERATOR)" %}
-                                <a href="{% url 'download_csv' dictionary.facility_less_1000_df keys %}">
-                            {% elif keys == "DSD: TX _PVLS (DENOMINATOR)" %}
-                                <a href="{% url 'download_csv' dictionary.vl_done_df keys %}">
-                            {% endif %}
-                            <button type="button" class="btn btn-success btn-floating mr-2"
-                                    data-mdb-ripple-color="dark">
-                                Download <i class="fas fa-download"></i>
-                            </button>
+                        <div>
+                            <a href="{% url 'download_csv' dictionary.subcounty_vl "subcounties viral suppression" %}">
+                                <button type="button" class="btn btn-success btn-floating mr-2"
+                                        data-mdb-ripple-color="dark">
+                                    subcounties viral suppression <i class="fas fa-download"></i>
+                                </button>
                             </a>
                         </div>
-                    {% endif %}
-                {% endfor %}
-                {% if not weekly_trend_fig is None %}
-                    <div>
-                        {{ subcounty_fig|safe }}
-                        {{ monthly_trend_fig|safe }}
-                        {{ weekly_trend_fig|safe }}
-                    </div>
-                    <hr>
-                    <h6 class="text-primary text-center">VIRAL LOAD SUPPRESSION</h6>
-                    <div class="alert alert-info col-12" role="alert">
-                        <h6 style="font-size: small">
-                            {{ vs_text }}
-                        </h6>
-                        <div class="mt-3">
-                            {{ monthly_hvl_trend_fig|safe }}
-                            {{ hvl_sex_age_fig|safe }}
-                            {{ period_hvl_box_plot_fig|safe }}
-                            {{ monthly_llv_trend_fig|safe }}
-                            {{ llv_sex_age_fig|safe }}
-                        </div>
-                    </div>
-                    <hr>
-                {% endif %}
-                <div>
-                    {% if vs_text %}
+                        <!--DOWNLOAD BUTTON-->
                         <div>
-                            <h6 class="text-primary text-center"> Download csv below </h6>
+                            <a href="{% url 'download_csv' dictionary.facility_vl "facilities viral suppression" %}">
+                                <button type="button" class="btn btn-success btn-floating mr-2"
+                                        data-mdb-ripple-color="dark">
+                                    facilities viral suppression <i class="fas fa-download"></i>
+                                </button>
+                            </a>
                         </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col d-flex justify-content-between">
-                                <!--DOWNLOAD BUTTON-->
-                                <div>
-                                    <a href="{% url 'download_csv' dictionary.subcounty_vl "subcounties viral suppression" %}">
-                                        <button type="button" class="btn btn-success btn-floating mr-2"
-                                                data-mdb-ripple-color="dark">
-                                            subcounties viral suppression <i class="fas fa-download"></i>
-                                        </button>
-                                    </a>
-                                </div>
-                                <!--DOWNLOAD BUTTON-->
-                                <div>
-                                    <a href="{% url 'download_csv' dictionary.facility_vl "facilities viral suppression" %}">
-                                        <button type="button" class="btn btn-success btn-floating mr-2"
-                                                data-mdb-ripple-color="dark">
-                                            facilities viral suppression <i class="fas fa-download"></i>
-                                        </button>
-                                    </a>
-                                </div>
-                                <!--DOWNLOAD BUTTON-->
-                                <div>
-                                    <a href="{% url 'download_csv' dictionary.hvl_linelist "suspected treatment failure linelist" %}">
-                                        <button type="button" class="btn btn-success btn-floating mr-2"
-                                                data-mdb-ripple-color="dark">
-                                            suspected Rx failure linelist <i class="fas fa-download"></i>
-                                        </button>
-                                    </a>
-                                </div>
-                                <!--DOWNLOAD BUTTON-->
-                                <div>
-                                    <a href="{% url 'download_csv' dictionary.hvl_linelist_facility "suspected treatment failure per facility" %}">
-                                        <button type="button" class="btn btn-success btn-floating mr-2"
-                                                data-mdb-ripple-color="dark">
-                                            suspected Rx failure per facility <i class="fas fa-download"></i>
-                                        </button>
-                                    </a>
-                                </div>
-                            </div>
+                        <!--DOWNLOAD BUTTON-->
+                        <div>
+                            <a href="{% url 'download_csv' dictionary.hvl_linelist "suspected treatment failure linelist" %}">
+                                <button type="button" class="btn btn-success btn-floating mr-2"
+                                        data-mdb-ripple-color="dark">
+                                    suspected Rx failure linelist <i class="fas fa-download"></i>
+                                </button>
+                            </a>
                         </div>
-                        <div class="row">
-                            <div class="col d-flex justify-content-between">
-                                <!--DOWNLOAD BUTTON-->
-                                <div class="mt-3">
-                                    <a href="{% url 'download_csv' dictionary.llv_linelist "llv" %}">
-                                        <button type="button" class="btn btn-secondary btn-floating mr-2"
-                                                data-mdb-ripple-color="dark">
-                                            LLV line list (200 - 999 cp/ml) <i class="fas fa-download"></i>
-                                        </button>
-                                    </a>
-                                </div>
-                                <!--DOWNLOAD BUTTON-->
-                                <div class="mt-3">
-                                    <a href="{% url 'download_csv' dictionary.llv_linelist_facility "llv per facility" %}">
-                                        <button type="button" class="btn btn-secondary btn-floating mr-2"
-                                                data-mdb-ripple-color="dark">
-                                            LLV in {{ llv_linelist_facility_shape }} facilities <i
-                                                class="fas fa-download"></i>
-                                        </button>
-                                    </a>
-                                </div>
-                                <!--DOWNLOAD BUTTON-->
-                                <div class="mt-3">
-                                    <a href="{% url 'download_csv' dictionary.facility_resuppression_status "facilities resuppression status" %}">
-                                        <button type="button" class="btn btn-secondary btn-floating mr-2"
-                                                data-mdb-ripple-color="dark">
-                                            facilities resuppression status <i class="fas fa-download"></i>
-                                        </button>
-                                    </a>
-                                </div>
-                                <!--DOWNLOAD BUTTON-->
-                                <div class="mt-3">
-                                    <a href="{% url 'download_csv' dictionary.confirm_rx_failure "resuppression linelist" %}">
-                                        <button type="button" class="btn btn-secondary btn-floating mr-2"
-                                                data-mdb-ripple-color="dark">
-                                            Repeat VLs Done Linelist <i class="fas fa-download"></i>
-                                        </button>
-                                    </a>
-                                </div>
-                            </div>
+                        <!--DOWNLOAD BUTTON-->
+                        <div>
+                            <a href="{% url 'download_csv' dictionary.hvl_linelist_facility "suspected treatment failure per facility" %}">
+                                <button type="button" class="btn btn-success btn-floating mr-2"
+                                        data-mdb-ripple-color="dark">
+                                    suspected Rx failure per facility <i class="fas fa-download"></i>
+                                </button>
+                            </a>
                         </div>
-
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col d-flex justify-content-between">
+                        <!--DOWNLOAD BUTTON-->
+                        <div class="mt-3">
+                            <a href="{% url 'download_csv' dictionary.llv_linelist "llv" %}">
+                                <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                        data-mdb-ripple-color="dark">
+                                    LLV line list (200 - 999 cp/ml) <i class="fas fa-download"></i>
+                                </button>
+                            </a>
                         </div>
-                        <hr>
-                        <h6 class="text-primary text-center"> RE-SUPPRESSION </h6>
-                        <div class="alert alert-info col-12" role="alert">
-                            <div class="mt-3">
-                                {{ justification_fig|safe }}
-                            </div>
+                        <!--DOWNLOAD BUTTON-->
+                        <div class="mt-3">
+                            <a href="{% url 'download_csv' dictionary.llv_linelist_facility "llv per facility" %}">
+                                <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                        data-mdb-ripple-color="dark">
+                                    LLV in {{ llv_linelist_facility_shape }} facilities <i
+                                        class="fas fa-download"></i>
+                                </button>
+                            </a>
                         </div>
-                    {% endif %}
-            </div>
+                        <!--DOWNLOAD BUTTON-->
+                        <div class="mt-3">
+                            <a href="{% url 'download_csv' dictionary.facility_resuppression_status "facilities resuppression status" %}">
+                                <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                        data-mdb-ripple-color="dark">
+                                    facilities resuppression status <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                        <!--DOWNLOAD BUTTON-->
+                        <div class="mt-3">
+                            <a href="{% url 'download_csv' dictionary.confirm_rx_failure "resuppression linelist" %}">
+                                <button type="button" class="btn btn-secondary btn-floating mr-2"
+                                        data-mdb-ripple-color="dark">
+                                    Repeat VLs Done Linelist <i class="fas fa-download"></i>
+                                </button>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <h6 class="text-primary text-center"> RE-SUPPRESSION </h6>
+                <div class="alert alert-info col-12" role="alert">
+                    <div class="mt-3">
+                         {{ justification_fig|safe }}
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </main>
 {% endblock %}

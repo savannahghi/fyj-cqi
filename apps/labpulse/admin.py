@@ -1,9 +1,7 @@
 from django.contrib import admin
 
 from apps.labpulse.models import BiochemistryResult, Cd4traker, Cd4TestingLabs, Commodities, DrtPdfFile, DrtProfile, \
-    DrtResults, \
-    EnableDisableCommodities, \
-    LabPulseUpdateButtonSettings, ReagentStock
+    DrtResults, EnableDisableCommodities, HistologyPdfFile, HistologyResults, LabPulseUpdateButtonSettings, ReagentStock
 from django.contrib.auth.models import Permission
 
 
@@ -23,6 +21,11 @@ class DrtResultsAdmin(admin.ModelAdmin):
         "facility_name__name", "facility_name__mfl_code", "patient_id")
 
 
+class HistologyResultsPdfFileAdmin(admin.ModelAdmin):
+    search_fields = (
+        "facility_name__name", "facility_name__mfl_code", "patient_id")
+
+
 # Register your models here.
 admin.site.register(Cd4TestingLabs)
 admin.site.register(Cd4traker, Cd4trakerAdmin)
@@ -35,3 +38,5 @@ admin.site.register(BiochemistryResult, BioChemAdmin)
 admin.site.register(DrtResults, DrtResultsAdmin)
 admin.site.register(DrtPdfFile)
 admin.site.register(DrtProfile)
+admin.site.register(HistologyPdfFile)
+admin.site.register(HistologyResults, HistologyResultsPdfFileAdmin)

@@ -417,3 +417,72 @@ class DrtProfile(DrtMixin):
         ordering = ['patient_id', 'date_created']
         unique_together = ['patient_id', 'collection_date', 'mutation_type']
         verbose_name_plural = "DRT Profile"
+
+
+class HistologyPdfFile(BaseModel):
+    result = models.FileField(upload_to='histology_files')
+
+    class Meta:
+        verbose_name_plural = "HISTOLOGY PDF Results"
+
+    def __str__(self):
+        # Fetch the first related result
+        first_result = self.histology_results.order_by('patient_id', 'date_created').first()
+        if first_result:
+            return f"{first_result.patient_id} - {first_result.facility_name} - {first_result.collection_date}"
+        # Return a default string if no related result exists
+        return f"No related result for {self.id}"
+
+
+class HistologyMixin(BaseModel):
+    patient_id = models.BigIntegerField(validators=[MaxValueValidator(9999999999)])
+    specimen_type = models.CharField(max_length=250, null=True, blank=True)
+    collection_date = models.DateTimeField()
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)
+    sub_county = models.ForeignKey(Sub_counties, null=True, blank=True, on_delete=models.CASCADE)
+    county = models.ForeignKey(Counties, null=True, blank=True, on_delete=models.CASCADE)
+    authorization_date = models.DateTimeField()
+    dispatch_date = models.DateTimeField()
+    reported_by = models.CharField(max_length=250)
+    lab_name = models.CharField(max_length=250, null=True, blank=True)
+    lab_phone = models.CharField(max_length=250, null=True, blank=True)
+    lab_email = models.CharField(max_length=250, null=True, blank=True)
+    lab_post_address = models.CharField(max_length=250, null=True, blank=True)
+    clinical_summary = models.CharField(max_length=250, null=True, blank=True)
+    referring_doctor = models.CharField(max_length=500, null=True, blank=True)
+    microscopy = models.CharField(max_length=2500, null=True, blank=True)
+    diagnosis = models.CharField(max_length=2500, null=True, blank=True)
+    gross_description = models.CharField(max_length=2500, null=True, blank=True)
+    comments = models.CharField(max_length=2500, null=True, blank=True)
+    age = models.PositiveIntegerField(validators=[MaxValueValidator(150)], null=True, blank=True)
+    sex = models.CharField(max_length=10, null=True, blank=True)
+    tat_days = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        # Make sure collection_date is timezone-aware
+        if not self.collection_date.tzinfo:
+            self.collection_date = timezone.make_aware(self.collection_date)
+
+        # Calculate TAT and save it
+        if self.collection_date:
+            tat = (timezone.now() - self.collection_date).days
+            self.tat_days = tat
+        # Set date_modified
+        self.date_modified = timezone.now()
+        # Save the instance
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.patient_id) + " - " + str(self.facility_name) + " - " + str(self.date_created)
+
+
+class HistologyResults(HistologyMixin):
+    result = models.ForeignKey(HistologyPdfFile, on_delete=models.CASCADE, related_name="histology_results")
+
+    class Meta:
+        ordering = ['patient_id', 'date_created']
+        unique_together = ['patient_id', 'collection_date']
+        verbose_name_plural = "Histology Results"

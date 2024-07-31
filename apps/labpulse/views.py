@@ -29,6 +29,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
+from django.views.generic import DetailView
 from plotly.offline import plot
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -6267,3 +6268,15 @@ def add_histology_results(request):
 
     context = {"form": form, "histology_pdf_file_form": histology_pdf_file_form, "title": title,"results": results_list,}
     return render(request, template_name, context)
+
+
+class HistologyResultDetailView(LoginRequiredMixin, DetailView):
+    model = HistologyPdfFile
+    template_name = 'lab_pulse/histology_result_detail.html'
+    context_object_name = 'result'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        histology_result = HistologyResults.objects.filter(result=self.object).first()
+        context['histology_result'] = histology_result
+        return context

@@ -4158,7 +4158,8 @@ def single_project(request, pk):
 
         project_performance = prepare_trends_big_size(df)
 
-        facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "All projects")
+        facility_proj_performance = bar_chart(df_other_projects, "department(s)", "total projects", "All projects",
+                                              xaxis_title="Department(s)")
         context = {"facility_project": facility_project, "test_of_change": changes,
                    "project_performance": project_performance, "facility_proj_performance": facility_proj_performance,
                    "pro_perfomance_trial": pro_perfomance_trial, "form": form, "all_comments": all_comments,

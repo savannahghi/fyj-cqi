@@ -608,6 +608,16 @@ class MilestoneForm(ModelForm):
             'style': 'font-size: 14px;',
         })
 
+    def save(self, commit=True):
+        """
+        Override the save method to ensure the description_name field is saved as the description field in the model.
+        """
+        instance = super().save(commit=False)
+        instance.description = self.cleaned_data['description_name']
+        if commit:
+            instance.save()
+        return instance
+
 
 class ActionPlanForm(ModelForm):
     start_date = forms.DateField(

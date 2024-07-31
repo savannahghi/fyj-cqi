@@ -2,7 +2,8 @@ from django.conf import settings
 from django.urls import include, path
 
 # from apps.data_analysis.views import download_csv
-from apps.labpulse.views import GenerateBioChemistryPDF, GenerateDrtPDF, add_commodities, add_drt_results, add_facility, \
+from apps.labpulse.views import GenerateBioChemistryPDF, GenerateDrtPDF, HistologyResultDetailView, add_commodities, \
+    add_drt_results, add_facility, \
     add_histology_results, choose_lab, \
     choose_testing_lab, \
     add_cd4_count, \
@@ -41,6 +42,7 @@ urlpatterns = [
     path('generate-drt-results/', generate_drt_results, name='generate_drt_results'),
     path('generate-drt-report/', GenerateDrtPDF.as_view(), name='generate_drt_pdf'),
     path('download/<str:filter_type>', download_csv, name='download_biochem_lab'),
+    path('histology-result/<uuid:pk>/', HistologyResultDetailView.as_view(), name='view_histology_result'),
 
 ]
 # urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]

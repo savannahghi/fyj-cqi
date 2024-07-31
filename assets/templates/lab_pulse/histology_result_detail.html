@@ -1,0 +1,270 @@
+{% extends 'lab_pulse/index_lab_pulse.html' %}
+{% load remove_underscores %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block content %}
+    <style>
+        :root {
+            --primary-color: #0A255C;
+            --secondary-color: #B10023;
+            --text-color: #333;
+            --bg-color: #f4f4f4;
+            --white: #ffffff;
+            --light-gray: #e0e0e0;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        header {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 1rem;
+        }
+
+        nav a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--secondary-color);
+        }
+
+        main {
+            margin-top: 80px;
+            padding: 2rem 0;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .result-header {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: var(--white);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-content {
+            background-color: var(--white);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-section {
+            margin-bottom: 2rem;
+        }
+
+        .result-section h3 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-item {
+            display: flex;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-label {
+            font-weight: bold;
+            width: 200px;
+        }
+
+        .result-value {
+            flex: 1;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-completed {
+            background-color: var(--success-color);
+            color: var(--white);
+        }
+
+        .action-buttons {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-decoration: none;
+            color: var(--white);
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #083a8c;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #8e001c;
+        }
+
+        footer {
+            background: var(--primary-color);
+            color: var(--white);
+            text-align: center;
+            padding: 1rem 0;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .result-item {
+                flex-direction: column;
+            }
+
+            .result-label {
+                width: 100%;
+                margin-bottom: 0.25rem;
+            }
+        }
+    </style>
+    <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4">
+        <section class="result-content">
+            <div class="result-section">
+                <h3>Patient Information</h3>
+                <div class="result-item">
+                    <span class="result-label">Patient ID:</span>
+                    <span class="result-value">{{ histology_result.patient_id }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Age:</span>
+                    <span class="result-value">{{ histology_result.age }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Gender:</span>
+                    <span class="result-value">{{ histology_result.sex }}</span>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h3>Specimen Information</h3>
+                <div class="result-item">
+                    <span class="result-label">Specimen Type:</span>
+                    <span class="result-value">{{ histology_result.specimen_type|title }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Date Collected:</span>
+                    <span class="result-value">{{ histology_result.collection_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Facility:</span>
+                    <span class="result-value">{{ histology_result.facility_name.name }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Date Reported:</span>
+                    <span class="result-value">{{ histology_result.dispatch_date|date:"M d, Y" }}</span>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h3>Histological Findings</h3>
+                <div class="result-item">
+                    <span class="result-label">Gross Description:</span>
+                    <span class="result-value">{{ histology_result.gross_description }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Microscopic Description:</span>
+                    <span class="result-value">{{ histology_result.microscopy }}</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Diagnosis:</span>
+                    <span class="result-value">{{ histology_result.diagnosis }}</span>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h3>Additional Comments</h3>
+                <div class="result-item">
+                    <span class="result-value">{{ histology_result.comments }}</span>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <h3>Result Status</h3>
+                <div class="result-item">
+                    <span class="result-label">Status:</span>
+                    <span class="result-value"><span class="status status-completed">Completed</span></span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                {% if histology_result.result.result.url %}
+                    <a href="{{ histology_result.result.result.url }}" class="btn btn-primary">Download Report</a>
+                {% else %}
+                    <p>No PDF file available</p>
+                {% endif %}
+                <a href="{% url 'add_histology_results' %}" class="btn btn-secondary">Back</a>
+            </div>
+        </section>
+    </main>
+{% endblock %}

@@ -295,7 +295,6 @@
                 <tbody>
                 {% for result in results %}
                     <tr>
-                        {#                            <td>{{ forloop.counter }}.</td>#}
                         {% for histology_result in result.histology_results.all|slice:":1" %}
                             <td>{{ histology_result.facility_name.name }}</td>
                             <td>{{ histology_result.patient_id }}</td>
@@ -311,7 +310,7 @@
                                 <td><span class="status status-completed">Normal</span></td>
                             {% endif %}
                             <td>
-                                <a href="#"
+                                <a href="{% url 'view_histology_result' histology_result.result.id %}"
                                    class="action-btn view-btn">View</a>
                                 <a href="{{ result.result.url }}"
                                    class="action-btn download-btn">Download</a>

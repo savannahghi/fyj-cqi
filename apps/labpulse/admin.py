@@ -21,6 +21,11 @@ class DrtResultsAdmin(admin.ModelAdmin):
         "facility_name__name", "facility_name__mfl_code", "patient_id")
 
 
+class ReagentStockAdmin(admin.ModelAdmin):
+    search_fields = (
+        "facility_name__name", "facility_name__mfl_code", "date_commodity_received")
+
+
 class HistologyResultsPdfFileAdmin(admin.ModelAdmin):
     search_fields = (
         "facility_name__name", "facility_name__mfl_code", "patient_id")
@@ -32,7 +37,7 @@ admin.site.register(Cd4traker, Cd4trakerAdmin)
 admin.site.register(Permission)
 admin.site.register(LabPulseUpdateButtonSettings)
 admin.site.register(Commodities)
-admin.site.register(ReagentStock)
+admin.site.register(ReagentStock,ReagentStockAdmin)
 admin.site.register(EnableDisableCommodities)
 admin.site.register(BiochemistryResult, BioChemAdmin)
 admin.site.register(DrtResults, DrtResultsAdmin)

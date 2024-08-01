@@ -2,12 +2,14 @@ from django.conf import settings
 from django.urls import include, path
 
 # from apps.data_analysis.views import download_csv
-from apps.labpulse.views import GenerateBioChemistryPDF, GenerateDrtPDF, HistologyResultDetailView, add_commodities, \
+from apps.labpulse.views import GenerateBioChemistryPDF, GenerateDrtPDF, HistologyResultDetailView, \
+    ReagentStockListView, add_commodities, \
     add_drt_results, add_facility, \
     add_histology_results, choose_lab, \
     choose_testing_lab, \
     add_cd4_count, \
-    delete_drt_result, delete_histology_result, download_csv, generate_drt_results, instructions_lab, \
+    delete_drt_result, delete_histology_result, delete_reagents_stock, download_csv, generate_drt_results, \
+    instructions_lab, \
     load_biochemistry_results, reload_page_without_cache, update_cd4_results, show_results, \
     GeneratePDF, \
     add_testing_lab, update_drt_results, update_reagent_stocks, update_testing_labs, \
@@ -26,6 +28,7 @@ urlpatterns = [
     path('update-testing-labs/<uuid:pk>/', update_testing_labs, name="update_testing_labs"),
     path('update-reagent-stocks/<uuid:pk>/', update_reagent_stocks, name="update_reagent_stocks"),
     path('show-results/', show_results, name="show_results"),
+    path('reagentstocks/', ReagentStockListView.as_view(), name='reagentstock_list'),
     path('reload-page/', reload_page_without_cache, name='reload_page_without_cache'),
     path('instructions-lab/<str:section>/', instructions_lab, name="instructions_lab"),
     # path('download/<str:name>/<str:filename>', download_csv, name='download_csv'),
@@ -39,6 +42,7 @@ urlpatterns = [
     path('update-drt-results/<uuid:pk>/', update_drt_results, name='update_drt_results'),
     path('delete-drt-results/<uuid:pk>/', delete_drt_result, name='delete_drt_result'),
     path('delete-histology-results/<uuid:pk>/', delete_histology_result, name='delete_histology_result'),
+    path('delete-reagents/<uuid:pk>/', delete_reagents_stock, name='delete_reagents_stock'),
     path('generate-drt-results/', generate_drt_results, name='generate_drt_results'),
     path('generate-drt-report/', GenerateDrtPDF.as_view(), name='generate_drt_pdf'),
     path('download/<str:filter_type>', download_csv, name='download_biochem_lab'),

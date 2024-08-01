@@ -7,7 +7,84 @@
         --bg-color: #f4f4f4;
         --white: #ffffff;
         --light-gray: #e0e0e0;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
     }
+    .action-buttons {
+        white-space: nowrap;
+    }
+
+    .action-btn {
+        display: inline-block;
+        padding: 0.3rem 0.3rem;
+        border-radius: 4px;
+        text-decoration: none;
+        color: var(--white);
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+        margin-right: 0.5rem;
+    }
+
+    .view-btn {
+        background-color: var(--primary-color);
+    }
+
+    .view-btn:hover {
+        background-color: #083a8c;
+    }
+
+    .success-btn {
+        background-color: var(--success-color);
+    }
+
+    .secondary-btn {
+        background-color: var(--secondary-color);
+    }
+
+    .warning-btn {
+        background-color: var(--warning-color);
+    }
+
+    .delete-btn {
+        background-color: var(--danger-color);
+    }
+    #filterForm {
+    background-color: var(--white);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  #filterForm label {
+    font-weight: bold;
+  }
+
+  #filterForm select,
+  #filterForm input[type="date"] {
+    padding: 0.5rem;
+    border: 1px solid var(--light-gray);
+    border-radius: 4px;
+  }
+
+  #filterForm button {
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  #filterForm button:hover {
+    background-color: #083a8c;
+  }
+
 
     * {
         box-sizing: border-box;

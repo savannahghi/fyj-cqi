@@ -23,13 +23,15 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import IntegrityError, transaction
-from django.db.models import Q, Sum
-from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.db.models import Avg, Q, Sum
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.timezone import localtime
 from django.views import View
-from django.views.generic import DetailView
+from django.views.generic import DetailView, ListView
 from plotly.offline import plot
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -687,6 +689,7 @@ def add_cd4_count(request, report_type, pk_lab):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     selected_lab, created = Cd4TestingLabs.objects.get_or_create(id=pk_lab)
     template_name = 'lab_pulse/add_cd4_data.html'
+    current_date = timezone.now()
 
     use_commodities = False
     enable_commodities = EnableDisableCommodities.objects.first()
@@ -703,6 +706,8 @@ def add_cd4_count(request, report_type, pk_lab):
             "commodity_status": commodity_status,
             "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
             "crag_total_remaining": crag_total_remaining,
+            'current_month_name': current_date.strftime('%B'),
+            'current_year': current_date.year,
         }
         if use_commodities:
             if crag_total_remaining == 0:
@@ -723,6 +728,8 @@ def add_cd4_count(request, report_type, pk_lab):
         context = {
             "form": form, "report_type": report_type, "use_commodities": use_commodities,
             "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
+            'current_month_name': current_date.strftime('%B'),
+            'current_year': current_date.year,
         }
 
     if request.method == "POST":
@@ -1088,6 +1095,25 @@ def update_cd4_results(request, report_type, pk):
         "crag_total_remaining": crag_total_remaining,
     }
     return render(request, 'lab_pulse/update results.html', context)
+
+
+@login_required(login_url='login')
+@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+def delete_reagents_stock(request, pk):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    item = ReagentStock.objects.get(id=pk)
+    if request.method == "POST":
+        item.delete()
+
+        return HttpResponseRedirect(request.session['page_from'])
+    context = {
+
+    }
+    return render(request, 'project/delete_test_of_change.html', context)
 
 
 def pagination_(request, item_list, record_count=None):
@@ -2562,14 +2588,14 @@ def add_commodities(request, pk_lab):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     form = ReagentStockForm(request.POST or None)
     selected_lab, created = Facilities.objects.get_or_create(id=pk_lab)
-    # commodities = ReagentStock.objects.filter(
-    #     facility_name__mfl_code=selected_lab.mfl_code,
-    # ).order_by("-date_commodity_received")
+    current_date = timezone.now()
 
     template_name = 'lab_pulse/add_cd4_data.html'
     context = {
         "form": form, "report_type": "commodity",
         "title": f"Add Commodities for {selected_lab.name.title()} Laboratory",
+        'current_month_name': current_date.strftime('%B'),
+        'current_year': current_date.year,
     }
     try:
         commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
@@ -2625,8 +2651,179 @@ def add_commodities(request, pk_lab):
         "title": f"Add Commodities for {selected_lab.name.title()} Laboratory",
         "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
         "crag_total_remaining": crag_total_remaining,
+        'current_month_name': current_date.strftime('%B'),
+        'current_year': current_date.year,
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
+
+
+# class ReagentStockListView(ListView):
+#     model = ReagentStock
+#     template_name = 'lab_pulse/reagentstock_list.html'  # Customize this path as needed
+#     context_object_name = 'reagentstocks'
+#     paginate_by = 10  # Optional: For pagination
+#
+#     def get_queryset(self):
+#         # Customize this method to filter/sort data if needed
+#         queryset = ReagentStock.objects.all().order_by('-date_commodity_received')
+#         return queryset
+
+# class ReagentStockListView(ListView):
+#     model = ReagentStock
+#     template_name = 'lab_pulse/reagentstock_list.html'
+#     context_object_name = 'reagentstocks'
+#     paginate_by = 5
+#
+#     def get_queryset(self):
+#         queryset = ReagentStock.objects.all().order_by('-date_commodity_received')
+#         return queryset
+#
+#     def render_to_response(self, context, **response_kwargs):
+#         if self.request.is_ajax():
+#             html = render_to_string('lab_pulse/reagentstock_list_content.html', context, request=self.request)
+#             return JsonResponse({'html': html})
+#         else:
+#             return super().render_to_response(context, **response_kwargs)
+
+# from django.views.generic import ListView
+# from django.template.loader import render_to_string
+# from django.http import JsonResponse
+# from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+
+# class ReagentStockListView(ListView):
+#     model = ReagentStock
+#     template_name = 'lab_pulse/reagentstock_list.html'
+#     context_object_name = 'reagentstocks'
+#     paginate_by = 5
+#
+#     def get_queryset(self):
+#         return ReagentStock.objects.all().order_by('-date_commodity_received')
+#
+#     def paginate_queryset(self, queryset, page_size):
+#         paginator = Paginator(queryset, page_size)
+#         page = self.request.GET.get('page', 1)
+#         try:
+#             page_number = int(page)
+#             page_obj = paginator.page(page_number)
+#         except (PageNotAnInteger, EmptyPage):
+#             page_obj = paginator.page(1)
+#
+#         return (paginator, page_obj, page_obj.object_list, page_obj.has_other_pages())
+#
+#     def render_to_response(self, context, **response_kwargs):
+#         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+#             html = render_to_string('lab_pulse/reagentstock_list_content.html', context, request=self.request)
+#             return JsonResponse({'html': html})
+#         else:
+#             return super().render_to_response(context, **response_kwargs)
+
+
+# from django.views.generic import ListView
+# from django.template.loader import render_to_string
+# from django.http import JsonResponse
+# from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+# from django.shortcuts import redirect
+
+
+# class ReagentStockListView(ListView):
+#     model = ReagentStock
+#     template_name = 'lab_pulse/reagentstock_list.html'
+#     context_object_name = 'reagentstocks'
+#     paginate_by = 5
+#
+#     def get_queryset(self):
+#         return ReagentStock.objects.all().order_by('-date_commodity_received')
+#
+#     def get(self, request, *args, **kwargs):
+#         page = self.request.GET.get('page', '1')
+#
+#         try:
+#             page = int(page)
+#             if page < 1:
+#                 return redirect(f"{request.path}?page=1")
+#         except ValueError:
+#             return redirect(f"{request.path}?page=1")
+#
+#         try:
+#             return super().get(request, *args, **kwargs)
+#         except EmptyPage:
+#             # If page is out of range, redirect to the last page
+#             last_page = self.get_paginator(self.get_queryset(), self.paginate_by).num_pages
+#             return redirect(f"{request.path}?page={last_page}")
+#
+#     def render_to_response(self, context, **response_kwargs):
+#         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+#             html = render_to_string('lab_pulse/reagentstock_list_content.html', context, request=self.request)
+#             return JsonResponse({'html': html})
+#         else:
+#             return super().render_to_response(context, **response_kwargs)
+
+
+class ReagentStockListView(ListView):
+    model = ReagentStock
+    template_name = 'lab_pulse/reagentstock_list.html'
+    context_object_name = 'reagentstocks'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = ReagentStock.objects.all().order_by('-date_commodity_received')
+        reagent_type = self.request.GET.get('reagentType')
+        start_date = self.request.GET.get('startDate')
+        end_date = self.request.GET.get('endDate')
+
+        if reagent_type:
+            queryset = queryset.filter(reagent_type=reagent_type)
+        if start_date and end_date:
+            queryset = queryset.filter(date_commodity_received__range=[start_date, end_date])
+
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        page = self.request.GET.get('page', '1')
+
+        try:
+            page = int(page)
+            if page < 1:
+                return redirect(f"{request.path}?page=1")
+        except ValueError:
+            return redirect(f"{request.path}?page=1")
+
+        try:
+            return super().get(request, *args, **kwargs)
+        except EmptyPage:
+            # If page is out of range, redirect to the last page
+            last_page = self.get_paginator(self.get_queryset(), self.paginate_by).num_pages
+            return redirect(f"{request.path}?page={last_page}")
+
+    def render_to_response(self, context, **response_kwargs):
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            html = render_to_string('lab_pulse/reagentstock_list_content.html', context, request=self.request)
+            return JsonResponse({'html': html})
+        else:
+            return super().render_to_response(context, **response_kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total_cd4_quantity'] = \
+            ReagentStock.objects.filter(reagent_type='CD4').aggregate(Sum('quantity_received'))[
+                'quantity_received__sum'] or 0
+        context['total_tb_lam_quantity'] = \
+            ReagentStock.objects.filter(reagent_type='TB LAM').aggregate(Sum('quantity_received'))[
+                'quantity_received__sum'] or 0
+        context['total_serum_crag_quantity'] = \
+            ReagentStock.objects.filter(reagent_type='Serum CrAg').aggregate(Sum('quantity_received'))[
+                'quantity_received__sum'] or 0
+        context['average_remaining_quantity'] = ReagentStock.objects.aggregate(Avg('remaining_quantity'))[
+                                                    'remaining_quantity__avg'] or 0
+
+        context['cd4_quantity'] = ReagentStock.objects.filter(reagent_type='CD4').aggregate(
+            Sum('remaining_quantity'))['remaining_quantity__sum'] or 0
+        context['tb_lam_quantity'] = ReagentStock.objects.filter(reagent_type='TB LAM').aggregate(
+            Sum('remaining_quantity'))['remaining_quantity__sum'] or 0
+        context['serum_crag_quantity'] = ReagentStock.objects.filter(reagent_type='Serum CrAg').aggregate(
+            Sum('remaining_quantity'))['remaining_quantity__sum'] or 0
+        return context
 
 
 @login_required(login_url='login')
@@ -2691,15 +2888,21 @@ def update_reagent_stocks(request, pk):
     item = ReagentStock.objects.get(id=pk)
     commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
         show_remaining_commodities(item.facility_name)
+
+    # Convert the date_commodity_received to local time before passing to the form
+    item.date_commodity_received = localtime(item.date_commodity_received)
     form = ReagentStockForm(instance=item)
 
     template_name = 'lab_pulse/update results.html'
+    current_date = timezone.now()
     context = {
         "form": form,
         "title": "Update Commodities",
         "commodity_status": commodity_status,
         "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
         "crag_total_remaining": crag_total_remaining,
+        'current_month_name': current_date.strftime('%B'),
+        'current_year': current_date.year,
     }
 
     if request.method == "POST":
@@ -2723,6 +2926,8 @@ def update_reagent_stocks(request, pk):
         "title": "Update Commodities", "commodity_status": commodity_status, "cd4_total_remaining": cd4_total_remaining,
         "tb_lam_total_remaining": tb_lam_total_remaining,
         "crag_total_remaining": crag_total_remaining,
+        # 'current_month_name': current_date.strftime('%B'),
+        # 'current_year': current_date.year,
     }
     return render(request, 'lab_pulse/update results.html', context)
 
@@ -4417,6 +4622,7 @@ def delete_drt_result(request, pk):
     }
     return render(request, 'project/delete_test_of_change.html', context)
 
+
 @login_required(login_url='login')
 def delete_histology_result(request, pk):
     if not request.user.first_name:
@@ -6088,7 +6294,7 @@ def parse_date(date_string):
 
 
 def save_histology_data(request, model_class, pdf_details, facility_id, all_subcounties, all_counties,
-                        histology_pdf_results_instance,specimen_type):
+                        histology_pdf_results_instance, specimen_type):
     try:
         with transaction.atomic():
             collection_date = parse_date(pdf_details['collection_date'])
@@ -6170,12 +6376,13 @@ def add_histology_results(request):
     if my_filters.qs:
         # fields to extract
         fields = ['histology_results__patient_id', 'histology_results__collection_date',
-                  'histology_results__county__county_name','histology_results__sub_county__sub_counties',
-                  'histology_results__facility_name__name','histology_results__facility_name__mfl_code',
-                  'histology_results__age','histology_results__sex','histology_results__authorization_date',
-                  'histology_results__dispatch_date','histology_results__clinical_summary',
-                  'histology_results__referring_doctor','histology_results__microscopy','histology_results__diagnosis',
-                  'histology_results__gross_description','histology_results__comments','histology_results__tat_days',
+                  'histology_results__county__county_name', 'histology_results__sub_county__sub_counties',
+                  'histology_results__facility_name__name', 'histology_results__facility_name__mfl_code',
+                  'histology_results__age', 'histology_results__sex', 'histology_results__authorization_date',
+                  'histology_results__dispatch_date', 'histology_results__clinical_summary',
+                  'histology_results__referring_doctor', 'histology_results__microscopy',
+                  'histology_results__diagnosis',
+                  'histology_results__gross_description', 'histology_results__comments', 'histology_results__tat_days',
                   ]
 
         # Extract the data from the queryset using values()
@@ -6188,7 +6395,7 @@ def add_histology_results(request):
         form = HistologyResultsForm(request.POST)
         if form.is_valid() and histology_pdf_file_form.is_valid():
             context = {"form": form, "histology_pdf_file_form": histology_pdf_file_form, "title": title,
-                       "results": results_list,}
+                       "results": results_list, }
 
             # Validate date
             date_fields_to_validate = ['collection_date']
@@ -6236,7 +6443,7 @@ def add_histology_results(request):
                                 success, message = save_histology_data(request, HistologyResults, pdf_details,
                                                                        facility_obj,
                                                                        all_subcounties, all_counties,
-                                                                       histology_results_instance,specimen_type)
+                                                                       histology_results_instance, specimen_type)
                                 if success:
                                     success_count += 1
                                 else:
@@ -6266,7 +6473,8 @@ def add_histology_results(request):
         form = HistologyResultsForm()
         histology_pdf_file_form = MultipleUploadForm()
 
-    context = {"form": form, "histology_pdf_file_form": histology_pdf_file_form, "title": title,"results": results_list,}
+    context = {"form": form, "histology_pdf_file_form": histology_pdf_file_form, "title": title,
+               "results": results_list, }
     return render(request, template_name, context)
 
 

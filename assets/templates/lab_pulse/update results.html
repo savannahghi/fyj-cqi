@@ -21,7 +21,7 @@
 
             <div class="container-fluid py-5">
                 <hr>
-                <h1 class="display-6 fw-bold text-primary text-center">{{ title }} </h1>
+                <h5 class="display-6 fw-bold text-center">{{ title }} </h5>
                 <hr>
                 {% if title == "Update Results" %}
                     {% if commodity_status %}
@@ -129,8 +129,17 @@
                         </div>
                     </form>
                 {% elif title == "Update Commodities" %}
-                    <p class="text-danger">Note: Records <strong>can only be updated</strong> if they were received
-                        within the <strong>current month.</strong></p>
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Update Policy:</strong>
+                        <ul>
+                            <li>Records can only be updated if they were received within the current month.</li>
+                            <li>This ensures data accuracy and compliance with our reporting standards.</li>
+                            <li>For older records, please contact the system administrator if changes are necessary.
+                            </li>
+                        </ul>
+                        <p class="mb-0">Current month: <strong>{{ current_month_name }} {{ current_year }}</strong></p>
+                    </div>
                     <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
                         <p> Please fill the fields below and then submit </p>
@@ -163,7 +172,7 @@
                                 {{ form.expiry_date|as_crispy_field }}
                             </div>
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2 pt-3">
-                                <input class="btn btn-success mt-1" type="submit" value="Submit">
+                                <input class="action-btn secondary-btn mt-1" type="submit" value="Submit">
                             </div>
                         </div>
                     </form>

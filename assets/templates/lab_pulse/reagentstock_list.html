@@ -1,0 +1,140 @@
+{% extends 'lab_pulse/index_lab_pulse.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load remove_underscores %}
+
+{% block content %}
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <h5 class="display-6 fw-bold text-center">Reagent Stocks</h5>
+        <div id="chart"></div>
+        <form id="filterForm">
+            <label for="reagentType">Reagent Type:</label>
+            <select id="reagentType" name="reagentType">
+                <option value="">All</option>
+                <option value="CD4">CD4</option>
+                <option value="TB LAM">TB LAM</option>
+                <option value="Serum CrAg">Serum CrAg</option>
+            </select>
+            <label for="dateRange">Date Range:</label>
+            <input type="date" id="startDate" name="startDate">
+            <input type="date" id="endDate" name="endDate">
+            <button type="button" onclick="applyFilters()">Apply Filters</button>
+        </form>
+        <div id="reagent-stock-list">
+            {% include 'lab_pulse/reagentstock_list_content.html' %}
+        </div>
+        <script>
+            function applyFilters() {
+                const form = document.getElementById('filterForm');
+                const formData = new FormData(form);
+                const url = new URL(window.location.href);
+                url.search = new URLSearchParams(formData).toString();
+                fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        document.querySelector('#reagent-stock-list').innerHTML = data.html;
+                        updateURL(url);
+                    })
+                    .catch(error => console.warn('Something went wrong.', error));
+            }
+        </script>
+
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script>
+            const data = [
+                {reagent_type: 'CD4', remaining_quantity: {{ cd4_quantity }}},
+                {reagent_type: 'TB LAM', remaining_quantity: {{ tb_lam_quantity }}},
+                {reagent_type: 'Serum CrAg', remaining_quantity: {{ serum_crag_quantity }}},
+            ];
+
+            const layout = {
+                title: 'Reagent Stock Levels',
+                height: 500,
+                {#width: 500,#}
+                barmode: 'group',
+                paper_bgcolor: '#f4f4f4',
+                plot_bgcolor: '#f4f4f4',
+                font: {color: '#333'},
+                xaxis: {
+                    title: 'Reagent Type',
+                    tickfont: {color: '#333'}
+                },
+                yaxis: {
+                    title: 'Remaining Quantity',
+                    tickfont: {color: '#333'}
+                }
+            };
+
+            const config = {responsive: true};
+
+            const barTrace = {
+                x: data.map(item => item.reagent_type),
+                y: data.map(item => item.remaining_quantity),
+                type: 'bar',
+                marker: {color: '#0A255C'},
+                text: data.map(item => item.remaining_quantity),
+                textposition: 'outside',
+                hoverinfo: 'x+y'
+            };
+
+            Plotly.newPlot('chart', [barTrace], layout, config);
+
+            // Pie chart for stock distribution
+            const pieColors = ['#0A255C', '#B10023', '#333'];
+            const pieData = [{
+                values: data.map(item => item.remaining_quantity),
+                labels: data.map(item => item.reagent_type),
+                type: 'pie',
+                marker: {
+                    colors: pieColors
+                },
+                textinfo: 'label+percent',
+                insidetextorientation: 'radial'
+            }];
+
+            const pieLayout = {
+                title: 'Reagent Stock Distribution',
+                height: 400,
+                width: 500,
+                paper_bgcolor: '#f4f4f4',
+                plot_bgcolor: '#f4f4f4',
+                font: {color: '#333'}
+            };
+
+            Plotly.newPlot('pie-chart', pieData, pieLayout, config);
+        </script>
+        <script>
+            function loadPage(pageNumber) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('page', pageNumber);
+                fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        document.querySelector('#reagent-stock-list').innerHTML = data.html;
+                        updateURL(url);
+                    })
+                    .catch(error => console.warn('Something went wrong.', error));
+            }
+
+            function updateURL(url) {
+                window.history.pushState({}, '', url);
+            }
+
+            // Ensure pagination works on back/forward navigation
+            window.onpopstate = function (event) {
+                if (event.state) {
+                    loadPage(new URL(window.location.href).searchParams.get('page') || 1);
+                }
+            };
+        </script>
+    </main>
+{% endblock %}

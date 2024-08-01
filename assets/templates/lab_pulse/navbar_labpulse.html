@@ -59,6 +59,13 @@
                             Add Commodities
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == choose_lab %} active{% endif %}"
+                           href="{% url 'reagentstock_list' %}">
+                            <span data-feather="book" class="align-text-bottom"></span>
+                            View Commodities
+                        </a>
+                    </li>
 
                 {% endif %}
                 {% if perms.labpulse.view_choose_testing_lab %}

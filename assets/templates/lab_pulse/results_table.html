@@ -1,0 +1,32 @@
+<!-- partials/results_table.html -->
+<tbody>
+    {% for result in results %}
+        <tr>
+            {% for histology_result in result.histology_results.all|slice:":1" %}
+                <td>{{ histology_result.facility_name.name }}</td>
+                <td>{{ histology_result.patient_id }}</td>
+                <td>{{ histology_result.age }}</td>
+                <td>{{ histology_result.specimen_type|title }}</td>
+                <td>{{ histology_result.collection_date|date:"M d, Y" }}</td>
+                <td>{{ histology_result.tat_days }}</td>
+                {% if "high grade" in histology_result.diagnosis|lower %}
+                    <td><span class="status status-urgent">Urgent</span></td>
+                {% elif "low grade" in histology_result.diagnosis|lower %}
+                    <td><span class="status status-pending">Pending</span></td>
+                {% else %}
+                    <td><span class="status status-completed">Normal</span></td>
+                {% endif %}
+                <td>
+                    <a href="{% url 'view_histology_result' histology_result.result.id %}"
+                       class="action-btn view-btn">View</a>
+                    <a href="{{ result.result.url }}"
+                       class="action-btn download-btn">Download</a>
+                    {% if user.id == result.created_by.id or user.is_superuser %}
+                        <a href="{% url 'delete_histology_result' histology_result.result.id %}"
+                           class="action-btn delete-btn">Delete</a>
+                    {% endif %}
+                </td>
+            {% endfor %}
+        </tr>
+    {% endfor %}
+</tbody>

@@ -46,6 +46,7 @@ urlpatterns = [
     path('generate-drt-results/', generate_drt_results, name='generate_drt_results'),
     path('generate-drt-report/', GenerateDrtPDF.as_view(), name='generate_drt_pdf'),
     path('download/<str:filter_type>', download_csv, name='download_biochem_lab'),
+    path('download/<str:filter_type>', download_csv, name='download_histology_results'),
     path('histology-result/<uuid:pk>/', HistologyResultDetailView.as_view(), name='view_histology_result'),
 
 ]

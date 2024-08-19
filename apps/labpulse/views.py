@@ -1937,6 +1937,97 @@ def save_biochem_report(writer, queryset):
         writer.writerow(data_row)
 
 
+def save_histology_report(writer, queryset):
+    """
+    Save BioChem report data to a CSV file.
+
+    Args:
+        writer (csv.writer): CSV writer object.
+        queryset (QuerySet): Django queryset containing DRT report data.
+
+    Returns:
+        None
+
+    Example:
+        save_biochem_report(csv.writer(response), queryset)
+
+    This function takes a CSV writer object and a Django queryset containing BioChem report data.
+    It writes the data to the CSV file in the specified format.
+
+    Args:
+        - writer (csv.writer): The CSV writer object to write data to the file.
+        - queryset (QuerySet): The Django queryset containing Biochem report data.
+
+    Example:
+        save_biochem_report(csv.writer(response), queryset)
+    """
+    # Define the header row for the CSV file
+    global date_str
+    header = [
+        'County', 'Sub-County', 'Facility Name', 'MFL CODE',
+        'Patient Id', 'Age', 'Sex', 'Specimen Type',
+        'Collection Date', 'Clinical Summary', 'Gross Description', 'Microscopy', 'Diagnosis', 'Referred by',
+        'Reported by'
+        # 'Result Time', 'Results Interpretation', 'Date Created', 'Performed By',
+    ]
+    # Write the header row to the CSV file
+    writer.writerow(header)
+
+    # Use select_related to fetch related objects in a single query
+    queryset = queryset.select_related('facility', 'sub_county', 'county')
+
+    # Retrieve data as a list of dictionaries
+    data_list = list(queryset.values(
+        'county__county_name', 'sub_county__sub_counties', 'facility_name__name', 'facility_name__mfl_code',
+        'patient_id', 'age', 'sex', 'specimen_type',
+
+        'collection_date', 'clinical_summary', 'gross_description', 'microscopy', 'diagnosis', 'referring_doctor',
+        'reported_by'
+        # 'result_time', 'results_interpretation', 'date_created', 'referring_doctor',
+    ))
+
+    # Write data rows based on the list of dictionaries
+    for record_dict in data_list:
+        # Get and format the collection_date
+        collection_date = record_dict.get("collection_date", "")
+        formatted_date = ""
+
+        if collection_date:
+            try:
+                # Convert to string if it's not already
+                date_str = str(collection_date)
+                # Try parsing with fromisoformat
+                date_obj = datetime.fromisoformat(date_str)
+                formatted_date = date_obj.strftime("%Y-%m-%d")
+            except (ValueError, TypeError):
+                # If parsing fails, try a more flexible approach
+                try:
+                    date_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S%z")
+                    formatted_date = date_obj.strftime("%Y-%m-%d")
+                except (ValueError, TypeError):
+                    # If all parsing attempts fail, use the original value
+                    formatted_date = date_str
+        data_row = [
+            record_dict.get("county__county_name", ""),
+            record_dict.get("sub_county__sub_counties", ""),
+            record_dict.get("facility_name__name", ""),
+            record_dict.get("facility_name__mfl_code", ""),
+            record_dict.get("patient_id", ""),
+            record_dict.get("age", ""),
+            record_dict.get("sex", ""),
+            record_dict.get("specimen_type", ""),
+            formatted_date,
+            record_dict.get("clinical_summary", ""),
+            record_dict.get("gross_description", ""),
+            record_dict.get("microscopy", ""),
+            record_dict.get("diagnosis", ""),
+            record_dict.get("referring_doctor", ""),
+            record_dict.get("reported_by", ""),
+        ]
+        # Write the data row to the CSV file
+        writer.writerow(data_row)
+
+
 def clear_expired_cache_entries():
     now = datetime.now()
     keys_to_delete = []
@@ -2005,6 +2096,10 @@ def download_csv(request, filter_type):
         response['Content-Disposition'] = f'attachment; filename="Biochemistry_results.csv"'
         queryset = BiochemistryResultFilter(request.GET).qs
         save_biochem_report(writer, queryset)
+    elif "histology" in current_page_url:
+        response['Content-Disposition'] = f'attachment; filename="Histology_results.csv"'
+        queryset = HistologyResultFilter(request.GET).qs
+        save_histology_report(writer, queryset)
 
     return response
 
@@ -6341,27 +6436,43 @@ def add_histology_results(request):
         return redirect("profile")
     title = "Add Histology Results"
     template_name = "lab_pulse/add_histology.html"
-    #####################################
-    # Display existing data
-    #####################################
-    if request.method == "GET":
-        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-        # record_count = int(request.GET.get('record_count', 10))  # Get the selected record count (default: 10)
-        record_count = request.GET.get('record_count', '10')
-    else:
-        record_count = request.GET.get('record_count', '100')
 
     results_qs = HistologyPdfFile.objects.all().prefetch_related('histology_results').order_by('-date_created')
-    record_count_options = [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50]] + [("all", "All"), ]
-    my_filters = HistologyResultFilter(request.GET, queryset=results_qs)
+    # my_filters = HistologyResultFilter(request.GET, queryset=results_qs)
+    # Custom filtering logic
+    patient_id = request.GET.get('patient_id')
+    facility_name = request.GET.get('facility_name')
+    urgency = request.GET.get('urgency')
+    specimen_type = request.GET.get('specimen_type')
+    record_count = request.GET.get('record_count', '50')
+
+    if patient_id:
+        results_qs = results_qs.filter(histology_results__patient_id__icontains=patient_id)
+        record_count = request.GET.get('record_count', '300')
+    if facility_name:
+        results_qs = results_qs.filter(histology_results__facility_name__name__icontains=facility_name)
+        record_count = request.GET.get('record_count', '300')
+    if urgency:
+        record_count = request.GET.get('record_count', '300')
+        # Assuming urgency is determined based on the diagnosis
+        urgency = urgency.lower()
+        if "u" in urgency or "ur" in urgency or "urg" in urgency or "urge" in urgency:
+            results_qs = results_qs.filter(Q(histology_results__diagnosis__icontains="high grade") |
+                                           Q(histology_results__diagnosis__icontains="low grade"))
+        elif "n" in urgency or "no" in urgency or "nor" in urgency or "norm" in urgency or "norma" in urgency:
+            results_qs = results_qs.exclude(Q(histology_results__diagnosis__icontains="high grade") |
+                                            Q(histology_results__diagnosis__icontains="low grade"))
+    if specimen_type:
+        record_count = request.GET.get('record_count', '300')
+        results_qs = results_qs.filter(histology_results__specimen_type__icontains=specimen_type)
 
     if "current_page_url" in request.session:
         del request.session['current_page_url']
     request.session['current_page_url'] = request.path
 
     # Apply distinct on specific fields to ensure unique combinations
-    filtered_qs = my_filters.qs.distinct('histology_results__patient_id', 'histology_results__collection_date',
-                                         'histology_results__facility_name', 'date_created')
+    filtered_qs = results_qs.distinct('histology_results__patient_id', 'histology_results__collection_date',
+                                      'histology_results__facility_name', 'date_created')
 
     results_list = pagination_(request, filtered_qs, record_count)
     qi_list = results_list
@@ -6373,7 +6484,7 @@ def add_histology_results(request):
     # check the page user is from
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    if my_filters.qs:
+    if filtered_qs:
         # fields to extract
         fields = ['histology_results__patient_id', 'histology_results__collection_date',
                   'histology_results__county__county_name', 'histology_results__sub_county__sub_counties',
@@ -6386,7 +6497,7 @@ def add_histology_results(request):
                   ]
 
         # Extract the data from the queryset using values()
-        data = my_filters.qs.values(*fields)
+        data = filtered_qs.values(*fields)
         df_histology = pd.DataFrame(data)
         # df_histology.to_csv("df_histology.csv", index=False)
 
@@ -6474,7 +6585,7 @@ def add_histology_results(request):
         histology_pdf_file_form = MultipleUploadForm()
 
     context = {"form": form, "histology_pdf_file_form": histology_pdf_file_form, "title": title,
-               "results": results_list, }
+               "results": results_list, "qi_list": qi_list}
     return render(request, template_name, context)
 
 

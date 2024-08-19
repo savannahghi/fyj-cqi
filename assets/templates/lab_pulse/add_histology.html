@@ -176,6 +176,7 @@
         .download-btn:hover {
             background-color: #218838;
         }
+
         .search-sort {
             display: flex;
             gap: 0.5rem;
@@ -257,6 +258,12 @@
                     <div class="col-12 col-md-6 col-lg-2">
                         <button type="submit" class="action-btn view-btn">Upload Results</button>
                     </div>
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                        <a href="{% url 'download_histology_results' "all" %}?{{ request.GET.urlencode }}"
+                           class="btn btn-secondary btn-block" role="button"> Download csv (All)
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
                     {% if histology_pdf_file_form.errors %}
                         <div class="alert alert-danger mt-4">
                             {{ histology_pdf_file_form.errors }}
@@ -324,264 +331,11 @@
                 {% endfor %}
                 </tbody>
             </table>
-            {#                <div class="col-md-12 alert alert-primary text-center">#}
-            {#                    <h4>Customize your search or filter below</h4>#}
-            {#                </div>#}
-            {#                <div class="mt-3">#}
-            {#                    <form id="filter-form" class="row g-3" autocomplete="off">#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.county|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.sub_county|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.facility_names|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.patient_id|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.sex|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.sequence_summary|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.age_lte|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.age_gte|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.collection_date_gte|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.collection_date_lte|as_crispy_field }}#}
-            {#                        </div>#}
-            {##}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.resistance_level|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            {{ my_filters.form.haart_class|as_crispy_field }}#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2 mt-2 pt-1">#}
-            {#                            <label for="record_count" class="form-label mb-0">Records Per Page</label>#}
-            {#                            <select name="record_count" id="record_count" class="form-select">#}
-            {#                                {% for option_value, option_label in record_count_options %}#}
-            {#                                    <option value="{{ option_value }}"#}
-            {#                                            {% if request.GET.record_count == option_value %}#}
-            {#                                            selected {% endif %}>#}
-            {#                                        {{ option_label }}#}
-            {#                                    </option>#}
-            {#                                {% endfor %}#}
-            {#                            </select>#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            <div class="row">#}
-            {#                                <div class="mt-4">#}
-            {#                                    <button class="btn btn-outline-primary btn-sm" type="submit">#}
-            {#                                        <i class="fas fa-search"></i> Search#}
-            {#                                    </button>#}
-            {#                                </div>#}
-            {#                            </div>#}
-            {#                        </div>#}
-            {#                        <div class="col-12 col-md-6 col-lg-2">#}
-            {#                            <div class="row">#}
-            {#                                <div class="mt-4">#}
-            {#                                    <a class="nav-link"#}
-            {#                                       href="{% url 'add_drt_results' %}">#}
-            {#                                        <span data-feather="refresh-cw" class="align-text-bottom"></span>#}
-            {#                                        Reset Filters#}
-            {#                                    </a>#}
-            {#                                </div>#}
-            {#                            </div>#}
-            {#                        </div>#}
-            {#                    </form>#}
-            {#                </div>#}
-            {#            </div>#}
-            {#            {% if resistance_level_fig %}#}
-            {#                <div class="row mb-3">#}
-            {#                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">#}
-            {#                        <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"#}
-            {#                           class="btn btn-secondary btn-block" role="button"> All records#}
-            {#                            <i class="fas fa-download"></i>#}
-            {#                        </a>#}
-            {#                    </div>#}
-            {#                </div>#}
-            {#                <div>#}
-            {#                    <div class="form-check form-switch">#}
-            {#                        <input class="form-check-input" type="checkbox" id="toggleSummaryTop">#}
-            {#                        <label class="form-check-label" for="toggleSummaryTop">Show or Hide Summary (Top)</label>#}
-            {#                    </div>#}
-            {#                </div>#}
-            {#                <div id="collapse_summary" class="collapse show">#}
-            {#                    <hr>#}
-            {#                    <h3 class="fw-bold text-primary text-center"> Summary </h3>#}
-            {#                    <hr>#}
-            {#                    <div class="row">#}
-            {#                        {% if drt_summary_fig %}#}
-            {#                            <div class="col-12 col-md-6">#}
-            {#                                {{ drt_summary_fig|safe }}#}
-            {#                            </div>#}
-            {#                        {% endif %}#}
-            {#                        {% if counties_summary_fig %}#}
-            {#                            <div class="col-12 col-md-6">#}
-            {#                                {{ counties_summary_fig|safe }}#}
-            {#                            </div>#}
-            {#                        {% endif %}#}
-            {#                    </div>#}
-            {#                    <hr>#}
-            {#                    <div class="row">#}
-            {#                        {% if age_pop_summary_fig %}#}
-            {#                            <div class="col-12 col-md-6">#}
-            {#                                {{ age_pop_summary_fig|safe }}#}
-            {#                            </div>#}
-            {#                        {% endif %}#}
-            {#                        {% if counties_summary_fig %}#}
-            {#                            <div class="col-12 col-md-6">#}
-            {#                                {{ resistance_type_count_fig|safe }}#}
-            {#                            </div>#}
-            {#                        {% endif %}#}
-            {#                    </div>#}
-            {#                    <hr>#}
-            {#                    {% if drt_distribution_fig %}#}
-            {#                        {{ drt_distribution_fig|safe }}#}
-            {#                        <hr>#}
-            {#                    {% endif %}#}
-            {#                    {% if drt_tat_fig %}#}
-            {#                        {{ drt_tat_fig|safe }}#}
-            {#                        <hr>#}
-            {#                    {% endif %}#}
-            {#                    {% if resistance_level_fig %}#}
-            {#                        {{ resistance_level_fig|safe }}#}
-            {#                        <hr>#}
-            {#                    {% endif %}#}
-            {#                    {% if age_summary_fig %}#}
-            {#                        {{ age_summary_fig|safe }}#}
-            {#                        <hr>#}
-            {#                    {% endif %}#}
-            {##}
-            {#                    {% if resistance_level_age_fig %}#}
-            {#                        {{ resistance_level_age_fig|safe }}#}
-            {#                        <hr>#}
-            {#                    {% endif %}#}
-            {#                    <h5 class="fw-bold text-primary text-center"> Time-Based Changes in Drug Resistance#}
-            {#                        Prevalence: Overall </h5>#}
-            {#                    <hr>#}
-            {#                    {{ prevalence_tat_fig|safe }}#}
-            {#                    <hr>#}
-            {#                    {{ drt_trend_fig|safe }}#}
-            {##}
-            {#                    <h5 class="fw-bold text-primary text-center"> Time-Based Changes in Drug Resistance#}
-            {#                        Prevalence: By Drug </h5>#}
-            {#                    <hr>#}
-            {#                    {% for keys, trend_fig in trend_figs.items %}#}
-            {#                        {{ trend_fig|safe }}#}
-            {#                        <hr>#}
-            {#                    {% endfor %}#}
-            {#                    {% if mutation_profile_figs %}#}
-            {#                        <hr>#}
-            {#                        <h5 class="fw-bold text-primary text-center"> Mutation Prevalence: By Class </h5>#}
-            {#                        <hr>#}
-            {#                        {% for keys, trend_fig in mutation_profile_figs.items %}#}
-            {#                            {{ trend_fig|safe }}#}
-            {#                        {% endfor %}#}
-            {#                    {% endif %}#}
-            {#                </div>#}
-            {#                <hr>#}
-            {#                <div class="col-12 mb-2">#}
-            {#                    {% if qi_list|length <= 500 %}#}
-            {#                        <h4 class="fw-bold text-primary text-center"> DRT Reports </h4>#}
-            {#                    {% else %}#}
-            {#                        <h6 class="text-primary text-center"> > 500 records. Use the filters above to narrow down your#}
-            {#                            search </h6>#}
-            {#                    {% endif %}#}
-            {#                </div>#}
-            {#                <hr>#}
-            {#                <div class="form-check form-switch mt-3">#}
-            {#                    <input class="form-check-input" type="checkbox" id="toggleSummaryBottom">#}
-            {#                    <label class="form-check-label" for="toggleSummaryBottom">Show or Hide Summary (Bottom)</label>#}
-            {#                </div>#}
-            {#            {% endif %}#}
-            {#            <div class="row mt-3">#}
-            {#                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">#}
-            {#                    <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"#}
-            {#                       class="btn btn-secondary btn-block" role="button"> All records#}
-            {#                        <i class="fas fa-download"></i>#}
-            {#                    </a>#}
-            {#                </div>#}
-            {#            </div>#}
-            {##}
-            {#                <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">#}
-            {#                    {% for result in results %}#}
-            {#                        <div class="col-md-12">#}
-            {#                            <div class="card h-100">#}
-            {#                                <div class="card-body">#}
-            {#                                    <h6 class="card-title">#}
-            {#                                        <div class="d-flex justify-content-between">#}
-            {#                                            <div>#}
-            {#                                                {{ forloop.counter }}.#}
-            {#                                                <a href="{{ result.result.url }}"#}
-            {#                                                        {% for drt_result in result.histology_results.all|slice:":1" %}#}
-            {#                                                   style="color:#}
-            {#                                                           {% if "High Grade" in drt_result.diagnosis %}#}
-            {#                                                               red#}
-            {#                                                           {% else %}#}
-            {#                                                               green#}
-            {#                                                           {% endif %}; font-size: small">#}
-            {#                                                            {{ drt_result.patient_id }}#}
-            {#                                                            (Sex: {{ drt_result.sex }}#}
-            {#                                                            Age: {{ drt_result.age }})#}
-            {#                                                            : {{ drt_result.facility_name }}#}
-            {#                                                            (Collection date:#}
-            {#                                                            {{ drt_result.collection_date|date:"M d, Y" }}#}
-            {#                                                            )#}
-            {#                                                            TAT: {{ drt_result.tat_days }} days#}
-            {#                                                        {% endfor %}#}
-            {#                                                </a>#}
-            {#                                            </div>#}
-            {##}
-            {#                                            <div>#}
-            {#                                                <a href="{{ result.result.url }}">#}
-            {#                                                    <button type="button"#}
-            {#                                                            class="btn btn-outline-success btn-floating mr-2"#}
-            {#                                                            data-mdb-ripple-color="dark">#}
-            {#                                                        Download <i class="fas fa-download"></i>#}
-            {#                                                    </button>#}
-            {#                                                </a>#}
-            {#                                                {% if user.id == result.created_by.id or user.is_superuser %}#}
-            {#                                                    <a href="{% url 'delete_histology_result' result.id %}">#}
-            {#                                                        <button type="button"#}
-            {#                                                                class="btn btn-outline-danger btn-floating mr-2"#}
-            {#                                                                data-mdb-ripple-color="dark">#}
-            {#                                                            DELETE#}
-            {#                                                        </button>#}
-            {#                                                    </a>#}
-            {#                                                {% endif %}#}
-            {#                                            </div>#}
-            {#                                        </div>#}
-            {#                                    </h6>#}
-            {#                                </div>#}
-            {#                                <div class="card-footer d-flex justify-content-between">#}
-            {#                                    <small class="text-muted">Last updated on {{ result.date_modified|date:"M d, Y" }}#}
-            {#                                        ({{ result.date_modified|timesince }}) ago#}
-            {#                                    </small>#}
-            {#                                    <small class="text-muted">Uploaded by {{ result.modified_by.first_name|title }}#}
-            {#                                        {{ result.modified_by.last_name|title }}#}
-            {#                                    </small>#}
-            {#                                </div>#}
-            {#                            </div>#}
-            {#                        </div>#}
-            {#                    {% endfor %}#}
-            {#                </div>#}
             <!-- Display the pagination links -->
             {% block pagination %}
                 {% include "partial_html/pagination.html" %}
             {% endblock %}
         </div>
-        {#        </div>#}
     </main>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -677,5 +431,54 @@
                 }
             });
         }
+
+        const updateResults = () => {
+            const urlParams = new URLSearchParams();
+
+            if (patientIdSearch.value) {
+                urlParams.set('patient_id', patientIdSearch.value);
+            }
+
+            if (facilitySearch.value) {
+                urlParams.set('facility_name', facilitySearch.value);
+            }
+
+            if (urgencySearch.value) {
+                urlParams.set('urgency', urgencySearch.value);
+            }
+
+            if (specimenSearch.value) {
+                urlParams.set('specimen_type', specimenSearch.value);
+            }
+
+            if (sortSelect.value) {
+                urlParams.set('sort_by', sortSelect.value);
+            }
+
+            const url = `${window.location.pathname}?${urlParams.toString()}`; // Use the current URL path
+
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest', // Mark this request as AJAX
+                }
+            })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newTableBody = doc.querySelector('#resultsTable tbody');
+
+                    if (newTableBody) {
+                        resultsTable.querySelector('tbody').replaceWith(newTableBody);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        };
+
+        patientIdSearch.addEventListener('input', updateResults);
+        facilitySearch.addEventListener('input', updateResults);
+        urgencySearch.addEventListener('input', updateResults);
+        specimenSearch.addEventListener('input', updateResults);
+        sortSelect.addEventListener('change', updateResults);
     </script>
 {% endblock %}

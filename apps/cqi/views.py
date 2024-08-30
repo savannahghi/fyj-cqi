@@ -6,7 +6,7 @@ from io import BytesIO
 from itertools import tee
 from django.shortcuts import render
 import plotly.express as px
-
+from django.utils.functional import cached_property
 from itertools import chain
 from django.utils.safestring import mark_safe
 import plotly.graph_objs as go
@@ -6930,6 +6930,22 @@ def home_page(request):
 
 
 
+from django.core.cache import cache
+from django.db.models import Prefetch
+from itertools import chain
+from django.shortcuts import render
+from django.http import HttpResponseBadRequest, JsonResponse
+from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
+import plotly.graph_objs as go
+import plotly.express as px
+import plotly.io as pio
+import pandas as pd
+
+from django.core.cache import cache
+from django.db.models import Prefetch, Max
+from django.utils import timezone
+
 @login_required(login_url='login')
 def projects_with_gaps(request):
     selected_hub = request.GET.get('hub_name')
@@ -6950,11 +6966,38 @@ def projects_with_gaps(request):
         'missing_milestones'
     ]
 
-    # Fetch projects and gap data for all hubs
-    all_hub_data = []
-    for hub in all_hubs:
-        facility_projects = QI_Projects.objects.filter(hub=hub)
-        hub_projects = Hub_qi_projects.objects.filter(hub=hub)
+    def get_hub_gaps(hub):
+        cache_key = f'hub_gaps_{hub.id}'
+        last_update_key = f'hub_last_update_{hub.id}'
+        
+        cached_data = cache.get(cache_key)
+        last_cached_update = cache.get(last_update_key)
+
+        # Get the latest update time for projects in this hub
+        latest_update = max(
+            QI_Projects.objects.filter(hub=hub).aggregate(Max('date_updated'))['date_updated__max'] or timezone.now(),
+            Hub_qi_projects.objects.filter(hub=hub).aggregate(Max('date_updated'))['date_updated__max'] or timezone.now()
+        )
+
+        # If cached data exists and no updates since last cache, return cached data
+        if cached_data and last_cached_update and last_cached_update >= latest_update:
+            return cached_data
+
+        # If we're here, we need to fetch new data
+        facility_projects = QI_Projects.objects.filter(hub=hub).prefetch_related(
+            'baseline_set',
+            'testedchange_set',
+            'actionplan_set',
+            'milestone_set',
+            'qi_team_members'
+        )
+        hub_projects = Hub_qi_projects.objects.filter(hub=hub).prefetch_related(
+            'baseline_set',
+            'testedchange_set',
+            'actionplan_set',
+            'milestone_set',
+            'qi_team_members'
+        )
         all_projects = list(chain(facility_projects, hub_projects))
 
         hub_gaps = {
@@ -6979,7 +7022,14 @@ def projects_with_gaps(request):
                     'gaps': project_gaps,
                 })
 
-        all_hub_data.append(hub_gaps)
+        # Cache the new data and update the last update time
+        cache.set(cache_key, hub_gaps, 3600)  # Cache for 1 hour
+        cache.set(last_update_key, timezone.now(), 3600)
+
+        return hub_gaps
+
+    # Fetch projects and gap data for all hubs
+    all_hub_data = [get_hub_gaps(hub) for hub in all_hubs]
 
     # Create overall heatmap
     heatmap_data = []

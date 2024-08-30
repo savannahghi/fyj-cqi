@@ -3,23 +3,26 @@ import csv
 from collections import defaultdict
 from datetime import datetime
 from io import BytesIO
-from itertools import chain, tee
+from itertools import tee
+from django.shortcuts import render
+import plotly.express as px
+
+from itertools import chain
+from django.utils.safestring import mark_safe
+import plotly.graph_objs as go
+import plotly.io as pio
+import pandas as pd
 
 import inflect
-import pandas as pd
-import plotly.express as px
-# from django.core.files.storage import FileSystemStorage
 from django.contrib import messages
-# from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
-# from django.db.models import Count, Q
-# from django.forms import forms
-from django.db.models import Count, F, Q
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import get_object_or_404, redirect, render
+from django.db.models import Count, F,Q
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from plotly.offline import plot
@@ -6918,6 +6921,182 @@ def home_page(request):
         'created_count': created_count,
         'managed_count': managed_count,
         'team_member_count': team_member_count,
+        'available_hubs': Hub.objects.all(),
     }
 
     return render(request, "account/user landing page.html", context)
+
+
+
+
+
+@login_required(login_url='login')
+def projects_with_gaps(request):
+    selected_hub = request.GET.get('hub_name')
+    all_hubs = Hub.objects.all()
+
+    if not selected_hub:
+        try:
+            selected_hub = Hub.objects.first().hub
+        except AttributeError:
+            return HttpResponseBadRequest("No hubs available")
+
+    gap_fields = [
+        'missing_root_cause_analysis',
+        'missing_tested_change',
+        'missing_qi_team_members',
+        'missing_baseline',
+        'missing_action_plan',
+        'missing_milestones'
+    ]
+
+    # Fetch projects and gap data for all hubs
+    all_hub_data = []
+    for hub in all_hubs:
+        facility_projects = QI_Projects.objects.filter(hub=hub)
+        hub_projects = Hub_qi_projects.objects.filter(hub=hub)
+        all_projects = list(chain(facility_projects, hub_projects))
+
+        hub_gaps = {
+            'hub_name': hub.hub,
+            'total_projects': len(all_projects),
+            'projects_with_gaps': 0,
+            'gap_counts': {field: 0 for field in gap_fields},
+            'projects': []
+        }
+
+        for project in all_projects:
+            project.missing_details = check_missing_details(project)
+            project_gaps = [field for field in gap_fields if project.missing_details[field]]
+            if project_gaps:
+                hub_gaps['projects_with_gaps'] += 1
+                for gap in project_gaps:
+                    hub_gaps['gap_counts'][gap] += 1
+                hub_gaps['projects'].append({
+                    'id': project.id,
+                    'title': project.project_title,
+                    'type': project.__class__.__name__,
+                    'gaps': project_gaps,
+                })
+
+        all_hub_data.append(hub_gaps)
+
+    # Create overall heatmap
+    heatmap_data = []
+    for hub_data in all_hub_data:
+        heatmap_data.append([hub_data['gap_counts'][field] for field in gap_fields])
+
+    fig_heatmap = go.Figure(data=go.Heatmap(
+        z=heatmap_data,
+        x=gap_fields,
+        y=[hub['hub_name'] for hub in all_hub_data],
+        colorscale='PuRd'))
+    fig_heatmap.update_layout(title='Gap Distribution Across All Hubs', xaxis_title='Gap Types', yaxis_title='Hubs')
+    overall_heatmap = pio.to_html(fig_heatmap, full_html=False)
+
+    # Create overall bar chart
+    df_overall = pd.DataFrame(all_hub_data)
+    df_overall_sorted = df_overall.sort_values('projects_with_gaps', ascending=False)
+    fig_overall = px.bar(df_overall_sorted, x='hub_name', y='projects_with_gaps', height=500,
+                         title='Projects with Gaps by Hub', text='projects_with_gaps',
+                         labels={'hub_name': 'Hub', 'projects_with_gaps': 'Number of Projects with Gaps'},
+                         color_discrete_sequence=['#0A255C'])
+    fig_overall.update_traces(textposition='outside')
+    overall_bar_chart = pio.to_html(fig_overall, full_html=False)
+
+    # Get data for the selected hub
+    selected_hub_data = next((hub for hub in all_hub_data if hub['hub_name'] == selected_hub), None)
+    if not selected_hub_data:
+        return HttpResponseBadRequest(f"No data found for hub: {selected_hub}")
+
+    # Create visualizations for the selected hub
+    df_hub = pd.DataFrame(list(selected_hub_data['gap_counts'].items()), columns=['Gap', 'Count'])
+    fig_hub = px.bar(df_hub.sort_values('Count', ascending=False), x='Gap', y='Count',
+                     title=f'Gap Distribution for {selected_hub}',
+                     color_discrete_sequence=['#0A255C'], text='Count')
+    hub_gap_chart = pio.to_html(fig_hub, full_html=False)
+
+    fig_pie = px.pie(df_hub, values='Count', names='Gap', title=f'Gap Distribution in {selected_hub}')
+
+    hub_pie_chart = pio.to_html(fig_pie, full_html=False)
+
+    # Calculate statistics for the selected hub
+    total_projects = selected_hub_data['total_projects']
+    projects_with_gaps_count = selected_hub_data['projects_with_gaps']
+    gap_percentage = round((projects_with_gaps_count / total_projects) * 100, 1) if total_projects > 0 else 0
+
+    # Prepare data for all hubs
+    hub_data_sorted = sorted(all_hub_data, key=lambda x: x['total_projects'], reverse=True)
+    hub_names = [hub['hub_name'] for hub in hub_data_sorted]
+    projects_with_gaps_data = [hub['projects_with_gaps'] for hub in hub_data_sorted]
+    projects_without_gaps_data = [hub['total_projects'] - hub['projects_with_gaps'] for hub in hub_data_sorted]
+    total_projects_data = [hub['total_projects'] for hub in hub_data_sorted]
+
+    # Calculate total projects across all hubs
+    total_hub_projects = sum(total_projects_data)
+
+    # Create the stacked bar chart for all hubs
+    fig_overall = go.Figure(data=[
+        go.Bar(name='Projects without Gaps', x=hub_names, y=projects_without_gaps_data, marker_color='#0A255C',
+               text=[f"{y} ({y / t * 100:.1f}%)" for y, t in zip(projects_without_gaps_data, total_projects_data)],
+               textposition='inside'),
+        go.Bar(name='Projects with Gaps', x=hub_names, y=projects_with_gaps_data, marker_color='#B10023',
+               text=[f"{y} ({y / t * 100:.1f}%)" for y, t in zip(projects_with_gaps_data, total_projects_data)],
+               textposition='inside')
+    ])
+
+    # Add total projects annotation on top of each stacked bar
+    for i, total in enumerate(total_projects_data):
+        fig_overall.add_annotation(
+            x=hub_names[i],
+            y=total,
+            text=f"Total: {total}",
+            showarrow=False,
+            yshift=10,
+            font=dict(color="black", size=10)
+        )
+
+    fig_overall.update_layout(
+        title=f'Project Distribution Across All Hubs (Total Projects: {total_hub_projects})',
+        barmode='stack',
+        xaxis_title='Hubs',
+        yaxis_title='Number of Projects',
+        legend_title='Project Status',
+        height=500,  # Adjust the height as needed
+    )
+
+    # Ensure text is always visible
+    fig_overall.update_traces(textfont=dict(size=10, color="white"))
+    fig_overall.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+    fig_overall.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
+
+    overall_projects_chart = pio.to_html(fig_overall, full_html=False)
+
+    context = {
+        'hub_name': selected_hub,
+        'projects_with_gaps': selected_hub_data['projects'],
+        'available_hubs': all_hubs,
+        'gap_chart': mark_safe(hub_gap_chart),
+        'type_chart': mark_safe(hub_pie_chart),
+        'total_projects': total_projects,
+        'projects_with_gaps_count': projects_with_gaps_count,
+        'gap_percentage': gap_percentage,
+        'overall_heatmap': mark_safe(overall_heatmap),
+        'overall_bar_chart': mark_safe(overall_bar_chart),
+        'overall_projects_chart': mark_safe(overall_projects_chart)
+    }
+
+    # return render(request, "account/projects_with_gaps.html", context)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # For AJAX requests, render only the hub details
+        html = render_to_string('project/hub_details.html', context, request=request)
+        return JsonResponse({'html': html})
+    else:
+        # For initial page load, render the full page
+        return render(request, 'account/projects_with_gaps.html', context)

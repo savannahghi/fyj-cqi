@@ -385,6 +385,9 @@
                     </div>
                 {% endfor %}
             </div>
+            <form action="{% url 'projects_with_gaps' %}" method="get" class="mt-3">
+                <button type="submit" class="btn btn-primary">View All Projects with Gaps</button>
+            </form>
 
             <section class="recent-activity">
                 <h2>Recent Activity</h2>

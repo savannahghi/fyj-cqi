@@ -1,0 +1,148 @@
+<!-- hub_details.html -->
+<style>
+    .project-title-link {
+        display: inline-block;
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #2c3e50;
+        text-decoration: none;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #3498db;
+        background-color: #ecf0f1;
+        transition: all 0.3s ease;
+        border-radius: 0 5px 5px 0;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .project-title-link:hover {
+        background-color: #3498db;
+        color: #ffffff;
+        transform: translateX(5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Different colors for different project types */
+    .project-title-link.qi-projects {
+        border-left-color: #3498db;
+    }
+
+    .project-title-link.program-qi-projects {
+        border-left-color: #e74c3c;
+    }
+
+    .project-title-link.subcounty-qi-projects {
+        border-left-color: #2ecc71;
+    }
+
+    .project-title-link.county-qi-projects {
+        border-left-color: #f39c12;
+    }
+
+    .project-title-link.hub-qi-projects {
+        border-left-color: #9b59b6;
+    }
+
+    .project-title-link.qi-projects:hover {
+        background-color: #3498db;
+    }
+
+    .project-title-link.program-qi-projects:hover {
+        background-color: #e74c3c;
+    }
+
+    .project-title-link.subcounty-qi-projects:hover {
+        background-color: #2ecc71;
+    }
+
+    .project-title-link.county-qi-projects:hover {
+        background-color: #f39c12;
+    }
+
+    .project-title-link.hub-qi-projects:hover {
+        background-color: #9b59b6;
+    }
+</style>
+
+<section class="quick-links">
+    <div class="quick-link-card">
+        <h3>Details for {{ hub_name }}</h3>
+    </div>
+</section>
+
+<div class="stats-container">
+    <div class="stat-card">
+        <i class="fas fa-project-diagram stat-icon"></i>
+        <div class="stat-value">{{ total_projects }}</div>
+        <div class="stat-label">Total Projects</div>
+    </div>
+    <div class="stat-card">
+        <i class="fas fa-exclamation-triangle stat-icon"></i>
+        <div class="stat-value">{{ projects_with_gaps_count }}</div>
+        <div class="stat-label">Projects with Gaps</div>
+    </div>
+    <div class="stat-card">
+        <i class="fas fa-percentage stat-icon"></i>
+        <div class="stat-value">{{ gap_percentage }}%</div>
+        <div class="stat-label">Gap Percentage</div>
+    </div>
+</div>
+
+<div>
+    <h3>Gap Distribution</h3>
+    {{ gap_chart|safe }}
+</div>
+
+<div>
+    <h3>Gap Proportion</h3>
+    {{ type_chart|safe }}
+</div>
+
+<h3>Projects with Gaps</h3>
+<section class="project-list">
+    {% if projects_with_gaps %}
+        {% for project in projects_with_gaps %}
+            <div class="project-card">
+                {% if project.type == 'QI_Projects' %}
+                    <a href="{% url 'single_project' pk=project.id %}">
+                        <h6 class="project-title-link qi-projects">{{ project.title }}</h6>
+                    </a>
+                {% elif project.type == 'Program_qi_projects' %}
+                    <a href="{% url 'single_project_program' pk=project.id %}">
+                        <h6 class="project-title-link program-qi-projects">{{ project.title }}</h6>
+                    </a>
+                {% elif project.type == 'Subcounty_qi_projects' %}
+                    <a href="{% url 'single_project_subcounty' pk=project.id %}">
+                        <h6 class="project-title-link subcounty-qi-projects">{{ project.title }}</h6>
+                    </a>
+                {% elif project.type == 'County_qi_projects' %}
+                    <a href="{% url 'single_project_county' pk=project.id %}">
+                        <h6 class="project-title-link county-qi-projects">{{ project.title }}</h6>
+                    </a>
+                {% elif project.type == 'Hub_qi_projects' %}
+                    <a href="{% url 'single_project_hub' pk=project.id %}">
+                        <h6 class="project-title-link hub-qi-projects">{{ project.title }}</h6>
+                    </a>
+                {% else %}
+                    <h6 class="project-title-link">{{ project.title }}</h6>
+                {% endif %}
+
+                {% if project.type == 'QI_Projects' %}
+                    <p class="project-role">Type: Facility project</p>
+                {% else %}
+                    <p class="project-role">Type: Hub project</p>
+                {% endif %}
+                <div class="project-gaps">
+                    <h3>Gaps:</h3>
+                    <ul class="gap-list">
+                        {% for gap in project.gaps %}
+                            <li>{{ gap|title }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No projects with gaps found for this hub.</p>
+    {% endif %}
+</section>

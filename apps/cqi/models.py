@@ -263,7 +263,7 @@ class QI_Projects(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.facility_name) + " : " + str(self.project_title)
+        return str(self.facility_name) + " : " + str(self.project_title)+ " : " + str(self.hub)
 
 
 class Subcounty_qi_projects(models.Model):

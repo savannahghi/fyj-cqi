@@ -299,6 +299,9 @@
                     <h3>My Active QI Projects</h3>
                 </div>
             </section>
+            <form action="{% url 'projects_with_gaps' %}" method="get" class="mt-2 mb-3">
+                <button type="submit" class="btn btn-primary">View All Projects with Gaps</button>
+            </form>
 
             <div class="project-summary">
                 <p>You are currently involved in <span class="project-count">{{ total_projects_count }}</span> active
@@ -400,18 +403,18 @@
                         <p><strong> Project Update:</strong> CxCa histology report available (Within LabPulse)</p>
                         <span class="activity-date">on 31/7/2024</span>
                     </li>
-{#                    <li class="activity-item">#}
-{#                        <p><strong>Data Quality Alert:</strong> Inconsistency detected in VL testing data</p>#}
-{#                        <span class="activity-date">Yesterday</span>#}
-{#                    </li>#}
-{#                    <li class="activity-item">#}
-{#                        <p><strong>New Resource:</strong> Updated WHO HIV Treatment Guidelines available</p>#}
-{#                        <span class="activity-date">2 days ago</span>#}
-{#                    </li>#}
-{#                    <li class="activity-item">#}
-{#                        <p><strong>Collaboration Invite:</strong> Join the "PMTCT Best Practices" workgroup</p>#}
-{#                        <span class="activity-date">3 days ago</span>#}
-{#                    </li>#}
+                    {#                    <li class="activity-item">#}
+                    {#                        <p><strong>Data Quality Alert:</strong> Inconsistency detected in VL testing data</p>#}
+                    {#                        <span class="activity-date">Yesterday</span>#}
+                    {#                    </li>#}
+                    {#                    <li class="activity-item">#}
+                    {#                        <p><strong>New Resource:</strong> Updated WHO HIV Treatment Guidelines available</p>#}
+                    {#                        <span class="activity-date">2 days ago</span>#}
+                    {#                    </li>#}
+                    {#                    <li class="activity-item">#}
+                    {#                        <p><strong>Collaboration Invite:</strong> Join the "PMTCT Best Practices" workgroup</p>#}
+                    {#                        <span class="activity-date">3 days ago</span>#}
+                    {#                    </li>#}
                 </ul>
             </section>
         </div>

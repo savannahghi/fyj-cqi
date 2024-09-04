@@ -4,6 +4,8 @@ from collections import defaultdict
 from datetime import datetime
 from io import BytesIO
 from itertools import tee
+
+from django.core.cache import cache
 from django.shortcuts import render
 import plotly.express as px
 from django.utils.functional import cached_property
@@ -19,7 +21,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Count, F,Q
+from django.db.models import Case, Count, F, IntegerField, Max, Prefetch, Q, Value, When
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
@@ -27,6 +29,7 @@ from django.urls import reverse
 from django.utils import timezone
 from plotly.offline import plot
 from reportlab.pdfgen import canvas
+# from silk.profiling.profiler import silk_profile
 
 from apps.account.forms import UpdateUserForm
 from .filters import *
@@ -6927,77 +6930,123 @@ def home_page(request):
     return render(request, "account/user landing page.html", context)
 
 
+def get_cache_key(chart_name, hub_name=None):
+    if hub_name:
+        return f"chart_{chart_name}_{hub_name}"
+    return f"chart_{chart_name}"
 
 
+def get_or_create_chart(chart_name, create_func, hub_name=None, timeout=3600):
+    cache_key = get_cache_key(chart_name, hub_name)
+    cached_chart = cache.get(cache_key)
 
-from django.core.cache import cache
-from django.db.models import Prefetch
-from itertools import chain
-from django.shortcuts import render
-from django.http import HttpResponseBadRequest, JsonResponse
-from django.template.loader import render_to_string
-from django.utils.safestring import mark_safe
-import plotly.graph_objs as go
-import plotly.express as px
-import plotly.io as pio
-import pandas as pd
+    if cached_chart is None:
+        chart = create_func()
+        cache.set(cache_key, chart, timeout)
+        return chart
 
-from django.core.cache import cache
-from django.db.models import Prefetch, Max
-from django.utils import timezone
+    return cached_chart
 
+
+# @silk_profile(name='projects_with_gaps')
 @login_required(login_url='login')
 def projects_with_gaps(request):
-    selected_hub = request.GET.get('hub_name')
+    selected_hub = get_selected_hub(request)
     all_hubs = Hub.objects.all()
 
-    if not selected_hub:
-        try:
-            selected_hub = Hub.objects.first().hub
-        except AttributeError:
-            return HttpResponseBadRequest("No hubs available")
+    # Get all hub data at once
+    all_hub_data = get_all_hub_gaps()
 
-    gap_fields = [
-        'missing_root_cause_analysis',
-        'missing_tested_change',
-        'missing_qi_team_members',
-        'missing_baseline',
-        'missing_action_plan',
-        'missing_milestones'
-    ]
+    # Create or retrieve cached charts
+    overall_heatmap = get_or_create_chart('overall_heatmap', lambda: create_overall_heatmap(all_hub_data.values()))
+    overall_bar_chart = get_or_create_chart('overall_bar_chart',
+                                            lambda: create_overall_bar_chart(all_hub_data.values()))
+    overall_projects_chart = get_or_create_chart('overall_projects_chart',
+                                                 lambda: create_overall_projects_chart(all_hub_data.values()))
 
-    def get_hub_gaps(hub):
-        cache_key = f'hub_gaps_{hub.id}'
-        last_update_key = f'hub_last_update_{hub.id}'
-        
-        cached_data = cache.get(cache_key)
-        last_cached_update = cache.get(last_update_key)
+    selected_hub_data = next((data for data in all_hub_data.values() if data['hub_name'] == selected_hub), None)
+    if not selected_hub_data:
+        return HttpResponseBadRequest(f"No data found for hub: {selected_hub}")
 
-        # Get the latest update time for projects in this hub
-        latest_update = max(
-            QI_Projects.objects.filter(hub=hub).aggregate(Max('date_updated'))['date_updated__max'] or timezone.now(),
-            Hub_qi_projects.objects.filter(hub=hub).aggregate(Max('date_updated'))['date_updated__max'] or timezone.now()
-        )
+    hub_gap_chart = get_or_create_chart('hub_gap_chart', lambda: create_hub_gap_chart(selected_hub_data), selected_hub)
+    hub_pie_chart = get_or_create_chart('hub_pie_chart', lambda: create_hub_pie_chart(selected_hub_data), selected_hub)
 
-        # If cached data exists and no updates since last cache, return cached data
-        if cached_data and last_cached_update and last_cached_update >= latest_update:
-            return cached_data
+    context = prepare_context(selected_hub, selected_hub_data, all_hubs, hub_gap_chart, hub_pie_chart,
+                              overall_heatmap, overall_bar_chart, overall_projects_chart)
 
-        # If we're here, we need to fetch new data
+    return handle_response(request, context)
+
+
+def handle_response(request, context):
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # For AJAX requests, render only the hub details
+        html = render_to_string('project/hub_details.html', context, request=request)
+        return JsonResponse({'html': html})
+    else:
+        # For initial page load, render the full page
+        return render(request, 'account/projects_with_gaps.html', context)
+
+
+# @silk_profile(name='get_all_hub_gaps')
+def get_all_hub_gaps():
+    cache_key = 'all_hub_gaps'
+    last_update_key = 'all_hub_last_update'
+
+    cached_data = cache.get(cache_key)
+    last_cached_update = cache.get(last_update_key)
+
+    latest_update = max(
+        QI_Projects.objects.aggregate(Max('date_updated'))['date_updated__max'] or timezone.now(),
+        Hub_qi_projects.objects.aggregate(Max('start_date'))['start_date__max'] or timezone.now(),
+    )
+
+    if cached_data and last_cached_update and last_cached_update >= latest_update:
+        return cached_data
+
+    all_hubs = Hub.objects.all()
+    all_hub_gaps = {}
+
+    for hub in all_hubs:
         facility_projects = QI_Projects.objects.filter(hub=hub).prefetch_related(
-            'baseline_set',
-            'testedchange_set',
-            'actionplan_set',
-            'milestone_set',
-            'qi_team_members'
+            Prefetch('baseline_set', queryset=Baseline.objects.all(), to_attr='prefetched_baselines'),
+            Prefetch('testedchange_set', queryset=TestedChange.objects.all(), to_attr='prefetched_testedchanges'),
+            Prefetch('actionplan_set', queryset=ActionPlan.objects.all(), to_attr='prefetched_actionplans'),
+            Prefetch('milestone_set', queryset=Milestone.objects.all(), to_attr='prefetched_milestones'),
+            Prefetch('qi_team_members', queryset=Qi_team_members.objects.all(), to_attr='prefetched_qi_team_members')
+        ).annotate(
+            missing_root_cause_analysis=Case(
+                When(process_analysis='', then=Value(1)),
+                When(process_analysis__isnull=True, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            ),
+            has_tested_change=Count('testedchange'),
+            has_qi_team_members=Count('qi_team_members'),
+            has_baseline=Count('baseline'),
+            has_action_plan=Count('actionplan'),
+            has_milestones=Count('milestone')
         )
+
         hub_projects = Hub_qi_projects.objects.filter(hub=hub).prefetch_related(
-            'baseline_set',
-            'testedchange_set',
-            'actionplan_set',
-            'milestone_set',
-            'qi_team_members'
+            Prefetch('baseline_set', queryset=Baseline.objects.all(), to_attr='prefetched_baselines'),
+            Prefetch('testedchange_set', queryset=TestedChange.objects.all(), to_attr='prefetched_testedchanges'),
+            Prefetch('actionplan_set', queryset=ActionPlan.objects.all(), to_attr='prefetched_actionplans'),
+            Prefetch('milestone_set', queryset=Milestone.objects.all(), to_attr='prefetched_milestones'),
+            Prefetch('qi_team_members', queryset=Qi_team_members.objects.all(), to_attr='prefetched_qi_team_members')
+        ).annotate(
+            missing_root_cause_analysis=Case(
+                When(process_analysis='', then=Value(1)),
+                When(process_analysis__isnull=True, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            ),
+            has_tested_change=Count('testedchange'),
+            has_qi_team_members=Count('qi_team_members'),
+            has_baseline=Count('baseline'),
+            has_action_plan=Count('actionplan'),
+            has_milestones=Count('milestone')
         )
+
         all_projects = list(chain(facility_projects, hub_projects))
 
         hub_gaps = {
@@ -7009,12 +7058,28 @@ def projects_with_gaps(request):
         }
 
         for project in all_projects:
-            project.missing_details = check_missing_details(project)
-            project_gaps = [field for field in gap_fields if project.missing_details[field]]
+            project_gaps = []
+            if project.missing_root_cause_analysis:
+                project_gaps.append('missing_root_cause_analysis')
+                hub_gaps['gap_counts']['missing_root_cause_analysis'] += 1
+            if not project.has_tested_change:
+                project_gaps.append('missing_tested_change')
+                hub_gaps['gap_counts']['missing_tested_change'] += 1
+            if not project.has_qi_team_members:
+                project_gaps.append('missing_qi_team_members')
+                hub_gaps['gap_counts']['missing_qi_team_members'] += 1
+            if not project.has_baseline:
+                project_gaps.append('missing_baseline')
+                hub_gaps['gap_counts']['missing_baseline'] += 1
+            if not project.has_action_plan:
+                project_gaps.append('missing_action_plan')
+                hub_gaps['gap_counts']['missing_action_plan'] += 1
+            if not project.has_milestones:
+                project_gaps.append('missing_milestones')
+                hub_gaps['gap_counts']['missing_milestones'] += 1
+
             if project_gaps:
                 hub_gaps['projects_with_gaps'] += 1
-                for gap in project_gaps:
-                    hub_gaps['gap_counts'][gap] += 1
                 hub_gaps['projects'].append({
                     'id': project.id,
                     'title': project.project_title,
@@ -7022,16 +7087,52 @@ def projects_with_gaps(request):
                     'gaps': project_gaps,
                 })
 
-        # Cache the new data and update the last update time
-        cache.set(cache_key, hub_gaps, 3600)  # Cache for 1 hour
-        cache.set(last_update_key, timezone.now(), 3600)
+        all_hub_gaps[hub.id] = hub_gaps
 
-        return hub_gaps
+    cache.set(cache_key, all_hub_gaps, 3600)  # Cache for 1 hour
+    cache.set(last_update_key, timezone.now(), 3600)
 
-    # Fetch projects and gap data for all hubs
-    all_hub_data = [get_hub_gaps(hub) for hub in all_hubs]
+    return all_hub_gaps
 
-    # Create overall heatmap
+
+# Define gap_fields at the module level
+gap_fields = [
+    'missing_root_cause_analysis',
+    'missing_tested_change',
+    'missing_qi_team_members',
+    'missing_baseline',
+    'missing_action_plan',
+    'missing_milestones'
+]
+
+
+def prepare_context(selected_hub, selected_hub_data, all_hubs, hub_gap_chart, hub_pie_chart,
+                    overall_heatmap, overall_bar_chart, overall_projects_chart):
+    total_projects, projects_with_gaps_count, gap_percentage = calculate_hub_statistics(selected_hub_data)
+
+    return {
+        'hub_name': selected_hub,
+        'projects_with_gaps': selected_hub_data['projects'],
+        'available_hubs': all_hubs,
+        'gap_chart': mark_safe(hub_gap_chart),
+        'type_chart': mark_safe(hub_pie_chart),
+        'total_projects': total_projects,
+        'projects_with_gaps_count': projects_with_gaps_count,
+        'gap_percentage': gap_percentage,
+        'overall_heatmap': mark_safe(overall_heatmap),
+        'overall_bar_chart': mark_safe(overall_bar_chart),
+        'overall_projects_chart': mark_safe(overall_projects_chart)
+    }
+
+
+def get_selected_hub(request):
+    selected_hub_name = request.GET.get('hub_name')
+    if not selected_hub_name:
+        return Hub.objects.first().hub
+    return selected_hub_name
+
+
+def create_overall_heatmap(all_hub_data):
     heatmap_data = []
     for hub_data in all_hub_data:
         heatmap_data.append([hub_data['gap_counts'][field] for field in gap_fields])
@@ -7042,9 +7143,10 @@ def projects_with_gaps(request):
         y=[hub['hub_name'] for hub in all_hub_data],
         colorscale='PuRd'))
     fig_heatmap.update_layout(title='Gap Distribution Across All Hubs', xaxis_title='Gap Types', yaxis_title='Hubs')
-    overall_heatmap = pio.to_html(fig_heatmap, full_html=False)
+    return pio.to_html(fig_heatmap, full_html=False)
 
-    # Create overall bar chart
+
+def create_overall_bar_chart(all_hub_data):
     df_overall = pd.DataFrame(all_hub_data)
     df_overall_sorted = df_overall.sort_values('projects_with_gaps', ascending=False)
     fig_overall = px.bar(df_overall_sorted, x='hub_name', y='projects_with_gaps', height=500,
@@ -7052,40 +7154,39 @@ def projects_with_gaps(request):
                          labels={'hub_name': 'Hub', 'projects_with_gaps': 'Number of Projects with Gaps'},
                          color_discrete_sequence=['#0A255C'])
     fig_overall.update_traces(textposition='outside')
-    overall_bar_chart = pio.to_html(fig_overall, full_html=False)
+    return pio.to_html(fig_overall, full_html=False)
 
-    # Get data for the selected hub
-    selected_hub_data = next((hub for hub in all_hub_data if hub['hub_name'] == selected_hub), None)
-    if not selected_hub_data:
-        return HttpResponseBadRequest(f"No data found for hub: {selected_hub}")
 
-    # Create visualizations for the selected hub
-    df_hub = pd.DataFrame(list(selected_hub_data['gap_counts'].items()), columns=['Gap', 'Count'])
+def create_hub_gap_chart(hub_data):
+    df_hub = pd.DataFrame(list(hub_data['gap_counts'].items()), columns=['Gap', 'Count'])
     fig_hub = px.bar(df_hub.sort_values('Count', ascending=False), x='Gap', y='Count',
-                     title=f'Gap Distribution for {selected_hub}',
+                     title=f'Gap Distribution for {hub_data["hub_name"]}',
                      color_discrete_sequence=['#0A255C'], text='Count')
-    hub_gap_chart = pio.to_html(fig_hub, full_html=False)
+    return pio.to_html(fig_hub, full_html=False)
 
-    fig_pie = px.pie(df_hub, values='Count', names='Gap', title=f'Gap Distribution in {selected_hub}')
 
-    hub_pie_chart = pio.to_html(fig_pie, full_html=False)
+def create_hub_pie_chart(hub_data):
+    df_hub = pd.DataFrame(list(hub_data['gap_counts'].items()), columns=['Gap', 'Count'])
+    fig_pie = px.pie(df_hub, values='Count', names='Gap', title=f'Gap Distribution in {hub_data["hub_name"]}')
+    return pio.to_html(fig_pie, full_html=False)
 
-    # Calculate statistics for the selected hub
-    total_projects = selected_hub_data['total_projects']
-    projects_with_gaps_count = selected_hub_data['projects_with_gaps']
+
+def calculate_hub_statistics(hub_data):
+    total_projects = hub_data['total_projects']
+    projects_with_gaps_count = hub_data['projects_with_gaps']
     gap_percentage = round((projects_with_gaps_count / total_projects) * 100, 1) if total_projects > 0 else 0
+    return total_projects, projects_with_gaps_count, gap_percentage
 
-    # Prepare data for all hubs
+
+def create_overall_projects_chart(all_hub_data):
     hub_data_sorted = sorted(all_hub_data, key=lambda x: x['total_projects'], reverse=True)
     hub_names = [hub['hub_name'] for hub in hub_data_sorted]
     projects_with_gaps_data = [hub['projects_with_gaps'] for hub in hub_data_sorted]
     projects_without_gaps_data = [hub['total_projects'] - hub['projects_with_gaps'] for hub in hub_data_sorted]
     total_projects_data = [hub['total_projects'] for hub in hub_data_sorted]
 
-    # Calculate total projects across all hubs
     total_hub_projects = sum(total_projects_data)
 
-    # Create the stacked bar chart for all hubs
     fig_overall = go.Figure(data=[
         go.Bar(name='Projects without Gaps', x=hub_names, y=projects_without_gaps_data, marker_color='#0A255C',
                text=[f"{y} ({y / t * 100:.1f}%)" for y, t in zip(projects_without_gaps_data, total_projects_data)],
@@ -7095,7 +7196,6 @@ def projects_with_gaps(request):
                textposition='inside')
     ])
 
-    # Add total projects annotation on top of each stacked bar
     for i, total in enumerate(total_projects_data):
         fig_overall.add_annotation(
             x=hub_names[i],
@@ -7112,10 +7212,9 @@ def projects_with_gaps(request):
         xaxis_title='Hubs',
         yaxis_title='Number of Projects',
         legend_title='Project Status',
-        height=500,  # Adjust the height as needed
+        height=500,
     )
 
-    # Ensure text is always visible
     fig_overall.update_traces(textfont=dict(size=10, color="white"))
     fig_overall.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
     fig_overall.update_layout(legend=dict(
@@ -7126,27 +7225,4 @@ def projects_with_gaps(request):
         x=1
     ))
 
-    overall_projects_chart = pio.to_html(fig_overall, full_html=False)
-
-    context = {
-        'hub_name': selected_hub,
-        'projects_with_gaps': selected_hub_data['projects'],
-        'available_hubs': all_hubs,
-        'gap_chart': mark_safe(hub_gap_chart),
-        'type_chart': mark_safe(hub_pie_chart),
-        'total_projects': total_projects,
-        'projects_with_gaps_count': projects_with_gaps_count,
-        'gap_percentage': gap_percentage,
-        'overall_heatmap': mark_safe(overall_heatmap),
-        'overall_bar_chart': mark_safe(overall_bar_chart),
-        'overall_projects_chart': mark_safe(overall_projects_chart)
-    }
-
-    # return render(request, "account/projects_with_gaps.html", context)
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        # For AJAX requests, render only the hub details
-        html = render_to_string('project/hub_details.html', context, request=request)
-        return JsonResponse({'html': html})
-    else:
-        # For initial page load, render the full page
-        return render(request, 'account/projects_with_gaps.html', context)
+    return pio.to_html(fig_overall, full_html=False)

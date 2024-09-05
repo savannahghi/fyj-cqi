@@ -14,6 +14,11 @@ class QI_ProjectsAdmin(admin.ModelAdmin):
     # form = QI_ProjectsForm
     search_fields = ("facility_name__name", "facility_name__mfl_code","project_title","created_by__first_name",
                      "created_by__username")
+@admin.register(PlatformUpdate)
+class PlatformUpdateAdmin(admin.ModelAdmin):
+    list_display = ('update_type', 'created_at', 'is_active')
+    list_filter = ('update_type', 'is_active')
+    search_fields = ('update_type', 'description')
 
 
 # admin.site.register(QI_Projects, QI_ProjectsAdmin)

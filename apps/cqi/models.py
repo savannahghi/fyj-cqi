@@ -1115,3 +1115,24 @@ class RootCauseImages(models.Model):
         if commit:
             image_resize(self.root_cause_image, 500, 500)
         super().save(*args, **kwargs)
+
+
+class PlatformUpdate(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+    description = models.TextField()
+    update_type = models.CharField(max_length=50, choices=[
+        ('feature', 'New Feature'),
+        ('improvement', 'Improvement'),
+        ('bug_fix', 'Bug Fix'),
+        ('announcement', 'Announcement'),
+    ])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = "Platform Updates"
+
+    def __str__(self):
+        return str(self.update_type) + " : " + str(self.description)

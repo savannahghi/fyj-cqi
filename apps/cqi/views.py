@@ -18,7 +18,8 @@ import pandas as pd
 
 import inflect
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required,user_passes_test
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
@@ -36,7 +37,7 @@ from reportlab.pdfgen import canvas
 from apps.account.forms import UpdateUserForm
 from .filters import *
 from .forms import ActionPlanForm, ArchiveProjectForm, BaselineForm, BestPerformingForm, CategoryForm, CommentForm, \
-    CountiesForm, DepartmentForm, FacilitiesForm, HubForm, Lesson_learnedForm, MilestoneForm, ProgramForm, \
+    CountiesForm, DepartmentForm, FacilitiesForm, HubForm, Lesson_learnedForm, MilestoneForm, PlatformUpdateForm, ProgramForm, \
     ProjectCommentsForm, ProjectResponsesForm, QI_ProjectsConfirmForm, QI_ProjectsForm, QI_ProjectsSubcountyForm, \
     QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, Qi_team_membersForm, \
     ResourcesForm, RootCauseImagesForm, ShowTriggerForm, StakeholderForm, Sub_countiesForm, SustainmentPlanForm, \
@@ -6853,6 +6854,8 @@ def check_missing_details(project):
     }
 
 
+from .models import PlatformUpdate
+
 @login_required(login_url='login')
 def home_page(request):
     user_email = request.user.email
@@ -6918,6 +6921,9 @@ def home_page(request):
     total_projects_count = len(all_projects)
     projects_with_gaps_count = len(projects_with_gaps)
 
+    # Fetch recent platform updates
+    platform_updates = PlatformUpdate.objects.filter(is_active=True).order_by('-created_at')[:5]
+
     context = {
         'all_projects': all_projects_with_roles,
         'total_projects_count': total_projects_count,
@@ -6927,6 +6933,7 @@ def home_page(request):
         'managed_count': managed_count,
         'team_member_count': team_member_count,
         'available_hubs': Hub.objects.all(),
+        'platform_updates': platform_updates,
     }
 
     return render(request, "account/user landing page.html", context)
@@ -7414,3 +7421,24 @@ def create_overall_projects_chart(all_hub_data):
     ))
 
     return pio.to_html(fig_overall, full_html=False)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def add_platform_update(request):
+    form = PlatformUpdateForm(request.POST)
+    if form.is_valid():
+        update = form.save(commit=False)
+        update.created_by = request.user
+        update.save()
+        return JsonResponse({'status': 'success'})
+    else:
+        errors = form.errors.as_json()
+        return JsonResponse({'status': 'error', 'message': errors})
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def delete_platform_update(request, pk):
+    update = get_object_or_404(PlatformUpdate, pk=pk)
+    update.delete()
+    return JsonResponse({'status': 'success'})

@@ -879,3 +879,7 @@ class BestPerformingForm(forms.Form):
         label="Choose threshold (%)",
         widget=forms.Select(attrs={'class': 'form-control select2'})
     )
+class PlatformUpdateForm(ModelForm):
+    class Meta:
+        model = PlatformUpdate
+        fields = ['update_type', 'description']

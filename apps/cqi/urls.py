@@ -3,7 +3,7 @@ from django.urls import include, path
 from django.contrib.auth import views as auth_views
 
 from apps.account.views import update_profile
-from apps.cqi.views import dashboard, deep_dive_facilities, home_page, load_data, monthly_data_review, deep_dive_chmt, projects_with_gaps, \
+from apps.cqi.views import add_platform_update, dashboard, deep_dive_facilities, delete_platform_update, home_page, load_data, monthly_data_review, deep_dive_chmt, projects_with_gaps, \
     qi_team_members_view, qi_managers_view, archived, audit_trail, show_all_comments, comments_no_response, \
     comments_with_response, single_project_comments, update_comments, comments_response, update_response, \
     untracked_projects, resources, sub_counties_list, single_project, single_project_program, facility_project, \
@@ -25,6 +25,9 @@ from apps.cqi.views import dashboard, deep_dive_facilities, home_page, load_data
     completed_closed_hub, action_plans_for_responsible_person, qiteam_member_filter_project
 
 urlpatterns = [
+    # ... existing patterns ...
+    path('add-platform-update/', add_platform_update, name='add_platform_update'),
+    path('delete-platform-update/<uuid:pk>/', delete_platform_update, name='delete_platform_update'),
     # ... existing patterns ...
     path('projects-with-gaps/', projects_with_gaps, name='projects_with_gaps'),
     path('', dashboard, name="dashboard"),

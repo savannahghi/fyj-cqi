@@ -7442,3 +7442,15 @@ def delete_platform_update(request, pk):
     update = get_object_or_404(PlatformUpdate, pk=pk)
     update.delete()
     return JsonResponse({'status': 'success'})
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def update_platform_update(request, pk):
+    update = get_object_or_404(PlatformUpdate, pk=pk)
+    form = PlatformUpdateForm(request.POST, instance=update)
+    if form.is_valid():
+        form.save()
+        return JsonResponse({'status': 'success'})
+    else:
+        errors = form.errors.as_json()
+        return JsonResponse({'status': 'error', 'message': errors})

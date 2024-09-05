@@ -22,12 +22,13 @@ from apps.cqi.views import add_platform_update, dashboard, deep_dive_facilities,
     delete_milestone, delete_action_plan, delete_lesson_learnt, delete_comments, delete_sustainable_plan, \
     download_lessons, download_pdf, add_trigger, completed_closed_program, single_project_subcounty, \
     single_project_county, single_project_hub, completed_closed_subcounty, completed_closed_county, \
-    completed_closed_hub, action_plans_for_responsible_person, qiteam_member_filter_project
+    completed_closed_hub, action_plans_for_responsible_person, qiteam_member_filter_project, update_platform_update
 
 urlpatterns = [
     # ... existing patterns ...
     path('add-platform-update/', add_platform_update, name='add_platform_update'),
     path('delete-platform-update/<uuid:pk>/', delete_platform_update, name='delete_platform_update'),
+    path('update-platform-update/<uuid:pk>/', update_platform_update, name='update_platform_update'),
     # ... existing patterns ...
     path('projects-with-gaps/', projects_with_gaps, name='projects_with_gaps'),
     path('', dashboard, name="dashboard"),

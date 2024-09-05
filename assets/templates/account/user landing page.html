@@ -507,6 +507,7 @@
                     <p><strong>{{ update.get_update_type_display }}:</strong> {{ update.description }}</p>
                     <span class="activity-date">{{ update.created_at|date:"F d, Y" }}</span>
                     {% if user.is_superuser %}
+                    <button class="btn btn-primary btn-sm edit-update" data-update-id="{{ update.id }}" data-update-type="{{ update.update_type }}" data-description="{{ update.description }}">Edit</button>
                     <button class="btn btn-danger btn-sm delete-update" data-update-id="{{ update.id }}">Delete</button>
                     {% endif %}
                 </li>
@@ -588,6 +589,43 @@
             </div>
         </div>
 
+        <!-- Edit Update Modal -->
+        <div class="modal fade" id="editUpdateModal" tabindex="-1" role="dialog" aria-labelledby="editUpdateModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editUpdateModalLabel">Edit Platform Update</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editUpdateForm">
+                            {% csrf_token %}
+                            <input type="hidden" id="edit_update_id" name="update_id">
+                            <div class="form-group">
+                                <label for="edit_update_type">Update Type</label>
+                                <select class="form-control" id="edit_update_type" name="update_type" required>
+                                    <option value="feature">New Feature</option>
+                                    <option value="improvement">Improvement</option>
+                                    <option value="bug_fix">Bug Fix</option>
+                                    <option value="announcement">Announcement</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_description">Description</label>
+                                <textarea class="form-control" id="edit_description" name="description" rows="3" required autocomplete="off"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="submitEditUpdate">Update</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Add this script at the end of your template, just before the closing </body> tag -->
         <script>
             $(document).ready(function () {
@@ -655,6 +693,58 @@
                 // Optional: Clear form when modal is hidden
                 $('#addUpdateModal').on('hidden.bs.modal', function () {
                     $('#addUpdateForm')[0].reset();
+                });
+
+                // Edit Update functionality
+                $('.edit-update').click(function () {
+                    var updateId = $(this).data('update-id');
+                    var updateType = $(this).data('update-type');
+                    var description = $(this).data('description');
+
+                    $('#edit_update_id').val(updateId);
+                    $('#edit_update_type').val(updateType);
+                    $('#edit_description').val(description).trigger('focus');  // Add focus here
+
+                    $('#editUpdateModal').modal('show');
+                });
+
+                // Ensure the description is not cleared when clicking
+                $('#edit_description').on('focus', function() {
+                    var value = $(this).val();
+                    $(this).val('').val(value);
+                });
+
+                $('#submitEditUpdate').click(function () {
+                    var formData = $('#editUpdateForm').serialize();
+                    var updateId = $('#edit_update_id').val();
+
+                    $.ajax({
+                        url: '/update-platform-update/' + updateId + '/',
+                        type: 'POST',
+                        data: formData,
+                        success: function (response) {
+                            if (response.status === 'success') {
+                                location.reload();
+                            } else {
+                                alert('Error updating update: ' + response.message);
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error('Error updating update:', error);
+                            alert('An error occurred while updating the update. Please try again.');
+                        }
+                    });
+                    $('#editUpdateModal').modal('hide');
+                });
+
+                // Add these lines to handle the cancel and close actions for the Edit Update modal
+                $('#editUpdateModal .close, #editUpdateModal .btn-secondary').click(function () {
+                    $('#editUpdateModal').modal('hide');
+                });
+
+                // Optional: Clear form when modal is hidden
+                $('#editUpdateModal').on('hidden.bs.modal', function () {
+                    $('#editUpdateForm')[0].reset();
                 });
             });
         </script>

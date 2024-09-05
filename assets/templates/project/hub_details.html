@@ -98,6 +98,11 @@
     {{ type_chart|safe }}
 </div>
 
+<div>
+    <h3>Gap per facility</h3>
+    {{ facilities_gap_chart|safe }}
+</div>
+
 <h3>Projects with Gaps</h3>
 <section class="project-list">
     {% if projects_with_gaps %}
@@ -129,8 +134,21 @@
 
                 {% if project.type == 'QI_Projects' %}
                     <p class="project-role">Type: Facility project</p>
-                {% else %}
+                    <p class="project-role">Facility: {{ project.facility_name }}</p>
+                {% elif project.type == 'Hub_qi_projects' %}
                     <p class="project-role">Type: Hub project</p>
+                    <p class="project-role">Hub: {{ project.hub_name }}</p>
+                {% elif project.type == 'Program_qi_projects' %}
+                    <p class="project-role">Type: Program project</p>
+                    <p class="project-role">Program: {{ project.program_name }}</p>
+                {% elif project.type == 'Subcounty_qi_projects' %}
+                    <p class="project-role">Type: Subcounty project</p>
+                    <p class="project-role">Sub-county: {{ project.subcounty_name }}</p>
+                {% elif project.type == 'County_qi_projects' %}
+                    <p class="project-role">Type: County project</p>
+                    <p class="project-role">County: {{ project.county_name }}</p>
+                {% else %}
+                    <p class="project-role">Type: Unknown project type</p>
                 {% endif %}
                 <div class="project-gaps">
                     <h3>Gaps:</h3>

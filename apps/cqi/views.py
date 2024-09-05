@@ -4,7 +4,8 @@ from collections import defaultdict
 from datetime import datetime
 from io import BytesIO
 from itertools import tee
-
+import matplotlib.colors as mcolors
+import numpy as np
 from django.core.cache import cache
 from django.shortcuts import render
 import plotly.express as px
@@ -21,12 +22,13 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Case, Count, F, IntegerField, Max, Prefetch, Q, Value, When
+from django.db.models import Case, Count, F, IntegerField, Max, Prefetch, Q, Sum, Value, When
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from matplotlib import pyplot as plt
 from plotly.offline import plot
 from reportlab.pdfgen import canvas
 # from silk.profiling.profiler import silk_profile
@@ -6970,9 +6972,12 @@ def projects_with_gaps(request):
 
     hub_gap_chart = get_or_create_chart('hub_gap_chart', lambda: create_hub_gap_chart(selected_hub_data), selected_hub)
     hub_pie_chart = get_or_create_chart('hub_pie_chart', lambda: create_hub_pie_chart(selected_hub_data), selected_hub)
+    
+    # New: Create facilities gap chart
+    facilities_gap_chart = get_or_create_chart('facilities_gap_chart', lambda: create_facilities_gap_chart(selected_hub), selected_hub)
 
     context = prepare_context(selected_hub, selected_hub_data, all_hubs, hub_gap_chart, hub_pie_chart,
-                              overall_heatmap, overall_bar_chart, overall_projects_chart)
+                              overall_heatmap, overall_bar_chart, overall_projects_chart, facilities_gap_chart)
 
     return handle_response(request, context)
 
@@ -7080,12 +7085,23 @@ def get_all_hub_gaps():
 
             if project_gaps:
                 hub_gaps['projects_with_gaps'] += 1
-                hub_gaps['projects'].append({
+                project_info = {
                     'id': project.id,
                     'title': project.project_title,
                     'type': project.__class__.__name__,
                     'gaps': project_gaps,
-                })
+                }
+                if isinstance(project, QI_Projects):
+                    project_info['facility_name'] = project.facility_name.name if project.facility_name else 'N/A'
+                elif isinstance(project, Hub_qi_projects):
+                    project_info['hub_name'] = project.hub.hub if project.hub else 'N/A'
+                elif isinstance(project, Program_qi_projects):
+                    project_info['program_name'] = project.program.program if project.program else 'N/A'
+                elif isinstance(project, Subcounty_qi_projects):
+                    project_info['subcounty_name'] = project.sub_county.sub_counties if project.sub_county else 'N/A'
+                elif isinstance(project, County_qi_projects):
+                    project_info['county_name'] = project.county.county_name if project.county else 'N/A'
+                hub_gaps['projects'].append(project_info)
 
         all_hub_gaps[hub.id] = hub_gaps
 
@@ -7107,7 +7123,7 @@ gap_fields = [
 
 
 def prepare_context(selected_hub, selected_hub_data, all_hubs, hub_gap_chart, hub_pie_chart,
-                    overall_heatmap, overall_bar_chart, overall_projects_chart):
+                    overall_heatmap, overall_bar_chart, overall_projects_chart, facilities_gap_chart):
     total_projects, projects_with_gaps_count, gap_percentage = calculate_hub_statistics(selected_hub_data)
 
     return {
@@ -7121,9 +7137,173 @@ def prepare_context(selected_hub, selected_hub_data, all_hubs, hub_gap_chart, hu
         'gap_percentage': gap_percentage,
         'overall_heatmap': mark_safe(overall_heatmap),
         'overall_bar_chart': mark_safe(overall_bar_chart),
-        'overall_projects_chart': mark_safe(overall_projects_chart)
+        'overall_projects_chart': mark_safe(overall_projects_chart),
+        'facilities_gap_chart': mark_safe(facilities_gap_chart)  # Add this line
     }
+# from django.db.models import Count, Case, When, Value, IntegerField, Sum
+# import pandas as pd
+# import plotly.express as px
+# import plotly.io as pio
+#
+# from django.db.models import Count, Case, When, Value, IntegerField, Sum, Q
+# import pandas as pd
+# import plotly.express as px
+# import plotly.io as pio
+#
+#
+# import plotly.graph_objects as go
+# from django.db.models import Count, Case, When, Value, IntegerField, Sum, Q
+# import pandas as pd
+# import plotly.express as px
+# import plotly.io as pio
+#
+# import numpy as np
+# import matplotlib.pyplot as plt
 
+# Define a color-blind friendly palette
+color_blind_friendly_palette = [
+    '#1f77b4',  # Blue
+    '#ff7f0e',  # Orange
+    '#2ca02c',  # Green
+    '#e377c2',  # Pink
+    '#8c564b',  # Brown
+    '#9467bd',  # Purple
+]
+
+# Ensure we have enough colors for all gap types
+if len(gap_fields) > len(color_blind_friendly_palette):
+    # If we need more colors, we can use a colormap to generate additional colors
+    additional_colors = plt.cm.get_cmap('tab20')(np.linspace(0, 1, len(gap_fields) - len(color_blind_friendly_palette)))
+    additional_colors = [mcolors.rgb2hex(color[:3]) for color in additional_colors]
+    color_blind_friendly_palette.extend(additional_colors)
+
+# Create a dictionary mapping gap types to colors
+gap_color_map = dict(zip(gap_fields, color_blind_friendly_palette))
+
+def create_facilities_gap_chart(hub_name):
+    hub = Hub.objects.get(hub=hub_name)
+    
+    # Get all distinct QI_Projects for the given hub
+    projects = QI_Projects.objects.filter(hub=hub).distinct()
+    
+    # Get unique facilities from these projects
+    facilities = Facilities.objects.filter(qi_projects__in=projects).distinct()
+
+    facility_data = []
+    for facility in facilities:
+        facility_projects = projects.filter(facility_name=facility).distinct()
+        
+        total_projects = facility_projects.count()
+        
+        projects_with_gaps = facility_projects.annotate(
+            missing_root_cause_analysis=Case(
+                When(process_analysis='', then=Value(1)),
+                When(process_analysis__isnull=True, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            ),
+            missing_tested_change=Case(When(testedchange__isnull=True, then=Value(1)), default=Value(0)),
+            missing_qi_team_members=Case(When(qi_team_members__isnull=True, then=Value(1)), default=Value(0)),
+            missing_baseline=Case(When(baseline__isnull=True, then=Value(1)), default=Value(0)),
+            missing_action_plan=Case(When(actionplan__isnull=True, then=Value(1)), default=Value(0)),
+            missing_milestones=Case(When(milestone__isnull=True, then=Value(1)), default=Value(0))
+        ).filter(Q(missing_root_cause_analysis=1) | Q(missing_tested_change=1) | 
+                 Q(missing_qi_team_members=1) | Q(missing_baseline=1) | 
+                 Q(missing_action_plan=1) | Q(missing_milestones=1))
+
+        gap_counts = projects_with_gaps.aggregate(
+            **{f'total_{field}': Sum(field) for field in gap_fields}
+        )
+
+        # Calculate total_gaps
+        total_gaps = sum((gap_counts.get(f'total_{field}') or 0) for field in gap_fields)
+
+        # Check if the facility has any gaps
+        has_gaps = total_gaps > 0
+
+        if total_projects > 0 and has_gaps:
+            facility_data.append({
+                'facility': facility.name,
+                'total_projects': total_projects,
+                'projects_with_gaps': projects_with_gaps.count(),
+                'total_gaps': total_gaps,
+                **{field: gap_counts.get(f'total_{field}', 0) or 0 for field in gap_fields}
+            })
+
+    df_facilities = pd.DataFrame(facility_data).sort_values('total_gaps', ascending=False)
+    
+    if df_facilities.empty:
+        return "No facilities with gaps in this hub."
+
+    fig = go.Figure()
+
+    for gap_type in gap_fields:
+        fig.add_trace(go.Bar(
+            x=df_facilities['facility'],
+            y=df_facilities[gap_type],
+            name=gap_type,
+            marker_color=gap_color_map[gap_type],
+            text=df_facilities[gap_type],
+            textposition='auto',
+        ))
+
+    # Update layout with smaller font sizes
+    fig.update_layout(
+        barmode='stack',
+        title={
+            'text': f'Gap Distribution Across Facilities with Gaps in {hub_name}',
+            'y':0.95,
+            'x':0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+            'font': {'size': 16}  # Slightly smaller title font
+        },
+        xaxis_title='Facility Name',
+        yaxis_title='Total Number of Gaps',
+        legend_title='Type of Gap',
+        hovermode='closest',
+        font=dict(size=10),  # Smaller overall font size
+        margin=dict(l=50, r=50, t=100, b=50),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            font=dict(size=10)  # Smaller legend font size
+        )
+    )
+
+    # Update x-axis tick labels (facility names)
+    fig.update_xaxes(tickfont=dict(size=8))  # Smaller facility name font size
+
+    # Add annotations for total projects with gaps and proportion
+    for i, row in df_facilities.iterrows():
+        proportion = (row['projects_with_gaps'] / row['total_projects']) * 100
+        fig.add_annotation(
+            x=row['facility'],
+            y=row['total_gaps'],
+            text=f"{row['projects_with_gaps']} ({proportion:.1f}%)",
+            showarrow=False,
+            yshift=10,
+            font=dict(size=10)
+        )
+
+    # Update hover template
+    fig.update_traces(
+        hovertemplate="<br>".join([
+            "<b>%{x}</b>",
+            "Type of Gap: %{data.name}",
+            "Number of Projects with this Gap: %{y}",
+            "Total Facility Projects: %{customdata[0]}",
+            "Projects with At Least One Gap: %{customdata[1]}",
+            "Total Gaps: %{customdata[2]}",
+            "<extra></extra>"
+        ]),
+        customdata=df_facilities[['total_projects', 'projects_with_gaps', 'total_gaps']].values
+    )
+
+    return pio.to_html(fig, full_html=False)
 
 def get_selected_hub(request):
     selected_hub_name = request.GET.get('hub_name')
@@ -7167,7 +7347,15 @@ def create_hub_gap_chart(hub_data):
 
 def create_hub_pie_chart(hub_data):
     df_hub = pd.DataFrame(list(hub_data['gap_counts'].items()), columns=['Gap', 'Count'])
-    fig_pie = px.pie(df_hub, values='Count', names='Gap', title=f'Gap Distribution in {hub_data["hub_name"]}')
+    fig_pie = px.pie(df_hub, values='Count', names='Gap', 
+                     title=f'Gap Distribution in {hub_data["hub_name"]}',
+                     color='Gap',
+                     color_discrete_map=gap_color_map)
+    
+    # Improve readability
+    fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+    fig_pie.update_layout(legend_title_text='Gap Types')
+    
     return pio.to_html(fig_pie, full_html=False)
 
 

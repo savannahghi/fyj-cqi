@@ -135,18 +135,27 @@
                 {% if project.type == 'QI_Projects' %}
                     <p class="project-role">Type: Facility project</p>
                     <p class="project-role">Facility: {{ project.facility_name }}</p>
+                    <p class="project-role">Department: {{ project.department }}</p>
+                    <p class="project-role">Status: {{ project.measurement_status }}</p>
                 {% elif project.type == 'Hub_qi_projects' %}
                     <p class="project-role">Type: Hub project</p>
                     <p class="project-role">Hub: {{ project.hub_name }}</p>
+                    <p class="project-role">Department: {{ project.department }}</p>
+                    <p class="project-role">Status: {{ project.measurement_status }}</p>
                 {% elif project.type == 'Program_qi_projects' %}
                     <p class="project-role">Type: Program project</p>
                     <p class="project-role">Program: {{ project.program_name }}</p>
+                    <p class="project-role">Department: {{ project.department }}</p>
                 {% elif project.type == 'Subcounty_qi_projects' %}
                     <p class="project-role">Type: Subcounty project</p>
                     <p class="project-role">Sub-county: {{ project.subcounty_name }}</p>
+                    <p class="project-role">Department: {{ project.department }}</p>
+                    <p class="project-role">Status: {{ project.measurement_status }}</p>
                 {% elif project.type == 'County_qi_projects' %}
                     <p class="project-role">Type: County project</p>
                     <p class="project-role">County: {{ project.county_name }}</p>
+                    <p class="project-role">Department: {{ project.department }}</p>
+                    <p class="project-role">Status: {{ project.measurement_status }}</p>
                 {% else %}
                     <p class="project-role">Type: Unknown project type</p>
                 {% endif %}

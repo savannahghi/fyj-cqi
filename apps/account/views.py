@@ -2,9 +2,12 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.sessions.models import Session
-from django.http import HttpResponseRedirect
+from django.core.cache import cache
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
 
 # Create your views here.
 from apps.account.forms import CustomUserForm, UpdateUserForm
@@ -125,3 +128,13 @@ def logout_page(request):
 
     logout(request)
     return redirect("login")
+
+
+@require_POST
+@csrf_protect
+def clear_cache_view(request):
+    try:
+        cache.clear()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

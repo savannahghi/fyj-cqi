@@ -879,6 +879,77 @@
     });
 </script>
 
+<script>
+function clearCacheWithoutReload() {
+    // Make an AJAX call to your Django view that clears the cache
+    fetch('/clear-cache/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showPopup('Cache cleared successfully!', 'success');
+            // Optionally, update parts of your page here
+            // For example: updatePageContent();
+        } else {
+            showPopup('Failed to clear cache', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showPopup('An error occurred', 'error');
+    });
+}
+
+function showPopup(message, type) {
+    // Create popup element
+    const popup = document.createElement('div');
+    popup.textContent = message;
+    popup.style.position = 'fixed';
+    popup.style.top = '20px';
+    popup.style.right = '20px';
+    popup.style.padding = '10px 20px';
+    popup.style.borderRadius = '5px';
+    popup.style.color = 'white';
+    popup.style.zIndex = '1000';
+
+    // Set background color based on message type
+    if (type === 'success') {
+        popup.style.backgroundColor = 'green';
+    } else if (type === 'error') {
+        popup.style.backgroundColor = 'red';
+    }
+
+    // Add popup to body
+    document.body.appendChild(popup);
+
+    // Remove popup after 3 seconds
+    setTimeout(() => {
+        document.body.removeChild(popup);
+    }, 3000);
+}
+
+// Helper function to get CSRF token (same as before)
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
 
 {% block footer %}{% endblock %}
 </body>

@@ -338,6 +338,33 @@
     }
     #hubButtons {
         margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .clear-cache-btn {
+        background-color: transparent;
+        border: 1px solid var(--secondary-color);
+        color: var(--secondary-color);
+        padding: 8px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .clear-cache-btn:hover {
+        background-color: var(--secondary-color);
+        color: var(--white);
+    }
+
+    .clear-cache-btn i {
+        margin: 0;
     }
 
     /* Custom scrollbar styles for WebKit browsers */
@@ -383,7 +410,6 @@
 {{ overall_bar_chart|safe }}
 </div>
 <div id="hubButtons" class="mt-3">
-<label>Select Hub:</label>
 <div class="hub-button-container">
 <div class="btn-group hub-button-group" role="group" aria-label="Hub selection">
     {% if available_hubs %}
@@ -397,6 +423,9 @@
     {% endif %}
 </div>
 </div>
+<button onclick="clearCacheWithoutReload()" class="btn btn-outline-secondary clear-cache-btn">
+    <i class="fas fa-sync-alt"></i>
+</button>
 </div>
 <div id="loadingIndicator" style="display: none;">
 Loading... <div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>

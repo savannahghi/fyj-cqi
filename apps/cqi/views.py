@@ -7019,7 +7019,10 @@ def get_all_hub_gaps():
     all_hub_gaps = {}
 
     for hub in all_hubs:
-        facility_projects = QI_Projects.objects.filter(hub=hub).prefetch_related(
+        facility_projects = QI_Projects.objects.filter(
+            hub=hub,
+            measurement_status__in=['Started or Ongoing', 'Completed-or-Closed']
+        ).prefetch_related(
             Prefetch('baseline_set', queryset=Baseline.objects.all(), to_attr='prefetched_baselines'),
             Prefetch('testedchange_set', queryset=TestedChange.objects.all(), to_attr='prefetched_testedchanges'),
             Prefetch('actionplan_set', queryset=ActionPlan.objects.all(), to_attr='prefetched_actionplans'),
@@ -7039,7 +7042,10 @@ def get_all_hub_gaps():
             has_milestones=Count('milestone')
         )
 
-        hub_projects = Hub_qi_projects.objects.filter(hub=hub).prefetch_related(
+        hub_projects = Hub_qi_projects.objects.filter(
+            hub=hub,
+            measurement_status__in=['Started or Ongoing', 'Completed-or-Closed']
+        ).prefetch_related(
             Prefetch('baseline_set', queryset=Baseline.objects.all(), to_attr='prefetched_baselines'),
             Prefetch('testedchange_set', queryset=TestedChange.objects.all(), to_attr='prefetched_testedchanges'),
             Prefetch('actionplan_set', queryset=ActionPlan.objects.all(), to_attr='prefetched_actionplans'),
@@ -7097,6 +7103,8 @@ def get_all_hub_gaps():
                     'title': project.project_title,
                     'type': project.__class__.__name__,
                     'gaps': project_gaps,
+                    'department': project.departments.department if project.departments else 'N/A',
+                    'measurement_status': project.measurement_status,
                 }
                 if isinstance(project, QI_Projects):
                     project_info['facility_name'] = project.facility_name.name if project.facility_name else 'N/A'

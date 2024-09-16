@@ -86,7 +86,7 @@ ALLOWED_HOSTS = env.list(
 # DJANGO DEV PANEL RECOMMENDATIONS AND OTHER SECURITY
 ###############################################################################
 
-DEBUG = False
+DEBUG = True
 
 SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 

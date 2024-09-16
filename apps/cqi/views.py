@@ -19,7 +19,7 @@ import pandas as pd
 import inflect
 from django.contrib import messages
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required,user_passes_test
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
@@ -37,7 +37,8 @@ from reportlab.pdfgen import canvas
 from apps.account.forms import UpdateUserForm
 from .filters import *
 from .forms import ActionPlanForm, ArchiveProjectForm, BaselineForm, BestPerformingForm, CategoryForm, CommentForm, \
-    CountiesForm, DepartmentForm, FacilitiesForm, HubForm, Lesson_learnedForm, MilestoneForm, PlatformUpdateForm, ProgramForm, \
+    CountiesForm, DepartmentForm, FacilitiesForm, HubForm, Lesson_learnedForm, MilestoneForm, PlatformUpdateForm, \
+    ProgramForm, \
     ProjectCommentsForm, ProjectResponsesForm, QI_ProjectsConfirmForm, QI_ProjectsForm, QI_ProjectsSubcountyForm, \
     QI_Projects_countyForm, QI_Projects_hubForm, QI_Projects_programForm, Qi_managersForm, Qi_team_membersForm, \
     ResourcesForm, RootCauseImagesForm, ShowTriggerForm, StakeholderForm, Sub_countiesForm, SustainmentPlanForm, \
@@ -5334,18 +5335,30 @@ def update_baseline(request, pk, program_name=None, facility_name=None, subcount
     # return render(request, "project/add_milestones.html", context)
 
 
+@user_passes_test(lambda u: u.is_superuser)
 @login_required(login_url='login')
-def delete_project(request, pk):
+def delete_project(request, pk, cqi_level):
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
 
-    item = QI_Projects.objects.get(id=pk)
-    if request.method == "POST":
-        item.delete()
+    # Mapping of cqi_level to corresponding model and redirect type
+    model_map = {
+        "facility_name": QI_Projects,
+        "hub_name": Hub_qi_projects,
+        "subcounty_name": Subcounty_qi_projects,
+        "county_name": County_qi_projects,
+        "program_name": Program_qi_projects,
+    }
 
-        redirect("facilities_landing_page", project_type="facility")
+    model = model_map.get(cqi_level)
+    if model:
+        item = model.objects.get(id=pk)
+        if request.method == "POST":
+            item.delete()
+            return redirect("facilities_landing_page", project_type=cqi_level.split('_')[0])
+
     context = {
         "test_of_changes": item
     }
@@ -6856,6 +6869,7 @@ def check_missing_details(project):
 
 from .models import PlatformUpdate
 
+
 @login_required(login_url='login')
 def home_page(request):
     user_email = request.user.email
@@ -6979,9 +6993,10 @@ def projects_with_gaps(request):
 
     hub_gap_chart = get_or_create_chart('hub_gap_chart', lambda: create_hub_gap_chart(selected_hub_data), selected_hub)
     hub_pie_chart = get_or_create_chart('hub_pie_chart', lambda: create_hub_pie_chart(selected_hub_data), selected_hub)
-    
+
     # New: Create facilities gap chart
-    facilities_gap_chart = get_or_create_chart('facilities_gap_chart', lambda: create_facilities_gap_chart(selected_hub), selected_hub)
+    facilities_gap_chart = get_or_create_chart('facilities_gap_chart',
+                                               lambda: create_facilities_gap_chart(selected_hub), selected_hub)
 
     context = prepare_context(selected_hub, selected_hub_data, all_hubs, hub_gap_chart, hub_pie_chart,
                               overall_heatmap, overall_bar_chart, overall_projects_chart, facilities_gap_chart)
@@ -7155,6 +7170,8 @@ def prepare_context(selected_hub, selected_hub_data, all_hubs, hub_gap_chart, hu
         'overall_projects_chart': mark_safe(overall_projects_chart),
         'facilities_gap_chart': mark_safe(facilities_gap_chart)  # Add this line
     }
+
+
 # from django.db.models import Count, Case, When, Value, IntegerField, Sum
 # import pandas as pd
 # import plotly.express as px
@@ -7195,21 +7212,22 @@ if len(gap_fields) > len(color_blind_friendly_palette):
 # Create a dictionary mapping gap types to colors
 gap_color_map = dict(zip(gap_fields, color_blind_friendly_palette))
 
+
 def create_facilities_gap_chart(hub_name):
     hub = Hub.objects.get(hub=hub_name)
-    
+
     # Get all distinct QI_Projects for the given hub
     projects = QI_Projects.objects.filter(hub=hub).distinct()
-    
+
     # Get unique facilities from these projects
     facilities = Facilities.objects.filter(qi_projects__in=projects).distinct()
 
     facility_data = []
     for facility in facilities:
         facility_projects = projects.filter(facility_name=facility).distinct()
-        
+
         total_projects = facility_projects.count()
-        
+
         projects_with_gaps = facility_projects.annotate(
             missing_root_cause_analysis=Case(
                 When(process_analysis='', then=Value(1)),
@@ -7222,8 +7240,8 @@ def create_facilities_gap_chart(hub_name):
             missing_baseline=Case(When(baseline__isnull=True, then=Value(1)), default=Value(0)),
             missing_action_plan=Case(When(actionplan__isnull=True, then=Value(1)), default=Value(0)),
             missing_milestones=Case(When(milestone__isnull=True, then=Value(1)), default=Value(0))
-        ).filter(Q(missing_root_cause_analysis=1) | Q(missing_tested_change=1) | 
-                 Q(missing_qi_team_members=1) | Q(missing_baseline=1) | 
+        ).filter(Q(missing_root_cause_analysis=1) | Q(missing_tested_change=1) |
+                 Q(missing_qi_team_members=1) | Q(missing_baseline=1) |
                  Q(missing_action_plan=1) | Q(missing_milestones=1))
 
         gap_counts = projects_with_gaps.aggregate(
@@ -7249,8 +7267,6 @@ def create_facilities_gap_chart(hub_name):
         return "No facilities with gaps in this hub."
 
     df_facilities = pd.DataFrame(facility_data).sort_values('total_gaps', ascending=False)
-    
-    
 
     fig = go.Figure()
 
@@ -7269,8 +7285,8 @@ def create_facilities_gap_chart(hub_name):
         barmode='stack',
         title={
             'text': f'Gap Distribution Across Facilities with Gaps in {hub_name}',
-            'y':0.95,
-            'x':0.5,
+            'y': 0.95,
+            'x': 0.5,
             'xanchor': 'center',
             'yanchor': 'top',
             'font': {'size': 16}  # Slightly smaller title font
@@ -7322,6 +7338,7 @@ def create_facilities_gap_chart(hub_name):
 
     return pio.to_html(fig, full_html=False)
 
+
 def get_selected_hub(request):
     selected_hub_name = request.GET.get('hub_name')
     if not selected_hub_name:
@@ -7364,15 +7381,15 @@ def create_hub_gap_chart(hub_data):
 
 def create_hub_pie_chart(hub_data):
     df_hub = pd.DataFrame(list(hub_data['gap_counts'].items()), columns=['Gap', 'Count'])
-    fig_pie = px.pie(df_hub, values='Count', names='Gap', 
+    fig_pie = px.pie(df_hub, values='Count', names='Gap',
                      title=f'Gap Distribution in {hub_data["hub_name"]}',
                      color='Gap',
                      color_discrete_map=gap_color_map)
-    
+
     # Improve readability
     fig_pie.update_traces(textposition='inside', textinfo='percent+label')
     fig_pie.update_layout(legend_title_text='Gap Types')
-    
+
     return pio.to_html(fig_pie, full_html=False)
 
 
@@ -7446,12 +7463,14 @@ def add_platform_update(request):
         errors = form.errors.as_json()
         return JsonResponse({'status': 'error', 'message': errors})
 
+
 @user_passes_test(lambda u: u.is_superuser)
 @require_POST
 def delete_platform_update(request, pk):
     update = get_object_or_404(PlatformUpdate, pk=pk)
     update.delete()
     return JsonResponse({'status': 'success'})
+
 
 @user_passes_test(lambda u: u.is_superuser)
 @require_POST

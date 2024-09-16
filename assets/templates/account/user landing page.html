@@ -446,8 +446,7 @@
                         {% if project_info.project.missing_details.missing_tested_change %}
                         <div class="status-value">0%</div>
                         {% elif project_info.project.missing_details.most_recent_achievement %}
-                        <div class="status-value">{{
-                            project_info.project.missing_details.most_recent_achievement|floatformat:1 }}%</div>
+                        <div class="status-value">{{ project_info.project.missing_details.most_recent_achievement|floatformat:1 }}%</div>
                         {% endif %}
                     </div>
                     <div class="status-item">

@@ -73,6 +73,22 @@
                                     <a href="{% url 'update_project_hub' facility_project.id facility_project.hub %}"
                                        class="action-btn warning-btn">Update project</a>
                                 {% endif %}
+                                {% if facility_name  and request.user.is_superuser %}
+                                    <a href="{% url 'delete_project' facility_project.id facility_name %}"
+                                       class="action-btn secondary-btn">Delete project</a>
+                                {% elif program_name and request.user.is_superuser %}
+                                    <a href="{% url 'delete_project' facility_project.id program_name %}"
+                                       class="action-btn secondary-btn">Delete project</a>
+                                {% elif subcounty_name and request.user.is_superuser %}
+                                    <a href="{% url 'delete_project' facility_project.id subcounty_name %}"
+                                       class="action-btn secondary-btn">Delete project</a>
+                                {% elif county_name and request.user.is_superuser %}
+                                    <a href="{% url 'delete_project' facility_project.id county_name %}"
+                                       class="action-btn secondary-btn">Delete project</a>
+                                {% elif hub_name and request.user.is_superuser %}
+                                    <a href="{% url 'delete_project' facility_project.id hub_name %}"
+                                       class="action-btn secondary-btn">Delete project</a>
+                                {% endif %}
                                 {% if all_archived %}
                                     {% if facility_project.id in all_archived %}
                                         {% if facility_name %}
@@ -130,6 +146,32 @@
                             {% endif %}
                         {% endif %}
                     {% else %}
+                        {% if facility_name  and request.user.is_superuser %}
+                            <a href="{% url 'update_project_facility' facility_project.id facility_project.facility_name.name %}"
+                               class="action-btn warning-btn">Update project</a>
+                            <a href="{% url 'delete_project' facility_project.id facility_name %}"
+                               class="action-btn secondary-btn">Delete project</a>
+                        {% elif program_name and request.user.is_superuser %}
+                            <a href="{% url 'update_project_program' facility_project.id facility_project.program.program %}"
+                               class="action-btn warning-btn">Update project</a>
+                            <a href="{% url 'delete_project' facility_project.id program_name %}"
+                               class="action-btn secondary-btn">Delete project</a>
+                        {% elif subcounty_name and request.user.is_superuser %}
+                            <a href="{% url 'update_project_subcounty' facility_project.id facility_project.sub_county %}"
+                               class="action-btn warning-btn">Update project</a>
+                            <a href="{% url 'delete_project' facility_project.id subcounty_name %}"
+                               class="action-btn secondary-btn">Delete project</a>
+                        {% elif county_name and request.user.is_superuser %}
+                            <a href="{% url 'update_project_county' facility_project.id facility_project.county.county_name %}"
+                               class="action-btn warning-btn">Update project</a>
+                            <a href="{% url 'delete_project' facility_project.id county_name %}"
+                               class="action-btn secondary-btn">Delete project</a>
+                        {% elif hub_name and request.user.is_superuser %}
+                            <a href="{% url 'update_project_hub' facility_project.id facility_project.hub %}"
+                               class="action-btn warning-btn">Update project</a>
+                            <a href="{% url 'delete_project' facility_project.id hub_name %}"
+                               class="action-btn secondary-btn">Delete project</a>
+                        {% endif %}
                         <a href="#" class="action-btn delete-btn">CLOSED PROJECT</a>
                     {% endif %}
                 </div>
@@ -320,7 +362,8 @@
             <h6 class="mt-2"><strong>PROBLEM STATEMENT :</strong></h6>
             <div class="d-flex justify-content-between">
                 <div>
-                    <a class="action-btn view-btn" data-bs-toggle="collapse" href="#collapseproblemstatement" role="button"
+                    <a class="action-btn view-btn" data-bs-toggle="collapse" href="#collapseproblemstatement"
+                       role="button"
                        aria-expanded="false" aria-controls="collapseproblemstatement">
                         PROBLEM STATEMENT IN BRIEF
                     </a>
@@ -744,7 +787,8 @@
                             {% if user.is_authenticated %}
                                 {% if request.user.is_superuser %}
                                     <td>
-                                        <a href="{% url 'delete_qi_team_member' field.id %}" class="action-btn delete-btn"
+                                        <a href="{% url 'delete_qi_team_member' field.id %}"
+                                           class="action-btn delete-btn"
                                            role="button">Delete</a>
                                     </td>
                                 {% endif %}
@@ -807,7 +851,8 @@
                         {% endif %}
                     </div>
                     <div>
-                        <a class="action-btn view-btn" data-bs-toggle="collapse" href="#collapseactionplan" role="button"
+                        <a class="action-btn view-btn" data-bs-toggle="collapse" href="#collapseactionplan"
+                           role="button"
                            aria-expanded="false" aria-controls="collapseactionplan">
                             ACTION PLAN IN BRIEF
                         </a>
@@ -1359,7 +1404,8 @@
                         comment to the QI team members implementing this QI initiative.</p>
                     <p>
                     <div class="d-flex justify-content-evenly">
-                        <a class="action-btn view-btn" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button"
+                        <a class="action-btn view-btn" data-bs-toggle="collapse" href="#collapseExampleTwo"
+                           role="button"
                            aria-expanded="false" aria-controls="collapseExampleTwo">
                             Yes
                         </a>
@@ -1449,7 +1495,7 @@
                     {% endif %}
                 </div>
             {% endif %}
-{#            <div class="container mt-auto p-3" style="background-color: #f6f6ff;">#}
+            {#            <div class="container mt-auto p-3" style="background-color: #f6f6ff;">#}
             <div class="container mt-auto p-3">
                 <h6 class="d-flex justify-content-evenly">QI Thematic areas
                     for {{ facility_project.facility_name|title }}.</h6>
@@ -1481,16 +1527,20 @@
                                         <a href="{% url 'single_project' key %}" class="action-btn view-btn">Go to the
                                             project</a>
                                     {% elif "program" in title %}
-                                        <a href="{% url 'single_project_program' key %}" class="action-btn view-btn">Go to
+                                        <a href="{% url 'single_project_program' key %}" class="action-btn view-btn">Go
+                                            to
                                             the project</a>
                                     {% elif "subcounty" in title %}
-                                        <a href="{% url 'single_project_subcounty' key %}" class="action-btn view-btn">Go to
+                                        <a href="{% url 'single_project_subcounty' key %}" class="action-btn view-btn">Go
+                                            to
                                             the project</a>
                                     {% elif "county" in title %}
-                                        <a href="{% url 'single_project_county' key %}" class="action-btn view-btn">Go to
+                                        <a href="{% url 'single_project_county' key %}" class="action-btn view-btn">Go
+                                            to
                                             the project</a>
                                     {% elif "hub" in title %}
-                                        <a href="{% url 'single_project_hub' key %}" class="action-btn view-btn">Go to the
+                                        <a href="{% url 'single_project_hub' key %}" class="action-btn view-btn">Go to
+                                            the
                                             project</a>
                                     {% endif %}
                                 </div>

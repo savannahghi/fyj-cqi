@@ -321,7 +321,7 @@ urlpatterns = [
     path('update-comments/<uuid:pk>/', update_comments, name="update_comments"),
 
     path('delete-test-of-change/<uuid:pk>/', delete_test_of_change, name="delete_test_of_change"),
-    path('delete-cqi/<uuid:pk>', delete_project, name="delete_project"),
+    path('delete-cqi/<uuid:pk>/<str:cqi_level>/', delete_project, name="delete_project"),
     path('delete-commment/<uuid:pk>/', delete_comment, name="delete_comment"),
     path('delete-response/<uuid:pk>/', delete_response, name="delete_response"),
     path('delete-resource/<uuid:pk>/', delete_resource, name="delete_resource"),

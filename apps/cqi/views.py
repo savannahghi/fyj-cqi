@@ -7245,10 +7245,12 @@ def create_facilities_gap_chart(hub_name):
                 **{field: gap_counts.get(f'total_{field}', 0) or 0 for field in gap_fields}
             })
 
+    if not facility_data:
+        return "No facilities with gaps in this hub."
+
     df_facilities = pd.DataFrame(facility_data).sort_values('total_gaps', ascending=False)
     
-    if df_facilities.empty:
-        return "No facilities with gaps in this hub."
+    
 
     fig = go.Figure()
 

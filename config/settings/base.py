@@ -19,7 +19,7 @@ ALLOWED_HOSTS = env.list(
         "fyjcqiprojects.ttl.co.ke", "127.0.0.1", "localhost",
     ],
 )
-DEBUG = env.bool("DJANGO_DEBUG", True)
+DEBUG = env.bool("DJANGO_DEBUG", False)
 DJANGO_LOG_LEVEL = env.str("DJANGO_LOG_LEVEL", default="DEBUG")
 SECRET_KEY = env.str("DJANGO_SECRET_KEY", "django-insecure-xlb*ys8xwb04c&=y_z")
 

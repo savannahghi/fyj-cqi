@@ -343,14 +343,32 @@
     const serumCragResultsField = document.querySelector('#id_serum_crag_results');
     const reasonNoSerumCragField = document.querySelector('#id_reason_for_no_serum_crag');
     const ageField = document.querySelector('#id_age');
+    const ageUnitField = document.querySelector('#id_age_unit');
     const rejectionReasonField = document.querySelector('#id_reason_for_rejection');
 
     // Function to enable or disable the cd4_percentage field
     function toggleCd4Percentage() {
         const receivedStatus = receivedStatusField.value;
         const age = parseFloat(ageField.value);
+        const ageUnit = ageUnitField.value;
 
-        if (receivedStatus === "Rejected" || (receivedStatus === "Accepted" && age > 5) || age > 5) {
+
+        let ageInYears;
+        switch (ageUnit) {
+            case 'years':
+                ageInYears = age;
+                break;
+            case 'months':
+                ageInYears = age / 12;
+                break;
+            case 'days':
+                ageInYears = age / 365;
+                break;
+            default:
+                ageInYears = 0;
+        }
+
+        if (receivedStatus === "Rejected" || ageInYears > 5) {
             cd4PercentageField.disabled = true;
             cd4PercentageField.value = "";
         } else {
@@ -361,8 +379,9 @@
     // Call the function on page load
     toggleCd4Percentage();
 
-    // Bind the function to the change event of the age and receivedStatus fields
+    // Bind the function to the change event of the age, ageUnit, and receivedStatus fields
     ageField.addEventListener('change', toggleCd4Percentage);
+    ageUnitField.addEventListener('change', toggleCd4Percentage);
     receivedStatusField.addEventListener('change', toggleCd4Percentage);
 
 

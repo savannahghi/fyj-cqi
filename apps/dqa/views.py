@@ -2308,7 +2308,7 @@ def compare_data_verification(merged_df, pepfar_col, description_list=None):
                              merged_viz_df['Absolute difference proportion'] <= 10),
                      merged_viz_df['Absolute difference proportion'] <= 5]
         choice_list = ["Needs urgent remediation", "Needs improvement", "Meets standard"]
-        merged_viz_df['Score'] = np.select(cond_list, choice_list, default=0)
+        merged_viz_df['Score'] = np.select(cond_list, choice_list, default="0")
         merged_viz_df.sort_values('Absolute difference proportion', inplace=True)
         merged_viz_df["Score"] = merged_viz_df["Score"].astype("category")
         merged_viz_df['indicator'] = merged_viz_df['indicator'].replace('Number Starting ART Total', 'TX_NEW')
@@ -2454,8 +2454,8 @@ def different_dfs(system_assessments_df, calculation_mapping):
                     column_name].reset_index().sort_values(
                     column_name, ascending=False)
             else:
-                grouped_df = na_df.groupby(['description']).sum(numeric_only=True)[
-                    column_name].reset_index().sort_values(
+                grouped_df = na_df.groupby(['description'])[
+                    column_name].sum(numeric_only=True).reset_index().sort_values(
                     column_name, ascending=False)
 
             dfs[label] = (na_df, grouped_df)
@@ -2463,12 +2463,12 @@ def different_dfs(system_assessments_df, calculation_mapping):
             sub_df = system_assessments_df[system_assessments_df['calculations'] == calculation_value]
             sub_df = sub_df.rename(columns={"count": column_name})
             if "model_name" in sub_df.columns:
-                grouped_df = sub_df.groupby(['description', 'model_name']).sum(numeric_only=True)[
-                    column_name].reset_index().sort_values(
+                grouped_df = sub_df.groupby(['description', 'model_name'])[
+                    column_name].sum(numeric_only=True).reset_index().sort_values(
                     column_name, ascending=False)
             else:
-                grouped_df = sub_df.groupby(['description']).sum(numeric_only=True)[
-                    column_name].reset_index().sort_values(
+                grouped_df = sub_df.groupby(['description'])[
+                    column_name].sum(numeric_only=True).reset_index().sort_values(
                     column_name, ascending=False)
             dfs[label] = (sub_df, grouped_df)
     return dfs
@@ -2827,7 +2827,7 @@ def prepare_data_system_assessment(system_assessments_df, custom_mapping, descri
         all_dfs['Scores'] = all_dfs['Scores'].replace("light_greens", "Needs improvement (Light greens and Yellows)")
         all_dfs['Scores'] = all_dfs['Scores'].replace("yellows", "Needs improvement (Light greens and Yellows)")
         all_dfs['Scores'] = all_dfs['Scores'].replace("reds", "Needs urgent remediation (Reds)")
-    all_dfs = all_dfs.groupby('Scores').sum(numeric_only=True)['# of scores'].reset_index().sort_values('# of scores',
+    all_dfs = all_dfs.groupby('Scores')['# of scores'].sum(numeric_only=True).reset_index().sort_values('# of scores',
                                                                                                         ascending=False)
     # calculate the total number of scores
     total_scores = all_dfs['# of scores'].sum()
@@ -5153,30 +5153,30 @@ def bar_chart_dqa(df, x_axis, y_axis, pepfar_col=None, title=None, color=None):
 
 def prepare_dqa_workplan_viz(dqa_workplan_df, col_name):
     dqa_workplan_df['Number of action points'] = 1
-    facilities_df = dqa_workplan_df.groupby(col_name).sum(numeric_only=True)[
-        'Number of action points'].reset_index()
+    facilities_df = dqa_workplan_df.groupby(col_name)[
+        'Number of action points'].sum(numeric_only=True).reset_index()
     facilities_df.sort_values('Number of action points', inplace=True)
 
-    area_reviewed_df = dqa_workplan_df.groupby('Program Areas Reviewed').sum(numeric_only=True)[
-        'Number of action points'].reset_index()
+    area_reviewed_df = dqa_workplan_df.groupby('Program Areas Reviewed')[
+        'Number of action points'].sum(numeric_only=True).reset_index()
     area_reviewed_df.sort_values('Number of action points', inplace=True)
 
     area_reviewed_facility_df = \
-        dqa_workplan_df.groupby([col_name, 'Program Areas Reviewed']).sum(numeric_only=True)[
-            'Number of action points'].reset_index()
+        dqa_workplan_df.groupby([col_name, 'Program Areas Reviewed'])[
+            'Number of action points'].sum(numeric_only=True).reset_index()
     # replace spaces and slashes with underscores in the column
     area_reviewed_facility_df['Program Areas Reviewed'] = area_reviewed_facility_df[
         'Program Areas Reviewed'].str.replace(', ', '_').str.replace(' ', '_').str.replace('/', '_').str.replace('&',
                                                                                                                  '_')
     area_reviewed_facility_df.sort_values('Number of action points', inplace=True)
 
-    action_point_status_df = dqa_workplan_df.groupby('completion').sum(numeric_only=True)[
-        'Number of action points'].reset_index()
+    action_point_status_df = dqa_workplan_df.groupby('completion')[
+        'Number of action points'].sum(numeric_only=True).reset_index()
     action_point_status_df.sort_values('completion', inplace=True)
     action_point_status_df['% completetion'] = action_point_status_df['completion'].astype(str) + "%"
 
-    dqa_date_df = dqa_workplan_df.groupby(['dqa_date', col_name]).sum(numeric_only=True)[
-        'Number of action points'].reset_index()
+    dqa_date_df = dqa_workplan_df.groupby(['dqa_date', col_name])[
+        'Number of action points'].sum(numeric_only=True).reset_index()
     # dqa_date_df=dqa_date_df.rename(columns={'Number of action points':"Number of DQAs done"})
     dqa_date_df['Number of DQAs done'] = 1
     dqa_date_df.sort_values('dqa_date', inplace=True)
@@ -5190,7 +5190,7 @@ def prepare_dqa_workplan_viz(dqa_workplan_df, col_name):
     weekly_counts = weekly_counts.rename(columns={"dqa_date": "dqa_dates (weekly)"})
 
     dqa_workplan_df['Timeframe'] = dqa_workplan_df['Timeframe'] / 7
-    timeframe_df = dqa_workplan_df.groupby('Timeframe').sum(numeric_only=True)['Number of action points'].reset_index()
+    timeframe_df = dqa_workplan_df.groupby('Timeframe')['Number of action points'].sum(numeric_only=True).reset_index()
     timeframe_df.sort_values('Timeframe', inplace=True)
 
     cond_list = [timeframe_df['Timeframe'] < 2, (timeframe_df['Timeframe'] >= 2) & (timeframe_df['Timeframe'] <= 4),
@@ -5198,10 +5198,10 @@ def prepare_dqa_workplan_viz(dqa_workplan_df, col_name):
                  (timeframe_df['Timeframe'] > 8) & (timeframe_df['Timeframe'] <= 12),
                  timeframe_df['Timeframe'] > 12]
     choice_list = ["<2 wks", "2-4 wks", "4-8 wks", "8-12 wks", ">12 wks"]
-    timeframe_df['timeframe (wks)'] = np.select(cond_list, choice_list, default=0)
+    timeframe_df['timeframe (wks)'] = np.select(cond_list, choice_list, default="0")
 
-    timeframe_df = timeframe_df.groupby('timeframe (wks)').sum(numeric_only=True)[
-        'Number of action points'].reset_index()
+    timeframe_df = timeframe_df.groupby('timeframe (wks)')[
+        'Number of action points'].sum(numeric_only=True).reset_index()
     timeframe_df['timeframe (wks)'] = pd.Categorical(timeframe_df['timeframe (wks)'],
                                                      categories=['<2 wks', '2-4 wks', '4-8 wks', '8-12 wks', '>12 wks'],
                                                      ordered=True)
@@ -5666,8 +5666,8 @@ def dqa_dashboard(request, dqa_type=None):
             merged_df = county_hub_sub_county_df.merge(facilities_df, on=['facilities', 'mfl_code'], how="right")
             if merged_df.shape[0] > 0:
                 merged_df['sub_counties'] = merged_df['sub_counties'].str.replace(" Sub County", "")
-                sub_county_df = merged_df.groupby('sub_counties').sum(numeric_only=True)[
-                    'count'].reset_index().sort_values('count')
+                sub_county_df = merged_df.groupby('sub_counties')[
+                    'count'].sum(numeric_only=True).reset_index().sort_values('count')
                 sub_county_df = sub_county_df.rename(columns={"count": "Number of facilities"})
                 sub_county_viz = bar_chart_dqa(sub_county_df, "sub_counties", "Number of facilities",
                                                title=f"{len(sub_county_df)} Sub-counties DQA Summary for {quarter_year}")

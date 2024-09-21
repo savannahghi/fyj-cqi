@@ -971,8 +971,8 @@ def create_mentorship_work_plans(request, pk, report_name):
 
 def make_mentorship_charts(df):
     df['staffs'] = df['first_name'] + " " + df['last_name']
-    df1 = df.groupby(['County', 'Sub-county', 'Facility', 'mfl_code', 'program_area', 'quarter_year']).count()[
-        'description'].reset_index()
+    df1 = df.groupby(['County', 'Sub-county', 'Facility', 'mfl_code', 'program_area', 'quarter_year'])[
+        'description'].count().reset_index()
     df1['# of mentorship'] = 1
     if 'description' in df1.columns:
         del df1['description']
@@ -1022,8 +1022,8 @@ def make_mentorship_charts(df):
     ####################################
 
     df2 = \
-        df.groupby(['County', 'Sub-county', 'Facility', 'mfl_code', 'program_area', 'quarter_year', 'staffs']).count()[
-            'description'].reset_index()
+        df.groupby(['County', 'Sub-county', 'Facility', 'mfl_code', 'program_area', 'quarter_year', 'staffs'])[
+            'description'].count().reset_index()
     df2['# of mentorship'] = 1
     if 'description' in df2.columns:
         del df2['description']
@@ -1035,8 +1035,8 @@ def make_mentorship_charts(df):
     # weekly trend viz
     ####################################
     date_df = df.groupby(
-        ['County', 'Sub-county', 'Facility', 'mfl_code', 'program_area', 'quarter_year', 'date_of_visit']).count()[
-        'description'].reset_index()
+        ['County', 'Sub-county', 'Facility', 'mfl_code', 'program_area', 'quarter_year', 'date_of_visit'])[
+        'description'].count().reset_index()
     date_df['# of mentorship'] = 1
     if 'description' in date_df.columns:
         del date_df['description']
@@ -1053,8 +1053,8 @@ def make_mentorship_charts(df):
     date_df['month'] = date_df['date_of_visit'].dt.strftime('%b-%y')  # Group by month in 'Jun-23' format
 
     df_new = date_df.groupby(['weeks', 'month'])['# of mentorship'].sum().reset_index()
-    df_weekly = date_df.groupby('weeks').count()[
-        '# of mentorship'].reset_index()  # Group by weeks and count the number of mentorships
+    df_weekly = date_df.groupby('weeks')[
+        '# of mentorship'].count().reset_index()  # Group by weeks and count the number of mentorships
     df_weekly = df_weekly.sort_values('weeks')
     weekly_fig = bar_chart(df_weekly, f"{df_weekly.columns[0]}",
                            "# of mentorship", f"Weekly trend for mentorship sessions")
@@ -1063,8 +1063,8 @@ def make_mentorship_charts(df):
     ####################################
 
     date_df['month_num'] = pd.to_datetime(date_df['month'], format='%b-%y')
-    df_monthly = date_df.groupby(['month', 'month_num']).count()[
-        '# of mentorship'].reset_index()  # Group by weeks and count the number of mentorships
+    df_monthly = date_df.groupby(['month', 'month_num'])[
+        '# of mentorship'].count().reset_index()  # Group by weeks and count the number of mentorships
     df_monthly = df_monthly.sort_values('month_num')
     monthly_fig = bar_chart(df_monthly, f"{df_monthly.columns[0]}",
                             "# of mentorship", f"Monthly trend for mentorship sessions")

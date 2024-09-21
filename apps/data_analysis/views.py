@@ -5339,6 +5339,7 @@ def create_county_status_chart(county_status, level):
 
 def compile_concordance_report(variances_df, df1, level):
     county_variances = variances_df.groupby(level)['Facility_Name'].nunique().reset_index()
+    df1[level] = df1[level].str.strip().str.title()
 
     # art_sites = pd.DataFrame(county_art_sites.items(), columns=[level, 'ART sites'])
     art_sites = \
@@ -5451,8 +5452,9 @@ def pre_process_moh730b(df, df1):
         visualize_variance.append(negative_var_fig)
     county_status_chart = compile_concordance_report(variances_df, df1, 'County')
     subcounty_status_chart = compile_concordance_report(variances_df, df1, 'Subcounty')
+    hub_status_chart = compile_concordance_report(variances_df, df1, 'Hub')
     return variances_df, visualize_variance, county_status_chart, subcounty_status_chart, filename, \
-        negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj
+        negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj,hub_status_chart
 
 
 @login_required(login_url='login')
@@ -5465,6 +5467,7 @@ def compare_opening_closing_bal_moh730b(request):
     visualize_variance = None
     county_status_chart = None
     subcounty_status_chart = None
+    hub_status_chart = None
     dictionary = None
     form = FileUploadForm(request.POST or None)
     report_name = "MOH 730B CONCORDANCE"
@@ -5507,8 +5510,9 @@ def compare_opening_closing_bal_moh730b(request):
                     df1['MFL Code'] = df1['MFL Code'].astype(int)
 
                     if df.shape[0] > 0 and df1.shape[0] > 0:
-                        variances_df, visualize_variance, county_status_chart, subcounty_status_chart, filename, negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj = pre_process_moh730b(
-                            df, df1)
+                        variances_df, visualize_variance, county_status_chart, subcounty_status_chart, filename, \
+                            negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj, hub_status_chart\
+                            = pre_process_moh730b(df, df1)
                 else:
                     messages.success(request, message)
                     return redirect('compare_opening_closing_bal_moh730b')
@@ -5522,6 +5526,7 @@ def compare_opening_closing_bal_moh730b(request):
                 "filename": filename, "overall_var_fig_fyj": overall_var_fig_fyj, "datasets": datasets,
                 "county_status_chart": county_status_chart, "subcounty_status_chart": subcounty_status_chart,
                 "visualize_variance": visualize_variance, "form": form, "report_name": report_name,
+                "hub_status_chart":hub_status_chart
             }
 
             return render(request, 'data_analysis/upload.html', context)
@@ -5541,6 +5546,7 @@ def compare_opening_closing_bal_moh730b(request):
         "negative_var_fig_fyj": negative_var_fig_fyj, "visualize_variance": visualize_variance,
         "overall_var_fig_fyj": overall_var_fig_fyj, "county_status_chart": county_status_chart,
         "subcounty_status_chart": subcounty_status_chart, "form": form, "report_name": report_name,
+        "hub_status_chart": hub_status_chart
     }
 
     return render(request, 'data_analysis/moh730B beginning vs closing.html', context)

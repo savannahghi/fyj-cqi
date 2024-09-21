@@ -6872,6 +6872,8 @@ from .models import PlatformUpdate
 
 @login_required(login_url='login')
 def home_page(request):
+    if not request.user.first_name:
+        return redirect("profile")
     user_email = request.user.email
     project_models = [QI_Projects, Subcounty_qi_projects, County_qi_projects, Hub_qi_projects, Program_qi_projects]
 
@@ -6974,6 +6976,8 @@ def get_or_create_chart(chart_name, create_func, hub_name=None, timeout=3600):
 # @silk_profile(name='projects_with_gaps')
 @login_required(login_url='login')
 def projects_with_gaps(request):
+    if not request.user.first_name:
+        return redirect("profile")
     selected_hub = get_selected_hub(request)
     all_hubs = Hub.objects.all()
 

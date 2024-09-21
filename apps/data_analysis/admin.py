@@ -9,7 +9,7 @@ class RtkDataAdmin(admin.ModelAdmin):
 
 
 class FYJHealthFacilityAdmin(admin.ModelAdmin):
-    search_fields = ("facility", "mfl_code", "facility_type", "county")
+    search_fields = ("facility", "mfl_code", "facility_type", "county","subcounty")
 
 
 admin.site.register(FYJHealthFacility, FYJHealthFacilityAdmin)

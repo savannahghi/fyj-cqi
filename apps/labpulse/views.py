@@ -504,7 +504,7 @@ def show_remaining_commodities(selected_lab):
     max_date = df['date_commodity_received'].max().date()
 
     # Group by reagent type and sum the total remaining quantities
-    df = df.groupby('reagent_type').sum(numeric_only=True)['total_remaining'].reset_index()
+    df = df.groupby('reagent_type')['total_remaining'].sum(numeric_only=True).reset_index()
 
     # Remaining stocks
     try:
@@ -1291,8 +1291,8 @@ def calculate_weekly_tat(df):
 
     # Group by week_start and calculate mean TAT
     df['week_start'] = df['Collection Date'].dt.to_period('W').dt.start_time
-    weekly_tat_df = df.groupby('week_start').mean(numeric_only=True)[
-        ['sample TAT (c-d)', 'sample TAT (c-r)']].reset_index()
+    weekly_tat_df = df.groupby('week_start')[
+        ['sample TAT (c-d)', 'sample TAT (c-r)']].mean(numeric_only=True).reset_index()
     weekly_tat_df['Mean weekly TAT(C-D)'] = weekly_tat_df['sample TAT (c-d)'].round()
     weekly_tat_df['Mean weekly TAT(C-R)'] = weekly_tat_df['sample TAT (c-r)'].round()
 
@@ -1321,6 +1321,7 @@ def calculate_weekly_tat(df):
 
     # Sort the DataFrame by the "Weekly Trend" column
     weekly_tat.sort_values(by='Weekly Trend', inplace=True)
+    weekly_tat['Weekly Trend'] = pd.to_datetime(weekly_tat['Weekly Trend'])
 
     # Convert the "Weekly Trend" column back to string for plotting (if needed)
     weekly_tat['Weekly Trend'] = weekly_tat['Weekly Trend'].dt.strftime('%Y-%m-%d.')
@@ -3107,8 +3108,8 @@ def load_biochemistry_results(request):
         all_df.sort_values(['results_interpretation'], inplace=True)
         all_df.sort_values(['number_of_samples'], inplace=True)
 
-        b = all_df.groupby(["results_interpretation", "test_name"]).sum(numeric_only=True)[
-            'number_of_samples'].reset_index()
+        b = all_df.groupby(["results_interpretation", "test_name"])[
+            'number_of_samples'].sum(numeric_only=True).reset_index()
 
         color_discrete_map = {'Normal': 'green', 'High': 'red', 'Low': 'blue'}
 
@@ -3128,8 +3129,8 @@ def load_biochemistry_results(request):
 
         tests_summary_fig = interpretation_bar_chart(b, "Distribution of Test Results")
 
-        sex_group = all_df.groupby(["results_interpretation", "test_name", "reference_class"]).sum(numeric_only=True)[
-            'number_of_samples'].reset_index()
+        sex_group = all_df.groupby(["results_interpretation", "test_name", "reference_class"])[
+            'number_of_samples'].sum(numeric_only=True).reset_index()
         sex_fig = {}
         for sex in sex_group['reference_class'].unique():
             unique_sex = sex_group[sex_group['reference_class'] == sex]
@@ -3156,7 +3157,7 @@ def load_biochemistry_results(request):
                                          height=350)
         df['results_interpretation'] = pd.Categorical(df['results_interpretation'],
                                                       ['Low', 'Normal', 'High'])
-        b = df.groupby("results_interpretation").sum(numeric_only=True)['number_of_samples'].reset_index()
+        b = df.groupby("results_interpretation")['number_of_samples'].sum(numeric_only=True).reset_index()
         b = add_percentage_and_count_string(b, col="number_of_samples")
 
         fig = px.bar(b, x="results_interpretation", y="number_of_samples", text="number_of_samples (%)", height=350,

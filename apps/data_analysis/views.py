@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -17,11 +18,9 @@ from django.urls import reverse_lazy
 # Create your views here.
 from django.utils.datastructures import MultiValueDictKeyError
 from django.views.generic import FormView
+from plotly import io as pio
 from plotly.offline import plot
-import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
-# from silk.profiling.profiler import silk_profile
 
 from apps.data_analysis.forms import DataFilterForm, DateFilterForm, EmrFileUploadForm, FileUploadForm, \
     MultipleUploadForm
@@ -30,6 +29,9 @@ from .filters import RTKDataFilter, RTKInventoryFilter
 from ..cqi.models import Facilities, Sub_counties
 from ..cqi.views import bar_chart
 from ..labpulse.models import Cd4traker
+
+
+# from silk.profiling.profiler import silk_profile
 
 
 @login_required(login_url='login')
@@ -95,7 +97,6 @@ def download_csv(request, name, filename):
     session_items = []
     for key, value in request.session.items():
         session_items.append(key)
-
     df = request.session[f'{name}']
     df = pd.DataFrame(df)
 
@@ -870,7 +871,7 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
     df[col_name] = df[last_date] - df[starting_date]
 
     # Remove days in TAT column
-    df[col_name] = df[col_name].astype('timedelta64[D]')
+    df[col_name] = df[col_name].dt.days
     if groupby == "Facilty":
         filter_by = 'Facility Code'
     else:
@@ -1578,8 +1579,8 @@ def merge_county_program_df(df, df1):
 def make_region_specific_df(nairobi_all, name):
     nairobi_all = nairobi_all.rename(columns={"periodname": "month/year"})
     nairobi_all['date'] = pd.to_datetime(nairobi_all['month/year'])
-    nairobi_all_rate = nairobi_all.groupby(['month/year', 'date']).mean(numeric_only=True)[
-        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
+    nairobi_all_rate = nairobi_all.groupby(['month/year', 'date'])[
+        'F-MAPS Revision 2019 Reporting rate (%)'].mean(numeric_only=True).reset_index().sort_values('date')
     nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'] = round(
         nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'], 1)
     nairobi_all_rate.insert(0, "region", name)
@@ -1651,8 +1652,8 @@ def fmarp_line_trend(reporting_rates, x_axis, y_axis, title=None, color=None):
 def make_charts(nairobi_730b, title):
     nairobi_730b.columns = nairobi_730b.columns.str.replace("'", "_")
     rates_cols = list(nairobi_730b.columns[-3:-1])
-    overall_df = nairobi_730b.groupby(['month/year', 'date']).mean(numeric_only=True)[
-        rates_cols].reset_index().sort_values('date')
+    overall_df = nairobi_730b.groupby(['month/year', 'date'])[
+        rates_cols].mean(numeric_only=True).reset_index().sort_values('date')
     overall_df[rates_cols[0]] = round(overall_df[rates_cols[0]], 1)
     overall_df[rates_cols[1]] = round(overall_df[rates_cols[1]], 1)
 
@@ -1733,10 +1734,10 @@ def missing_fcdrr(program_facilities, total_fmaps):
         (program_facilities['Facility - CDRR Revision 2019 Reporting rate (%)'].isnull())
         | (program_facilities['Facility - CDRR Revision 2019 Reporting rate (%)'] == 0)]
     no_fcdrr_copy = no_fcdrr.copy()
-    no_fcdrr = no_fcdrr.groupby(['facility', 'MFL Code', 'month/year']).count()[
-        'Facility - CDRR Revision 2019 Reporting rate (%)'].reset_index()
+    no_fcdrr = no_fcdrr.groupby(['facility', 'MFL Code', 'month/year'])[
+        'Facility - CDRR Revision 2019 Reporting rate (%)'].count().reset_index()
 
-    no_fcdrr_df = no_fcdrr_copy.groupby(['month/year']).count()['facility'].reset_index()
+    no_fcdrr_df = no_fcdrr_copy.groupby(['month/year'])['facility'].count().reset_index()
     no_fcdrr_df = no_fcdrr_df.rename(columns={"facility": "facilities"})
     # convert 'month/year' column to datetime format
     no_fcdrr_df['Month/Year'] = pd.to_datetime(no_fcdrr_df['month/year'], format='%B %Y')
@@ -1753,10 +1754,10 @@ def missing_fmaps(program_facilities):
     no_fmaps = program_facilities[(program_facilities['F-MAPS Revision 2019 Reporting rate (%)'].isnull())
                                   | (program_facilities['F-MAPS Revision 2019 Reporting rate (%)'] == 0)]
     no_fmaps_copy = no_fmaps.copy()
-    no_fmaps = no_fmaps.groupby(['facility', 'MFL Code', 'month/year']).count()[
-        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index()
+    no_fmaps = no_fmaps.groupby(['facility', 'MFL Code', 'month/year'])[
+        'F-MAPS Revision 2019 Reporting rate (%)'].count().reset_index()
 
-    no_fmaps_df = no_fmaps_copy.groupby(['month/year']).count()['facility'].reset_index()
+    no_fmaps_df = no_fmaps_copy.groupby(['month/year'])['facility'].count().reset_index()
     no_fmaps_df = no_fmaps_df.rename(columns={"facility": "facilities"})
     # convert 'month/year' column to datetime format
     no_fmaps_df['Month/Year'] = pd.to_datetime(no_fmaps_df['month/year'], format='%B %Y')
@@ -1797,7 +1798,7 @@ def process_facility_data(data, region, col):
         average_rate, processed_data = process_facility_data(fyj_kajiado_facilities, region, col)
     """
     data['date'] = pd.to_datetime(data['month/year'])
-    data_rate = data.groupby(['month/year', 'date']).mean(numeric_only=True)[col].reset_index().sort_values('date')
+    data_rate = data.groupby(['month/year', 'date'])[col].mean(numeric_only=True).reset_index().sort_values('date')
     data_rate[col] = round(data_rate[col], 1)
     data_rate.insert(0, "region", region)
     average_reporting_rate = round(data_rate[col].mean(), 1)
@@ -1862,8 +1863,8 @@ def analyse_fmaps_fcdrr(df, df1):
     all_data = merge_county_program_df(df, df1)
     all_data['date'] = pd.to_datetime(all_data['month/year'])
     # overall
-    overall_df = all_data.groupby(['month/year', 'date']).mean(numeric_only=True)[
-        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
+    overall_df = all_data.groupby(['month/year', 'date'])[
+        'F-MAPS Revision 2019 Reporting rate (%)'].mean(numeric_only=True).reset_index().sort_values('date')
     overall_df['F-MAPS Revision 2019 Reporting rate (%)'] = round(overall_df['F-MAPS Revision 2019 Reporting rate (%)'],
                                                                   1)
     overall_df.insert(0, "region", "Nairobi/Kajiado counties")
@@ -1881,8 +1882,8 @@ def analyse_fmaps_fcdrr(df, df1):
         nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, program_facilities_729b_fig, \
         fyj_729b = transform_make_charts(all_facilities, cols_729b, "729b", fyj_facility_mfl_code)
 
-    program_facilities_rate = program_facilities.groupby(['month/year', 'date']).mean(numeric_only=True)[
-        'F-MAPS Revision 2019 Reporting rate (%)'].reset_index().sort_values('date')
+    program_facilities_rate = program_facilities.groupby(['month/year', 'date'])[
+        'F-MAPS Revision 2019 Reporting rate (%)'].mean(numeric_only=True).reset_index().sort_values('date')
     program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'] = round(
         program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'], 1)
     program_facilities_rate.insert(0, "region", "FYJ")
@@ -2348,7 +2349,7 @@ def transform_vl_dataframe(df):
     and a combined period column. The month column is converted to a datetime object and sorted.
     """
     df['months since last VL'] = pd.Timestamp.now().normalize() - pd.to_datetime(df['Date Tested'])
-    df['months since last VL'] = df['months since last VL'].astype('timedelta64[M]')
+    df['months since last VL'] = (df['months since last VL'].dt.days / 30.44).round()
     df = df[~df['Date Tested'].isnull()]
     df['Month vl Tested'] = pd.to_datetime(df['Date Tested']).dt.strftime('%b')
     df['Year vl Tested'] = pd.to_datetime(df['Date Tested']).dt.strftime('%Y')
@@ -2456,7 +2457,7 @@ def handle_facility_and_subcounty(new_df, group_by_cols):
     # Replace None values with "Missing"
     new_df['Viral Load'] = np.where(new_df['Viral Load'].isna(), "Missing results", new_df['Viral Load'])
     # Sub county Viral suppression
-    subcounty_vl = new_df.groupby(group_by_cols + ['Viral Load']).sum()['V.L'].reset_index()
+    subcounty_vl = new_df.groupby(group_by_cols + ['Viral Load'])['V.L'].sum().reset_index()
     subcounty_vl = subcounty_vl.pivot_table(values='V.L', index=subcounty_vl[group_by_cols], columns='Viral Load',
                                             aggfunc='first')
     subcounty_vl = subcounty_vl.fillna(0)
@@ -2554,8 +2555,8 @@ def monthly_trend(monthly_vl_trend, title, y_axis_text):
 
 def plot_monthly_trend(newdf_HVL, title, y_axis_text):
     monthly_hvl_trend = \
-        newdf_HVL.groupby(['Month', 'Month vl Tested', 'period', 'Year vl Tested']).sum()[
-            'V.L'].reset_index().sort_values(['Year vl Tested', 'Month'])
+        newdf_HVL.groupby(['Month', 'Month vl Tested', 'period', 'Year vl Tested'])[
+            'V.L'].sum().reset_index().sort_values(['Year vl Tested', 'Month'])
     monthly_hvl_trend_fig = monthly_trend(monthly_hvl_trend,
                                           title,
                                           y_axis_text)
@@ -2573,14 +2574,14 @@ def prepare_age_sex_df(df, newdf_HVL):
     hvl_linelist = hvl_linelist[list(hvl_linelist.columns[:28])].sort_values("Viral Load",
                                                                              ascending=False)
 
-    hvl_linelist_facility = hvl_linelist.groupby(["Facility Name"]).sum(numeric_only=True)[
-        'V.L'].reset_index().sort_values("V.L", ascending=False)
+    hvl_linelist_facility = hvl_linelist.groupby(["Facility Name"])[
+        'V.L'].sum(numeric_only=True).reset_index().sort_values("V.L", ascending=False)
     hvl_linelist_facility['%'] = round(
         hvl_linelist_facility['V.L'] / sum(hvl_linelist_facility['V.L']) * 100, 1)
     hvl_linelist_facility = hvl_linelist_facility.rename(columns={"V.L": "STF"})
 
-    newdf_HVL_age_sex = newdf_HVL.groupby(["Age", "Sex"]).sum(numeric_only=True)[
-        'V.L'].reset_index().sort_values("V.L", ascending=False)
+    newdf_HVL_age_sex = newdf_HVL.groupby(["Age", "Sex"])[
+        'V.L'].sum(numeric_only=True).reset_index().sort_values("V.L", ascending=False)
     newdf_HVL_age_sex['%'] = round(
         newdf_HVL_age_sex['V.L'] / sum(newdf_HVL_age_sex['V.L']) * 100,
         1)
@@ -2621,7 +2622,7 @@ def calculate_overall_resuppression_rate(confirm_rx_failure, newdf_HVL, newdf_ll
     newdf_HVL['resuppression status'] = "STF (HVL)"
     resuppression_status = pd.concat([resuppressed_df, newdf_HVL, newdf_llv])
 
-    resuppression_rate_df = resuppression_status.groupby(["resuppression status"]).sum()['V.L'].reset_index()
+    resuppression_rate_df = resuppression_status.groupby(["resuppression status"])['V.L'].sum().reset_index()
     resuppression_rate_df = resuppression_rate_df.sort_values("V.L", ascending=False)
     resuppression_rate_df['%'] = round(resuppression_rate_df['V.L'] / sum(resuppression_rate_df['V.L']) * 100,
                                        1).astype(str) + "%"
@@ -2630,8 +2631,8 @@ def calculate_overall_resuppression_rate(confirm_rx_failure, newdf_HVL, newdf_ll
 
 def calculate_facility_resuppression_rate(resuppression_status):
     facility_resuppression_status = \
-        resuppression_status.groupby(['Facility Name', 'Facility Code', "resuppression status"]).sum()[
-            'V.L'].reset_index()
+        resuppression_status.groupby(['Facility Name', 'Facility Code', "resuppression status"])[
+            'V.L'].sum().reset_index()
     facility_resuppression_status = facility_resuppression_status.sort_values("V.L", ascending=False)
     facility_resuppression_status['%'] = round(
         facility_resuppression_status['V.L'] / sum(facility_resuppression_status['V.L']) * 100, 1).astype(str) + "%"
@@ -2663,7 +2664,7 @@ def calculate_facility_resuppression_rate(resuppression_status):
 def calculate_justification_resuppression_rate(resuppression_status):
     facility_resuppression_status = resuppression_status.groupby(['Justification',
                                                                   "resuppression status"]
-                                                                 ).sum()['V.L'].reset_index()
+                                                                 )['V.L'].sum().reset_index()
 
     facility_resuppression_status = facility_resuppression_status.pivot_table(index=['Justification'],
                                                                               columns='resuppression status',
@@ -2743,7 +2744,7 @@ def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
             'Other (Pediatric) bottles'
         ], value_name=col_name)
 
-    total_df = total_df.groupby("County").sum()[col_name].reset_index()
+    total_df = total_df.groupby("County")[col_name].sum().reset_index()
     # merge dfs together
     merged = main_df.merge(
         other_adult_df,
@@ -2758,9 +2759,9 @@ def compile_pmp_report(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
                        other_paeds_df: pd.DataFrame, filename) -> pd.DataFrame:
     """Compile the PMP report"""
     prepared_data, total_df = prepare_data(main_df, other_adult_df, other_paeds_df, filename)
-    pmp = prepared_data.groupby(['County']).sum()[[
+    pmp = prepared_data.groupby(['County'])[[
         'TLD 90s', 'DTG 10', 'DTG 50mg tabs 30s', 'ABC/3TC 120mg/60mg', 'CTX 240mg/5ml', '3HP 300/300',
-    ]].reset_index()
+    ]].sum().reset_index()
     pmp = total_df.merge(pmp, on="County", how="left")
     pmp.index += 1
     pmp.loc['Total'] = pmp.sum(numeric_only=True)
@@ -2960,8 +2961,8 @@ def viral_load(request):
 
                             # summarize data by groupby
                             monthly_vl_trend = \
-                                df.groupby(['Month', 'Month vl Tested', 'period', 'Year vl Tested']).sum()[
-                                    'V.L'].reset_index().sort_values(['Year vl Tested', 'Month'])
+                                df.groupby(['Month', 'Month vl Tested', 'period', 'Year vl Tested'])[
+                                    'V.L'].sum().reset_index().sort_values(['Year vl Tested', 'Month'])
                             monthly_trend_fig = monthly_trend(monthly_vl_trend,
                                                               "Monthly VL uptake trend.      Total sample collected and "
                                                               "processed ", "VL sample taken")
@@ -3150,7 +3151,7 @@ def viral_load(request):
 
     date_cols = [col for col in hvl_linelist.columns if "date" in col.lower()]
     for col in date_cols:
-        hvl_linelist[col] = pd.to_datetime(hvl_linelist[col])
+        hvl_linelist[col] = pd.to_datetime(hvl_linelist[col], errors='coerce')
         hvl_linelist[col] = hvl_linelist[col].dt.date
     request.session['hvl_linelist_facility'] = hvl_linelist_facility.to_dict()
 
@@ -3362,22 +3363,22 @@ def trend_variances(negative_variances_df, title, bar_grouping=False):
 
 
 def get_variance_df(df):
-    overall_variances_trend = df.groupby(["month", "month_num"]).sum()['Variance'].reset_index().sort_values(
+    overall_variances_trend = df.groupby(["month", "month_num"])['Variance'].sum().reset_index().sort_values(
         "month_num")
     positive_variances_df = df[df['Variance'] > 0]
 
-    positive_variances_df = positive_variances_df.groupby(["month", "month_num"]).sum()[
-        'Variance'].reset_index().sort_values("month_num")
+    positive_variances_df = positive_variances_df.groupby(["month", "month_num"])[
+        'Variance'].sum().reset_index().sort_values("month_num")
     positive_variances_df['variance type'] = "Positive"
     negative_variances_df = df[df['Variance'] < 0]
-    negative_variances_df = negative_variances_df.groupby(["month", "month_num"]).sum()[
-        'Variance'].reset_index().sort_values("month_num")
+    negative_variances_df = negative_variances_df.groupby(["month", "month_num"])[
+        'Variance'].sum().reset_index().sort_values("month_num")
     negative_variances_df['Variance'] = negative_variances_df['Variance'].abs()
     negative_variances_df['variance type'] = "Negative"
     pos_neg_var = pd.concat([positive_variances_df, negative_variances_df]).sort_values("month_num")
     no_variances_df = df[df['Variance'] == 0]
-    no_variances_df = no_variances_df.groupby(["month", "month_num"]).count()[
-        'Facility Name'].reset_index().sort_values("month_num")
+    no_variances_df = no_variances_df.groupby(["month", "month_num"])[
+        'Facility Name'].count().reset_index().sort_values("month_num")
     return no_variances_df, pos_neg_var, negative_variances_df, positive_variances_df, overall_variances_trend
 
 
@@ -3413,7 +3414,7 @@ def add_percentage_and_count_string(haart_class_df, col):
 
 def get_monthly_frequency(variances, col):
     number_of_facilities = len(variances['Facility Name'].unique())
-    variances_trend_df = variances.groupby(["month", "month_num"]).count()[col].reset_index().sort_values(
+    variances_trend_df = variances.groupby(["month", "month_num"])[col].count().reset_index().sort_values(
         "month_num")
     variances_trend_df = variances_trend_df.rename(columns={col: "Frequency"})
     variances_trend_df = add_percentage_and_count_string(variances_trend_df, "Frequency")
@@ -4390,7 +4391,7 @@ def generate_duedates(above_25yrs, month_duedates, col):
         patient_due_list.append(patients_due)
 
     due_next_12_months_raw = pd.concat(patient_due_list)
-    due_next_12_months = due_next_12_months_raw.groupby('Due in (n) months').count()['CCC No'].reset_index()
+    due_next_12_months = due_next_12_months_raw.groupby('Due in (n) months')['CCC No'].count().reset_index()
     due_next_12_months.columns = ["Due in (n) months", "Numbers"]
     return due_next_12_months, due_next_12_months_raw, patient_due_list
 
@@ -4540,7 +4541,7 @@ def generate_reports(no_vl_so_far, not_merged1, merged_df_100, has_results_withi
 
 
 def prep_categorical_columns(backlog_df, col):
-    dist_backlog = backlog_df.groupby([col]).count()['CCC No'].reset_index()
+    dist_backlog = backlog_df.groupby([col])['CCC No'].count().reset_index()
     dist_backlog.columns = [col, "TX_CURR (Eligible)"]
     dist_backlog['%'] = round(
         dist_backlog["TX_CURR (Eligible)"] / dist_backlog["TX_CURR (Eligible)"].sum() * 100, ).astype(int)
@@ -4686,11 +4687,11 @@ def calculate_vl_uptake(last_one_year_df, cd4_results):
     """
 
     # Calculate TX_CURR (Eligible)
-    all_df = last_one_year_df.groupby("age_band").count()['CCC No'].reset_index()
+    all_df = last_one_year_df.groupby("age_band")['CCC No'].count().reset_index()
     all_df.columns = ['Age band', 'TX_CURR (Eligible)']
 
     # Calculate valid results
-    vl_results = cd4_results.groupby("age_band").count()['CCC No'].reset_index()
+    vl_results = cd4_results.groupby("age_band")['CCC No'].count().reset_index()
     vl_results.columns = ['Age band', 'valid results']
 
     # Merge and calculate VL uptake
@@ -4868,9 +4869,9 @@ def analyze_cd4_reflex_test_uptake(merged_cd4, one_year_ago):
     cd4_scrag.loc[:, 'month_year'] = pd.to_datetime(cd4_scrag['Collection Date (Labpulse)']).dt.strftime('%b-%Y')
 
     # Group by month_year and count the relevant columns
-    cd4_ = cd4_scrag.groupby("month_year").count()["CCC No"].reset_index()
-    tb_lam_ = cd4_scrag.groupby("month_year").count()["TB LAM (Labpulse)"].reset_index()
-    s_crag_ = cd4_scrag.groupby("month_year").count()["Serum Crag (Labpulse)"].reset_index()
+    cd4_ = cd4_scrag.groupby("month_year")["CCC No"].count().reset_index()
+    tb_lam_ = cd4_scrag.groupby("month_year")["TB LAM (Labpulse)"].count().reset_index()
+    s_crag_ = cd4_scrag.groupby("month_year")["Serum Crag (Labpulse)"].count().reset_index()
 
     # Sort the DataFrames
     cd4_ = sort_month_year(cd4_, "month_year")
@@ -5056,7 +5057,7 @@ def viral_track(request):
         vl_cascade.index += 1
         dist_backlog = prep_categorical_columns(backlog_df, "eligibility criteria")
 
-        backlog_df_age_band = backlog_df.groupby(["age_band", "Sex"]).count()['CCC No'].reset_index()
+        backlog_df_age_band = backlog_df.groupby(["age_band", "Sex"])['CCC No'].count().reset_index()
 
         result, custom_order = sort_custom_agebands(backlog_df_age_band, 'age_band')
         result.columns = ['Age band', 'Sex', "TX_CURR (Eligible)"]
@@ -5166,3 +5167,380 @@ def viral_track(request):
     }
 
     return render(request, 'data_analysis/viral_tracker.html', context)
+
+
+def convert_mfl_code_to_int(df):
+    # drop the rows containing letters
+    df = df[pd.to_numeric(df['organisationunitcode'], errors='coerce').notnull()]
+    df['organisationunitcode'] = df['organisationunitcode'].astype(int)
+    return df
+
+
+def normalize_khis_facilities(df1, fyj_facility_mfl_code):
+    df1 = df1[~df1['organisationunitcode'].isnull()]
+    df1 = convert_mfl_code_to_int(df1)
+    df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
+    return df1
+
+
+def clean_up_khis_moh730b_regimen(variances_df):
+    variances_df['regimen'] = variances_df['regimen'].str.replace("MoH 730B Revision 2017", "")
+    variances_df['regimen'] = variances_df['regimen'].str.replace("MoH 730B Revision 2019", "")
+    variances_df['regimen'] = variances_df['regimen'].str.replace("Paediatric preparations", "")
+    variances_df['regimen'] = variances_df['regimen'].str.replace("Medicines for OIs", "")
+    variances_df['regimen'] = variances_df['regimen'].str.replace("Adult preparations", "")
+    variances_df['regimen'] = variances_df['regimen'].str.replace("TB/ HIV DRUGS", "")
+
+    # Strip white spaces from both ends of each entry
+    variances_df['regimen'] = variances_df['regimen'].str.strip()
+
+    return variances_df
+
+
+def sort_variances(neg_disc, col):
+    neg_disc = clean_up_khis_moh730b_regimen(neg_disc)
+    neg_disc['variances'] = abs(neg_disc['variances'])
+    neg_disc = neg_disc.groupby(['regimen'])[['variances']].sum().reset_index().sort_values(
+        "variances", ascending=False)
+    neg_disc.columns = ['regimen', col]
+    return neg_disc
+
+
+def create_variance_bars(df_fig, col, county):
+    # Create horizontal bar chart for negative variances
+    fig = px.bar(df_fig.head(10), x=col, y='regimen', text=col, height=450,
+                 orientation='h', title=f'Top 10 Drugs with {col.title()}: {county}',
+                 labels={col: f'{col.title()}', 'regimen': 'Drug Name'},
+                 color=col, color_continuous_scale='PuRd')
+    fig.update_layout(yaxis={'categoryorder': 'total ascending'})
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def create_variances_heatmap(variance_regimen, county):
+    # Create a new dataframe with absolute values of variances
+    heatmap_df = variance_regimen[
+        ['regimen', 'negative variances', 'positive variances']].copy()
+    heatmap_df['negative variances'] = heatmap_df['negative variances'].abs()
+    heatmap_df['overall variances'] = heatmap_df['negative variances'] + heatmap_df[
+        'positive variances']
+
+    # Sort the dataframe by overall variances in descending order
+    heatmap_df = heatmap_df.sort_values('overall variances', ascending=False)
+
+    # Create the heatmap
+    fig = px.imshow(
+        heatmap_df[['negative variances', 'positive variances', 'overall variances']],
+        labels=dict(x="Variance Type", y="Drug Name", color="Variance"),
+        y=heatmap_df['regimen'],
+        x=['Negative Variances', 'Positive Variances', 'Overall Variances'],
+        color_continuous_scale='PuRd',
+        aspect="auto",
+        text_auto=True,
+        title=f"Heatmap of Drug Variances: {county}")
+    if len(heatmap_df) > 10:
+        height = len(heatmap_df) * 25
+    else:
+        height = len(heatmap_df) * 55
+
+    # Update layout for better readability
+    fig.update_layout(
+        #     width=1000,  # Adjust width as needed
+        height=height,  # Adjust height based on number of drugs
+        xaxis_side="top",
+        yaxis={'dtick': 1, 'tickmode': 'linear'},
+        coloraxis_colorbar=dict(
+            title="Variance",
+            ticksuffix=" units",
+            lenmode="pixels", len=300,
+        )
+    )
+
+    return plot(fig, include_plotlyjs=False, output_type="div")
+
+
+def create_variance_visualizations(variances_df, county="FYJ"):
+    neg_disc = sort_variances(variances_df[variances_df['variances'] < 0],
+                              'negative variances')
+    negative_var_fig = create_variance_bars(neg_disc, 'negative variances', county)
+
+    pos_disc = sort_variances(variances_df[variances_df['variances'] > 0],
+                              'positive variances')
+    positive_var_fig = create_variance_bars(pos_disc, 'positive variances', county)
+
+    variance_regimen = neg_disc.merge(pos_disc, on="regimen", how="outer").fillna(0)
+    variance_regimen.columns = ['regimen', 'negative variances', 'positive variances']
+    variance_regimen = variance_regimen.sort_values(
+        by=['negative variances', 'positive variances'],
+        ascending=False)
+    overall_var_fig = create_variances_heatmap(variance_regimen, county)
+    return negative_var_fig, positive_var_fig, overall_var_fig
+
+
+def create_county_status_chart(county_status, level):
+    # Sort the data by total ART sites in descending order
+    county_status_sorted = county_status.sort_values('ART sites', ascending=False)
+
+    county_names = county_status_sorted[level].tolist()
+    facilities_without_variances = (county_status_sorted['ART sites'] - county_status_sorted[
+        '# Facility with variances']).tolist()
+    facilities_with_variances = county_status_sorted['# Facility with variances'].tolist()
+    total_facilities = county_status_sorted['ART sites'].tolist()
+
+    total_all_facilities = sum(total_facilities)
+
+    fig = go.Figure(data=[
+        go.Bar(name='Facilities without Variances', x=county_names,
+               y=facilities_without_variances, marker_color='#0A255C',
+               text=[f"{y} ({y / t * 100:.1f}%)" for y, t in
+                     zip(facilities_without_variances, total_facilities)],
+               textposition='inside'),
+        go.Bar(name='Facilities with Variances', x=county_names, y=facilities_with_variances,
+               marker_color='#B10023',
+               text=[f"{y} ({y / t * 100:.1f}%)" for y, t in
+                     zip(facilities_with_variances, total_facilities)],
+               textposition='inside')
+    ])
+
+    for i, total in enumerate(total_facilities):
+        fig.add_annotation(
+            x=county_names[i],
+            y=total,
+            text=f"Total: {total}",
+            showarrow=False,
+            yshift=10,
+            font=dict(color="black", size=10)
+        )
+    if level == "County":
+        level = "Counties"
+    elif level == "Subcounty":
+        level = "Subcounties"
+
+    fig.update_layout(
+        title=f'Concordant Reports (MOH 730B) Across {level} (Total Facilities: {total_all_facilities})',
+        barmode='stack',
+        xaxis_title=level,
+        yaxis_title='Number of ART Facilities',
+        legend_title='Facility Status',
+        height=500,
+    )
+
+    fig.update_traces(textfont=dict(size=10, color="white"))
+    fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
+
+    return pio.to_html(fig, full_html=False)
+
+
+def compile_concordance_report(variances_df, df1, level):
+    county_variances = variances_df.groupby(level)['Facility_Name'].nunique().reset_index()
+
+    # art_sites = pd.DataFrame(county_art_sites.items(), columns=[level, 'ART sites'])
+    art_sites = \
+        df1[df1['Care & Treatment(Yes/No)'].str.contains("yes", case=False)].groupby(
+            [level])[
+            'facility'].nunique().reset_index()
+    art_sites.columns = [level, 'ART sites']
+    county_status = art_sites.merge(county_variances, on=level, how="outer").fillna(0)
+    county_status = county_status.rename(
+        columns={"Facility_Name": "# Facility with variances"})
+    county_status['Facility concordance %'] = round(
+        100 - county_status['# Facility with variances'] / county_status['ART sites'] * 100, 1)
+
+    # Usage:
+    county_status_chart = create_county_status_chart(county_status, level)
+    return county_status_chart
+
+
+def pre_process_moh730b(df, df1):
+    fyj_facility_mfl_code = df1['MFL Code'].unique()
+    common_col = ['organisationunitid', 'organisationunitname', 'organisationunitcode',
+                  'organisationunitdescription', 'periodid', 'periodname', 'month_year',
+                  'periodcode',
+                  'perioddescription']
+    beginning_bal = [x for x in df.columns if "Beginning Balance" in x]
+
+    ending_bal = [x for x in df.columns if "End of Month Physical Stock Count" in x]
+    beginning_bal_df = df[common_col + beginning_bal]
+
+    beginning_bal_df['report_type'] = "beginning balance"
+    ending_bal_df = df[common_col + ending_bal]
+
+    beginning_bal_df = beginning_bal_df.melt(id_vars=common_col, value_vars=beginning_bal,
+                                             var_name='regimen', value_name='beginning_values')
+
+    beginning_bal_df['report_type'] = "beginning balance"
+    beginning_bal_df = beginning_bal_df.sort_values("month_year")
+
+    beginning_bal_df = beginning_bal_df[
+        beginning_bal_df['month_year'] == beginning_bal_df['month_year'].unique()[1]]
+    beginning_bal_df['regimen'] = beginning_bal_df['regimen'].str.replace(" Beginning Balance", '')
+    ending_bal_df = ending_bal_df.melt(id_vars=common_col,
+                                       value_vars=ending_bal_df,
+                                       var_name='regimen',
+                                       value_name='ending_values')
+
+    ending_bal_df['report_type'] = "ending balance"
+    ending_bal_df = ending_bal_df.sort_values("month_year")
+    ending_bal_df = ending_bal_df[ending_bal_df['month_year'] ==
+                                  ending_bal_df['month_year'].unique()[0]]
+
+    ending_bal_df['regimen'] = ending_bal_df['regimen'].str.replace(
+        " End of Month Physical Stock Count", '')
+    merged_df = ending_bal_df.merge(beginning_bal_df,
+                                    on=[
+                                        'organisationunitid',
+                                        'organisationunitname',
+                                        'organisationunitcode', 'regimen'
+                                    ])
+    merged_df = merged_df[[
+        'organisationunitname', 'organisationunitcode', 'periodname_x', 'regimen',
+        'ending_values', 'report_type_x', 'periodname_y', 'beginning_values',
+        'report_type_y'
+    ]]
+    merged_df = merged_df.rename(
+        columns={"periodname_x": "previous_month", "periodname_y": "month"})
+    merged_df['variances'] = merged_df['ending_values'] - merged_df['beginning_values']
+
+    merged_df = normalize_khis_facilities(merged_df, fyj_facility_mfl_code)
+    merged_df = merged_df.merge(df1, left_on="organisationunitcode", right_on="MFL Code")
+    merged_df = merged_df[['County', 'Subcounty', 'Hub',
+                           'organisationunitname', 'organisationunitcode', 'previous_month',
+                           'regimen',
+                           'ending_values', 'report_type_x', 'month', 'beginning_values',
+                           'report_type_y', 'variances'
+                           ]]
+
+    # convert all float columns to int
+    m = merged_df.select_dtypes(np.number)
+    merged_df[m.columns] = m.round().astype('Int64')
+    merged_df = merged_df.rename(columns={"organisationunitname": "Facility_Name",
+                                          "organisationunitcode": "MFL_Code"})
+    prev_mon = merged_df['previous_month'].unique()[0]
+    mon_name = merged_df['month'].unique()[0]
+
+    # Get the current date and time
+    current_time = datetime.now()
+
+    # Format the current date and time as a string
+    time_str = current_time.strftime("%Y-%m-%d %H-%M-%S")
+
+    # Use the formatted time string in the file name
+    filename = f"MOH 730B {mon_name} beginning bal vs {prev_mon} ending bal {time_str}"
+    variances_df = merged_df[merged_df['variances'] != 0].sort_values("variances", ascending=False)
+
+    variances_df = clean_up_khis_moh730b_regimen(variances_df)
+
+    # Apply the decoding to the 'regimen' column
+    variances_df['regimen'] = variances_df['regimen'].str.replace("/", "_")
+
+    negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj = create_variance_visualizations(
+        variances_df)
+    visualize_variance = []
+    for county in variances_df['County'].unique():
+        county_df = variances_df[variances_df['County'] == county]
+        negative_var_fig, positive_var_fig, overall_var_fig = create_variance_visualizations(
+            county_df, county=county)
+        visualize_variance.append(overall_var_fig)
+        visualize_variance.append(positive_var_fig)
+        visualize_variance.append(negative_var_fig)
+    county_status_chart = compile_concordance_report(variances_df, df1, 'County')
+    subcounty_status_chart = compile_concordance_report(variances_df, df1, 'Subcounty')
+    return variances_df, visualize_variance, county_status_chart, subcounty_status_chart, filename, \
+        negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj
+
+
+@login_required(login_url='login')
+def compare_opening_closing_bal_moh730b(request):
+    final_df = pd.DataFrame()
+    filename = None
+    negative_var_fig_fyj = None
+    positive_var_fig_fyj = None
+    overall_var_fig_fyj = None
+    visualize_variance = None
+    county_status_chart = None
+    subcounty_status_chart = None
+    dictionary = None
+    form = FileUploadForm(request.POST or None)
+    report_name = "MOH 730B CONCORDANCE"
+    variances_df = pd.DataFrame()
+    datasets = [
+        "MOH 730B Beginning balance",
+        "MOH 730B Ending balance",
+    ]
+
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == 'POST':
+        try:
+            form = FileUploadForm(request.POST, request.FILES)
+            message = "It seems that the dataset you uploaded is incorrect. To proceed with the analysis, " \
+                      "kindly upload the MoH 730B beginning balance and closing balance in one file. Please generate " \
+                      "these files and ensure they are in CSV format before uploading them. You can find detailed " \
+                      "instructions on how to upload the files below. Thank you. "
+            if form.is_valid():
+                file = request.FILES['file']
+                if "csv" in file.name:
+                    df = pd.read_csv(file).fillna(0)
+                    df['month_year'] = pd.to_datetime(df['periodname'])
+                else:
+                    messages.success(request, message)
+                    return redirect('compare_opening_closing_bal_moh730b')
+                # Check if required columns exist in the DataFrame
+                if len(df.columns) >= 140:
+                    # Read data from FYJHealthFacility model into a pandas DataFrame
+                    qs = FYJHealthFacility.objects.all()
+                    df1 = pd.DataFrame.from_records(qs.values())
+
+                    df1 = df1.rename(columns={
+                        "mfl_code": "MFL Code", "county": "County", 'health_subcounty': 'Health Subcounty',
+                        'subcounty': 'Subcounty', 'hub': 'Hub', 'm_and_e_mentor': 'M&E Mentor/SI associate',
+                        'm_and_e_assistant': 'M&E Assistant', 'care_and_treatment': 'Care & Treatment(Yes/No)',
+                        'hts': 'HTS(Yes/No)', 'vmmc': 'VMMC(Yes/No)', 'key_pop': 'Key Pop(Yes/No)',
+                        'facility_type': 'Faclity Type', 'category': 'Category (HVF/MVF/LVF)', 'emr': 'EMR'
+                    })
+                    df1['MFL Code'] = df1['MFL Code'].astype(int)
+
+                    if df.shape[0] > 0 and df1.shape[0] > 0:
+                        variances_df, visualize_variance, county_status_chart, subcounty_status_chart, filename, negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj = pre_process_moh730b(
+                            df, df1)
+                else:
+                    messages.success(request, message)
+                    return redirect('compare_opening_closing_bal_moh730b')
+            else:
+                messages.success(request, message)
+                return redirect('compare_opening_closing_bal_moh730b')
+        except MultiValueDictKeyError:
+            context = {
+                "variances_df": variances_df, "negative_var_fig_fyj": negative_var_fig_fyj,
+                "dictionary": dictionary, "positive_var_fig_fyj": positive_var_fig_fyj,
+                "filename": filename, "overall_var_fig_fyj": overall_var_fig_fyj, "datasets": datasets,
+                "county_status_chart": county_status_chart, "subcounty_status_chart": subcounty_status_chart,
+                "visualize_variance": visualize_variance, "form": form, "report_name": report_name,
+            }
+
+            return render(request, 'data_analysis/upload.html', context)
+    # start index at 1 for Pandas DataFrame
+    variances_df.index = range(1, len(variances_df) + 1)
+    # Drop date from dfs
+    dfs = [variances_df]
+    for df in dfs:
+        if "date" in df.columns:
+            df.drop('date', axis=1, inplace=True)
+    request.session['variances_df'] = variances_df.to_dict()
+    # Convert dict_items into a list
+    dictionary = get_key_from_session_names(request)
+    context = {
+        "variances_df": variances_df, "filename": filename, "final_df": final_df,
+        "dictionary": dictionary, "positive_var_fig_fyj": positive_var_fig_fyj, "datasets": datasets,
+        "negative_var_fig_fyj": negative_var_fig_fyj, "visualize_variance": visualize_variance,
+        "overall_var_fig_fyj": overall_var_fig_fyj, "county_status_chart": county_status_chart,
+        "subcounty_status_chart": subcounty_status_chart, "form": form, "report_name": report_name,
+    }
+
+    return render(request, 'data_analysis/moh730B beginning vs closing.html', context)

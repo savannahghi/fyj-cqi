@@ -2991,13 +2991,13 @@ def wash_dqa_dashboard(request, dqa_type=None):
 
             merged_df = county_hub_sub_county_df.merge(facilities_df, on=['wards', 'ward_code'], how="right")
             if merged_df.shape[0] > 0:
-                sub_county_df = merged_df.groupby('sub_counties').sum(numeric_only=True)[
-                    'count'].reset_index().sort_values('count')
+                sub_county_df = merged_df.groupby('sub_counties')[
+                    'count'].sum(numeric_only=True).reset_index().sort_values('count')
                 sub_county_df = sub_county_df.rename(columns={"count": "Number of wards"})
                 sub_county_df['sub_counties'] = sub_county_df['sub_counties'].str.replace(" Sub County", "")
                 sub_county_viz = bar_chart_dqa(sub_county_df, "sub_counties", "Number of wards",
                                                title=f"Sub-counties WASH DQA Summary for {quarter_year} N={len(sub_county_df)} ")
-                county_df = merged_df.groupby('counties').sum(numeric_only=True)['count'].reset_index().sort_values(
+                county_df = merged_df.groupby('counties')['count'].sum(numeric_only=True).reset_index().sort_values(
                     'count')
                 county_df = county_df.rename(columns={"count": "Number of wards"})
                 county_viz = bar_chart_dqa(county_df, "counties", "Number of wards",

@@ -901,8 +901,12 @@ def update_cd4_results(request, report_type, pk):
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = Cd4traker.objects.get(id=pk)
     if report_type == "Current":
-        commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
-            show_remaining_commodities(item.facility_name)
+        if request.user.groups.filter(name='laboratory_staffs_labpulse').exists():
+            commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
+                show_remaining_commodities(item.testing_laboratory)
+        else:
+            commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
+                show_remaining_commodities(item.facility_name)
     else:
         commodity_status = None
         # commodities = None

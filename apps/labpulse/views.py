@@ -3235,7 +3235,7 @@ def load_biochemistry_results(request):
             )
         )
         county_fig = plot(fig, include_plotlyjs=False, output_type="div")
-        b = df.groupby("sub_county").sum(numeric_only=True)['number_of_samples'].reset_index()
+        b = df.groupby("sub_county")['number_of_samples'].sum(numeric_only=True).reset_index()
         b = add_percentage_and_count_string(b, col="number_of_samples").sort_values("number_of_samples")
         fig = px.bar(b, x="sub_county", y="number_of_samples", text="number_of_samples (%)", height=350,
                      title=f"Results by Sub-County N={b['number_of_samples'].sum()}")
@@ -3272,7 +3272,7 @@ def load_biochemistry_results(request):
         )
         sub_county_fig = plot(fig, include_plotlyjs=False, output_type="div")
 
-        b = df.groupby("test_name").sum(numeric_only=True)['number_of_samples'].reset_index().sort_values(
+        b = df.groupby("test_name")['number_of_samples'].sum(numeric_only=True).reset_index().sort_values(
             "number_of_samples")
 
         fig = px.bar(b, x="test_name", y="number_of_samples", text="number_of_samples", height=350,
@@ -3671,7 +3671,7 @@ def save_drt_data(request, resistance_patterns_df, model_class, field_mapping, f
 
 
 def group_resistance_patterns(df_resistant_patterns, cols_to_groupby):
-    resistance_counts = df_resistant_patterns.groupby(cols_to_groupby).count()['patient_id'].reset_index()
+    resistance_counts = df_resistant_patterns.groupby(cols_to_groupby)['patient_id'].count().reset_index()
     resistance_counts = resistance_counts.sort_values(by=['resistance_level', 'haart_class'], ascending=False)
     resistance_counts = resistance_counts.rename(columns={"patient_id": "Number of DRT tests"})
     return resistance_counts
@@ -3727,7 +3727,7 @@ def categorize_age(age):
 def prepare_age_resistant_patterns(df_resistant_patterns, groupby_list):
     if "resistance_level" in groupby_list:
         df_resistant_patterns = df_resistant_patterns.rename(columns={"patient_id": "Number of Drugs"})
-        resistance_num = df_resistant_patterns.groupby(groupby_list).count()['Number of Drugs'].reset_index()
+        resistance_num = df_resistant_patterns.groupby(groupby_list)['Number of Drugs'].count().reset_index()
         # Apply the function to create a new 'age_band' column
         resistance_num['age_band'] = resistance_num['age'].apply(categorize_age)
 
@@ -3739,7 +3739,7 @@ def prepare_age_resistant_patterns(df_resistant_patterns, groupby_list):
         # Apply the function to create a new 'age_band' column
         resistance_num['age_band'] = resistance_num['age'].apply(categorize_age)
 
-        result = resistance_num.groupby(['age_band', 'sex']).count()['Number of DRT results'].reset_index()
+        result = resistance_num.groupby(['age_band', 'sex'])['Number of DRT results'].count().reset_index()
     # # Define the custom sorting order
     # custom_order = ['<1', '1-4.', '5-9', '10-14.', '15-19', '20-24', '25-29', '30-34', '35-39', '40-44', '45-49',
     #                 '50-54', '55-59', '60-64', '65+']
@@ -4073,7 +4073,7 @@ def generate_mutation_profile_figs(df_resistant_profiles):
 
     # Concatenate mutation counts DataFrames
     mutations_df = pd.concat(dfs).reset_index(drop=True)
-    df_mutations = mutations_df.groupby(['mutation_type', 'mutations']).sum()['count'].reset_index().sort_values(
+    df_mutations = mutations_df.groupby(['mutation_type', 'mutations'])['count'].sum().reset_index().sort_values(
         "count", ascending=False)
 
     # Set specific order for mutation types
@@ -4159,7 +4159,7 @@ def count_resistance_types(df, patient_id="patient_id", resistance_type="resista
         dfs.append(result_df.head(1))
 
     pt_level_df = pd.concat(dfs)
-    pt_level_df = pt_level_df.groupby([resistance_type]).count()[patient_id].reset_index()
+    pt_level_df = pt_level_df.groupby([resistance_type])[patient_id].count().reset_index()
     pt_level_df.columns = ['resistance_type', 'count']
     return pt_level_df
 
@@ -4267,7 +4267,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         ###############################################
         # COUNTY PICTURE
         ###############################################
-        county_summary = df_cascade.groupby("county_name").count()['patient_id'].reset_index()
+        county_summary = df_cascade.groupby("county_name")['patient_id'].count().reset_index()
         county_summary.columns = ["county", "counts"]
         if county_summary.shape[0] > 1:
             xaxis_title = "Counties"
@@ -4325,7 +4325,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         ##############################################################
         # Distribution of HIV Drugs Across Resistance Levels by Sex
         ##############################################################
-        resistance_num = df_resistant_patterns.groupby(["resistance_level", "sex"]).count()['patient_id'].reset_index()
+        resistance_num = df_resistant_patterns.groupby(["resistance_level", "sex"])['patient_id'].count().reset_index()
         resistance_num = resistance_num.rename(columns={"patient_id": "Number of Drugs"})
         resistance_num = add_percentage(resistance_num, "Number of Drugs", "sex")
 
@@ -4391,7 +4391,7 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         tat_df = df_resistant_patterns.copy()
         tat_df = tat_df.drop_duplicates(['patient_id', 'formatted_collected_date'])
         tat_df = tat_df.rename(columns={"patient_id": "Number of Drugs"})
-        tat = tat_df.groupby(['formatted_date', "formatted_collected_date"]).mean()['tat_days'].reset_index()
+        tat = tat_df.groupby(['formatted_date', "formatted_collected_date"])['tat_days'].mean().reset_index()
         tat['tat_days'] = tat['tat_days'].round().astype(int)
         tat = tat.sort_values("formatted_collected_date")
         drt_tat_fig = line_chart_median_mean(tat, "formatted_date", "tat_days",
@@ -4452,8 +4452,8 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         resistance_counts = group_resistance_patterns(df_resistant_patterns, cols_to_groupby)
 
         resistance_counts = \
-            resistance_counts.groupby(["resistance_level", "formatted_date", "formatted_collected_date"]).sum()[
-                'Number of DRT tests'].reset_index()
+            resistance_counts.groupby(["resistance_level", "formatted_date", "formatted_collected_date"])[
+                'Number of DRT tests'].sum().reset_index()
         resistance_counts = resistance_counts.sort_values("formatted_collected_date")
         # Reorder the resistance levels
         resistance_counts['resistance_level'] = pd.Categorical(resistance_counts['resistance_level'],
@@ -4490,8 +4490,8 @@ def prepare_drt_summary(my_filters, trend_figs, drt_trend_fig, resistance_level_
         resistance_counts = resistance_counts.sort_values('month_num').drop('month_num', axis=1)
 
         resistance_counts = resistance_counts.groupby(
-            ["resistance_level", "formatted_date", "formatted_collected_date", "drug", "haart_class"]).sum()[
-            'Number of DRT tests'].reset_index()
+            ["resistance_level", "formatted_date", "formatted_collected_date", "drug", "haart_class"])[
+            'Number of DRT tests'].sum().reset_index()
 
         # Reorder the resistance levels
         resistance_counts['resistance_level'] = pd.Categorical(resistance_counts['resistance_level'],

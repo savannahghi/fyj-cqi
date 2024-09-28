@@ -5178,6 +5178,7 @@ def convert_mfl_code_to_int(df):
 
 def normalize_khis_facilities(df1, fyj_facility_mfl_code):
     df1 = df1[~df1['organisationunitcode'].isnull()]
+    df1.loc[df1['organisationunitname'] == "Hope Med C", 'organisationunitcode'] = 19834
     df1 = convert_mfl_code_to_int(df1)
     df1 = df1[df1['organisationunitcode'].isin(fyj_facility_mfl_code)]
     return df1
@@ -5508,6 +5509,7 @@ def compare_opening_closing_bal_moh730b(request):
                         'facility_type': 'Faclity Type', 'category': 'Category (HVF/MVF/LVF)', 'emr': 'EMR'
                     })
                     df1['MFL Code'] = df1['MFL Code'].astype(int)
+                    # df1.to_csv("df1.csv",index=False)
 
                     if df.shape[0] > 0 and df1.shape[0] > 0:
                         variances_df, visualize_variance, county_status_chart, subcounty_status_chart, filename, \
@@ -5526,7 +5528,7 @@ def compare_opening_closing_bal_moh730b(request):
                 "filename": filename, "overall_var_fig_fyj": overall_var_fig_fyj, "datasets": datasets,
                 "county_status_chart": county_status_chart, "subcounty_status_chart": subcounty_status_chart,
                 "visualize_variance": visualize_variance, "form": form, "report_name": report_name,
-                "hub_status_chart":hub_status_chart
+                "hub_status_chart": hub_status_chart
             }
 
             return render(request, 'data_analysis/upload.html', context)

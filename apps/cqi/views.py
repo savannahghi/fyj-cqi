@@ -4163,7 +4163,7 @@ def single_project(request, pk):
     # convert data from database to a dataframe
     df = pd.DataFrame(changes_data)
     if df.shape[0] != 0:
-        df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
+        df_other_projects = df_other_projects.groupby('department(s)')['total projects'].sum()
         df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
 
         project_performance = prepare_trends_big_size(df)
@@ -4310,7 +4310,7 @@ def single_project_program(request, pk):
     # convert data from database to a dataframe
     df = pd.DataFrame(changes_data)
     if df.shape[0] != 0:
-        df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
+        df_other_projects = df_other_projects.groupby('department(s)')['total projects'].sum()
         df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
 
         project_performance = prepare_trends_big_size(df)
@@ -4456,7 +4456,7 @@ def single_project_subcounty(request, pk):
     # convert data from database to a dataframe
     df = pd.DataFrame(changes_data)
     if df.shape[0] != 0:
-        df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
+        df_other_projects = df_other_projects.groupby('department(s)')['total projects'].sum()
         df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
 
         project_performance = prepare_trends_big_size(df)
@@ -4603,7 +4603,7 @@ def single_project_county(request, pk):
     # convert data from database to a dataframe
     df = pd.DataFrame(changes_data)
     if df.shape[0] != 0:
-        df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
+        df_other_projects = df_other_projects.groupby('department(s)')['total projects'].sum()
         df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
 
         project_performance = prepare_trends_big_size(df)
@@ -4751,7 +4751,7 @@ def single_project_hub(request, pk):
     # convert data from database to a dataframe
     df = pd.DataFrame(changes_data)
     if df.shape[0] != 0:
-        df_other_projects = df_other_projects.groupby('department(s)').sum()['total projects']
+        df_other_projects = df_other_projects.groupby('department(s)')['total projects'].sum()
         df_other_projects = df_other_projects.reset_index().sort_values('total projects', ascending=False)
 
         project_performance = prepare_trends_big_size(df)

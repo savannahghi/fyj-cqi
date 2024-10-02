@@ -4744,8 +4744,8 @@ def process_cd4_data(cd4_df, df, facility_mfl_code, one_year_ago):
     cd4_df = cd4_df.drop_duplicates(subset=['CCC NO.'], keep="last")
 
     # Ensure relevant columns in `df` are in datetime format
-    df['Latest CD4 Count Date '] = pd.to_datetime(df['Latest CD4 Count Date '])
-    df["Art Start Date"] = pd.to_datetime(df["Art Start Date"])
+    df['Latest CD4 Count Date '] = pd.to_datetime(df['Latest CD4 Count Date '], dayfirst=True)
+    df["Art Start Date"] = pd.to_datetime(df["Art Start Date"], dayfirst=True)
 
     # Ensure CD4 counts are in string format
     df['Latest CD4 Count'] = df['Latest CD4 Count'].astype(str)
@@ -5004,7 +5004,7 @@ def viral_track(request):
 
         # Calculate the date three months ago from the current date
         three_months_ago = current_date - pd.DateOffset(months=3)
-        df['Art Start Date'] = pd.to_datetime(df['Art Start Date'])
+        df['Art Start Date'] = pd.to_datetime(df['Art Start Date'], dayfirst=True)
         df = df[df['Art Start Date'] < three_months_ago]
 
         df = transform_emr_data(df)

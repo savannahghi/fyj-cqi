@@ -940,9 +940,9 @@ def generate_tat_report(df, groupby, starting_date, last_date, col_name):
 
     # find the average of TAT grouped by area of interest
     if groupby == "Facilty":
-        turn_around_time = round(df.groupby([groupby, 'month_year', filter_by]).mean(numeric_only=True)[col_name])
+        turn_around_time = round(df.groupby([groupby, 'month_year', filter_by])[col_name].mean(numeric_only=True))
     else:
-        turn_around_time = round(df.groupby([groupby, 'month_year']).mean(numeric_only=True)[col_name])
+        turn_around_time = round(df.groupby([groupby, 'month_year'])[col_name].mean(numeric_only=True))
 
     # convert results into a dataframe and sort TAT column Z-A
     tat = pd.DataFrame(turn_around_time).sort_values(col_name, ascending=False).reset_index()
@@ -1196,7 +1196,7 @@ def transform_data(df, df1, from_date, to_date):
 
     # Convert cols to datetime
     for col in date_cols:
-        df[col] = pd.to_datetime(df[col], dayfirst=True, errors='coerce')
+        df[col] = pd.to_datetime(df[col], errors='coerce')
 
     df = df.loc[(df['Date Collected'].dt.date >= from_date) &
                 (df['Date Collected'].dt.date <= to_date)]

@@ -5171,6 +5171,8 @@ def extract_non_intergrase_text(pdf_text):
     if len(nnrti_comments_) == 0:
         nnrti_comments_ = extract_text(pdf_text, "\nNNRTI\n",
                                        ".\nMutation scoring:", custom_pattern=custom_nnrti_pattern)
+        if len(nnrti_comments_) == 0:
+            nnrti_comments_ = extract_text(pdf_text, "\nNNRTI\n", "\nhttps")
 
     if len(nnrti_comments_) > 0 and "NNRTI" in nnrti_comments_[0]:
         nnrti_comments_ = [x for x in nnrti_comments_ if (". NNRTI" != x) and ("NNRTI" != x)]

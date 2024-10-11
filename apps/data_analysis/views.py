@@ -5282,35 +5282,41 @@ def create_county_status_chart(county_status, level):
     county_status_sorted = county_status.sort_values('ART sites', ascending=False)
 
     county_names = county_status_sorted[level].tolist()
-    facilities_without_variances = (county_status_sorted['ART sites'] - county_status_sorted[
-        '# Facility with variances']).tolist()
+    facilities_without_variances = (
+                county_status_sorted['ART sites'] - county_status_sorted['# Facility with variances']).tolist()
     facilities_with_variances = county_status_sorted['# Facility with variances'].tolist()
     total_facilities = county_status_sorted['ART sites'].tolist()
+
+    # Ensure all values are non-negative
+    facilities_without_variances = [max(0, abs(x)) for x in facilities_without_variances]
+    facilities_with_variances = [max(0, abs(x)) for x in facilities_with_variances]
 
     total_all_facilities = sum(total_facilities)
 
     fig = go.Figure(data=[
         go.Bar(name='Facilities without Variances', x=county_names,
                y=facilities_without_variances, marker_color='#0A255C',
-               text=[f"{y} ({y / t * 100:.1f}%)" for y, t in
+               text=[f"{y} ({y / t * 100:.1f}%)" if t > 0 else "0 (0.0%)" for y, t in
                      zip(facilities_without_variances, total_facilities)],
                textposition='inside'),
         go.Bar(name='Facilities with Variances', x=county_names, y=facilities_with_variances,
                marker_color='#B10023',
-               text=[f"{y} ({y / t * 100:.1f}%)" for y, t in
+               text=[f"{y} ({y / t * 100:.1f}%)" if t > 0 else "0 (0.0%)" for y, t in
                      zip(facilities_with_variances, total_facilities)],
                textposition='inside')
     ])
 
     for i, total in enumerate(total_facilities):
-        fig.add_annotation(
-            x=county_names[i],
-            y=total,
-            text=f"Total: {total}",
-            showarrow=False,
-            yshift=10,
-            font=dict(color="black", size=10)
-        )
+        if total > 0:  # Only add annotation if total is greater than zero
+            fig.add_annotation(
+                x=county_names[i],
+                y=total,
+                text=f"Total: {total}",
+                showarrow=False,
+                yshift=10,
+                font=dict(color="black", size=10)
+            )
+
     if level == "County":
         level = "Counties"
     elif level == "Subcounty":
@@ -5339,6 +5345,7 @@ def create_county_status_chart(county_status, level):
 
 
 def compile_concordance_report(variances_df, df1, level):
+    variances_df[level] = variances_df[level].str.strip()
     county_variances = variances_df.groupby(level)['Facility_Name'].nunique().reset_index()
     df1[level] = df1[level].str.strip().str.title()
 
@@ -5455,7 +5462,7 @@ def pre_process_moh730b(df, df1):
     subcounty_status_chart = compile_concordance_report(variances_df, df1, 'Subcounty')
     hub_status_chart = compile_concordance_report(variances_df, df1, 'Hub')
     return variances_df, visualize_variance, county_status_chart, subcounty_status_chart, filename, \
-        negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj,hub_status_chart
+        negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj, hub_status_chart
 
 
 @login_required(login_url='login')
@@ -5513,7 +5520,7 @@ def compare_opening_closing_bal_moh730b(request):
 
                     if df.shape[0] > 0 and df1.shape[0] > 0:
                         variances_df, visualize_variance, county_status_chart, subcounty_status_chart, filename, \
-                            negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj, hub_status_chart\
+                            negative_var_fig_fyj, positive_var_fig_fyj, overall_var_fig_fyj, hub_status_chart \
                             = pre_process_moh730b(df, df1)
                 else:
                     messages.success(request, message)

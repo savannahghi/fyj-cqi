@@ -5079,6 +5079,35 @@ def extract_comments(pdf_text, start_pattern, end_pattern):
                                                                                                       "\nMutation scoring")
 
 
+def combine_rt_mutations(rt_resistance_mutation_profile):
+    # Find the index of 'RT Other Mutations' in the list
+    rt_other_index = next(
+        (i for i, s in enumerate(rt_resistance_mutation_profile) if s.startswith('RT Other Mutations:')), None)
+
+    if rt_other_index is not None:
+        # Split the RT Other Mutations string
+        prefix, mutations = rt_resistance_mutation_profile[rt_other_index].split(': ', 1)
+
+        # Collect all mutations
+        all_mutations = [mutations.rstrip(',')]
+        for i in range(rt_other_index + 1, len(rt_resistance_mutation_profile)):
+            if ':' not in rt_resistance_mutation_profile[i]:  # Check if it's a mutation and not a new category
+                all_mutations.append(rt_resistance_mutation_profile[i])
+            else:
+                break
+
+        # Combine all mutations
+        combined_mutations = ','.join(all_mutations)
+
+        # Update the RT Other Mutations string
+        rt_resistance_mutation_profile[rt_other_index] = f"{prefix}: {combined_mutations}"
+
+        # Remove the extra mutation entries
+        del rt_resistance_mutation_profile[rt_other_index + 1:rt_other_index + len(all_mutations)]
+
+    return rt_resistance_mutation_profile
+
+
 def extract_non_intergrase_text(pdf_text):
     other_pi_mutation_comments = []
     other_rt_comments = []
@@ -5137,6 +5166,7 @@ def extract_non_intergrase_text(pdf_text):
         "\nNucleoside Reverse Transcriptase Inhibitors")
     rt_resistance_mutation_profile = rt_resistance_mutation_profile
     rt_resistance_mutation_profile = join_lines_starting_uppercase(rt_resistance_mutation_profile)
+    rt_resistance_mutation_profile = combine_rt_mutations(rt_resistance_mutation_profile)
 
     nrti_tdf = extract_text(pdf_text, "tenofovir", "\n")
     nrti_3tc = extract_text(pdf_text, "lamivudine", "\ntenofovir")
@@ -5585,7 +5615,7 @@ def generate_drt_report(pdf, todays_date, patient_name, ccc_num, rt_resistance_m
             ######################################
             # NRTI
             ######################################
-
+            y -= 10
             y = draw_section_with_list(pdf, y, nrtis_list,
                                        "NUCLEOSIDE REVERSE TRANSCRIPTASE INHIBITORS (NRTIS) DRUG RESISTANCE INTERPRETATION",
                                        start_x, x_value, width, patient_name, ccc_num, todays_date, page_info)

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from crum import get_current_request, get_current_user
-from django.core.validators import MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
@@ -246,25 +246,38 @@ class Commodities(BaseModel):
 
 
 class ReagentStock(BaseModel):
+    TRANSACTION_TYPES = (
+        ('RECEIVING', 'Receiving'),
+        ('DISPENSING', 'Dispensing')
+    )
     REAGENT_CHOICES = (
         ('CD4', 'CD4'),
         ('TB LAM', 'TB LAM'),
         ('Serum CrAg', 'Serum CrAg')
     )
-
+    transaction_type = models.CharField(
+        max_length=25,
+        choices=TRANSACTION_TYPES, blank=True, null=True,
+        help_text="Select whether you are receiving or dispensing commodities"
+    )
     reagent_type = models.CharField(max_length=25, choices=REAGENT_CHOICES)
     received_from = models.CharField(max_length=25, choices=(
         ('KEMSA', 'KEMSA'), ('Another Facility', 'Another Facility')))
-    beginning_balance = models.IntegerField(default=0)
-    quantity_received = models.IntegerField(default=0)
-    positive_adjustments = models.IntegerField(default=0)
-    quantity_used = models.IntegerField(default=0, blank=True)
-    negative_adjustment = models.IntegerField(default=0)
+    beginning_balance = models.PositiveIntegerField(default=0)  # Ensure non-negative
+    quantity_received = models.PositiveIntegerField(default=0)  # Ensure non-negative
+    positive_adjustments = models.PositiveIntegerField(default=0)  # Ensure non-negative
+    quantity_used = models.PositiveIntegerField(default=0, blank=True)  # Ensure non-negative
+    negative_adjustment = models.PositiveIntegerField(default=0)  # Ensure non-negative
     expiry_date = models.DateTimeField(blank=True, null=True)
-    quantity_expired = models.IntegerField(default=0)
-    remaining_quantity = models.IntegerField(default=0)
-    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE)
-    date_commodity_received = models.DateTimeField(default=timezone.now)
+    quantity_expired = models.PositiveIntegerField(default=0)  # Ensure non-negative
+    remaining_quantity = models.IntegerField(default=0)  # Ensure non-negative
+    facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, related_name='reagent_stock_facility_name')
+    date_commodity_received = models.DateTimeField(default=timezone.now, blank=True, null=True)
+    date_commodity_dispensed = models.DateTimeField(default=timezone.now, blank=True, null=True)
+    facility_received_from = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True,
+                                               related_name='received_from')
+    facility_dispensed_to = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True,
+                                              related_name='dispensed_to')
 
     def calculate_remaining_quantity(self):
         remaining_quantity = (self.beginning_balance + self.quantity_received + self.positive_adjustments - \
@@ -486,3 +499,7 @@ class HistologyResults(HistologyMixin):
         ordering = ['patient_id', 'date_created']
         unique_together = ['patient_id', 'collection_date']
         verbose_name_plural = "Histology Results"
+
+
+
+

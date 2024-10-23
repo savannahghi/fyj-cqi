@@ -206,9 +206,23 @@ class CommoditiesForm(ModelForm):
 
 
 class ReagentStockForm(ModelForm):
+    facility_received_from = forms.ModelChoiceField(
+        queryset=Facilities.objects.all(),
+        empty_label="Select facility",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+    facility_dispensed_to = forms.ModelChoiceField(
+        queryset=Facilities.objects.all(),
+        empty_label="Select facility",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
     date_commodity_received = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
         label="Date Commodity Received"
+    )
+    date_commodity_dispensed = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date Commodity Dispensed"
     )
     expiry_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
@@ -227,6 +241,19 @@ class ReagentStockForm(ModelForm):
             'negative_adjustment': 'Negative Adjustment',
             'positive_adjustment': 'Positive Adjustment',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Set files field as not required initially
+        self.fields['facility_dispensed_to'].required = False
+        self.fields['facility_received_from'].required = False
+        self.fields['quantity_received'].required = False
+        self.fields['negative_adjustment'].required = False
+        self.fields['positive_adjustments'].required = False
+        self.fields['date_commodity_dispensed'].required = False
+        self.fields['date_commodity_received'].required = False
+        self.fields['received_from'].required = False
 
 
 class DrtResultsForm(ModelForm):
@@ -365,7 +392,7 @@ class HistologyResultsForm(ModelForm):
     )
     SPECIMEN_CHOICES = [("", "Select ..."), ("cervical biopsy", "Cervical Biopsy"),
                         ("breast tissue biopsy", "Breast Tissue Biopsy"),
-                        ("liver biopsy", "Liver biopsy"),("lymph node biopsy", "Lymph Node biopsy")
+                        ("liver biopsy", "Liver biopsy"), ("lymph node biopsy", "Lymph Node biopsy")
                         ]
     specimen_type = forms.ChoiceField(choices=SPECIMEN_CHOICES)
 
@@ -464,8 +491,10 @@ class HistologyForm(MultipleUploadForm):
     #
     #     return cleaned_data
 
+
 class MultipleUploadForm(forms.Form):
     files = MultiFileField(min_num=1, max_num=12, max_file_size=1024 * 1024 * 5)
+
 
 class HistologyPdfFileForm(forms.ModelForm):
     class Meta:

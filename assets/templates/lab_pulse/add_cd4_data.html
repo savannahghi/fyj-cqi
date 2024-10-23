@@ -204,22 +204,38 @@
                         </div>
                         <div class="row">
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.transaction_type|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.reagent_type|as_crispy_field }}
                             </div>
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.beginning_balance|as_crispy_field }}
                             </div>
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2" id="received_from_container">
                                 {{ form.received_from|as_crispy_field }}
                             </div>
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2" id="facility_received_from_container"
+                                 style="display: none;">
+                                {{ form.facility_received_from|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2" id="date_commodity_received_container"
+                                 style="display: none;">
                                 {{ form.date_commodity_received|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2" id="date_commodity_dispensed_container"
+                                 style="display: none;">
+                                {{ form.date_commodity_dispensed|as_crispy_field }}
                             </div>
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.quantity_received|as_crispy_field }}
                             </div>
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.negative_adjustment|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2" id="facility_dispensed_to_container"
+                                 style="display: none;">
+                                {{ form.facility_dispensed_to|as_crispy_field }}
                             </div>
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.positive_adjustments|as_crispy_field }}
@@ -299,15 +315,50 @@
                                             </td>
                                             <td>
                                                 {{ commodity.received_from }}
+                                                {% if commodity.received_from is not None %}
+                                                    <br>
+                                                    <span style="font-size: 8px"
+                                                            {% if commodity.transaction_type == "RECEIVING" %}
+                                                          class="badge alert-success">
+                                                            {% elif commodity.transaction_type == "DISPENSING" %}
+                                                                class="badge alert-danger">
+                                                            {% endif %}
+                                                    Transaction type: {{ commodity.transaction_type }}
+                                                    </span>
+                                                    <br>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">Expiry date: {{ commodity.expiry_date|date:"Y-m-d" }}</span>
+                                                    <br>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 {{ commodity.positive_adjustments }}
+                                                {% if commodity.facility_received_from is not None %}
+                                                    <br>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-warning">Dispensing facility: {{ commodity.facility_received_from }}</span>
+                                                    <br>
+
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">Date received: {{ commodity.date_commodity_received|date:"Y-m-d" }}</span>
+                                                    <br>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 {{ commodity.quantity_used }}
                                             </td>
                                             <td>
                                                 {{ commodity.negative_adjustment }}
+                                                {% if commodity.facility_dispensed_to is not None %}
+                                                    <br>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-warning">Receiving facility: {{ commodity.facility_dispensed_to }}</span>
+                                                    <br>
+
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">Date issued: {{ commodity.date_commodity_dispensed|date:"Y-m-d" }}</span>
+                                                    <br>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 {{ commodity.quantity_expired }}
@@ -561,4 +612,115 @@
             </div>
         </div>
     </main>
+    <script>
+        $(document).ready(function () {
+            $('.select2').select2({
+                width: '100%' // Ensures the select2 dropdown takes full width
+            }).css('width', '100%'); // Ensure the select2 element takes full width
+
+            // Function to toggle fields based on transaction_type
+            function toggleFields() {
+                const transactionType = $('#id_transaction_type').val(); // Get the current transaction type
+
+                // Common actions for both transaction types
+                $('#received_from_container').hide(); // Hide the received_from container by default
+                $('#facility_received_from_container').hide(); // Hide the facility_received_from container by default
+                $('#facility_dispensed_to_container').hide(); // Hide the facility_dispensed_to container by default
+                $('#date_commodity_received_container').hide(); // Hide the date_commodity_received_container by default
+                $('#date_commodity_dispensed_container').hide(); // Hide the date_commodity_dispensed_container by default
+
+                $('#id_received_from').prop('required', false).val(''); // Clear and make not required
+                $('#id_positive_adjustments').prop('disabled', true).prop('required', false).val(''); // Clear and disable
+                $('#id_quantity_received').prop('disabled', true).prop('required', false).val(''); // Clear and disable
+                $('#id_negative_adjustment').prop('disabled', true).prop('required', false).val(''); // Disable by default
+
+                if (transactionType === 'DISPENSING') {
+                    // Specific actions for DISPENSING
+                    //$('#facility_dispensed_to_container').show(); // Show the facility_dispensed_to container
+                    $('#date_commodity_dispensed_container').show(); // Show the date_commodity_dispensed_container
+                    $('#id_negative_adjustment').prop('disabled', false).prop('required', true).css('backgroundColor', ''); // Enable negative adjustment                
+                } else if (transactionType === 'RECEIVING') {
+                    // Specific actions for RECEIVING
+                    $('#received_from_container').show(); // Show the received_from container
+                    $('#id_received_from').prop('required', true); // Make it required
+                    $('#id_positive_adjustments').prop('disabled', false).prop('required', true); // Enable positive adjustments
+                    $('#id_quantity_received').prop('disabled', false).prop('required', true); // Enable quantity received
+                    $('#date_commodity_received_container').show(); // Show the date_commodity_received_container
+                    // Negative adjustment is already disabled by default
+                    $('#facility_dispensed_to_container').hide(); // Ensure facility_dispensed_to_container is hidden
+                }
+            }
+
+            // Function to toggle facility dispensed to
+            function toggleFacilityDispensedTo() {
+                const negativeAdjustmentInput = $('#id_negative_adjustment'); // Adjust the ID based on your form field
+                const facilityDispensedToContainer = $('#facility_dispensed_to_container'); // Adjust the ID based on your container
+
+                if (parseInt(negativeAdjustmentInput.val()) > 0) {
+                    facilityDispensedToContainer.show(); // Show the container
+                    facilityDispensedToContainer.find('input, select, textarea').prop('required', true); // Set required when visible
+                } else {
+                    facilityDispensedToContainer.hide(); // Hide the container
+                    facilityDispensedToContainer.find('input, select, textarea').prop('required', false).val(''); // Clear value when hidden
+                }
+            }
+
+            // Function to toggle facility received from
+            function toggleFacilityReceivedFrom() {
+                const receivedFromSelect = $('#id_received_from');
+                const facilityReceivedFromContainer = $('#facility_received_from_container');
+                const facilityReceivedToInput = facilityReceivedFromContainer.find('input, select, textarea');
+                const quantityReceivedInput = $('#id_quantity_received');
+                const negativeAdjustmentInput = $('#id_negative_adjustment');
+                const positiveAdjustmentInput = $('#id_positive_adjustments');
+
+                if (receivedFromSelect.val() === 'Another Facility') {
+                    facilityReceivedFromContainer.show(); // Show the container
+                    facilityReceivedToInput.prop('required', true); // Set required
+                    quantityReceivedInput.prop('disabled', true).val('').css('backgroundColor', '#e9ecef'); // Disable and clear
+                    negativeAdjustmentInput.prop('disabled', true).css('backgroundColor', '#e9ecef'); // Keep negative adjustment disabled
+                    positiveAdjustmentInput.prop('disabled', false).css('backgroundColor', ''); // Enable positive adjustment
+                } else if (receivedFromSelect.val() === 'KEMSA') {
+                    facilityReceivedFromContainer.hide(); // Hide the container
+                    facilityReceivedToInput.prop('required', false).val(''); // Clear value
+                    quantityReceivedInput.prop('disabled', false).css('backgroundColor', ''); // Enable quantity received
+                    negativeAdjustmentInput.prop('disabled', true).val('').css('backgroundColor', '#e9ecef'); // Keep negative adjustment disabled
+                    positiveAdjustmentInput.prop('disabled', true).val('').css('backgroundColor', '#e9ecef'); // Disable and clear
+                } else {
+                    facilityReceivedFromContainer.hide(); // Hide the container
+                    facilityReceivedToInput.prop('required', false).val(''); // Clear value
+                    quantityReceivedInput.prop('disabled', false).css('backgroundColor', ''); // Enable quantity received
+                    negativeAdjustmentInput.prop('disabled', true).css('backgroundColor', '#e9ecef'); // Keep negative adjustment disabled
+                    positiveAdjustmentInput.prop('disabled', false).css('backgroundColor', ''); // Enable positive adjustment
+                }
+            }
+
+            // Initial check on page load
+            toggleFields();
+            toggleFacilityDispensedTo();
+            toggleFacilityReceivedFrom();
+
+            // Event listeners for changes
+            $('#id_transaction_type').change(function () {
+                toggleFields();
+            });
+
+            $('#id_negative_adjustment').on('input', function () {
+                toggleFacilityDispensedTo();
+            });
+
+            $('#id_received_from').change(function () {
+                toggleFacilityReceivedFrom();
+            });
+        });
+    </script>
 {% endblock %}
+
+
+
+
+
+
+
+
+

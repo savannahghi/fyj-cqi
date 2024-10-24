@@ -469,7 +469,7 @@ def get_total_remaining_stocks(df, reagent_type):
 def show_remaining_commodities(selected_lab):
     time_threshold = timezone.now() - timedelta(days=365)
     commodities = ReagentStock.objects.filter(facility_name__mfl_code=selected_lab.mfl_code,
-                                              date_commodity_received__gte=time_threshold
+                                              date_created__gte=time_threshold
                                               ).order_by("-date_commodity_received")
     # Aggregate remaining quantities by reagent type
     remaining_commodities = commodities.values(

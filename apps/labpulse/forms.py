@@ -214,6 +214,7 @@ class ReagentStockForm(ModelForm):
     facility_dispensed_to = forms.ModelChoiceField(
         queryset=Facilities.objects.all(),
         empty_label="Select facility",
+        label="Facility Issued to",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
     date_commodity_received = forms.DateField(
@@ -222,7 +223,7 @@ class ReagentStockForm(ModelForm):
     )
     date_commodity_dispensed = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
-        label="Date Commodity Dispensed"
+        label="Date Commodity Issued"
     )
     expiry_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),

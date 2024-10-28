@@ -248,7 +248,7 @@ class Commodities(BaseModel):
 class ReagentStock(BaseModel):
     TRANSACTION_TYPES = (
         ('RECEIVING', 'Receiving'),
-        ('DISPENSING', 'Dispensing')
+        ('DISPENSING', 'Issuing')
     )
     REAGENT_CHOICES = (
         ('CD4', 'CD4'),

@@ -479,6 +479,8 @@ def show_remaining_commodities(selected_lab):
     # Convert the remaining_commodities queryset to a list of dictionaries
     remaining_commodities_list = list(remaining_commodities)
     df = pd.DataFrame(remaining_commodities_list)
+    if "date_commodity_received" in df.columns:
+        df['date_commodity_received'] = pd.to_datetime(df['date_commodity_received'], utc=True)
     if df.empty:
         reagent_types = ['Serum CrAg', 'TB LAM', 'CD4']
         total_remaining = [0, 0, 0]
@@ -490,6 +492,8 @@ def show_remaining_commodities(selected_lab):
         }
 
         df = pd.DataFrame(data)
+        if "date_commodity_received" in df.columns:
+            df['date_commodity_received'] = pd.to_datetime(df['date_commodity_received'], utc=True)
         naive_timestamp = pd.Timestamp(datetime(1970, 1, 1))  # A neutral date in the past
         df['date_commodity_received'] = pd.to_datetime(naive_timestamp, utc=True)
 
@@ -2713,34 +2717,40 @@ def add_commodities(request, pk_lab):
         cd4_total_remaining = None
         crag_total_remaining = None
         tb_lam_total_remaining = None
-        # return render(request, template_name,context )
     if request.method == "POST":
         if form.is_valid():
-            # reagent_type = form.cleaned_data['reagent_type']
-            # try:
-            post = form.save(commit=False)
-            if not validate_commodity_form(form):
-                # If validation fails, return the form with error messages
-                return render(request, template_name, context)
-            selected_facility = selected_lab.mfl_code
+            reagent_type = form.cleaned_data['reagent_type']
+            transaction_type = form.cleaned_data['transaction_type']
+            if reagent_type == "CD4" and cd4_total_remaining == 0 and transaction_type != "RECEIVING" or \
+                    reagent_type == "TB LAM" and tb_lam_total_remaining == 0 and transaction_type != "RECEIVING" or \
+                    reagent_type == "Serum CrAg" and crag_total_remaining == 0 and transaction_type != "RECEIVING":
+                messages.error(request, f"You do not have {reagent_type} reagents currently in stock!")
+                render(request, template_name, context)
+            else:
+                # try:
+                post = form.save(commit=False)
+                if not validate_commodity_form(form):
+                    # If validation fails, return the form with error messages
+                    return render(request, template_name, context)
+                selected_facility = selected_lab.mfl_code
 
-            facility_name = Facilities.objects.filter(mfl_code=selected_facility).first()
-            post.facility_name = facility_name
-            # now = datetime.now()
-            # existing_facility_record = ReagentStock.objects.filter(reagent_type=reagent_type,
-            #                                                        facility_name__mfl_code=selected_facility,
-            #                                                        remaining_quantity__gt=0,
-            #                                                        date_commodity_received__month=now.month)
+                facility_name = Facilities.objects.filter(mfl_code=selected_facility).first()
+                post.facility_name = facility_name
+                # now = datetime.now()
+                # existing_facility_record = ReagentStock.objects.filter(reagent_type=reagent_type,
+                #                                                        facility_name__mfl_code=selected_facility,
+                #                                                        remaining_quantity__gt=0,
+                #                                                        date_commodity_received__month=now.month)
 
-            #     # TODO FILTER ACTIVE RECORDS(OPERATING BETWEEN 1ST AND END OF THE MONTH)
+                #     # TODO FILTER ACTIVE RECORDS(OPERATING BETWEEN 1ST AND END OF THE MONTH)
 
-            post.save()
-            messages.error(request, "Record saved successfully!")
-            # Generate the URL for the redirect
-            url = reverse('add_commodities', kwargs={
-                # 'report_type': report_type,
-                'pk_lab': pk_lab})
-            return redirect(url)
+                post.save()
+                messages.error(request, "Record saved successfully!")
+                # Generate the URL for the redirect
+                url = reverse('add_commodities', kwargs={
+                    # 'report_type': report_type,
+                    'pk_lab': pk_lab})
+                return redirect(url)
 
         else:
             messages.error(request, f"Record already exists.")
@@ -2969,7 +2979,7 @@ def add_facility(request):
         else:
             form.save()
             messages.error(request, "Record saved successfully!")
-            return redirect("choose_testing_lab")
+            return HttpResponseRedirect(request.session['page_from'])
     context = {
         "form": form,
         "title": f"Add Missing Laboratory",

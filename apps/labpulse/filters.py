@@ -29,6 +29,9 @@ class Cd4trakerFilter(django_filters.FilterSet):
     received_status = ChoiceFilter(choices=Cd4traker.RECEIVED_CHOICES, field_name="received_status",
                                    lookup_expr="exact",
                                    label='Received Status')
+    lab_type = ChoiceFilter(choices=(("Testing Laboratory", "Testing Laboratory"),
+                                     ("Spoke Laboratory", "Spoke Laboratory"),), field_name="lab_type",
+                            lookup_expr="exact", label='Laboratory Type')
     reason_for_rejection = ChoiceFilter(choices=Cd4traker.REJECTION_CHOICES, field_name="reason_for_rejection",
                                         lookup_expr="exact",
                                         label='Reason For Rejection')

@@ -3,6 +3,7 @@
 {% url "show_results" as show_results %}
 {% url "choose_testing_lab" as choose_testing_lab %}
 {% url "choose_lab" as choose_lab %}
+{% url "reagentstock_list" as reagentstock_list %}
 {% url "choose_testing_lab_manual" as choose_testing_lab_manual %}
 {% url "load_biochemistry_results" as load_biochemistry_results %}
 {% url "add_drt_results" as add_drt_results %}
@@ -60,7 +61,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == choose_lab %} active{% endif %}"
+                        <a class="nav-link {% if request.path == reagentstock_list %} active{% endif %}"
                            href="{% url 'reagentstock_list' %}">
                             <span data-feather="book" class="align-text-bottom"></span>
                             View Commodities
@@ -68,7 +69,8 @@
                     </li>
 
                 {% endif %}
-                {% if perms.labpulse.view_choose_testing_lab %}
+{#                {% if perms.labpulse.view_choose_testing_lab %}#}
+                {% if perms.labpulse.view_update_cd4_results %}
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
                         <span>Data entry</span>
                     </h6>

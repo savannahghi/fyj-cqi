@@ -160,6 +160,15 @@
         <a href="#">Forgot Password?</a>
     </div>
     <div class="register-link">
+        {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info col-12" role="alert">
+                            <h5 class="d-flex justify-content-evenly" style="font-size: x-small">{{ message }}</h5>
+                        </div>
+                    {% endfor %}
+                </ul>
+            {% endif %}
 {#        <p>Don't have an account? <a href="https://cqi.health.go.ke/register">Register here</a></p>#}
         <p>Don't have an account? <a href="#">Register here</a></p>
 

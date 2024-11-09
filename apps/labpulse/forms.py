@@ -11,11 +11,6 @@ from apps.labpulse.models import Cd4traker, Cd4TestingLabs, Commodities, DrtPdfF
 
 
 class Cd4trakerForm(ModelForm):
-    # facility_name = forms.ModelChoiceField(
-    #     queryset=Facilities.objects.all(),
-    #     empty_label="Select facility",
-    #     widget=forms.Select(attrs={'class': 'form-control select2'}),
-    # )
     facility_name = forms.ChoiceField(
         choices=[],
         required=True,
@@ -38,8 +33,13 @@ class Cd4trakerForm(ModelForm):
         attrs={'class': 'form-control'}))
 
     def __init__(self, *args, **kwargs):
+        selected_lab = kwargs.pop('selected_lab', None)
+        laboratory_type = kwargs.pop('laboratory_type', [])
         user = kwargs.pop('user', None)  # Pop the 'user' argument from kwargs
         super(Cd4trakerForm, self).__init__(*args, **kwargs)
+
+        self.fields['lab_type'].required = False
+
         if user and user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
             # If the user is in the referring_lab_group, make disable all fields
             for field_name in self.fields:
@@ -54,6 +54,12 @@ class Cd4trakerForm(ModelForm):
             # Generate a tuple for each facility with its primary key as the value
             # and a display string combining name and MFL code
             (str(facility.pk), f"{facility.name} ({facility.mfl_code})") for facility in facilities]
+
+        # Modify reagent_type choices based on selected_lab
+        if laboratory_type == "Spoke Laboratory" and selected_lab:
+            # Preselect the facility name for spoke laboratory users
+            self.fields['facility_name'].initial = str(selected_lab.pk)
+            self.fields['facility_name'].disabled = True  # Optional: disable the field to prevent changes
 
     def clean(self):
         cleaned_data = super().clean()  # Get the cleaned data from the form
@@ -77,6 +83,7 @@ class Cd4trakerForm(ModelForm):
             'reason_for_no_serum_crag': 'Reason for not doing serum CrAg',
             'cd4_percentage': 'CD4 % values',
             'tb_lam_results': 'TB LAM results',
+            'reason_for_no_tb_lam': 'Reason for not doing TB_LAM',
         }
 
     def save(self, commit=True):
@@ -85,23 +92,6 @@ class Cd4trakerForm(ModelForm):
         if commit:
             instance.save()
         return instance
-
-    # def clean(self):
-    #     cleaned_data = super().clean()
-    #
-    #     # Check if CD4 test was performed
-    #     if cleaned_data.get('cd4_count_results') is not None:
-    #         cleaned_data['cd4_reagent_used'] = True
-    #
-    #     # Check if TB LAM test was performed
-    #     if cleaned_data.get('tb_lam_results') is not None:
-    #         cleaned_data['tb_lam_reagent_used'] = True
-    #
-    #     # Check if serum CRAG test was performed
-    #     if cleaned_data.get('serum_crag_results') is not None:
-    #         cleaned_data['serum_crag_reagent_used'] = True
-    #
-    #     return cleaned_data
 
 
 class Cd4TestingLabsForm(forms.Form):
@@ -119,6 +109,16 @@ class facilities_lab_Form(forms.Form):
         empty_label="Select Testing Lab ...",
         widget=forms.Select(attrs={'class': 'form-control select2'}),
     )
+
+
+class Spoke_facilities_lab_form(facilities_lab_Form):
+    def __init__(self, *args, **kwargs):
+        # selected_lab = kwargs.pop('selected_lab', None)
+        testing_lab = kwargs.pop('testing_lab', [])
+        super().__init__(*args, **kwargs)
+
+        # Filter out the testing labs
+        self.fields['facility_name'].queryset = Facilities.objects.exclude(mfl_code__in=testing_lab)
 
 
 class Cd4TestingLabForm(ModelForm):
@@ -170,16 +170,47 @@ class Cd4trakerManualDispatchForm(ModelForm):
         required=True
     )
 
+    def __init__(self, *args, **kwargs):
+        selected_lab = kwargs.pop('selected_lab', None)
+        laboratory_type = kwargs.pop('laboratory_type', [])
+        user = kwargs.pop('user', None)  # Pop the 'user' argument from kwargs
+        super(Cd4trakerManualDispatchForm, self).__init__(*args, **kwargs)
+
+        self.fields['lab_type'].required = False
+
+        # Populate the choices for the facility_name field
+        facilities = Facilities.objects.all()  # Fetch all Facilities objects from the database
+        # Create a list of choices for the facility_name field
+        # Prepend an empty choice for the initial, empty label ("Select facility")
+        self.fields['facility_name'].choices = [('', 'Select facility')] + [
+            # Generate a tuple for each facility with its primary key as the value
+            # and a display string combining name and MFL code
+            (str(facility.pk), f"{facility.name} ({facility.mfl_code})") for facility in facilities]
+
+        # Modify reagent_type choices based on selected_lab
+        if laboratory_type == "Spoke Laboratory" and selected_lab:
+            # Preselect the facility name for spoke laboratory users
+            self.fields['facility_name'].initial = str(selected_lab.pk)
+            self.fields['facility_name'].disabled = True  # Optional: disable the field to prevent changes
+
     class Meta:
         model = Cd4traker
-        exclude = ['created_by', 'modified_by', 'date_updated', 'testing_laboratory', 'report_type']
+        exclude = ['created_by', 'modified_by', 'date_dispatched', 'date_updated', 'testing_laboratory', 'report_type']
         labels = {
             'cd4_count_results': 'CD4 count results',
             'serum_crag_results': 'Serum CrAg Results',
             'reason_for_no_serum_crag': 'Reason for not doing serum CrAg',
             'cd4_percentage': 'CD4 % values',
             'tb_lam_results': 'TB LAM results',
+            'reason_for_no_tb_lam': 'Reason for not doing TB_LAM',
         }
+
+    def save(self, commit=True):
+        instance = super(Cd4trakerManualDispatchForm, self).save(commit=False)
+        instance.date_dispatched = timezone.now()
+        if commit:
+            instance.save()
+        return instance
 
 
 class CommoditiesForm(ModelForm):
@@ -244,6 +275,8 @@ class ReagentStockForm(ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        selected_lab = kwargs.pop('selected_lab', None)
+        testing_lab = kwargs.pop('testing_lab', [])
         super().__init__(*args, **kwargs)
 
         # Set files field as not required initially
@@ -255,6 +288,11 @@ class ReagentStockForm(ModelForm):
         self.fields['date_commodity_dispensed'].required = False
         self.fields['date_commodity_received'].required = False
         self.fields['received_from'].required = False
+
+        # Modify reagent_type choices based on selected_lab
+        if selected_lab and selected_lab.mfl_code not in testing_lab:
+            choices = [choice for choice in self.fields['reagent_type'].choices if choice[0] not in ['CD4']]
+            self.fields['reagent_type'].choices = choices
 
 
 class DrtResultsForm(ModelForm):

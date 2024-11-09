@@ -1,5 +1,6 @@
 from functools import wraps
 
+from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.shortcuts import redirect
 
@@ -30,6 +31,8 @@ def group_required(group_names):
                 # User has the required group membership or is a superuser, allow access to the view
                 return view_func(request, *args, **kwargs)
             else:
+                # Add a message to be displayed after the redirect
+                messages.error(request, "You don't have permission to access this page.")
                 # Redirect the user to a permission denied page or another appropriate URL
                 return redirect('login')  # Replace 'permission_denied' with your desired URL
 

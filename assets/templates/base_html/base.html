@@ -303,9 +303,6 @@
 <script src="{% static 'dashboard.js' %}"></script>
 <script>
     $(function () {
-        {#$("#id_start_date").datepicker();#}
-        {#$("#id_end_date").datepicker();#}
-        {#$("#id_due_date").datepicker();#}
         $("#id_month_year").datepicker();
         $("#id_dqa_date").datepicker();
         $("#id_due_complete_by").datepicker();
@@ -341,11 +338,13 @@
     const cd4CountResultsField = document.querySelector('#id_cd4_count_results');
     const cd4PercentageField = document.querySelector('#id_cd4_percentage');
     const tbLamResultsField = document.querySelector('#id_tb_lam_results');
+    const reasonNoTBLamField = document.querySelector('#id_reason_for_no_tb_lam');
     const serumCragResultsField = document.querySelector('#id_serum_crag_results');
     const reasonNoSerumCragField = document.querySelector('#id_reason_for_no_serum_crag');
     const ageField = document.querySelector('#id_age');
     const ageUnitField = document.querySelector('#id_age_unit');
     const rejectionReasonField = document.querySelector('#id_reason_for_rejection');
+    const testingTypeField = document.querySelector('#id_testing_type');
 
     // Function to enable or disable the cd4_percentage field
     function toggleCd4Percentage() {
@@ -391,27 +390,73 @@
         const receivedStatus = receivedStatusField.value;
 
         if (receivedStatus === 'Rejected') {
-            [dateOfTestingField, cd4CountResultsField, tbLamResultsField, cd4PercentageField, serumCragResultsField,
+            [dateOfTestingField, cd4CountResultsField, tbLamResultsField,reasonNoTBLamField,
+                cd4PercentageField, serumCragResultsField,
                 reasonNoSerumCragField].forEach(field => {
                 field.disabled = true;
                 field.value = "";
             });
         } else {
-            [dateOfTestingField, cd4CountResultsField, tbLamResultsField, cd4PercentageField, serumCragResultsField,
+            [dateOfTestingField, cd4CountResultsField, tbLamResultsField,reasonNoTBLamField,
+                cd4PercentageField, serumCragResultsField,
                 reasonNoSerumCragField].forEach(field => {
                 field.disabled = false;
             });
             // Enable cd4PercentageField if the conditions are met
             toggleCd4Percentage();
+            toggleFieldsUponTestingType();
             {#toggleCragField();#}
         }
     }
+    function toggleFieldsUponTestingType() {
+        const testingType = testingTypeField.value;
+        const allFields = [
+            cd4CountResultsField,
+            cd4PercentageField,
+            tbLamResultsField,
+            reasonNoTBLamField,
+            serumCragResultsField,
+            reasonNoSerumCragField
+        ];
 
+        // First, enable and clear all fields
+        allFields.forEach(field => {
+            field.disabled = false;
+            field.value = "";
+        });
+
+        // Then, apply specific rules based on testing type
+        switch(testingType) {
+            case 'TB LAM Only':
+                [cd4CountResultsField, cd4PercentageField, serumCragResultsField,
+                    reasonNoSerumCragField].forEach(field => {
+                    field.disabled = true;
+                });
+                break;
+            case 'ScrAg Only':
+                [cd4CountResultsField, tbLamResultsField, reasonNoTBLamField,
+                    cd4PercentageField].forEach(field => {
+                    field.disabled = true;
+                });
+                break;
+            case 'TB LAM & ScrAg':
+                [cd4CountResultsField, cd4PercentageField].forEach(field => {
+                    field.disabled = true;
+                });
+                break;
+            case 'All':
+                // All fields are already enabled, so we don't need to do anything here
+                break;
+        }
+    }
     // Call the function on page load
     toggleFieldsUponRejection();
+    toggleFieldsUponTestingType();
 
     // Bind the function to the change event of the received_status field
     receivedStatusField.addEventListener('change', toggleFieldsUponRejection);
+    testingTypeField.addEventListener('change', toggleFieldsUponTestingType);
+    testingTypeField.addEventListener('change', toggleFieldsUponRejection);
 
     // Function to enable or disable the reason_for_rejection field
     function toggleRejectionReason() {
@@ -429,30 +474,6 @@
     // Bind the function to the change event of the received_status field
     receivedStatusField.addEventListener('change', toggleRejectionReason);
 
-    {#// Function to enable or disable the serum_crag_results field#}
-    {#function toggleCragField() {#}
-    {#    const cd4CountValue = cd4CountResultsField.value;#}
-    {##}
-    {#    if (cd4CountValue !== "" && parseFloat(cd4CountValue) > 200) {#}
-    {#        serumCragResultsField.disabled = true;#}
-    {#        serumCragResultsField.value = "";#}
-    {#        reasonNoSerumCragField.disabled = true;#}
-    {#        reasonNoSerumCragField.value = "";#}
-    {#        tbLamResultsField.disabled = true;#}
-    {#        tbLamResultsField.value = "";#}
-    {#    } else {#}
-    {#        serumCragResultsField.disabled = false;#}
-    {#        tbLamResultsField.disabled = false;#}
-    {#        reasonNoSerumCragField.disabled = false;#}
-    {#    }#}
-    //}
-    {##}
-    {#// Call the function on page load#}
-    {#toggleCragField();#}
-    {##}
-    {#// Bind the function to the change event of the cd4_count_results field#}
-    {#cd4CountResultsField.addEventListener('change', toggleCragField);#}
-
     // Function to enable or disable the reason_for_no_serum_crag field
     function toggleNoCragReason() {
         const cd4CountValue = cd4CountResultsField.value;
@@ -461,8 +482,6 @@
             reasonNoSerumCragField.value = "";
         } else {
             reasonNoSerumCragField.disabled = false;
-            // Enable reasonNoSerumCragField if the conditions are met
-            {#toggleCragField()#}
         }
     }
 

@@ -68,6 +68,8 @@ class Cd4traker(models.Model):
         ("Positive", "Positive"),
     )
     RECEIVED_CHOICES = (('Accepted', 'Accepted'), ('Rejected', 'Rejected'))
+    TESTING_CHOICES = (('All', 'All tests'), ('TB LAM Only', 'TB LAM Only'),
+                       ('ScrAg Only', 'ScrAg Only'), ('TB LAM & ScrAg', 'TB LAM & ScrAg'))
     REJECTION_CHOICES = sorted(
         (
             ("Improper Collection Technique", "Improper Collection Technique"),
@@ -90,6 +92,7 @@ class Cd4traker(models.Model):
         ),
         key=lambda x: x[0]
     )
+
     AGE_UNIT_CHOICES = (("", "Select ..."), ("years", "Years"), ("months", "Months"), ("days", "Days"))
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
@@ -110,10 +113,17 @@ class Cd4traker(models.Model):
     justification = models.CharField(max_length=50, choices=JUSTIFICATION_CHOICES, blank=True, null=True)
     sex = models.CharField(max_length=9, choices=(('M', 'M'), ('F', 'F')))
     received_status = models.CharField(max_length=9, choices=RECEIVED_CHOICES)
+    testing_type = models.CharField(max_length=20, choices=TESTING_CHOICES, default='All')
+    lab_type = models.CharField(max_length=25,  default='Testing Laboratory')
     reason_for_rejection = models.CharField(max_length=50, choices=REJECTION_CHOICES, blank=True, null=True)
     date_of_testing = models.DateTimeField(blank=True, null=True)
-    reason_for_no_serum_crag = models.CharField(max_length=25, choices=(
-        ('Reagents Stock outs', 'Reagents Stock outs'), ('Others', 'Others')),
+    reason_for_no_serum_crag = models.CharField(max_length=30, choices=(
+        ('Reagents Stock outs', 'Reagents Stock outs'),
+        ('On cryptococcal meningitis Rx', 'On cryptococcal meningitis Rx'), ('Others', 'Others')),
+                                                blank=True, null=True)
+    reason_for_no_tb_lam = models.CharField(max_length=30, choices=(
+        ('Reagents Stock outs', 'Reagents Stock outs'),
+        ('On TB Rx', 'On TB Rx'), ('Others', 'Others')),
                                                 blank=True, null=True)
     testing_laboratory = models.ForeignKey(Cd4TestingLabs, on_delete=models.CASCADE, blank=True, null=True)
 
@@ -489,7 +499,7 @@ class HistologyMixin(BaseModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.patient_id) + " - " + str(self.facility_name) + " - " + str(self.date_created)
+        return str(self.patient_id) + " - " + str(self.facility_name) + " - " + str(self.date_created) + " - " + str(self.dispatch_date)
 
 
 class HistologyResults(HistologyMixin):

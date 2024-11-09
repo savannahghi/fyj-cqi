@@ -28,7 +28,7 @@ class ReagentStockAdmin(admin.ModelAdmin):
 
 class HistologyResultsPdfFileAdmin(admin.ModelAdmin):
     search_fields = (
-        "facility_name__name", "facility_name__mfl_code", "patient_id")
+        "facility_name__name", "facility_name__mfl_code", "patient_id", "dispatch_date")
 
 
 # Register your models here.

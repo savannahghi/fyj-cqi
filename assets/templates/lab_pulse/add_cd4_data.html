@@ -11,6 +11,7 @@
         <h5 class="fw-bold text-center">{{ title }}</h5>
         <hr>
         <div class="p-5 mb-4 bg-light rounded-3">
+        {% if show_data_entry  %}
             {% if messages %}
                 <!--group the messages by their text and display only one message for each unique text-->
                 {% regroup messages by message as message_list %}
@@ -19,6 +20,7 @@
                         <h5 class="d-flex justify-content-evenly small">{{ message.grouper }}</h5>
                     </div>
                 {% endfor %}
+            {% endif %}
             {% endif %}
             <div class="container-fluid">
                 <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
@@ -39,9 +41,15 @@
                         </div>
                     {% elif title == "CD4 TRACKER" %}
                         <p> Please select testing laboratory below and then submit </p>
-                        <div class="col-md-4 mt-2">
-                            {{ cd4_testing_lab_form.testing_lab_name|as_crispy_field }}
-                        </div>
+                        {% if perms.labpulse.view_choose_testing_lab %}
+                            <div class="col-md-4 mt-2">
+                                {{ cd4_testing_lab_form.testing_lab_name|as_crispy_field }}
+                            </div>
+                        {% else %}
+                            <div class="col-md-4 mt-2">
+                                {{ cd4_testing_lab_form.facility_name }}
+                            </div>
+                        {% endif %}
                         <div class="col-md-2 mt-2 pt-3">
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
@@ -156,21 +164,6 @@
                                     <td>
                                         {{ facility.mfl_code }}
                                     </td>
-                                    {% if user.is_authenticated %}
-                                        {% if user.id == facility.created_by.id or request.user.is_superuser %}
-                                            {% if not facility.hide_update_button or request.user.is_superuser %}
-                                                <td>
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <a href="{% url "update_testing_labs" facility.id %}"
-                                                                    {#                                                            <a href="#"#}
-                                                               class="action-btn secondary-btn"> Update </a>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endif %}
                                 </tr>
                             {% endfor %}
                             </tbody>
@@ -186,7 +179,7 @@
                                     Add Missing Facility
                                 </a>
                             </div>
-                            {% if cd4_total_remaining == 0 %}
+                            {% if cd4_total_remaining == 0 and request.user|has_group_permission:"laboratory_staffs_labpulse" or request.user.is_superuser %}
                                 <div class="col-3">
                                     <a href="#" class="btn btn-success flicker-button" role="button">
                                         CD4 REAGENTS ARE OUT OF STOCKS.
@@ -318,6 +311,18 @@
                                             </td>
                                             <td>
                                                 {{ commodity.date_commodity_received|date:"Y-m-d" }}
+                                                <br>
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-info">
+                                                    Transaction by:
+                                                </span>
+                                                <br>
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-info">
+                                                    {{ commodity.modified_by.first_name }}
+                                                     {{ commodity.modified_by.last_name }}
+                                                </span>
+                                                <br>
                                             </td>
                                             <td>
                                                 {{ commodity.received_from }}
@@ -403,215 +408,224 @@
                                 </table>
                             </div>
                         </div>
-                    {% elif "Testing Laboratory" in title %}
+{#                    {% elif "Testing Laboratory" in title %}#}
+                    {% elif "Laboratory" in title %}
                         <div>
                             {{ commodity_status|safe }}
                         </div>
-                        {% if cd4_total_remaining != 0 or not use_commodities %}
-                            <div class="mb-3 mt-3 row justify-content-between">
-                                {% if cd4_total_remaining == 0 %}
-                                    <div class="col-4">
-                                        <a href="#" class="btn btn-success flicker-button" role="button">
-                                            CD4 REAGENTS ARE OUT OF STOCKS.
-                                        </a>
-                                    </div>
-                                {% endif %}
-                                {% if tb_lam_total_remaining == 0 %}
-                                    <div class="col-4">
-                                        <a href="#" class="btn btn-success flicker-button" role="button">
-                                            LF TB LAM REAGENTS ARE OUT OF STOCKS
-                                        </a>
-                                    </div>
-                                {% endif %}
-                                {% if crag_total_remaining == 0 %}
-                                    <div class="col-4">
-                                        <a href="#" class="btn btn-success flicker-button" role="button">
-                                            SERUM CRAG REAGENTS ARE OUT OF STOCKS
-                                        </a>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <p> Please fill the fields below and then submit </p>
-                            <div class="col-md-2 mt-2 mb-2">
-                                <a href="{% url 'add_facility' %}"
-                                   class="btn btn-warning" role="button">
-                                    Add Missing Facility
-                                </a>
-                            </div>
-                            <div class="row">
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.facility_name|as_crispy_field }}
+                        {% if show_data_entry  %}
+{#                            {% if request.user|has_group_permission:"laboratory_staffs_labpulse,referring_laboratory_staffs_labpulse" or request.user.is_superuser %}#}
+{#                            {% if cd4_total_remaining != 0 or not use_commodities %}#}
+                                <div class="mb-3 mt-3 row justify-content-between">
+                                    {% if cd4_total_remaining == 0 and request.user|has_group_permission:"laboratory_staffs_labpulse" or request.user.is_superuser %}
+                                        <div class="col-4">
+                                            <a href="#" class="btn btn-success flicker-button" role="button">
+                                                CD4 REAGENTS ARE OUT OF STOCKS.
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if tb_lam_total_remaining == 0 %}
+                                        <div class="col-4">
+                                            <a href="#" class="btn btn-success flicker-button" role="button">
+                                                LF TB LAM REAGENTS ARE OUT OF STOCKS
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if crag_total_remaining == 0 %}
+                                        <div class="col-4">
+                                            <a href="#" class="btn btn-success flicker-button" role="button">
+                                                SERUM CRAG REAGENTS ARE OUT OF STOCKS
+                                            </a>
+                                        </div>
+                                    {% endif %}
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.patient_unique_no|as_crispy_field }}
+                                <p> Please fill the fields below and then submit </p>
+                                <div class="col-md-2 mt-2 mb-2">
+                                    <a href="{% url 'add_facility' %}"
+                                       class="btn btn-warning" role="button">
+                                        Add Missing Facility
+                                    </a>
                                 </div>
+                                <div class="row">
                                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.age|as_crispy_field }}
+                                    {{ form.testing_type|as_crispy_field }}
                                 </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.age_unit|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.sex|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.date_of_collection|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.date_sample_received|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.received_status|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.reason_for_rejection|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.justification|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.date_of_testing|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.cd4_count_results|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.cd4_percentage|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.serum_crag_results|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.reason_for_no_serum_crag|as_crispy_field }}
-                                </div>
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                    {{ form.tb_lam_results|as_crispy_field }}
-                                </div>
-                                {% if report_type == "Retrospective" %}
                                     <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
-                                        {{ form.date_dispatched|as_crispy_field }}
+                                        {{ form.facility_name|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.patient_unique_no|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.age|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.age_unit|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.sex|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.date_of_collection|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.date_sample_received|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.received_status|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.reason_for_rejection|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.justification|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.date_of_testing|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.cd4_count_results|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.cd4_percentage|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.serum_crag_results|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.reason_for_no_serum_crag|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.tb_lam_results|as_crispy_field }}
+                                    </div>
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                        {{ form.reason_for_no_tb_lam|as_crispy_field }}
+                                    </div>
+                                    {% if report_type == "Retrospective" %}
+                                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                            {{ form.date_dispatched|as_crispy_field }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2 pt-3">
+                                        <input class="btn btn-success mt-1" type="submit" value="Submit">
+                                    </div>
+                                </div>
+                                {% if commodities %}
+                                    <div>
+                                        <hr>
+                                        <h5 class="fw-bold text-center"> Commodities' Status </h5>
+                                        <div class="alert alert-info" role="alert">
+                                            <i class="fas fa-info-circle"></i>
+                                            <strong>Update Policy:</strong>
+                                            <ul>
+                                                <li>Reagent records can only be updated <strong>if and only if</strong> they
+                                                    were
+                                                    received within the current
+                                                    month.
+                                                </li>
+                                                <li>This ensures data accuracy and compliance with our reporting
+                                                    standards.
+                                                </li>
+                                                <li>For older records, please contact the system administrator if changes
+                                                    are necessary.
+                                                </li>
+                                            </ul>
+                                            <p class="mb-0">Current month:
+                                                <strong>{{ current_month_name }} {{ current_year }}</strong></p>
+                                        </div>
+                                        <hr>
+                                        <table class="table table-striped table-hover" style="font-size: smaller;">
+                                            <thead class="thead-dark">
+                                            <tr>
+                                                <th></th>
+                                                <th style="font-size: x-small"> Facility</th>
+                                                <th style="font-size: x-small"> Reagent Type</th>
+                                                <th style="font-size: x-small"> Beginning Balance</th>
+                                                <th style="font-size: x-small"> Quantity Received</th>
+                                                <th style="font-size: x-small"> Date Received</th>
+                                                <th style="font-size: x-small"> Received From</th>
+                                                <th style="font-size: x-small"> Positive Adjustments</th>
+                                                <th style="font-size: x-small"> Quantity Used</th>
+                                                <th style="font-size: x-small"> Negative Adjustments</th>
+                                                <th style="font-size: x-small"> Quantity Expired</th>
+                                                <th style="font-size: x-small"> Remaining Quantity</th>
+                                                {% for commodity in commodities %}
+                                                    {% if user.is_authenticated %}
+                                                        {% if forloop.counter == 1 %}
+                                                            {% if user.id == commodity.created_by.id or request.user.is_superuser %}
+                                                                {% if not testing_lab.hide_update_button or request.user.is_superuser %}
+                                                                    <th style="font-size: x-small"></th>
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for commodity in commodities %}
+                                                <tr>
+                                                    <td> {{ forloop.counter }} </td>
+                                                    <td>
+                                                        {{ commodity.facility_name.name|upper }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.reagent_type|upper }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.beginning_balance }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.quantity_received }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.date_commodity_received|date:"Y-m-d" }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.received_from }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.positive_adjustments }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.quantity_used }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.negative_adjustment }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.quantity_expired }}
+                                                    </td>
+                                                    <td>
+                                                        {{ commodity.remaining_quantity }}
+                                                    </td>
+                                                    <td class="action-buttons">
+                                                        {% if user.is_authenticated %}
+                                                            {% if user.id == commodity.created_by.id or request.user.is_superuser %}
+                                                                {% if not commodity.hide_update_button or request.user.is_superuser %}
+                                                                    {% with within_current_month=commodity.date_commodity_received|within_current_month %}
+                                                                        {% if within_current_month %}
+                                                                            <a href="{% url "update_reagent_stocks" commodity.id %}"
+                                                                               class="action-btn secondary-btn">
+                                                                                Update </a>
+                                                                            {% if request.user.is_superuser %}
+                                                                                <a href="{% url "delete_reagents_stock" commodity.id %}"
+                                                                                   class="action-btn delete-btn">
+                                                                                    Delete </a>
+                                                                            {% endif %}
+                                                                        {% endif %}
+                                                                    {% endwith %}
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 {% endif %}
-                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2 pt-3">
-                                    <input class="btn btn-success mt-1" type="submit" value="Submit">
-                                </div>
-                            </div>
-
-                            {% if commodities %}
-                                <div>
-                                    <hr>
-                                    <h5 class="fw-bold text-center"> Commodities' Status </h5>
-                                    <div class="alert alert-info" role="alert">
-                                        <i class="fas fa-info-circle"></i>
-                                        <strong>Update Policy:</strong>
-                                        <ul>
-                                            <li>Reagent records can only be updated <strong>if and only if</strong> they
-                                                were
-                                                received within the current
-                                                month.
-                                            </li>
-                                            <li>This ensures data accuracy and compliance with our reporting
-                                                standards.
-                                            </li>
-                                            <li>For older records, please contact the system administrator if changes
-                                                are necessary.
-                                            </li>
-                                        </ul>
-                                        <p class="mb-0">Current month:
-                                            <strong>{{ current_month_name }} {{ current_year }}</strong></p>
-                                    </div>
-                                    <hr>
-                                    <table class="table table-striped table-hover" style="font-size: smaller;">
-                                        <thead class="thead-dark">
-                                        <tr>
-                                            <th></th>
-                                            <th style="font-size: x-small"> Facility</th>
-                                            <th style="font-size: x-small"> Reagent Type</th>
-                                            <th style="font-size: x-small"> Beginning Balance</th>
-                                            <th style="font-size: x-small"> Quantity Received</th>
-                                            <th style="font-size: x-small"> Date Received</th>
-                                            <th style="font-size: x-small"> Received From</th>
-                                            <th style="font-size: x-small"> Positive Adjustments</th>
-                                            <th style="font-size: x-small"> Quantity Used</th>
-                                            <th style="font-size: x-small"> Negative Adjustments</th>
-                                            <th style="font-size: x-small"> Quantity Expired</th>
-                                            <th style="font-size: x-small"> Remaining Quantity</th>
-                                            {% for commodity in commodities %}
-                                                {% if user.is_authenticated %}
-                                                    {% if forloop.counter == 1 %}
-                                                        {% if user.id == commodity.created_by.id or request.user.is_superuser %}
-                                                            {% if not testing_lab.hide_update_button or request.user.is_superuser %}
-                                                                <th style="font-size: x-small"></th>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    {% endif %}
-                                                {% endif %}
-                                            {% endfor %}
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {% for commodity in commodities %}
-                                            <tr>
-                                                <td> {{ forloop.counter }} </td>
-                                                <td>
-                                                    {{ commodity.facility_name.name|upper }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.reagent_type|upper }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.beginning_balance }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.quantity_received }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.date_commodity_received|date:"Y-m-d" }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.received_from }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.positive_adjustments }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.quantity_used }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.negative_adjustment }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.quantity_expired }}
-                                                </td>
-                                                <td>
-                                                    {{ commodity.remaining_quantity }}
-                                                </td>
-                                                <td class="action-buttons">
-                                                    {% if user.is_authenticated %}
-                                                        {% if user.id == commodity.created_by.id or request.user.is_superuser %}
-                                                            {% if not commodity.hide_update_button or request.user.is_superuser %}
-                                                                {% with within_current_month=commodity.date_commodity_received|within_current_month %}
-                                                                    {% if within_current_month %}
-                                                                        <a href="{% url "update_reagent_stocks" commodity.id %}"
-                                                                           class="action-btn secondary-btn">
-                                                                            Update </a>
-                                                                        {% if request.user.is_superuser %}
-                                                                            <a href="{% url "delete_reagents_stock" commodity.id %}"
-                                                                               class="action-btn delete-btn">
-                                                                                Delete </a>
-                                                                        {% endif %}
-                                                                    {% endif %}
-                                                                {% endwith %}
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% endif %}
+{#                            {% endif %}#}
                         {% endif %}
                     {% endif %}
                 </form>
@@ -644,7 +658,10 @@
                     // Specific actions for DISPENSING
                     //$('#facility_dispensed_to_container').show(); // Show the facility_dispensed_to container
                     $('#date_commodity_dispensed_container').show(); // Show the date_commodity_dispensed_container
-                    $('#id_negative_adjustment').prop('disabled', false).prop('required', true).css('backgroundColor', ''); // Enable negative adjustment                
+                    $('#id_date_commodity_dispensed').prop('disabled', false).prop('required', true); // Make it required
+                    $('#id_negative_adjustment').prop('disabled', false).prop('required', true).css('backgroundColor', ''); // Enable negative adjustment
+                    $('#id_expiry_date').prop('disabled', false).prop('required', true); // Make it required
+                    {#$('#id_quantity_received').prop('disabled', true).prop('required', false).val(''); // Clear and disable#}
                 } else if (transactionType === 'RECEIVING') {
                     // Specific actions for RECEIVING
                     $('#received_from_container').show(); // Show the received_from container
@@ -652,6 +669,8 @@
                     $('#id_positive_adjustments').prop('disabled', false).prop('required', true); // Enable positive adjustments
                     $('#id_quantity_received').prop('disabled', false).prop('required', true); // Enable quantity received
                     $('#date_commodity_received_container').show(); // Show the date_commodity_received_container
+                    $('#id_date_commodity_received').prop('disabled', false).prop('required', true); // Make it required
+                    $('#id_expiry_date').prop('disabled', false).prop('required', true); // Make it required
                     // Negative adjustment is already disabled by default
                     $('#facility_dispensed_to_container').hide(); // Ensure facility_dispensed_to_container is hidden
                 }

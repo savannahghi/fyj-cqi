@@ -49,7 +49,7 @@ from apps.labpulse.forms import BiochemistryForm, Cd4TestingLabForm, Cd4TestingL
     Cd4trakerManualDispatchForm, \
     DrtForm, DrtPdfFileForm, DrtResultsForm, HistologyResultsForm, \
     LabPulseUpdateButtonSettingsForm, MultipleUploadForm, ReagentStockForm, \
-    facilities_lab_Form
+    Spoke_facilities_lab_form, facilities_lab_Form
 from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtPdfFile, DrtProfile, DrtResults, \
     EnableDisableCommodities, \
     HistologyPdfFile, HistologyResults, LabPulseUpdateButtonSettings, ReagentStock
@@ -214,16 +214,25 @@ def lab_pulse_update_button_settings(request):
 
 # Create your views here.
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse'])
+@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
 def choose_testing_lab(request):
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    cd4_testing_lab_form = Cd4TestingLabsForm(request.POST or None)
+    if request.user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
+        testing_lab = list(Cd4TestingLabs.objects.values_list('mfl_code', flat=True))
+        cd4_testing_lab_form = Spoke_facilities_lab_form(request.POST or None, testing_lab=testing_lab)
+    else:
+        cd4_testing_lab_form = Cd4TestingLabsForm(request.POST or None)
+
     if request.method == "POST":
         if cd4_testing_lab_form.is_valid():
-            testing_lab_name = cd4_testing_lab_form.cleaned_data['testing_lab_name']
+            if request.user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
+                # pass
+                testing_lab_name = cd4_testing_lab_form.cleaned_data['facility_name']
+            else:
+                testing_lab_name = cd4_testing_lab_form.cleaned_data['testing_lab_name']
             # Generate the URL for the redirect
             url = reverse('add_cd4_count',
                           kwargs={
@@ -271,7 +280,10 @@ def validate_cd4_count_form(form, report_type):
     cd4_count_results = form.cleaned_data['cd4_count_results']
     serum_crag_results = form.cleaned_data['serum_crag_results']
     reason_for_no_serum_crag = form.cleaned_data['reason_for_no_serum_crag']
+    reason_for_no_tb_lam = form.cleaned_data['reason_for_no_tb_lam']
     cd4_percentage = form.cleaned_data['cd4_percentage']
+    testing_type = form.cleaned_data['testing_type']
+    tb_lam_results = form.cleaned_data['tb_lam_results']
     age = form.cleaned_data['age']
     today = timezone.now().date()
 
@@ -333,6 +345,24 @@ def validate_cd4_count_form(form, report_type):
             form.add_error('received_status', error_message)
             form.add_error('date_of_testing', error_message)
             return False
+        if serum_crag_results is None and testing_type == "ScrAg Only":
+            error_message = f"Provide Serum CrAg results"
+            form.add_error('testing_type', error_message)
+            form.add_error('serum_crag_results', error_message)
+            return False
+
+        if tb_lam_results is None and testing_type == "TB LAM Only":
+            error_message = f"Provide Serum CrAg results"
+            form.add_error('testing_type', error_message)
+            form.add_error('tb_lam_results', error_message)
+            return False
+
+        if tb_lam_results is None and serum_crag_results is None and testing_type == "TB LAM & ScrAg":
+            error_message = f"Provide Serum CrAg and TB LAM results"
+            form.add_error('testing_type', error_message)
+            form.add_error('tb_lam_results', error_message)
+            form.add_error('serum_crag_results', error_message)
+            return False
 
         if date_of_testing < date_of_collection:
             error_message = f"Testing date is less than Collection date!"
@@ -357,7 +387,7 @@ def validate_cd4_count_form(form, report_type):
             # If there are any errors, return the form with the error messages
             return False
 
-        if not cd4_count_results:
+        if not cd4_count_results and testing_type == "All":
             error_message = f"Provide CD4 count results"
             form.add_error('received_status', error_message)
             form.add_error('cd4_count_results', error_message)
@@ -368,14 +398,14 @@ def validate_cd4_count_form(form, report_type):
             form.add_error('age', error_message)
             form.add_error('cd4_percentage', error_message)
             return False
-        if cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
+        if cd4_count_results is not None and cd4_count_results <= 200 and not serum_crag_results and not reason_for_no_serum_crag:
             error_message = f"Select a reason why serum CRAG was not done"
             form.add_error('reason_for_no_serum_crag', error_message)
             form.add_error('cd4_count_results', error_message)
             form.add_error('serum_crag_results', error_message)
             return False
 
-        if cd4_count_results > 200 and not serum_crag_results and reason_for_no_serum_crag:
+        if cd4_count_results is not None and cd4_count_results > 200 and not serum_crag_results and reason_for_no_serum_crag:
             error_message = f"Check if the information is correct"
             form.add_error('reason_for_no_serum_crag', error_message)
             form.add_error('cd4_count_results', error_message)
@@ -386,6 +416,12 @@ def validate_cd4_count_form(form, report_type):
             error_message = f"Check if the information is correct"
             form.add_error('reason_for_no_serum_crag', error_message)
             form.add_error('serum_crag_results', error_message)
+            return False
+
+        if tb_lam_results and reason_for_no_tb_lam:
+            error_message = f"Check if the information is correct"
+            form.add_error('reason_for_no_tb_lam', error_message)
+            form.add_error('tb_lam_results', error_message)
             return False
     return True
 
@@ -685,15 +721,30 @@ def handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_re
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse'])
+@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
 def add_cd4_count(request, report_type, pk_lab):
     if not request.user.first_name:
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    selected_lab, created = Cd4TestingLabs.objects.get_or_create(id=pk_lab)
+    if request.user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
+        selected_lab, created = Facilities.objects.get_or_create(id=pk_lab)
+        lab_name = selected_lab.name.title()
+        laboratory_type = "Spoke Laboratory"
+        lab_type = f"User From {laboratory_type}"
+        if selected_lab.mfl_code in list(Cd4TestingLabs.objects.values_list('mfl_code', flat=True)):
+            show_data_entry = False
+        else:
+            show_data_entry = True
+    else:
+        selected_lab, created = Cd4TestingLabs.objects.get_or_create(id=pk_lab)
+        lab_name = selected_lab.testing_lab_name.title()
+        laboratory_type = "Testing Laboratory"
+        lab_type = f"User From {laboratory_type}"
+        show_data_entry = True
     template_name = 'lab_pulse/add_cd4_data.html'
     current_date = timezone.now()
+    testing_lab = list(Cd4TestingLabs.objects.values_list('mfl_code', flat=True))
 
     use_commodities = False
     enable_commodities = EnableDisableCommodities.objects.first()
@@ -701,26 +752,29 @@ def add_cd4_count(request, report_type, pk_lab):
         use_commodities = True
 
     if report_type == "Current":
-        form = Cd4trakerForm(request.POST or None)
+        if laboratory_type == "Spoke Laboratory":
+            form = Cd4trakerForm(request.POST or None, selected_lab=selected_lab, laboratory_type=laboratory_type)
+        else:
+            form = Cd4trakerForm(request.POST or None)
         commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
             show_remaining_commodities(selected_lab)
         context = {
             "form": form, "report_type": report_type, "commodities": commodities, "use_commodities": use_commodities,
-            "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
+            "title": f"Add CD4 Results for {lab_name} ({lab_type})",
             "commodity_status": commodity_status,
             "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
-            "crag_total_remaining": crag_total_remaining,
+            "crag_total_remaining": crag_total_remaining, "show_data_entry": show_data_entry,
             'current_month_name': current_date.strftime('%B'),
             'current_year': current_date.year,
         }
-        if use_commodities:
+        if use_commodities and request.user.groups.filter(name='laboratory_staffs_labpulse').exists():
             if crag_total_remaining == 0:
                 messages.error(request, generate_commodity_error_message("Serum CrAg"))
             if tb_lam_total_remaining == 0:
                 messages.error(request, generate_commodity_error_message("LF TB LAM"))
             if cd4_total_remaining == 0:
                 messages.error(request, generate_commodity_error_message("CD4"))
-                return render(request, template_name, context)
+            return render(request, template_name, context)
     else:
         crag_total_remaining = None
         tb_lam_total_remaining = None
@@ -728,15 +782,18 @@ def add_cd4_count(request, report_type, pk_lab):
         if not request.user.has_perm('labpulse.view_add_retrospective_cd4_count'):
             # Redirect or handle the case where the user doesn't have the permission
             return HttpResponseForbidden("You don't have permission to access this form.")
-        form = Cd4trakerManualDispatchForm(request.POST or None)
+        if laboratory_type == "Spoke Laboratory":
+            form = Cd4trakerManualDispatchForm(request.POST or None, selected_lab=selected_lab, laboratory_type=laboratory_type)
+        else:
+            form = Cd4trakerManualDispatchForm(request.POST or None)
         context = {
             "form": form, "report_type": report_type, "use_commodities": use_commodities,
-            "title": f"Add CD4 Results for {selected_lab.testing_lab_name.title()} (Testing Laboratory)",
-            'current_month_name': current_date.strftime('%B'),
+            "title": f"Add CD4 Results for {lab_name} ({lab_type})",
+            'current_month_name': current_date.strftime('%B'), "show_data_entry": show_data_entry,
             'current_year': current_date.year,
         }
-
     if request.method == "POST":
+        reload_page_without_cache(request)
         if form.is_valid():
             post = form.save(commit=False)
             #################
@@ -776,6 +833,7 @@ def add_cd4_count(request, report_type, pk_lab):
             post.facility_name = facility_name
             post.testing_laboratory = Cd4TestingLabs.objects.filter(testing_lab_name=selected_lab).first()
             post.report_type = report_type
+            post.lab_type = laboratory_type
             ####################################
             # Deduct Commodities used
             ####################################
@@ -788,6 +846,7 @@ def add_cd4_count(request, report_type, pk_lab):
             url = reverse('add_cd4_count', kwargs={'report_type': report_type, 'pk_lab': pk_lab})
             return redirect(url)
         else:
+            print(f"check form errors::::::::::: {form.errors}")
             messages.error(request, f"Record already exists.")
             render(request, template_name, context)
     return render(request, template_name, context)
@@ -1085,6 +1144,7 @@ def update_cd4_results(request, report_type, pk):
                             return render(request, template_name, context)
             post.save()
             messages.error(request, "Record updated successfully!")
+            reload_page_without_cache(request)
             return HttpResponseRedirect(request.session['page_from'])
     else:
         if report_type == "Current":
@@ -1646,7 +1706,7 @@ def generate_results_df(list_of_projects):
     def generate_summary_df(list_of_projects_fac):
         # Create the summary dataframe
         summary_df = pd.DataFrame({
-            'Total CD4': [list_of_projects_fac.shape[0]],
+            'Total CD4': [list_of_projects_fac[list_of_projects_fac['Testing Laboratory'].notnull()].shape[0]],
             'Rejected': [(list_of_projects_fac['Received status'] == 'Rejected').sum()],
             'CD4 >200': [(list_of_projects_fac['CD4 Count'] > 200).sum()],
             'CD4 <= 200': [(list_of_projects_fac['CD4 Count'] <= 200).sum()],
@@ -1675,7 +1735,7 @@ def generate_results_df(list_of_projects):
     # CD4 SUMMARY CHART
     ###################################
     cd4_summary_fig = bar_chart(summary_df, "variables", "values",
-                                f"Summary of CD4 Records and Serum CrAg Results Between {min_date} and {max_date} ",
+                                f"Testing Cascade Between {min_date} and {max_date} ",
                                 xaxis_title="CD4 Testing Cascade")
 
     # @silk_profile(name='generate_workload_summary_df')
@@ -1689,6 +1749,21 @@ def generate_results_df(list_of_projects):
                       .rename(columns={'CD4 Count': 'Total CD4 Count', 'Serum Crag': 'Total CRAG Reports'})
                       .sort_values('Testing Laboratory')
                       .reset_index(drop=True))
+        if summary_df.empty:
+            # summary_df = pd.DataFrame({
+            #     'Testing Laboratory': [''],
+            #     'Total CD4 Count': [0],
+            #     'Total CRAG Reports': [0]
+            # })
+            summary_df = (list_of_projects_fac[list_of_projects_fac['Testing Laboratory'].isnull()].pivot_table(
+                index='Facility',
+                values=['CD4 Count', 'Serum Crag'],
+                aggfunc={'CD4 Count': 'count', 'Serum Crag': lambda x: x.count() if x.notnull().any() else 0}
+            ).reset_index()
+                          .rename(columns={'CD4 Count': 'Total CD4 Count', 'Serum Crag': 'Total CRAG Reports'})
+                          .sort_values('Facility')
+                          .reset_index(drop=True))
+            summary_df.columns = ['Testing Laboratory', 'Total CD4 Count', 'Total CRAG Reports']
 
         # Melt the summary dataframe
         summary_df = pd.melt(summary_df, id_vars="Testing Laboratory",
@@ -1741,6 +1816,12 @@ def generate_results_df(list_of_projects):
         show_crag_testing_workload, available_dfs
 
 
+def format_date(date_value):
+    if date_value:
+        return date_value.strftime('%Y-%m-%d')
+    return ""
+
+
 # @silk_profile(name='save_cd4_report')
 def save_cd4_report(writer, queryset):
     """
@@ -1761,7 +1842,7 @@ def save_cd4_report(writer, queryset):
         "County", "Sub-County", "Patient Unique No.", "Facility Name", "MFL Code", "Age", "Age Unit", "Sex",
         "Date of Collection", "Date of Receipt", "Date of Testing", "Dispatch Date", "CD4 Count",
         "TB LAM Results", "Serum CRAG Results", "Justification", "Received Status", "Reason for Rejection",
-        "Reason for No Serum CRAG", "Testing Laboratory"
+        "Reason for No Serum CRAG", "Reason for No TB LAM", "Testing Laboratory", "Laboratory Type"
     ]
     # Write the header row to the CSV file
     writer.writerow(header)
@@ -1775,7 +1856,7 @@ def save_cd4_report(writer, queryset):
         'facility_name__mfl_code', 'age', 'age_unit', 'sex', 'date_of_collection', 'date_sample_received',
         'date_of_testing', 'date_dispatched', 'cd4_count_results', 'tb_lam_results', 'serum_crag_results',
         'justification', 'received_status', 'reason_for_rejection', 'reason_for_no_serum_crag',
-        'testing_laboratory__testing_lab_name',
+        'reason_for_no_tb_lam', 'testing_laboratory__testing_lab_name', 'lab_type'
     ))
 
     # Write data rows based on the list of dictionaries
@@ -1789,10 +1870,10 @@ def save_cd4_report(writer, queryset):
             record_dict.get("age", ""),
             record_dict.get("age_unit", ""),
             record_dict.get("sex", ""),
-            record_dict.get("date_of_collection", ""),
-            record_dict.get("date_sample_received", ""),
-            record_dict.get("date_of_testing", ""),
-            record_dict.get("date_dispatched", ""),
+            format_date(record_dict.get("date_of_collection")),
+            format_date(record_dict.get("date_sample_received")),
+            format_date(record_dict.get("date_of_testing")),
+            format_date(record_dict.get("date_dispatched")),
             record_dict.get("cd4_count_results", ""),
             record_dict.get("tb_lam_results", ""),
             record_dict.get("serum_crag_results", ""),
@@ -1800,7 +1881,9 @@ def save_cd4_report(writer, queryset):
             record_dict.get("received_status", ""),
             record_dict.get("reason_for_rejection", ""),
             record_dict.get("reason_for_no_serum_crag", ""),
+            record_dict.get("reason_for_no_tb_lam", ""),
             record_dict.get("testing_laboratory__testing_lab_name", ""),
+            record_dict.get("lab_type", ""),
         ]
         # Write the data row to the CSV file
         writer.writerow(data_row)
@@ -1861,10 +1944,10 @@ def save_drt_report(writer, queryset):
             record_dict.get("age", ""),
             record_dict.get("age_unit", ""),
             record_dict.get("sex", ""),
-            record_dict.get("collection_date", ""),
-            record_dict.get("date_received", ""),
-            record_dict.get("date_test_performed", ""),
-            record_dict.get("date_created", ""),
+            format_date(record_dict.get("collection_date")),
+            format_date(record_dict.get("date_received")),
+            format_date(record_dict.get("date_test_performed")),
+            format_date(record_dict.get("date_created")),
             record_dict.get("drug", ""),
             record_dict.get("drug_abbreviation", ""),
             record_dict.get("sequence_summary", ""),
@@ -1936,10 +2019,10 @@ def save_biochem_report(writer, queryset):
             record_dict.get("high_limit", ""),
             record_dict.get("units", ""),
             record_dict.get("reference_class", ""),
-            record_dict.get("collection_date", ""),
+            format_date(record_dict.get("collection_date")),
             record_dict.get("result_time", ""),
             record_dict.get("results_interpretation", ""),
-            record_dict.get("date_created", ""),
+            format_date(record_dict.get("date_created")),
             record_dict.get("performed_by", ""),
         ]
         # Write the data row to the CSV file
@@ -2252,11 +2335,15 @@ def show_results(request):
     # Access the page URL
     request.session['current_page_url'] = request.path
 
+    # Convert my_filters to a JSON string
+    filters_json = json.dumps(my_filters.data, sort_keys=True)
+
     # Generate a cache key based on relevant data
     data_hash = hashlib.sha256(
         f"{request.GET.get('received_status')}:{request.GET.get('start_date')}:{request.GET.get('end_date')}:"
         f"{request.GET.get('record_count')}:{request.GET.get('testing_laboratory')}:{request.GET.get('sub_county')}:"
-        f"{request.GET.get('county')}:{request.GET.get('facility_name')}:{page_number}".encode()
+        f"{request.GET.get('county')}:{request.GET.get('facility_name')}:{page_number}"
+        f"{filters_json}:{page_number}".encode()
     ).hexdigest()
     cache_key = f'labpulse_visualization:{data_hash}'
 
@@ -2690,8 +2777,13 @@ def add_commodities(request, pk_lab):
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    form = ReagentStockForm(request.POST or None)
+    testing_lab = list(Cd4TestingLabs.objects.values_list('mfl_code', flat=True))
     selected_lab, created = Facilities.objects.get_or_create(id=pk_lab)
+    if selected_lab.mfl_code in testing_lab:
+        show_data_entry = False
+    else:
+        show_data_entry = True
+    form = ReagentStockForm(request.POST or None, selected_lab=selected_lab, testing_lab=testing_lab)
     current_date = timezone.now()
 
     template_name = 'lab_pulse/add_cd4_data.html'
@@ -2699,7 +2791,7 @@ def add_commodities(request, pk_lab):
         "form": form, "report_type": "commodity",
         "title": f"Add Commodities for {selected_lab.name.title()} Laboratory",
         'current_month_name': current_date.strftime('%B'),
-        'current_year': current_date.year,
+        'current_year': current_date.year, "show_data_entry": show_data_entry
     }
     try:
         commodity_status, commodities, cd4_total_remaining, crag_total_remaining, tb_lam_total_remaining = \
@@ -2721,10 +2813,16 @@ def add_commodities(request, pk_lab):
         if form.is_valid():
             reagent_type = form.cleaned_data['reagent_type']
             transaction_type = form.cleaned_data['transaction_type']
-            if reagent_type == "CD4" and cd4_total_remaining == 0 and transaction_type != "RECEIVING" or \
-                    reagent_type == "TB LAM" and tb_lam_total_remaining == 0 and transaction_type != "RECEIVING" or \
-                    reagent_type == "Serum CrAg" and crag_total_remaining == 0 and transaction_type != "RECEIVING":
+            if (reagent_type == "CD4" and cd4_total_remaining == 0 and transaction_type != "RECEIVING") or \
+                    (reagent_type == "TB LAM" and tb_lam_total_remaining == 0 and transaction_type != "RECEIVING") or \
+                    (reagent_type == "Serum CrAg" and crag_total_remaining == 0 and transaction_type != "RECEIVING"):
                 messages.error(request, f"You do not have {reagent_type} reagents currently in stock!")
+                context = {
+                    "form": form, "report_type": "commodity",
+                    "title": f"Add Commodities for {selected_lab.name.title()} Laboratory",
+                    'current_month_name': current_date.strftime('%B'),
+                    'current_year': current_date.year, "show_data_entry": show_data_entry
+                }
                 render(request, template_name, context)
             else:
                 # try:
@@ -2760,7 +2858,7 @@ def add_commodities(request, pk_lab):
         "form": form, "report_type": "commodity", "commodities": commodities, "commodity_status": commodity_status,
         "title": f"Add Commodities for {selected_lab.name.title()} Laboratory",
         "cd4_total_remaining": cd4_total_remaining, "tb_lam_total_remaining": tb_lam_total_remaining,
-        "crag_total_remaining": crag_total_remaining,
+        "crag_total_remaining": crag_total_remaining, "show_data_entry": show_data_entry,
         'current_month_name': current_date.strftime('%B'),
         'current_year': current_date.year,
     }
@@ -2943,7 +3041,12 @@ def choose_lab(request):
         return redirect("profile")
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-    cd4_testing_lab_form = facilities_lab_Form(request.POST or None)
+
+    if request.user.groups.filter(name='referring_laboratory_staffs_labpulse').exists():
+        testing_lab = list(Cd4TestingLabs.objects.values_list('mfl_code', flat=True))
+        cd4_testing_lab_form = Spoke_facilities_lab_form(request.POST or None, testing_lab=testing_lab)
+    else:
+        cd4_testing_lab_form = facilities_lab_Form(request.POST or None)
     if request.method == "POST":
         if cd4_testing_lab_form.is_valid():
             testing_lab_name = cd4_testing_lab_form.cleaned_data['facility_name']

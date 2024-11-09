@@ -37,6 +37,9 @@
                             {{ my_filters.form.sub_county|as_crispy_field }}
                         </div>
                         <div class="col-12 col-md-6 col-lg-2">
+                            {{ my_filters.form.lab_type|as_crispy_field }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
                             {{ my_filters.form.patient_unique_no|as_crispy_field }}
                         </div>
                         <div class="col-12 col-md-6 col-lg-2">
@@ -326,7 +329,8 @@
                                         </td>
                                         <td> {{ result.age }} {{ result.age_unit }}</td>
                                         <td>
-                                            {% if result.cd4_count_results is None %}
+{#                                            {% if result.cd4_count_results is None %}#}
+                                            {% if result.received_status == "Rejected" %}
                                                 <p class="fw-bold text-danger">Rejected</p>
                                                 <p class="fw-bold text-danger"
                                                    style="font-size: xx-small">{{ result.reason_for_rejection }}</p>
@@ -347,8 +351,16 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            {% if result.cd4_count_results <= 200 and result.serum_crag_results is None %}
-                                                <p class="fw-bold text-danger">CRAG: Missing</p>
+                                            {% if result.cd4_count_results <= 200 and result.serum_crag_results is None  or result.testing_laboratory is None %}
+                                                {% if result.testing_laboratory is not None %}
+                                                    <p class="fw-bold text-danger">CRAG: Missing</p>
+                                                {% elif result.testing_laboratory is None and result.serum_crag_results is not None %}
+                                                    <span style="font-size: 9px"
+                                                      class="badge alert-danger">Serum CrAg: {{ result.serum_crag_results }}</span>
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-info">CRAG date: {{ result.date_serum_crag_results_entered|date:"Y-m-d" }}</span>
+                                                <br>
+                                                {% endif %}
                                                 {% if result.tb_lam_results == "Positive" %}
                                                     <span style="font-size: 8px"
                                                           class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
@@ -360,8 +372,12 @@
                                                     <span style="font-size: 8px"
                                                           class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
                                                 {% else %}
+                                                     {% if result.testing_laboratory is not None %}
+                                                    <p class="fw-bold text-danger">CRAG: Missing</p>
+
                                                     <span style="font-size: 8px"
                                                           class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                         {% endif %}
                                                 {% endif %}
                                             {% elif result.serum_crag_results is None %}
 
@@ -413,8 +429,13 @@
                                         <td>
                                             {{ result.date_of_testing|date:"Y-m-d" }}
                                             <br>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-warning">Testing Lab: {{ result.testing_laboratory }}</span>
+
+                                                  {% if result.testing_laboratory is None %}
+                                                    <span style="font-size: 8px"class="badge alert-warning">Testing Lab: {{ result.facility_name }}</span>
+                                                  {% else %}
+                                                    <span style="font-size: 8px"class="badge alert-warning">Testing Lab: {{ result.testing_laboratory }}</span>
+
+                                            {% endif %}
                                             <br>
                                             <br>
                                             <span style="font-size: 8px"
@@ -454,7 +475,7 @@
                                                 {% endif %}
                                             {% elif user|has_group:'referring_laboratory_staffs_labpulse' %}
                                                 {% if result.cd4_count_results <= 200 and result.report_type == "Current" %}
-                                                    {% if not result.hide_update_button or request.user.is_superuser %}
+{#                                                    {% if not result.hide_update_button or request.user.is_superuser %}#}
                                                         <td>
                                                             <div class="row">
                                                                 <div class="col-md-6">
@@ -465,7 +486,7 @@
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                    {% endif %}
+{#                                                    {% endif %}#}
                                                 {% endif %}
                                             {% endif %}
                                         {% endif %}

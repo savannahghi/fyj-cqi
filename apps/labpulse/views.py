@@ -774,7 +774,7 @@ def add_cd4_count(request, report_type, pk_lab):
                 messages.error(request, generate_commodity_error_message("LF TB LAM"))
             if cd4_total_remaining == 0:
                 messages.error(request, generate_commodity_error_message("CD4"))
-            return render(request, template_name, context)
+            # return render(request, template_name, context)
     else:
         crag_total_remaining = None
         tb_lam_total_remaining = None
@@ -846,7 +846,6 @@ def add_cd4_count(request, report_type, pk_lab):
             url = reverse('add_cd4_count', kwargs={'report_type': report_type, 'pk_lab': pk_lab})
             return redirect(url)
         else:
-            print(f"check form errors::::::::::: {form.errors}")
             messages.error(request, f"Record already exists.")
             render(request, template_name, context)
     return render(request, template_name, context)

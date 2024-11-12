@@ -55,7 +55,7 @@ class QuarterSelectionForm(forms.Form):
 
 class YearSelectionForm(forms.Form):
     current_year = datetime.datetime.now().year
-    YEAR_CHOICES = [(str(x), str(x)) for x in range(2021, current_year + 1)]
+    YEAR_CHOICES = [(str(x), str(x)) for x in range(2021, current_year + 2)]
     year = forms.ChoiceField(
         choices=YEAR_CHOICES,
         label="FY",

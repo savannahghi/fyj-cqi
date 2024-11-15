@@ -56,6 +56,9 @@
                         {% csrf_token %}
                         <p> Please fill the fields below and then submit </p>
                         <div class="row">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.testing_type|as_crispy_field }}
+                            </div>
                             <div class="col-md-3 mt-2">
                                 {{ form.facility_name|as_crispy_field }}
                             </div>
@@ -104,6 +107,9 @@
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                 {{ form.tb_lam_results|as_crispy_field }}
                             </div>
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
+                                {{ form.reason_for_no_tb_lam|as_crispy_field }}
+                            </div>
                             {% if report_type == "Retrospective" %}
                                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 mt-2">
                                     {{ form.date_dispatched|as_crispy_field }}
@@ -131,11 +137,11 @@
                 {% elif title == "Update Commodities" %}
                     <div class="alert alert-info" role="alert">
                         <i class="fas fa-info-circle"></i>
-                        <strong>Update Policy:</strong>
+                        <strong> Update Policy: </strong>
                         <ul>
-                            <li>Records can only be updated if they were received within the current month.</li>
-                            <li>This ensures data accuracy and compliance with our reporting standards.</li>
-                            <li>For older records, please contact the system administrator if changes are necessary.
+                            <li> Records can only be updated if they were received within the current month.</li>
+                            <li> This ensures data accuracy and compliance with our reporting standards.</li>
+                            <li> For older records, please contact the system administrator if changes are necessary.
                             </li>
                         </ul>
                         <p class="mb-0">Current month: <strong>{{ current_month_name }} {{ current_year }}</strong></p>

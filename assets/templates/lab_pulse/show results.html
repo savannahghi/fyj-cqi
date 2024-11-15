@@ -379,8 +379,21 @@
                                                           class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
                                                          {% endif %}
                                                 {% endif %}
-                                            {% elif result.serum_crag_results is None %}
-
+                                            {% elif result.cd4_count_results is None %}
+                                                {% if result.tb_lam_results == "Positive" %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-danger">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
+                                                {% elif result.tb_lam_results == "Negative" %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-success">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
+                                                {% else %}
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                {% endif %}
                                             {% elif result.serum_crag_results == "Positive" %}
                                                 <span style="font-size: 9px"
                                                       class="badge alert-danger">Serum CrAg: {{ result.serum_crag_results }}</span>

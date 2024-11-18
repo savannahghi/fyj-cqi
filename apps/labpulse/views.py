@@ -744,7 +744,6 @@ def add_cd4_count(request, report_type, pk_lab):
         show_data_entry = True
     template_name = 'lab_pulse/add_cd4_data.html'
     current_date = timezone.now()
-    testing_lab = list(Cd4TestingLabs.objects.values_list('mfl_code', flat=True))
 
     use_commodities = False
     enable_commodities = EnableDisableCommodities.objects.first()

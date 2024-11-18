@@ -422,7 +422,7 @@
         // First, enable and clear all fields
         allFields.forEach(field => {
             field.disabled = false;
-            field.value = "";
+            {#field.value = "";#}
         });
 
         // Then, apply specific rules based on testing type
@@ -431,17 +431,20 @@
                 [cd4CountResultsField, cd4PercentageField, serumCragResultsField,
                     reasonNoSerumCragField].forEach(field => {
                     field.disabled = true;
+                    field.value = "";
                 });
                 break;
             case 'ScrAg Only':
                 [cd4CountResultsField, tbLamResultsField, reasonNoTBLamField,
                     cd4PercentageField].forEach(field => {
                     field.disabled = true;
+                    field.value = "";
                 });
                 break;
             case 'TB LAM & ScrAg':
                 [cd4CountResultsField, cd4PercentageField].forEach(field => {
                     field.disabled = true;
+                    field.value = "";
                 });
                 break;
             case 'All':

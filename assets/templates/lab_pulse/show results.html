@@ -124,54 +124,56 @@
                 </div>
                 <hr>
                 {% if qi_list %}
-                    <div class="row">
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                            <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"
-                               class="btn btn-secondary btn-block" role="button"> All records
-                                <i class="fas fa-download"></i>
-                            </a>
+                    {% if perms.cqi.add_qi_managers %}
+                        <div class="row">
+                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"
+                                   class="btn btn-secondary btn-block" role="button"> All records
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                            {% if rejected_samples_exist %}
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                    <a href="{% url 'download_csv_lab' "rejected" %}?{{ request.GET.urlencode }}"
+                                       class="btn btn-secondary btn-block" role="button"> Rejected samples
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {% if tb_lam_pos_samples_exist %}
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                    <a href="{% url 'download_csv_lab' "positive_tb_lam" %}?{{ request.GET.urlencode }}"
+                                       class="btn btn-secondary btn-block" role="button"> Positive TB LAM
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {% if crag_pos_samples_exist %}
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                    <a href="{% url 'download_csv_lab' "positive_crag" %}?{{ request.GET.urlencode }}"
+                                       class="btn btn-secondary btn-block" role="button"> Positive CrAg
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {% if missing_crag_samples_exist %}
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                    <a href="{% url 'download_csv_lab' filter_type='missing_crag' %}?{{ request.GET.urlencode }}"
+                                       class="btn btn-secondary btn-block" role="button"> Missing CrAg
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {% if missing_tb_lam_samples_exist %}
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                    <a href="{% url 'download_csv_lab' "missing_tb_lam" %}?{{ request.GET.urlencode }}"
+                                       class="btn btn-secondary btn-block" role="button"> Missing TB LAM
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
                         </div>
-                        {% if rejected_samples_exist %}
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' "rejected" %}?{{ request.GET.urlencode }}"
-                                   class="btn btn-secondary btn-block" role="button"> Rejected samples
-                                    <i class="fas fa-download"></i>
-                                </a>
-                            </div>
-                        {% endif %}
-                        {% if tb_lam_pos_samples_exist %}
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' "positive_tb_lam" %}?{{ request.GET.urlencode }}"
-                                   class="btn btn-secondary btn-block" role="button"> Positive TB LAM
-                                    <i class="fas fa-download"></i>
-                                </a>
-                            </div>
-                        {% endif %}
-                        {% if crag_pos_samples_exist %}
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' "positive_crag" %}?{{ request.GET.urlencode }}"
-                                   class="btn btn-secondary btn-block" role="button"> Positive CrAg
-                                    <i class="fas fa-download"></i>
-                                </a>
-                            </div>
-                        {% endif %}
-                        {% if missing_crag_samples_exist %}
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' filter_type='missing_crag' %}?{{ request.GET.urlencode }}"
-                                   class="btn btn-secondary btn-block" role="button"> Missing CrAg
-                                    <i class="fas fa-download"></i>
-                                </a>
-                            </div>
-                        {% endif %}
-                        {% if missing_tb_lam_samples_exist %}
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'download_csv_lab' "missing_tb_lam" %}?{{ request.GET.urlencode }}"
-                                   class="btn btn-secondary btn-block" role="button"> Missing TB LAM
-                                    <i class="fas fa-download"></i>
-                                </a>
-                            </div>
-                        {% endif %}
-                    </div>
+                    {% endif %}
                     {% if title == "Results" %}
                         <hr>
                         <h4 class="fw-bold text-primary text-center"> Summary </h4>
@@ -255,10 +257,12 @@
                                     <h6 class="text-primary text-sm-left"> > 500 records </h6>
                                 {% endif %}
                             </div>
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'generate_cd4_report_pdf' %}" class="btn btn-warning btn-block mb-2"
-                                   role="button"> Download PDF</a>
-                            </div>
+                            {% if perms.cqi.add_qi_managers %}
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                    <a href="{% url 'generate_cd4_report_pdf' %}" class="btn btn-warning btn-block mb-2"
+                                       role="button"> Download PDF</a>
+                                </div>
+                            {% endif %}
                         </div>
 
                         <hr>
@@ -329,7 +333,7 @@
                                         </td>
                                         <td> {{ result.age }} {{ result.age_unit }}</td>
                                         <td>
-{#                                            {% if result.cd4_count_results is None %}#}
+                                            {#                                            {% if result.cd4_count_results is None %}#}
                                             {% if result.received_status == "Rejected" %}
                                                 <p class="fw-bold text-danger">Rejected</p>
                                                 <p class="fw-bold text-danger"
@@ -356,10 +360,10 @@
                                                     <p class="fw-bold text-danger">CRAG: Missing</p>
                                                 {% elif result.testing_laboratory is None and result.serum_crag_results is not None %}
                                                     <span style="font-size: 9px"
-                                                      class="badge alert-danger">Serum CrAg: {{ result.serum_crag_results }}</span>
-                                                <span style="font-size: 8px"
-                                                      class="badge alert-info">CRAG date: {{ result.date_serum_crag_results_entered|date:"Y-m-d" }}</span>
-                                                <br>
+                                                          class="badge alert-danger">Serum CrAg: {{ result.serum_crag_results }}</span>
+                                                    <span style="font-size: 8px"
+                                                          class="badge alert-info">CRAG date: {{ result.date_serum_crag_results_entered|date:"Y-m-d" }}</span>
+                                                    <br>
                                                 {% endif %}
                                                 {% if result.tb_lam_results == "Positive" %}
                                                     <span style="font-size: 8px"
@@ -372,12 +376,12 @@
                                                     <span style="font-size: 8px"
                                                           class="badge alert-info">TB-LAM date: {{ result.date_tb_lam_results_entered|date:"Y-m-d" }}</span>
                                                 {% else %}
-                                                     {% if result.testing_laboratory is not None %}
-                                                    <p class="fw-bold text-danger">CRAG: Missing</p>
+                                                    {% if result.testing_laboratory is not None %}
+                                                        <p class="fw-bold text-danger">CRAG: Missing</p>
 
-                                                    <span style="font-size: 8px"
-                                                          class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
-                                                         {% endif %}
+                                                        <span style="font-size: 8px"
+                                                              class="badge alert-warning">TB-LAM: {{ result.tb_lam_results }}</span>
+                                                    {% endif %}
                                                 {% endif %}
                                             {% elif result.cd4_count_results is None %}
                                                 {% if result.tb_lam_results == "Positive" %}
@@ -443,10 +447,12 @@
                                             {{ result.date_of_testing|date:"Y-m-d" }}
                                             <br>
 
-                                                  {% if result.testing_laboratory is None %}
-                                                    <span style="font-size: 8px"class="badge alert-warning">Testing Lab: {{ result.facility_name }}</span>
-                                                  {% else %}
-                                                    <span style="font-size: 8px"class="badge alert-warning">Testing Lab: {{ result.testing_laboratory }}</span>
+                                            {% if result.testing_laboratory is None %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">Testing Lab: {{ result.facility_name }}</span>
+                                            {% else %}
+                                                <span style="font-size: 8px"
+                                                      class="badge alert-warning">Testing Lab: {{ result.testing_laboratory }}</span>
 
                                             {% endif %}
                                             <br>
@@ -488,18 +494,18 @@
                                                 {% endif %}
                                             {% elif user|has_group:'referring_laboratory_staffs_labpulse' %}
                                                 {% if result.cd4_count_results <= 200 and result.report_type == "Current" %}
-{#                                                    {% if not result.hide_update_button or request.user.is_superuser %}#}
-                                                        <td>
-                                                            <div class="row">
-                                                                <div class="col-md-6">
-                                                                    <a href="{% url 'update_cd4_results' result.report_type result.id %}"
-                                                                       class="btn btn-info glow-button" role="button"><i
-                                                                            class="fas fa-edit"></i>
-                                                                    </a>
-                                                                </div>
+                                                    {#                                                    {% if not result.hide_update_button or request.user.is_superuser %}#}
+                                                    <td>
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <a href="{% url 'update_cd4_results' result.report_type result.id %}"
+                                                                   class="btn btn-info glow-button" role="button"><i
+                                                                        class="fas fa-edit"></i>
+                                                                </a>
                                                             </div>
-                                                        </td>
-{#                                                    {% endif %}#}
+                                                        </div>
+                                                    </td>
+                                                    {#                                                    {% endif %}#}
                                                 {% endif %}
                                             {% endif %}
                                         {% endif %}

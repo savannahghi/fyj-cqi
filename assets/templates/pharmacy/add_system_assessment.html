@@ -18,6 +18,7 @@
             box-shadow: none;
             border-radius: 10px;
             margin-bottom: 20px;
+            font-size: small;
         }
 
         .auditor-textarea {
@@ -32,113 +33,146 @@
             margin-bottom: 20px;
         }
 
+        .container-fluid {
+            padding: 20px;
+            background-color: #ffffff; /* White background for the main container */
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+        }
 
-        .toggle-numerator-denominator {
-            background-color: #4CAF50;
+        /* Button styles borrowed from add_pharmacy_commodities.html */
+        .btn {
+            display: inline-flex; /* Flexbox for alignment */
+            align-items: center; /* Center icon and text */
             border: none;
-            color: white;
-            padding: 5px 10px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 12px;
-            margin: 4px 2px;
+            border-radius: 20px; /* Rounded corners */
+            padding: 8px 15px; /* Padding for buttons */
+            font-size: 8px; /* Font size */
             cursor: pointer;
-            border-radius: 2px;
+            transition: all 0.3s ease; /* Smooth transition */
+            text-transform: uppercase; /* Uppercase text */
+            text-decoration: none; /* Remove underline for links */
+            color: #fff; /* Default text color for buttons */
+            background-color: #BA0C2F; /* Inactive button background color */
+            width: 220px; /* Fixed width for all buttons */
+            text-align: center; /* Center text */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
         }
 
-        .toggle-numerator-denominator:hover {
-            background-color: #3e8e41;
+        .btn:hover {
+            background-color: #d68aaf; /* Darker shade on hover */
+            transform: scale(1.05); /* Slightly enlarge on hover */
         }
 
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
+        .btn.active {
+            background: #004494; /* Darker blue for active button */
+            color: white; /* Active button text color */
+            border: 2px solid #002f6c; /* Darker border for active button */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Stronger shadow for depth */
+            transform: scale(1.05); /* Slightly enlarge active button */
         }
 
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
+        .btn-outline-success {
+            background: transparent; /* Transparent background */
+            color: #28a745; /* Text color */
+            border: 2px solid #28a745; /* Border color */
         }
 
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            -webkit-transition: .4s;
-            transition: .4s;
-            width: 80px;
+        .btn-outline-success:hover {
+            background-color: #28a745; /* Background color on hover */
+            color: white; /* Text color on hover */
         }
 
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 6px;
-            bottom: 4px;
-            background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
+        /* Additional styles for better legibility */
+        .btn:not(.active) {
+            color: white; /* Text color for inactive buttons */
+            background-color: #BA0C2F; /* Background color for inactive buttons */
+            border: 2px solid #BA0C2F; /* Border color for inactive buttons */
         }
 
-        input:checked + .slider {
-            background-color: #2196F3;
+        /* Icon styles */
+        .btn i {
+            margin-right: 5px; /* Space between icon and text */
         }
 
-        input:focus + .slider {
-            box-shadow: 0 0 1px #2196F3;
+        @media (max-width: 576px) { /* Extra small devices (phones) */
+            .my-textarea, .auditor-textarea {
+                width: 100%; /* Full width on mobile */
+                font-size: small; /* Adjust font size for better readability */
+            }
+
+            .btn {
+                width: 100%; /* Full width buttons on mobile */
+                font-size: 8px; /* Set font size for buttons */
+                margin-bottom: 10px; /* Space between buttons */
+            }
+
+            .d-flex {
+                flex-direction: column; /* Stack buttons vertically */
+            }
+
+            .container-fluid {
+                padding: 10px; /* Reduced padding for mobile */
+            }
+
+            table {
+                font-size: 12px; /* Adjust table font size for mobile */
+            }
+
+            th, td {
+                padding: 5px; /* Reduced padding in table cells */
+            }
         }
 
-        input:checked + .slider:before {
-            -ms-transform: translateX(42px);
-            transform: translateX(42px);
+        @media (min-width: 577px) and (max-width: 768px) { /* Small devices (tablets) */
+            .my-textarea, .auditor-textarea {
+                width: 100%; /* Full width on tablets */
+                font-size: small; /* Adjust font size for better readability */
+            }
+
+            .btn {
+                width: 48%; /* Slightly smaller width for buttons */
+                font-size: 8px; /* Set font size for buttons */
+                margin-bottom: 10px; /* Space between buttons */
+            }
+
+            .d-flex {
+                flex-direction: row; /* Keep buttons in a row */
+                flex-wrap: wrap; /* Allow wrapping if needed */
+            }
+
+            .container-fluid {
+                padding: 15px; /* Adjusted padding for tablets */
+            }
+
+            table {
+                font-size: 14px; /* Adjust table font size for tablets */
+            }
         }
 
-        .slider.round {
-            border-radius: 34px;
-        }
+        @media (min-width: 769px) { /* Medium devices and up (desktops) */
+            .my-textarea, .auditor-textarea {
+                width: 100%; /* Full width on desktops */
+                font-size: small; /* Adjust font size for better readability */
+            }
 
-        .slider.round:before {
-            border-radius: 50%;
-        }
+            .btn {
+                width: auto; /* Default button width for desktops */
+                font-size: 8px; /* Set font size for buttons */
+                margin-bottom: 0; /* No margin needed */
+            }
 
-        .on, .off {
-            color: white;
-            position: absolute;
-            transform: translate(-50%, -50%);
-            top: 50%;
-            left: 50%;
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
+            .d-flex {
+                flex-direction: row; /* Keep buttons in a row */
+            }
 
-        .on {
-            opacity: 0;
-        }
+            .container-fluid {
+                padding: 20px; /* Default padding for desktops */
+            }
 
-        input:checked + .slider .on {
-            opacity: 1;
-        }
-
-        input:checked + .slider .off {
-            opacity: 0;
-        }
-
-        .on {
-            left: 25%;
-        }
-
-        .off {
-            left: 70%;
+            table {
+                font-size: 16px; /* Default table font size for desktops */
+            }
         }
 
     </style>
@@ -155,207 +189,118 @@
                     </div>
                 {% endfor %}
             {% endif %}
-            <div>
-                <a href="{% url 'choose_facilities_inventory' %}" class="btn btn-secondary mb-5" role="button">Add
-                    data for another facility</a>
-            </div>
             <div class="container-fluid">
                 <div>
                     <div class="d-flex justify-content-between mb-3">
-                        {#                    {{ filtered_data }}#}
-                        {% if "stock_cards" in filtered_data %}
-                        {% else %}
-                            {% if report_name == "stock_cards" %}
-                                <a href="{% url 'add_inventory' report_name='stock_cards' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">1.
-                                    Stock
-                                    Cards</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='stock_cards' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">1.
-                                    Stock Cards</a>
-                            {% endif %}
-                        {% endif %}
-                        {% if "unit_supplied" in filtered_data %}
-                        {% else %}
-                            {% if report_name == "unit_supplied" %}
-                                <a href="{% url 'add_inventory' report_name='unit_supplied' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">2.
-                                    Unit
-                                    Supplied</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='unit_supplied' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">2.
-                                    Unit Supplied</a>
-                            {% endif %}
-                        {% endif %}
-                        {% if "quantity_delivered" in filtered_data %}
-                        {% else %}
-
-                        {% endif %}
-                        {% if "beginning_balance" in filtered_data %}
-                        {% else %}
-
-                            {% if report_name == "beginning_balance" %}
-                                <a href="{% url 'add_inventory' report_name='beginning_balance' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">3.
-                                    Beginning Balance</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='beginning_balance' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">3. Beginning Balance</a>
-                            {% endif %}
-                        {% endif %}
-
-                        {% if "positive_adjustments" in filtered_data %}
-                        {% else %}
-
-                            {% if report_name == "positive_adjustments" %}
-                                <a href="{% url 'add_inventory' report_name='positive_adjustments' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">
-                                    4. +ve Adjustments</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='positive_adjustments' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">4. +ve Adjustments</a>
-                            {% endif %}
-                        {% endif %}
-                        {% if "unit_issued" in filtered_data %}
-                        {% else %}
-
-                            {% if report_name == "unit_issued" %}
-                                <a href="{% url 'add_inventory' report_name='unit_issued' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">5.
-                                    Unit
-                                    Issued to others</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='unit_issued' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">5.
-                                    Unit Issued to others</a>
-                            {% endif %}
-                        {% endif %}
-                        {% if "negative_adjustment" in filtered_data %}
-                        {% else %}
-                            {% if report_name == "negative_adjustment" %}
-                                <a href="{% url 'add_inventory' report_name='negative_adjustment' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">6.
-                                    -ve Adjustment</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='negative_adjustment' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">6. -ve Adjustment</a>
-                            {% endif %}
-                        {% endif %}
-
+                        <a href="{% url 'add_inventory' report_name='Arvs_choices' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn btn-primary {% if report_name == 'Arvs_choices' %}active{% endif %}">
+                            <i class="fas fa-clipboard-check"></i> HAART Quality Assessment
+                        </a>
+                        <a href="{% url 'add_inventory' report_name='fp_choices' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn btn-info {% if report_name == 'fp_choices' %}active{% endif %}">
+                            <i class="fas fa-calculator"></i> Family Planning Quality Assessment
+                        </a>
+                        <a href="{% url 'add_inventory' report_name='malaria_choices' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn btn-info {% if report_name == 'malaria_choices' %}active{% endif %}">
+                            <i class="fas fa-calculator"></i> Anti-Malaria Quality Assessment
+                        </a>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
-
-                        {% if "s11_form_availability" in filtered_data %}
-                        {% else %}
-
-                            {% if report_name == "s11_form_availability" %}
-                                <a href="{% url 'add_inventory' report_name='s11_form_availability' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">7.
-                                    S11
-                                    Form </a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='s11_form_availability' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">7.
-                                    S11 Form </a>
-                            {% endif %}
-                        {% endif %}
-                        {% if "s11_form_endorsed" in filtered_data %}
-                        {% else %}
-
-                            {% if report_name == "s11_form_endorsed" %}
-                                <a href="{% url 'add_inventory' report_name='s11_form_endorsed' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">8.
-                                    S11 Form Endorsed</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='s11_form_endorsed' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">8.
-                                    S11 Form Endorsed</a>
-                            {% endif %}
-                        {% endif %}
-                        {% if "expired" in filtered_data %}
-                        {% else %}
-
-                            {% if report_name == "expired" %}
-                                <a href="{% url 'add_inventory' report_name='expired' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">9.
-                                    Stock outs & Expiries</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='expired' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">9.
-                                    Stock outs & Expiries</a>
-                            {% endif %}
-                        {% endif %}
-                        {% if "expired_units" in filtered_data %}
-                        {% else %}
-                            {% if report_name == "expired_units" %}
-                                <a href="{% url 'add_inventory' report_name='expired_units' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">10.
-                                    Stock outs & Expired Units</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='expired_units' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">10.
-                                    Stock outs & Expired Units</a>
-                            {% endif %}
-                        {% endif %}
-                        {% if "expiry_tracking" in filtered_data %}
-                        {% else %}
-                            {% if report_name == "expiry_tracking" %}
-                                <a href="{% url 'add_inventory' report_name='expiry_tracking' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">11.
-                                    Expiry Tracking</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='expiry_tracking' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">11. Expiry Tracking</a>
-                            {% endif %}
-                        {% endif %}
-                        {% if "stock_management" in filtered_data %}
-                        {% else %}
-                            {% if report_name == "stock_management" %}
-                                <a href="{% url 'add_inventory' report_name='stock_management' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-success">12.
-                                    Stock Management</a>
-                            {% else %}
-                                <a href="{% url 'add_inventory' report_name='stock_management' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-outline-success">12. Stock Management</a>
-                            {% endif %}
-                        {% endif %}
+                        <a href="{% url 'add_inventory' report_name='Arvs_integers' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn btn-primary {% if report_name == 'Arvs_integers' %}active{% endif %}">
+                            <i class="fas fa-clipboard-check"></i> HAART Quantity Inventory
+                        </a>
+                        <a href="{% url 'add_inventory' report_name='fp_integers' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn btn-info {% if report_name == 'fp_integers' %}active{% endif %}">
+                            <i class="fas fa-calculator"></i> Family Planning Quantity Inventory
+                        </a>
+                        <a href="{% url 'add_inventory' report_name='malaria_integers' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn btn-info {% if report_name == 'malaria_integers' %}active{% endif %}">
+                            <i class="fas fa-calculator"></i> Anti-Malaria Quantity Inventory
+                        </a>
                     </div>
                 </div>
                 <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                     {% csrf_token %}
                     {{ formset.management_form }}
-                    <table class="table table-striped table-hover table-bordered" style="font-size: x-small;">
-                        <thead class="thead-dark text-center">
-                        <tr>
-                            <th>DESCRIPTION</th>
-                            <th>TLD 90s</th>
-                            <th>DTG 10</th>
-                            <th>ABC/3TC 120/60</th>
-                            <th>3HP</th>
-                            <th>IMPLANT 1 ROD</th>
-                            <th>AL 24</th>
-                            <th>COMMENTS</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for form in formset %}
+                    {% if "Arvs" in report_name %}
+                        <table class="table table-striped table-hover table-bordered" style="font-size: x-small;">
+                            <thead class="thead-dark text-center">
                             <tr>
-                                <td class="fw-bold">
-                                    {{ form.description }}
-                                </td>
-                                <td style="width: calc((100% - 35%) / 6);">{{ form.adult_arv_tdf_3tc_dtg|as_crispy_field }}</td>
-                                <td style="width: calc((100% - 35%) / 6);">{{ form.pead_arv_dtg_10mg|as_crispy_field }}</td>
-                                <td style="width: calc((100% - 35%) / 6);">{{ form.paed_arv_abc_3tc_120_60mg|as_crispy_field }}</td>
-                                <td style="width: calc((100% - 35%) / 6);">{{ form.tb_3hp|as_crispy_field }}</td>
-                                <td style="width: calc((100% - 35%) / 6);">{{ form.family_planning_rod|as_crispy_field }}</td>
-                                <td style="width: calc((100% - 35%) / 6);">{{ form.al_24|as_crispy_field }}</td>
-                                <td style="width: 20%;height: 100px;">{{ form.comments|as_crispy_field }}</td>
+                                <th>DESCRIPTION</th>
+                                <th>TLD 90s</th>
+                                <th>DTG 10</th>
+                                <th>ABC/3TC 120/60</th>
+                                <th>TDF/FTC 300/200</th>
+                                <th>COMMENTS</th>
                             </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            {% for form in formset %}
+                                <tr>
+                                    <td class="fw-bold">
+                                        {{ form.description }}
+                                    </td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.adult_arv_tdf_3tc_dtg|as_crispy_field }}</td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.pead_arv_dtg_10mg|as_crispy_field }}</td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.paed_arv_abc_3tc_120_60mg|as_crispy_field }}</td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.tb_3hp|as_crispy_field }}</td>
+                                    <td>{{ form.comments|as_crispy_field }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif "fp" in report_name %}
+                        <table class="table table-striped table-hover table-bordered" style="font-size: x-small;">
+                            <thead class="thead-dark text-center">
+                            <tr>
+                                <th>DESCRIPTION</th>
+                                <th>1 Rod Implant</th>
+                                <th>2 Rod Implant</th>
+                                <th>DMPA IM</th>
+                                <th>DMPA SC</th>
+                                <th>COMMENTS</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in formset %}
+                                <tr>
+                                    <td class="fw-bold">
+                                        {{ form.description }}
+                                    </td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.family_planning_rod|as_crispy_field }}</td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.family_planning_rod2|as_crispy_field }}</td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.dmpa_im|as_crispy_field }}</td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.dmpa_sc|as_crispy_field }}</td>
+                                    <td>{{ form.comments|as_crispy_field }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% elif "malaria" in report_name %}
+                        <table class="table table-striped table-hover table-bordered" style="font-size: x-small;">
+                            <thead class="thead-dark text-center">
+                            <tr>
+                                <th>DESCRIPTION</th>
+                                <th>AL 6s</th>
+                                <th>AL 24S</th>
+                                <th>COMMENTS</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in formset %}
+                                <tr>
+                                    <td class="fw-bold">
+                                        {{ form.description }}
+                                    </td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.al_6|as_crispy_field }}</td>
+                                    <td style="width: calc((100% - 35%) / 6);">{{ form.al_24|as_crispy_field }}</td>
+                                    <td>{{ form.comments|as_crispy_field }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
                     <div class="col-md-2 mt-2 pt-3">
                         <input class="btn btn-success mt-1" type="submit" value="Save">
                     </div>

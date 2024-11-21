@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Q
-from django.forms import modelformset_factory
+from django.forms import formset_factory, modelformset_factory
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 # Create your views here.
@@ -28,13 +28,24 @@ from apps.dqa.form import CountySelectionForm, FacilitySelectionForm, HubSelecti
 from apps.dqa.models import Period
 from apps.dqa.views import disable_update_buttons
 from apps.labpulse.views import line_chart_median_mean
-from apps.pharmacy.forms import BeginningBalanceForm, DateSelectionForm, ExpiredForm, ExpiredUnitsForm, \
+from apps.pharmacy.forms import BeginningBalanceForm, DateSelectionForm, DeliveryNotesForm, \
+    ExpiredForm, \
+    ExpiredUnitsForm, \
     ExpiryTrackingForm, FacilityForm, NegativeAdjustmentForm, PharmacyAuditTeamForm, PharmacyRecordsForm, \
-    PositiveAdjustmentsForm, QuarterSelectForm, S11FormAvailabilityForm, S11FormEndorsedForm, StockCardsForm, \
+    PositiveAdjustmentsForm, QualitativeAntiMalariaForm, QualitativeFpForm, QualitativeInventoryForm, \
+    QuantitativeAntiMalariaForm, QuantitativeFpForm, QuantitativeInventoryForm, QuarterSelectForm, \
+    S11FormAvailabilityForm, S11FormEndorsedForm, \
+    StockCardsForm, \
     StockManagementForm, UnitIssuedForm, UnitSuppliedForm, WorkPlanForm, YearSelectForm
 from apps.pharmacy.models import BeginningBalance, Expired, ExpiredUnits, ExpiryTracking, NegativeAdjustment, \
-    PharmacyAuditTeam, PharmacyRecords, PositiveAdjustments, Registers, S11FormAvailability, S11FormEndorsed, \
+    PharmacyAuditTeam, PharmacyFpModel, PharmacyFpQualitativeModel, PharmacyMalariaModel, \
+    PharmacyMalariaQualitativeModel, PharmacyRecords, \
+    PositiveAdjustments, \
+    Registers, S11FormAvailability, \
+    S11FormEndorsed, \
     StockCards, StockManagement, TableNames, UnitIssued, UnitSupplied, WorkPlan
+
+
 # from silk.profiling.profiler import silk_profile
 
 
@@ -107,7 +118,27 @@ def choose_facilities_pharmacy(request):
     return render(request, 'pharmacy/add_facilities_data_inventory.html', context)
 
 
+def validate_form(form, facility):
+    register_available = form.cleaned_data.get('register_available')
+    last_month_copy = form.cleaned_data.get('last_month_copy')
+    comments = form.cleaned_data.get('comments')
+    register_name = form.cleaned_data.get('register_name')
+
+    if register_available == 'No' and not comments:
+        error_message = f"Please specify which register is used instead of {register_name}" if register_name != "Delivery notes file" else f"Please specify how {facility.name} stores delivery notes."
+        form.add_error('comments', error_message)
+        return False
+
+    if last_month_copy == 'No' and not comments:
+        error_message = f"Please indicate why {facility.name} do not have a copy of the {register_name} report that was prepared for the last month of the review period."
+        form.add_error('comments', error_message)
+        return False
+
+    return True
+
+
 @login_required(login_url='login')
+@transaction.atomic
 def add_pharmacy_records(request, register_name=None, quarter=None, year=None, pk=None, date=None):
     if not request.user.first_name:
         return redirect("profile")
@@ -115,6 +146,9 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     date_form = DateSelectionForm(request.POST or None)
     form = PharmacyRecordsForm(request.POST or None)
+    form1 = PharmacyRecordsForm(request.POST or None, prefix='form1')
+    form2 = PharmacyRecordsForm(request.POST or None, prefix='form2')
+    form3 = DeliveryNotesForm(request.POST or None, prefix='form3')
     selected_quarter = quarter
 
     selected_year = year
@@ -148,9 +182,9 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
     filtered_data = get_expected_records()
     expected_register_names = ["Malaria Commodities DAR (MoH 645)",
                                "ARV Daily Activity Register (DAR) (MOH 367A) or WebADT",
-                               "ARV F-MAPS (MOH 729B)", "DADR-Anti TB register",
+                               "DADR-Anti TB register",
                                "Family Planning Commodities Daily Activity Register (DAR) (MOH 512)",
-                               "Delivery notes file"]
+                               ]
     missing = [item for item in expected_register_names if item not in filtered_data]
     if len(missing) == 0:
         messages.success(request, f"All data for {facility_name} {period_check} is successfully saved! "
@@ -165,7 +199,7 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
 
     # Initialize the commodity_questions dictionary
     commodity_questions = {
-        register_name: [
+        register_name: [[
             'Does the facility have a Malaria Commodities DAR (MoH 645) register? If not, please specify which '
             'register is used to capture dispensing of Malaria commodities in the comment section.',
             'Is the Malaria Commodity DAR (MoH 645) currently being used by the facility?',
@@ -173,7 +207,12 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
             '(MOH743) that was prepared in the last month of the review period?',
             'If the facility has the Malaria CDRR for the last month of the review period, please indicate the '
             'date when it was submitted (DD/MM/YY)'
-        ] if register_name == "Malaria Commodities DAR (MoH 645)" else [
+        ], [
+            "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
+            "arranged chronologically?",
+            "Does the facility have a copy of the delivery notes for commodities received during the last month "
+            "of the review period?",
+        ]] if register_name == "Malaria Commodities DAR (MoH 645)" else [[
             'Is there a MANUAL ARV Daily Activity Register (DAR) (MOH 367A) or an electronic dispensing tool '
             '(WebADT) in this facility? Specify which one in the comments section',
             'Is the MANUAL ARV Daily Activity Register (DAR) (MOH 367A) or an electronic dispensing tool '
@@ -182,22 +221,7 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
             'the review period',
             'If “Yes”, when was the ARV F-CDRR (MOH 730B) for the last month of the review period submitted?'
             '(DD/MM/YY)',
-        ] if register_name == 'ARV Daily Activity Register (DAR) (MOH 367A) or WebADT' else [
-            'Is there a DADR-Anti TB register in this facility? If no, specifiy which register is used '
-            'to capture dispensing of TB commodities in the comment section',
-            'Is the DADR-Anti TB register currently in use?',
-            'Does the facility have a copy of the Anti TB F-CDRR that was prepared for the last month of the '
-            'review period?',
-            'If “Yes”, when was the Anti TB F-CDRR for the last month of the review period submitted?'
-        ] if register_name == "DADR-Anti TB register" else [
-            'Is there a Family Planning Commodities Daily Activity Register (DAR) (MOH 512) in this facility? If '
-            'no, specifiy which register is used to capture dispensing of Family Planning commodities in the '
-            'comment section',
-            'Is the Family Planning Commodities DAR (MOH 512 or other) currently in use',
-            'Does the facility have a copy of the Family Planning Commodity Report (F-CDRR MOH 747A) that was '
-            'prepared and submitted for the last month of the review period?',
-            'If “Yes”, when was the FP CDRR for the last month of the review period submitted?'
-        ] if register_name == "Family Planning Commodities Daily Activity Register (DAR) (MOH 512)" else [
+        ], [
             'Does the facility have a copy of the ARV F-MAPS (MOH 729B) that was prepared for the last month of '
             'the review period?',
             'Is the ARV F-MAPS (MOH 729B) currently being used by the facility?',
@@ -205,142 +229,116 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
             'the review period?',
             'If the facility has the ARV F-MAPS (MOH 729B) for the last month of the review period, please indicate'
             ' the date when it was submitted'
-        ] if register_name == "ARV F-MAPS (MOH 729B)" else [
+        ], [
             "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
             "arranged chronologically?",
-            "Is the file containing delivery notes currently being used by the facility?",
             "Does the facility have a copy of the delivery notes for commodities received during the last month "
             "of the review period?",
-            "If the facility has the delivery notes for the last month of the review period, please indicate the "
-            "date when the commodities were last received."
+        ]] if register_name == 'ARV Daily Activity Register (DAR) (MOH 367A) or WebADT'
+        else [[
+            'Is there a DADR-Anti TB register in this facility? If no, specifiy which register is used '
+            'to capture dispensing of TB commodities in the comment section',
+            'Is the DADR-Anti TB register currently in use?',
+            'Does the facility have a copy of the Anti TB F-CDRR that was prepared for the last month of the '
+            'review period?',
+            'If “Yes”, when was the Anti TB F-CDRR for the last month of the review period submitted?'
+        ], [
+            "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
+            "arranged chronologically?",
+            "Does the facility have a copy of the delivery notes for commodities received during the last month "
+            "of the review period?",
+        ]] if register_name == "DADR-Anti TB register" else [[
+            'Is there a Family Planning Commodities Daily Activity Register (DAR) (MOH 512) in this facility? If '
+            'no, specifiy which register is used to capture dispensing of Family Planning commodities in the '
+            'comment section',
+            'Is the Family Planning Commodities DAR (MOH 512 or other) currently in use',
+            'Does the facility have a copy of the Family Planning Commodity Report (F-CDRR MOH 747A) that was '
+            'prepared and submitted for the last month of the review period?',
+            'If “Yes”, when was the FP CDRR for the last month of the review period submitted?'
+        ], [
+            "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
+            "arranged chronologically?",
+            "Does the facility have a copy of the delivery notes for commodities received during the last month "
+            "of the review period?",
+        ]] if register_name == "Family Planning Commodities Daily Activity Register (DAR) (MOH 512)" else [
+            "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
+            "arranged chronologically?",
+            "Does the facility have a copy of the delivery notes for commodities received during the last month "
+            "of the review period?",
         ]
     }
     # Check if the request method is POST and the submit_dta button was pressed
     if 'submit_data' in request.POST:
         # Create an instance of the DataVerificationForm with the submitted data
         form = PharmacyRecordsForm(request.POST)
-        # Check if the form data is valid
-        if form.is_valid():
+        form1 = PharmacyRecordsForm(request.POST, prefix='form1')
+        form2 = PharmacyRecordsForm(request.POST, prefix='form2')
+        form3 = DeliveryNotesForm(request.POST, prefix='form3')
+
+        if (form1.is_valid() and form2.is_valid() and form3.is_valid()) or (form.is_valid() and form3.is_valid()):
             facility, created = Facilities.objects.get_or_create(id=pk)
             facility_name = facility
             selected_facility = facility_name
             selected_date = date
-            # if date_form_initial:
-            #     selected_date = date_form_initial['date']
 
             context = {
-                "form": form,
-                "register_name": register_name,
-                "commodity_questions": commodity_questions,
-                # "register_form_initial": register_form_initial,
-
-                "quarter": quarter,
-                "year": year,
-                "facility_id": pk,
-                "date": date,
-                "filtered_data": filtered_data
+                "form": form, 'form1': form1, 'form2': form2, 'form3': form3,
+                "register_name": register_name, "commodity_questions": commodity_questions, "quarter": quarter,
+                "year": year, "facility_id": pk, "date": date, "filtered_data": filtered_data
             }
-            # for form in form.forms:
-            register_available = form.cleaned_data.get('register_available')
-            currently_in_use = form.cleaned_data.get('currently_in_use')
-            last_month_copy = form.cleaned_data.get('last_month_copy')
-            date_report_submitted = form.cleaned_data.get('date_report_submitted')
-            comments = form.cleaned_data.get('comments')
-            today = timezone.now().date()
-
-            if register_available == 'No':
-                if comments == "":
-                    if register_name != "Delivery notes file":
-                        error_message = f"Please specify which register is used instead of {register_name}"
-                        form.add_error('comments', error_message)
-                        return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
-                    else:
-                        error_message = f"Please specify how {facility_name} stores delivery notes."
-                        form.add_error('comments', error_message)
-                        return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
-                if currently_in_use == "Yes":
-                    error_message = f"Please confirm whether the register, {register_name}, is available." \
-                                    f" The information seems inconsistent."
-                    form.add_error('currently_in_use', error_message)
+            if register_name == "ARV Daily Activity Register (DAR) (MOH 367A) or WebADT":
+                # Validation checks
+                if not validate_form(form1, facility):
                     return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
 
-            if currently_in_use == 'No':
-                if comments == "":
-                    error_message = f"Please specify why {register_name} is not in use at {facility_name}"
-                    form.add_error('comments', error_message)
+                if not validate_form(form2, facility):
                     return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
-
-            if last_month_copy == 'No':
-                if comments == "":
-                    error_message = f"Please indicate why {facility_name} do not have a copy of the " \
-                                    f"{register_name} report that was prepared for the last month of the review period."
-                    form.add_error('comments', error_message)
+            else:
+                # Validation checks
+                if not validate_form(form, facility):
                     return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
-                if date_report_submitted is not None:
-                    if register_name != "Delivery notes file":
-                        error_message = f"Since there was no report submitted for the last month of the review period," \
-                                        f" please clear the date you provided."
-                        form.add_error('date_report_submitted', error_message)
-                    else:
-                        error_message = f"Since there was no copy of the commodities received for the last month of " \
-                                        f"the review period, please clear the date you provided."
-                        form.add_error('date_report_submitted', error_message)
-
-                    return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
-
-            if last_month_copy == "Yes" and date_report_submitted is None:
-                if register_name != "Delivery notes file":
-                    error_message = f"Please indicate the date when monthly report was submitted."
-                    form.add_error('date_report_submitted', error_message)
-                else:
-                    error_message = f"Please indicate the date when the commodities were last received"
-                    form.add_error('date_report_submitted', error_message)
+            if not validate_form(form3, facility):
                 return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
-            if date_report_submitted is not None:
-                if date_report_submitted > today:
-                    if register_name != "Delivery notes file":
-                        error_message = f"Report's submission ({date_report_submitted}) date cannot be greater than " \
-                                        f"today\'s date ({today})."
-                        form.add_error('date_report_submitted', error_message)
-                    else:
-                        error_message = f"The date commodities ({date_report_submitted}) were last received cannot be " \
-                                        f"greater than today\'s date ({today})."
-                        form.add_error('date_report_submitted', error_message)
-                    return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
+
+            def save_form(form, period, selected_date, selected_facility,
+                          register_name=request.session['register_name']):
+                post = form.save(commit=False)
+                post.quarter_year = period
+                post.register_name, _ = Registers.objects.get_or_create(register_name=register_name)
+                post.date_of_interview = selected_date
+                post.facility_name = selected_facility
+                post.save()
 
             # Try to save the form data
             try:
-                with transaction.atomic():
-                    # Get the instance of the form data but don't commit it yet
-                    post = form.save(commit=False)
-                    # Get or create the period instance
-                    period, created = Period.objects.get_or_create(quarter=request.session['selected_quarter'],
-                                                                   year=request.session['selected_year'])
+                # Get or create the period instance
+                period, created = Period.objects.get_or_create(quarter=request.session['selected_quarter'],
+                                                               year=request.session['selected_year'])
+                if register_name == "ARV Daily Activity Register (DAR) (MOH 367A) or WebADT":
+                    # Save form1
+                    save_form(form1, period, selected_date, selected_facility,
+                              "ARV Daily Activity Register (DAR) (MOH 367A) or WebADT")
 
-                    # Set the quarter_year field of the form data
-                    post.quarter_year = period
-                    register_name, created = Registers.objects.get_or_create(
-                        register_name=request.session['register_name'])
-                    post.register_name = register_name
-                    # post.register_name = request.session['register_name']
-                    post.date_of_interview = selected_date
-                    post.facility_name = Facilities.objects.filter(name=selected_facility).first()
+                    # Save form2
+                    save_form(form2, period, selected_date, selected_facility, "ARV F-MAPS (MOH 729B)")
 
-                    # Save the form data
-                    post.save()
-                    filtered_data = get_expected_records()
-                    missing = [item for item in expected_register_names if item not in filtered_data]
-                    if len(missing) != 0:
-                        messages.success(request, f"Data for {facility_name} {period_check} is successfully saved!")
-                        # Redirect to the URL with the first missing item as the report_name
-                        url = reverse('add_pharmacy_records',
-                                      kwargs={"register_name": missing[0], 'quarter': quarter, 'year': year, 'pk': pk,
-                                              'date': date})
-                        return redirect(url)
-                    else:
-                        messages.success(request, f"All data for {facility_name} {period_check} is successfully saved! "
-                                                  f"Please select a different facility.")
-                        return redirect("choose_facilities_pharmacy")
+                else:
+                    save_form(form, period, selected_date, selected_facility)
+
+                save_form(form3, period, selected_date, selected_facility)
+                filtered_data = get_expected_records()
+                missing = [item for item in expected_register_names if item not in filtered_data]
+                if len(missing) != 0:
+                    messages.success(request, f"Data for {facility_name} {period_check} is successfully saved!")
+                    # Redirect to the URL with the first missing item as the report_name
+                    url = reverse('add_pharmacy_records',
+                                  kwargs={"register_name": missing[0], 'quarter': quarter, 'year': year, 'pk': pk,
+                                          'date': date})
+                    return redirect(url)
+                else:
+                    messages.success(request, f"All data for {facility_name} {period_check} is successfully saved! "
+                                              f"Please select a different facility.")
+                    return redirect("choose_facilities_pharmacy")
             except DatabaseError:
                 messages.error(request,
                                f"Data for {facility_name} {period_check} already exists!")
@@ -350,7 +348,7 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
                 return redirect(request.path)
 
     context = {
-        "form": form,
+        "form": form, 'form1': form1, 'form2': form2, 'form3': form3,
         "register_name": register_name,
         "commodity_questions": commodity_questions,
         "date_form": date_form,
@@ -364,120 +362,218 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
     return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
 
 
+# def generate_descriptions(report_name):
+#     if report_name == "stock_cards":
+#         descriptions = [
+#             'Is there currently a stock card or electronic record available for?',
+#             'Does the stock card or electronic record cover the entire period under review, '
+#             'which began on {start_date} to {end_date}?'
+#         ]
+#     elif report_name == "unit_supplied":
+#         descriptions = [
+#             'How many units were supplied by MEDS/KEMSA to this facility during the period under review from '
+#             'delivery notes?',
+#             'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
+#         ]
+#     elif report_name == "beginning_balance":
+#         descriptions = [
+#             'What was the beginning balance? (At the start of the review period)',
+#         ]
+#     elif report_name == "s11_form_availability":
+#         descriptions = [
+#             'Is there a corresponding S11 form at this facility for each of the positive adjustment transactions?',
+#             'Is there a corresponding S11 form at this facility for each of the negative adjustment transactions?',
+#         ]
+#     elif report_name == "positive_adjustments":
+#         descriptions = [
+#             'How many units were received from other facilities (Positive Adjustments) during the period under review?',
+#             'How many positive adjustment transactions do not have a corresponding S11 form?',
+#         ]
+#     elif report_name == "unit_issued":
+#         descriptions = [
+#             'How many units were issued from the storage areas to service delivery/dispensing point(s) within '
+#             'this facility during the period under review?',
+#         ]
+#     elif report_name == "negative_adjustment":
+#         descriptions = [
+#             'How many units were issued to other facilities (Negative Adjustments) during the period under review?',
+#             'How many negative adjustment transactions were made on the stock card for transfers to other health '
+#             'facilities during the period under review?',
+#             'How many negative adjustment transactions do not have a corresponding S11 form?',
+#         ]
+#     elif report_name == "s11_form_endorsed":
+#         descriptions = [
+#             'Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this '
+#             'facility?',
+#             'Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at '
+#             'this facility?',
+#         ]
+#     elif report_name == "expired":
+#         descriptions = [
+#             'Has there been a stock out during the period under review?',
+#             'Were there any expiries during the period under review?',
+#             'Are there any expires in the facility?',
+#         ]
+#     elif report_name == "expired_units":
+#         descriptions = [
+#             'How many days out of stock?',
+#             'How many expired units  were in the facility during the review period?',
+#         ]
+#     elif report_name == "expiry_tracking":
+#         descriptions = [
+#             'Is there a current expiry tracking chart/register in this facility (wall chart or electronic)?',
+#             'Are there units with less than 6 months to expiry?',
+#             'Are the units (with less than 6 months to expiry) captured on the expiry chart?',
+#         ]
+#
+#     elif report_name == "stock_management":
+#         descriptions = [
+#             'What is the ending balance on the stock card or electronic record on the last day of the review period?',
+#             'What was the actual physical count of this on the day of the visit?',
+#             'What is the stock balance on the stock card or electronic record on the day of the visit?',
+#             'What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
+#             'What quantity was dispensed, based the CDRR, at this facility during the review period?',
+#             'What is the average monthly consumption?'
+#         ]
+#     else:
+#         descriptions = []
+#     return descriptions
+
 def generate_descriptions(report_name):
-    if report_name == "stock_cards":
+    if "choices" in report_name:
         descriptions = [
             'Is there currently a stock card or electronic record available for?',
             'Does the stock card or electronic record cover the entire period under review, '
-            'which began on {start_date} to {end_date}?'
+            'which began on {start_date} to {end_date}?',
+
+            'Is there a corresponding S11 form at this facility for each of the positive adjustment transactions?',
+            'Is there a corresponding S11 form at this facility for each of the negative adjustment transactions?',
+
+            'Has there been a stock out during the period under review?',
+            'Were there any expiries during the period under review?'
         ]
-    elif report_name == "unit_supplied":
+    elif "integers" in report_name:
         descriptions = [
             'How many units were supplied by MEDS/KEMSA to this facility during the period under review from '
             'delivery notes?',
             'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
-        ]
-    elif report_name == "beginning_balance":
-        descriptions = [
+
             'What was the beginning balance? (At the start of the review period)',
-        ]
-    elif report_name == "s11_form_availability":
-        descriptions = [
-            'Is there a corresponding S11 form at this facility for each of the positive adjustment transactions?',
-            'Is there a corresponding S11 form at this facility for each of the negative adjustment transactions?',
-        ]
-    elif report_name == "positive_adjustments":
-        descriptions = [
+
             'How many units were received from other facilities (Positive Adjustments) during the period under review?',
             'How many positive adjustment transactions do not have a corresponding S11 form?',
-        ]
-    elif report_name == "unit_issued":
-        descriptions = [
+
             'How many units were issued from the storage areas to service delivery/dispensing point(s) within '
             'this facility during the period under review?',
-        ]
-    elif report_name == "negative_adjustment":
-        descriptions = [
+
             'How many units were issued to other facilities (Negative Adjustments) during the period under review?',
             'How many negative adjustment transactions were made on the stock card for transfers to other health '
             'facilities during the period under review?',
             'How many negative adjustment transactions do not have a corresponding S11 form?',
-        ]
-    elif report_name == "s11_form_endorsed":
-        descriptions = [
+
             'Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this '
             'facility?',
             'Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at '
             'this facility?',
-        ]
-    elif report_name == "expired":
-        descriptions = [
-            'Has there been a stock out during the period under review?',
-            'Were there any expiries during the period under review?',
-            'Are there any expires in the facility?',
-        ]
-    elif report_name == "expired_units":
-        descriptions = [
+
             'How many days out of stock?',
             'How many expired units  were in the facility during the review period?',
-        ]
-    elif report_name == "expiry_tracking":
-        descriptions = [
-            'Is there a current expiry tracking chart/register in this facility (wall chart or electronic)?',
-            'Are there units with less than 6 months to expiry?',
-            'Are the units (with less than 6 months to expiry) captured on the expiry chart?',
-        ]
 
-    elif report_name == "stock_management":
-        descriptions = [
             'What is the ending balance on the stock card or electronic record on the last day of the review period?',
             'What was the actual physical count of this on the day of the visit?',
             'What is the stock balance on the stock card or electronic record on the day of the visit?',
             'What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
             'What quantity was dispensed, based the CDRR, at this facility during the review period?',
             'What is the average monthly consumption?'
+            'What number of active clients on ART were reported in MOH 731 in the period?',
+            'What number of active clients on ART were reported in MOH 729B in the period?'
         ]
+        if "Arvs" not in report_name:
+            descriptions = descriptions[0:-2]
     else:
         descriptions = []
     return descriptions
 
 
-def create_inventory_formset(report_name, request, initial_data):
-    # Define a dictionary mapping report names to model and form classes
-    report_mapping = {
-        "stock_cards": (StockCards, StockCardsForm),
-        "unit_supplied": (UnitSupplied, UnitSuppliedForm),
-        # "quantity_delivered": (QuantityDelivered, QuantityDeliveredForm),
-        "beginning_balance": (BeginningBalance, BeginningBalanceForm),
-        # "unit_received": (UnitReceived, UnitReceivedForm),
-        "positive_adjustments": (PositiveAdjustments, PositiveAdjustmentsForm),
-        "unit_issued": (UnitIssued, UnitIssuedForm),
-        "negative_adjustment": (NegativeAdjustment, NegativeAdjustmentForm),
-        "expired": (Expired, ExpiredForm),
-        "expired_units": (ExpiredUnits, ExpiredUnitsForm),
-        "expiry_tracking": (ExpiryTracking, ExpiryTrackingForm),
-        "stock_management": (StockManagement, StockManagementForm),
-        "s11_form_availability": (S11FormAvailability, S11FormAvailabilityForm),
-        "s11_form_endorsed": (S11FormEndorsed, S11FormEndorsedForm),
-    }
+# def create_inventory_formset(report_name, request, initial_data):
+#     # Define a dictionary mapping report names to model and form classes
+#     report_mapping = {
+#         "stock_cards": (StockCards, StockCardsForm),
+#         "unit_supplied": (UnitSupplied, UnitSuppliedForm),
+#         # "quantity_delivered": (QuantityDelivered, QuantityDeliveredForm),
+#         "beginning_balance": (BeginningBalance, BeginningBalanceForm),
+#         # "unit_received": (UnitReceived, UnitReceivedForm),
+#         "positive_adjustments": (PositiveAdjustments, PositiveAdjustmentsForm),
+#         "unit_issued": (UnitIssued, UnitIssuedForm),
+#         "negative_adjustment": (NegativeAdjustment, NegativeAdjustmentForm),
+#         "expired": (Expired, ExpiredForm),
+#         "expired_units": (ExpiredUnits, ExpiredUnitsForm),
+#         "expiry_tracking": (ExpiryTracking, ExpiryTrackingForm),
+#         "stock_management": (StockManagement, StockManagementForm),
+#         "s11_form_availability": (S11FormAvailability, S11FormAvailabilityForm),
+#         "s11_form_endorsed": (S11FormEndorsed, S11FormEndorsedForm),
+#     }
+#
+#     if report_name in report_mapping:
+#         model_class, form_class = report_mapping[report_name]
+#     else:
+#         model_class, form_class = report_mapping["stock_cards"]
+#
+#     inventory_form_set = modelformset_factory(
+#         model_class,
+#         form=form_class,
+#         extra=len(initial_data)
+#     )
+#     formset = inventory_form_set(
+#         request.POST or None,
+#         queryset=model_class.objects.none(),
+#         initial=initial_data
+#     )
+#
+#     return formset, inventory_form_set, model_class, form_class
+# from django.forms import formset_factory
 
-    if report_name in report_mapping:
-        model_class, form_class = report_mapping[report_name]
+
+def create_inventory_formset(request, initial_data, report_name="Arvs_choices"):
+    if report_name == "Arvs_integers":
+        inventory_form_set = formset_factory(
+            QuantitativeInventoryForm,
+            extra=0
+        )
+    elif report_name == "Arvs_choices":
+        inventory_form_set = formset_factory(
+            QualitativeInventoryForm,
+            extra=0
+        )
+    elif report_name == "fp_choices":
+        inventory_form_set = formset_factory(
+            QualitativeFpForm,
+            extra=0
+        )
+    elif report_name == "fp_integers":
+        inventory_form_set = formset_factory(
+            QuantitativeFpForm,
+            extra=0
+        )
+    elif report_name == "malaria_choices":
+        inventory_form_set = formset_factory(
+            QualitativeAntiMalariaForm,
+            extra=0
+        )
+    elif report_name == "malaria_integers":
+        inventory_form_set = formset_factory(
+            QuantitativeAntiMalariaForm,
+            extra=0
+        )
     else:
-        model_class, form_class = report_mapping["stock_cards"]
+        raise ValueError(f"Unexpected report_name: {report_name}")
 
-    inventory_form_set = modelformset_factory(
-        model_class,
-        form=form_class,
-        extra=len(initial_data)
-    )
     formset = inventory_form_set(
         request.POST or None,
-        queryset=model_class.objects.none(),
         initial=initial_data
     )
 
-    return formset, inventory_form_set, model_class, form_class
+    return formset, inventory_form_set
 
 
 @login_required(login_url='login')
@@ -499,7 +595,7 @@ def choose_facilities_inventory(request):
             selected_date = date_form.cleaned_data['date']
             # Generate the URL for the redirect
             url = reverse('add_inventory',
-                          kwargs={"report_name": "None", 'quarter': selected_quarter, 'year': selected_year,
+                          kwargs={"report_name": "Arvs_choices", 'quarter': selected_quarter, 'year': selected_year,
                                   'pk': selected_facility.id, 'date': selected_date})
 
             return redirect(url)
@@ -527,7 +623,7 @@ def add_inventory(request, report_name=None, quarter=None, year=None, pk=None, d
     descriptions = generate_descriptions(report_name)
     request.session['descriptions'] = descriptions
     initial_data = [{'description': description} for description in descriptions]
-    formset, inventory_form_set, model_class, form_class = create_inventory_formset(report_name, request, initial_data)
+    formset, inventory_form_set = create_inventory_formset(request, initial_data, report_name)
     period_check, created = Period.objects.get_or_create(quarter=quarter, year=year)
     quarter_year_id = period_check.id
 
@@ -587,162 +683,262 @@ def add_inventory(request, report_name=None, quarter=None, year=None, pk=None, d
         return redirect(url)
 
     if request.method == "POST":
-        formset = inventory_form_set(request.POST, initial=initial_data)
         if formset.is_valid():
-            selected_date = date
-            instances = formset.save(commit=False)
-            context = {
-                "formset": formset, "quarter_form": quarter_form, "year_form": year_form,
-                "facility_form": facility_form,
-                "date_form": date_form, "descriptions": descriptions,
-                "page_from": request.session.get('page_from', '/'),
-                "report_name": missing[0],
-                "quarter": quarter,
-                "year": year,
-                "facility_id": pk,
-                "date": date,
-                "filtered_data": filtered_data
-            }
-            #######################################
-            # CHECK IF USER SELECTION IS LOGICAL  #
-            #######################################
-            fields_to_validate = [
-                ('adult_arv_tdf_3tc_dtg', 'adult_arv_tdf_3tc_dtg'),
-                ('pead_arv_dtg_10mg', 'pead_arv_dtg_10mg'),
-                ('paed_arv_abc_3tc_120_60mg', 'paed_arv_abc_3tc_120_60mg'),
-                ('tb_3hp', 'tb_3hp'),
-                ('family_planning_rod', 'family_planning_rod'),
-                ('al_24', 'al_24'),
-            ]
-
-            for field_to_validate, error_field in fields_to_validate:
-                if form_class == StockCardsForm:
-                    question_1_value = formset.forms[0].cleaned_data.get(field_to_validate)
-                    question_2_value = formset.forms[1].cleaned_data.get(field_to_validate)
-                    if question_1_value == 'No' and question_2_value == 'Yes':
-                        formset.forms[1].add_error(error_field,
-                                                   f"Invalid selection. Can't select 'Yes' if above question is 'No'.")
-                elif form_class == ExpiredForm:
-                    question_1_value = formset.forms[1].cleaned_data.get(field_to_validate)
-                    question_2_value = formset.forms[2].cleaned_data.get(field_to_validate)
-                    if question_1_value == 'No' and question_2_value == 'Yes':
-                        formset.forms[2].add_error(error_field,
-                                                   f"Invalid selection. Can't select 'Yes' if above question is 'No'.")
-            ############################################
-            # CHECK IF THERE ARE ERRORS IN THE FORMSET #
-            ############################################
-            if any(form.errors for form in formset.forms):
-                # There are form errors in the formset
-                return render(request, 'pharmacy/add_system_assessment.html', context)
-
-            #################################################
-            # CHECK IF ALL FORMS IN THE FORMSET ARE FILLED  #
-            #################################################
-            if not all([form.has_changed() for form in formset.forms]):
-                for form in formset.forms:
-                    if not form.has_changed():
-                        for field in form.fields:
-                            if field != "comments":
-                                form.add_error(field, "This field is required.")
-                return render(request, 'pharmacy/add_system_assessment.html', context)
-            try:
-                errors = False
-
-                ##############################################
-                # CHECK IF THERE IS A COMMENT FOR ANY 'NO'!  #
-                ##############################################
-                fields_to_check = [
-                    ('adult_arv_tdf_3tc_dtg', "TLD 90s"),
-                    ('pead_arv_dtg_10mg', "DTG 10mg"),
-                    ('paed_arv_abc_3tc_120_60mg', "ABC/3TC 120/60"),
-                    ('tb_3hp', "3HP"),
-                    ('family_planning_rod', "IMPLANT 1 ROD"),
-                    ('al_24', "AL 24"),
-                ]
-
-                for form in formset.forms:
-                    error_fields = []
-                    for field, field_name in fields_to_check:
-                        if report_name != "expiry_tracking":
-                            if report_name == "expired":
-                                if form.cleaned_data.get(field) == 'Yes' and not form.cleaned_data.get('comments'):
-                                    errors = True
-                                    error_fields.append(field_name)
-                            else:
-                                if form.cleaned_data.get(field) == 'No' and not form.cleaned_data.get('comments'):
-                                    errors = True
-                                    error_fields.append(field_name)
-
-                    if error_fields:
-                        if report_name == "expired":
-                            error_message = f"Please provide a comment for 'Yes' selection in the following fields: " \
-                                            f"{', '.join(error_fields)} "
-                            form.add_error('comments', error_message)
-
+            for index, form in enumerate(formset):
+                if form.is_valid() and "Arvs" in report_name:
+                    data = {
+                        'quarter_year': period_check,
+                        'facility_name': facility,
+                        'date_of_interview': date,
+                        'description': form.cleaned_data['description'],
+                        'adult_arv_tdf_3tc_dtg': form.cleaned_data.get('adult_arv_tdf_3tc_dtg'),
+                        'pead_arv_dtg_10mg': form.cleaned_data.get('pead_arv_dtg_10mg'),
+                        'paed_arv_abc_3tc_120_60mg': form.cleaned_data.get('paed_arv_abc_3tc_120_60mg'),
+                        'tb_3hp': form.cleaned_data.get('tb_3hp'),
+                        'comments': form.cleaned_data.get('comments')
+                    }
+                    if report_name == "Arvs_integers":
+                        if index < 2:
+                            table_name, created = TableNames.objects.get_or_create(model_name="unit_supplied")
+                            data['model_name'] = table_name
+                            UnitSupplied.objects.create(**data)
+                        elif index == 2:
+                            table_name, created = TableNames.objects.get_or_create(model_name="beginning_balance")
+                            data['model_name'] = table_name
+                            BeginningBalance.objects.create(**data)
+                        elif 3 <= index <= 4:
+                            table_name, created = TableNames.objects.get_or_create(model_name="positive_adjustments")
+                            data['model_name'] = table_name
+                            PositiveAdjustments.objects.create(**data)
+                        elif index == 5:
+                            table_name, created = TableNames.objects.get_or_create(model_name="unit_issued")
+                            data['model_name'] = table_name
+                            UnitIssued.objects.create(**data)
+                        elif 6 <= index <= 8:
+                            table_name, created = TableNames.objects.get_or_create(model_name="negative_adjustment")
+                            data['model_name'] = table_name
+                            NegativeAdjustment.objects.create(**data)
+                        elif 9 <= index <= 10:
+                            table_name, created = TableNames.objects.get_or_create(model_name="s11_form_endorsed")
+                            data['model_name'] = table_name
+                            S11FormEndorsed.objects.create(**data)
+                        elif 11 <= index <= 12:
+                            table_name, created = TableNames.objects.get_or_create(model_name="expired_units")
+                            data['model_name'] = table_name
+                            ExpiredUnits.objects.create(**data)
                         else:
-                            error_message = f"Please provide a comment for 'No' selection in the following fields: " \
-                                            f"{', '.join(error_fields)} "
-                            form.add_error('comments', error_message)
-
-                if errors:
-                    return render(request, 'pharmacy/add_system_assessment.html', context)
-
-                #################################################
-                # CHECK IF ALREADY DATA EXIST IN THE DATABASE!  #
-                # 'MANUAL CHECK FOR UNIQUE TOGETHER'            #
-                #################################################
-                existing_data = model_class.objects.values_list('description', 'facility_name', 'quarter_year')
-                for form in formset.forms:
-                    description_check = form.cleaned_data.get('description')
-
-                    if (description_check, facility_name, quarter_year_id) in existing_data:
-                        messages.error(request, f"Data for {facility_name} {period_check} already exists!")
-                        return render(request, 'pharmacy/add_system_assessment.html', context)
-
-                ###########################################################
-                # SAVE DATA IF IT DOES NOT EXIST AND THERE IS NO ERRORS!  #
-                ###########################################################
-                with transaction.atomic():
-                    for form, instance in zip(formset.forms, instances):
-                        # Set instance fields from form data
-                        instance.adult_arv_tdf_3tc_dtg = form.cleaned_data['adult_arv_tdf_3tc_dtg']
-                        instance.pead_arv_dtg_10mg = form.cleaned_data['pead_arv_dtg_10mg']
-                        instance.paed_arv_abc_3tc_120_60mg = form.cleaned_data['paed_arv_abc_3tc_120_60mg']
-                        instance.tb_3hp = form.cleaned_data['tb_3hp']
-                        instance.adult_arv_tdf_3tc_dtg = form.cleaned_data['adult_arv_tdf_3tc_dtg']
-                        instance.family_planning_rod = form.cleaned_data['family_planning_rod']
-                        instance.al_24 = form.cleaned_data['al_24']
-                        instance.comments = form.cleaned_data['comments']
-                        instance.date_of_interview = selected_date
-                        instance.created_by = request.user
-                        instance.description = form.cleaned_data['description']
-                        # facility, created = Facilities.objects.get_or_create(id=selected_facility)
-                        instance.facility_name = facility
-                        # Get or create the Period instance
-                        # period, created = Period.objects.get_or_create(quarter=selected_quarter, year=selected_year)
-                        instance.quarter_year = period_check
-                        # Get or create the Table instance
-                        table_name, created = TableNames.objects.get_or_create(model_name=report_name)
-                        instance.model_name = table_name
-                        instance.save()
-
-                    filtered_data = get_data_entered()
-                    missing = [item for item in model_names if item not in filtered_data]
-                    if len(missing) != 0:
-                        messages.success(request, f"Data for {facility_name} {period_check} is successfully saved!")
-                        # Redirect to the URL with the first missing item as the report_name
-                        url = reverse('add_inventory',
-                                      kwargs={"report_name": missing[0], 'quarter': quarter, 'year': year, 'pk': pk,
-                                              'date': date})
-                        return redirect(url)
+                            table_name, created = TableNames.objects.get_or_create(model_name="stock_management")
+                            data['model_name'] = table_name
+                            StockManagement.objects.create(**data)
+                    elif report_name == "Arvs_choices":
+                        if index < 2:
+                            table_name, created = TableNames.objects.get_or_create(model_name="stock_cards")
+                            data['model_name'] = table_name
+                            StockCards.objects.create(**data)
+                        elif 2 <= index < 4:
+                            table_name, created = TableNames.objects.get_or_create(model_name="s11_form_availability")
+                            data['model_name'] = table_name
+                            S11FormAvailability.objects.create(**data)
+                        else:
+                            table_name, created = TableNames.objects.get_or_create(model_name="expired")
+                            data['model_name'] = table_name
+                            Expired.objects.create(**data)
+                elif form.is_valid() and "fp" in report_name:
+                    data = {
+                        'quarter_year': period_check,
+                        'facility_name': facility,
+                        'date_of_interview': date,
+                        'description': form.cleaned_data['description'],
+                        'family_planning_rod': form.cleaned_data.get('family_planning_rod'),
+                        'family_planning_rod2': form.cleaned_data.get('family_planning_rod2'),
+                        'dmpa_im': form.cleaned_data.get('dmpa_im'),
+                        'dmpa_sc': form.cleaned_data.get('dmpa_sc'),
+                        'comments': form.cleaned_data.get('comments')
+                    }
+                    if report_name == "fp_integers":
+                        table_name, created = TableNames.objects.get_or_create(model_name="family_planning")
+                        data['model_name'] = table_name
+                        PharmacyFpModel.objects.create(**data)
                     else:
-                        messages.success(request, f"All data for {facility_name} {period_check} is successfully saved! "
-                                                  f"Please select a different facility.")
-                        return redirect("choose_facilities_inventory")
+                        table_name, created = TableNames.objects.get_or_create(model_name="family_planning")
+                        data['model_name'] = table_name
+                        PharmacyFpQualitativeModel.objects.create(**data)
+                elif form.is_valid() and "malaria" in report_name:
+                    data = {
+                        'quarter_year': period_check,
+                        'facility_name': facility,
+                        'date_of_interview': date,
+                        'description': form.cleaned_data['description'],
+                        'al_24': form.cleaned_data.get('al_24'),
+                        'al_6': form.cleaned_data.get('al_6'),
+                        'comments': form.cleaned_data.get('comments')
+                    }
+                    if report_name == "malaria_integers":
+                        table_name, created = TableNames.objects.get_or_create(model_name="anti_malaria")
+                        data['model_name'] = table_name
+                        PharmacyMalariaModel.objects.create(**data)
+                    else:
+                        table_name, created = TableNames.objects.get_or_create(model_name="anti_malaria")
+                        data['model_name'] = table_name
+                        PharmacyMalariaQualitativeModel.objects.create(**data)
 
-            except DatabaseError:
-                messages.error(request,
-                               f"Data for {facility_name} {period_check} already exists!")
+        # if formset.is_valid():
+        #     selected_date = date
+        #     instances = formset.save(commit=False)
+        #     context = {
+        #         "formset": formset, "quarter_form": quarter_form, "year_form": year_form,
+        #         "facility_form": facility_form,
+        #         "date_form": date_form, "descriptions": descriptions,
+        #         "page_from": request.session.get('page_from', '/'),
+        #         "report_name": missing[0],
+        #         "quarter": quarter,
+        #         "year": year,
+        #         "facility_id": pk,
+        #         "date": date,
+        #         "filtered_data": filtered_data
+        #     }
+        #
+        #     #######################################
+        #     # CHECK IF USER SELECTION IS LOGICAL  #
+        #     #######################################
+        #     fields_to_validate = [
+        #         ('adult_arv_tdf_3tc_dtg', 'adult_arv_tdf_3tc_dtg'),
+        #         ('pead_arv_dtg_10mg', 'pead_arv_dtg_10mg'),
+        #         ('paed_arv_abc_3tc_120_60mg', 'paed_arv_abc_3tc_120_60mg'),
+        #         ('tb_3hp', 'tb_3hp'),
+        #         ('family_planning_rod', 'family_planning_rod'),
+        #         ('al_24', 'al_24'),
+        #     ]
+
+        # for field_to_validate, error_field in fields_to_validate:
+        #     if form_class == StockCardsForm:
+        #         question_1_value = formset.forms[0].cleaned_data.get(field_to_validate)
+        #         question_2_value = formset.forms[1].cleaned_data.get(field_to_validate)
+        #         if question_1_value == 'No' and question_2_value == 'Yes':
+        #             formset.forms[1].add_error(error_field,
+        #                                        f"Invalid selection. Can't select 'Yes' if above question is 'No'.")
+        #     elif form_class == ExpiredForm:
+        #         question_1_value = formset.forms[1].cleaned_data.get(field_to_validate)
+        #         question_2_value = formset.forms[2].cleaned_data.get(field_to_validate)
+        #         if question_1_value == 'No' and question_2_value == 'Yes':
+        #             formset.forms[2].add_error(error_field,
+        #                                        f"Invalid selection. Can't select 'Yes' if above question is 'No'.")
+        # ############################################
+        # # CHECK IF THERE ARE ERRORS IN THE FORMSET #
+        # ############################################
+        # if any(form.errors for form in formset.forms):
+        #     # There are form errors in the formset
+        #     return render(request, 'pharmacy/add_system_assessment.html', context)
+        #
+        # #################################################
+        # # CHECK IF ALL FORMS IN THE FORMSET ARE FILLED  #
+        # #################################################
+        # if not all([form.has_changed() for form in formset.forms]):
+        #     for form in formset.forms:
+        #         if not form.has_changed():
+        #             for field in form.fields:
+        #                 if field != "comments":
+        #                     form.add_error(field, "This field is required.")
+        #     return render(request, 'pharmacy/add_system_assessment.html', context)
+        # try:
+        #     errors = False
+        #
+        #     ##############################################
+        #     # CHECK IF THERE IS A COMMENT FOR ANY 'NO'!  #
+        #     ##############################################
+        #     fields_to_check = [
+        #         ('adult_arv_tdf_3tc_dtg', "TLD 90s"),
+        #         ('pead_arv_dtg_10mg', "DTG 10mg"),
+        #         ('paed_arv_abc_3tc_120_60mg', "ABC/3TC 120/60"),
+        #         ('tb_3hp', "3HP"),
+        #         ('family_planning_rod', "IMPLANT 1 ROD"),
+        #         ('al_24', "AL 24"),
+        #     ]
+        #
+        #     for form in formset.forms:
+        #         error_fields = []
+        #         for field, field_name in fields_to_check:
+        #             if report_name != "expiry_tracking":
+        #                 if report_name == "expired":
+        #                     if form.cleaned_data.get(field) == 'Yes' and not form.cleaned_data.get('comments'):
+        #                         errors = True
+        #                         error_fields.append(field_name)
+        #                 else:
+        #                     if form.cleaned_data.get(field) == 'No' and not form.cleaned_data.get('comments'):
+        #                         errors = True
+        #                         error_fields.append(field_name)
+        #
+        #         if error_fields:
+        #             if report_name == "expired":
+        #                 error_message = f"Please provide a comment for 'Yes' selection in the following fields: " \
+        #                                 f"{', '.join(error_fields)} "
+        #                 form.add_error('comments', error_message)
+        #
+        #             else:
+        #                 error_message = f"Please provide a comment for 'No' selection in the following fields: " \
+        #                                 f"{', '.join(error_fields)} "
+        #                 form.add_error('comments', error_message)
+        #
+        #     if errors:
+        #         return render(request, 'pharmacy/add_system_assessment.html', context)
+        #
+        #     #################################################
+        #     # CHECK IF ALREADY DATA EXIST IN THE DATABASE!  #
+        #     # 'MANUAL CHECK FOR UNIQUE TOGETHER'            #
+        #     #################################################
+        #     existing_data = model_class.objects.values_list('description', 'facility_name', 'quarter_year')
+        #     for form in formset.forms:
+        #         description_check = form.cleaned_data.get('description')
+        #
+        #         if (description_check, facility_name, quarter_year_id) in existing_data:
+        #             messages.error(request, f"Data for {facility_name} {period_check} already exists!")
+        #             return render(request, 'pharmacy/add_system_assessment.html', context)
+        #
+        #     ###########################################################
+        #     # SAVE DATA IF IT DOES NOT EXIST AND THERE IS NO ERRORS!  #
+        #     ###########################################################
+        #     with transaction.atomic():
+        #         for form, instance in zip(formset.forms, instances):
+        #             # Set instance fields from form data
+        #             instance.adult_arv_tdf_3tc_dtg = form.cleaned_data['adult_arv_tdf_3tc_dtg']
+        #             instance.pead_arv_dtg_10mg = form.cleaned_data['pead_arv_dtg_10mg']
+        #             instance.paed_arv_abc_3tc_120_60mg = form.cleaned_data['paed_arv_abc_3tc_120_60mg']
+        #             instance.tb_3hp = form.cleaned_data['tb_3hp']
+        #             instance.adult_arv_tdf_3tc_dtg = form.cleaned_data['adult_arv_tdf_3tc_dtg']
+        #             instance.family_planning_rod = form.cleaned_data['family_planning_rod']
+        #             instance.al_24 = form.cleaned_data['al_24']
+        #             instance.comments = form.cleaned_data['comments']
+        #             instance.date_of_interview = selected_date
+        #             instance.created_by = request.user
+        #             instance.description = form.cleaned_data['description']
+        #             # facility, created = Facilities.objects.get_or_create(id=selected_facility)
+        #             instance.facility_name = facility
+        #             # Get or create the Period instance
+        #             # period, created = Period.objects.get_or_create(quarter=selected_quarter, year=selected_year)
+        #             instance.quarter_year = period_check
+        #             # Get or create the Table instance
+        #             table_name, created = TableNames.objects.get_or_create(model_name=report_name)
+        #             instance.model_name = table_name
+        #             instance.save()
+        #
+        #         filtered_data = get_data_entered()
+        #         missing = [item for item in model_names if item not in filtered_data]
+        #         if len(missing) != 0:
+        #             messages.success(request, f"Data for {facility_name} {period_check} is successfully saved!")
+        #             # Redirect to the URL with the first missing item as the report_name
+        #             url = reverse('add_inventory',
+        #                           kwargs={"report_name": missing[0], 'quarter': quarter, 'year': year, 'pk': pk,
+        #                                   'date': date})
+        #             return redirect(url)
+        #         else:
+        #             messages.success(request, f"All data for {facility_name} {period_check} is successfully saved! "
+        #                                       f"Please select a different facility.")
+        #             return redirect("choose_facilities_inventory")
+        #
+        # except DatabaseError:
+        #     messages.error(request,
+        #                    f"Data for {facility_name} {period_check} already exists!")
+
     context = {
         "formset": formset,
         "report_name": report_name,

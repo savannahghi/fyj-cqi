@@ -19,7 +19,7 @@ import pandas as pd
 import inflect
 from django.contrib import messages
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
@@ -321,6 +321,7 @@ def create_project_dataframes(county_qi_list, hub_qi_list, program_qi_list):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def dashboard(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -590,6 +591,7 @@ def dashboard(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_qi_managers(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -611,6 +613,7 @@ def update_qi_managers(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_project(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -659,6 +662,7 @@ def add_project(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def choose_project_level(request):
     return render(request, "project/choose_project.html")
 
@@ -715,6 +719,7 @@ def add_project_facility(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_qi_manager(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -765,6 +770,7 @@ def add_department(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_category(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -790,6 +796,7 @@ def add_category(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_subcounty(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -815,6 +822,7 @@ def add_subcounty(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def sub_counties_list(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -845,6 +853,7 @@ def update_fields(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_sub_counties(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -871,6 +880,7 @@ def update_sub_counties(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_hub(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -897,6 +907,7 @@ def update_hub(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_facility(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -923,6 +934,7 @@ def add_facility(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_hub(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -949,6 +961,7 @@ def add_hub(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_county(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -1123,6 +1136,7 @@ def add_program(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_trigger(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -1144,6 +1158,7 @@ def add_trigger(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_project(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                    county_name=None):
     if not request.user.first_name:
@@ -1299,6 +1314,7 @@ def make_archive_charts(list_of_projects):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def archived(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -1498,6 +1514,7 @@ def pair_iterable_for_delta_changes(iterable):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def facilities_landing_page(request, project_type):
     if not request.user.first_name:
         return redirect("profile")
@@ -1586,6 +1603,7 @@ def facilities_landing_page(request, project_type):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def program_landing_page(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -1642,6 +1660,7 @@ def program_landing_page(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def facility_project(request, pk, project_type):
     if not request.user.first_name:
         return redirect("profile")
@@ -1675,6 +1694,7 @@ def facility_project(request, pk, project_type):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def department_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -1712,6 +1732,7 @@ def department_project(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def department_filter_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -1840,6 +1861,7 @@ def department_filter_project(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def qi_managers_filter_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -1952,6 +1974,7 @@ def qi_managers_filter_project(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def facility_filter_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2079,6 +2102,7 @@ def facility_filter_project(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def qicreator_filter_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2219,6 +2243,7 @@ def qicreator_filter_project(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def county_filter_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2317,6 +2342,7 @@ def county_filter_project(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def sub_county_filter_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2382,6 +2408,7 @@ def sub_county_filter_project(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def canceled_projects(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2442,6 +2469,7 @@ def postponed(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def qi_creator(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2471,6 +2499,7 @@ def qi_creator(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def qi_managers_projects(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2500,6 +2529,7 @@ def qi_managers_projects(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def completed_closed(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2516,6 +2546,7 @@ def completed_closed(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def completed_closed_program(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2532,6 +2563,7 @@ def completed_closed_program(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def completed_closed_subcounty(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2548,6 +2580,7 @@ def completed_closed_subcounty(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def completed_closed_county(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2564,6 +2597,7 @@ def completed_closed_county(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def completed_closed_hub(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2580,6 +2614,7 @@ def completed_closed_hub(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def lesson_learnt(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -2629,6 +2664,7 @@ def lesson_learnt(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_lesson_learnt(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                       county_name=None):
     if not request.user.first_name:
@@ -2699,6 +2735,7 @@ def add_lesson_learnt(request, pk, program_name=None, facility_name=None, subcou
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_lesson_learnt(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                          county_name=None):
     if not request.user.first_name:
@@ -2743,6 +2780,7 @@ def update_lesson_learnt(request, pk, program_name=None, facility_name=None, sub
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_lesson_learnt(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2761,6 +2799,7 @@ def delete_lesson_learnt(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def ongoing(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2812,6 +2851,7 @@ def measurement_frequency(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def toggle_archive_project(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                            county_name=None):
     if not request.user.first_name:
@@ -2923,6 +2963,7 @@ def toggle_archive_project(request, pk, program_name=None, facility_name=None, s
 #     return render(request, 'project/add_tested_change.html', context)
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def tested_change(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                   county_name=None):
     if not request.user.first_name:
@@ -2989,6 +3030,7 @@ def tested_change(request, pk, program_name=None, facility_name=None, subcounty_
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_test_of_change(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3011,6 +3053,7 @@ def update_test_of_change(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_test_of_change(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3029,6 +3072,7 @@ def delete_test_of_change(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_response(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3047,6 +3091,7 @@ def delete_response(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_resource(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3065,6 +3110,7 @@ def delete_resource(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_profile(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -3093,6 +3139,7 @@ def deep_dive_chmt(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_qi_team_member(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                        county_name=None):
     if not request.user.first_name:
@@ -3180,6 +3227,7 @@ def add_qi_team_member(request, pk, program_name=None, facility_name=None, subco
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_qi_team_member(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3198,6 +3246,7 @@ def delete_qi_team_member(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_qi_team_member(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                           county_name=None):
     if not request.user.first_name:
@@ -3238,6 +3287,7 @@ def update_qi_team_member(request, pk, program_name=None, facility_name=None, su
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def qi_team_members(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -3384,6 +3434,7 @@ def qi_team_members(request):
 #     # Render the template with the context variable
 #     return render(request, 'cqi/qi_team_members.html', context)
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def qi_team_members_view(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -3413,6 +3464,7 @@ def qi_team_members_view(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def qi_team_involved(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3500,6 +3552,7 @@ def qi_team_involved(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def qi_managers_view(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -3528,6 +3581,7 @@ def qi_managers_view(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def audit_trail(request):
     return render(request, "project/audit_trail.html")
 
@@ -3547,6 +3601,7 @@ def audit_trail(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def comments_no_response(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -3569,6 +3624,7 @@ def comments_no_response(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def comments_with_response(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -3583,6 +3639,7 @@ def comments_with_response(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def single_project_comments(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3649,6 +3706,7 @@ def single_project_comments(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_comments(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3670,6 +3728,7 @@ def update_comments(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_resource(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3691,6 +3750,7 @@ def update_resource(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def comments_response(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3721,6 +3781,7 @@ def comments_response(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def project_responses(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3750,6 +3811,7 @@ def project_responses(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_response(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -3771,6 +3833,7 @@ def update_response(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def resources(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -4049,6 +4112,7 @@ def prepare_trends_big_size(df, title=""):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def single_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -4197,6 +4261,7 @@ def single_project(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def single_project_program(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -4342,6 +4407,7 @@ def single_project_program(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def single_project_subcounty(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -4488,6 +4554,7 @@ def single_project_subcounty(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def single_project_county(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -4635,6 +4702,7 @@ def single_project_county(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def single_project_hub(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -4783,6 +4851,7 @@ def single_project_hub(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def untracked_projects(request, project_type):
     if not request.user.first_name:
         return redirect("profile")
@@ -4810,6 +4879,7 @@ def untracked_projects(request, project_type):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_stake_holders(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -4910,6 +4980,7 @@ def add_stake_holders(request, pk):
 #                }
 #     return render(request, 'project/baseline_images.html', context)
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_baseline_image(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                        county_name=None):
     if not request.user.first_name:
@@ -5237,6 +5308,7 @@ def add_baseline_image(request, pk, program_name=None, facility_name=None, subco
 #     }
 #     return render(request, 'project/add_milestones.html', context)
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_baseline(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                     county_name=None):
     if not request.user.first_name:
@@ -5366,6 +5438,7 @@ def delete_project(request, pk, cqi_level):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_comment(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -5487,6 +5560,7 @@ def delete_comment(request, pk):
 #         qi_project = None
 #         program_qi_project = Program_qi_projects.objects.get(id=pk, program=program)
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_project_milestone(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                           county_name=None):
     if not request.user.first_name:
@@ -5555,6 +5629,7 @@ def add_project_milestone(request, pk, program_name=None, facility_name=None, su
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_milestone(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                      county_name=None):
     if not request.user.first_name:
@@ -5588,6 +5663,7 @@ def update_milestone(request, pk, program_name=None, facility_name=None, subcoun
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_milestone(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -5606,6 +5682,7 @@ def delete_milestone(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_corrective_action(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                           county_name=None):
     if not request.user.first_name:
@@ -5717,6 +5794,7 @@ def add_corrective_action(request, pk, program_name=None, facility_name=None, su
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_action_plan(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                        county_name=None):
     if not request.user.first_name:
@@ -5788,6 +5866,7 @@ def update_action_plan(request, pk, program_name=None, facility_name=None, subco
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_action_plan(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -5850,6 +5929,7 @@ def delete_action_plan(request, pk):
 #         form = CommentForm()
 #     return render(request, 'project/create_comment.html', {'form': form})
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def create_comment(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                    county_name=None):
     if not request.user.first_name:
@@ -5924,6 +6004,7 @@ def create_comment(request, pk, program_name=None, facility_name=None, subcounty
 
 #
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_comments(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -5960,6 +6041,7 @@ def update_comments(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_comments(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -5998,6 +6080,7 @@ def delete_comments(request, pk):
 #     context = {'all_comments': comments, "title": "COMMENTS", "qi_project": project, }
 #     return render(request, 'project/comments_trial.html', context)
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def show_project_comments(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                           county_name=None):
     if not request.user.first_name:
@@ -6054,6 +6137,7 @@ def show_project_comments(request, pk, program_name=None, facility_name=None, su
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def show_all_comments(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -6070,6 +6154,7 @@ def show_all_comments(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def like_dislike(request, pk):
     """
     A view function that handles the liking and disliking of a comment.
@@ -6122,6 +6207,7 @@ def like_dislike(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_sustainmentplan(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                         county_name=None):
     if not request.user.first_name:
@@ -6199,6 +6285,7 @@ def add_sustainmentplan(request, pk, program_name=None, facility_name=None, subc
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def show_sustainmentPlan(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -6211,6 +6298,7 @@ def show_sustainmentPlan(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def update_sustainable_plan(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                             county_name=None):
     if not request.user.first_name:
@@ -6247,6 +6335,7 @@ def update_sustainable_plan(request, pk, program_name=None, facility_name=None, 
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def delete_sustainable_plan(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -6265,6 +6354,7 @@ def delete_sustainable_plan(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def monthly_data_review(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -6272,6 +6362,7 @@ def monthly_data_review(request):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def add_images(request, pk, program_name=None, facility_name=None, subcounty_name=None, hub_name=None,
                county_name=None):
     if not request.user.first_name:
@@ -6352,6 +6443,7 @@ def add_images(request, pk, program_name=None, facility_name=None, subcounty_nam
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def action_plans_for_responsible_person(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -6366,6 +6458,7 @@ def action_plans_for_responsible_person(request, pk):
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def qiteam_member_filter_project(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -6871,6 +6964,7 @@ from .models import PlatformUpdate
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def home_page(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -6975,6 +7069,7 @@ def get_or_create_chart(chart_name, create_func, hub_name=None, timeout=3600):
 
 # @silk_profile(name='projects_with_gaps')
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def projects_with_gaps(request):
     if not request.user.first_name:
         return redirect("profile")

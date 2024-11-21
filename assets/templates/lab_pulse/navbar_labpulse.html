@@ -49,7 +49,8 @@
             {% endif %}
             <ul class="nav flex-column">
 
-                {% if request.user|has_group_permission:"laboratory_staffs_labpulse,referring_laboratory_staffs_labpulse" or request.user.is_superuser %}
+                {#                {% if request.user|has_group_permission:"laboratory_staffs_labpulse,referring_laboratory_staffs_labpulse" or request.user.is_superuser %}#}
+                {% if perms.labpulse.view_update_cd4_results %}
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
                         <span>COMMODITIES</span>
                     </h6>
@@ -60,6 +61,8 @@
                             Add Commodities
                         </a>
                     </li>
+                {% endif %}
+                {% if perms.labpulse.view_add_cd4_count %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == reagentstock_list %} active{% endif %}"
                            href="{% url 'reagentstock_list' %}">
@@ -67,9 +70,8 @@
                             View Commodities
                         </a>
                     </li>
-
                 {% endif %}
-{#                {% if perms.labpulse.view_choose_testing_lab %}#}
+                {#                {% if perms.labpulse.view_choose_testing_lab %}#}
                 {% if perms.labpulse.view_update_cd4_results %}
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
                         <span>Data entry</span>
@@ -103,7 +105,7 @@
                         </a>
                     </li>
                 {% endif %}
-                {% if perms.labpulse.view_show_results or request.user|has_group_permission:"unitid_staffs_labpulse" %}
+                {% if perms.labpulse.view_show_results or perms.labpulse.add_biochemistryresult %}
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
                         <span>OTHER LAB RESULTS</span>
                     </h6>
@@ -114,7 +116,7 @@
                             Biochemistry results
                         </a>
                     </li>
-                    {% if request.user|has_group_permission:"unitid_staffs_labpulse" or request.user.is_superuser %}
+                    {% if perms.labpulse.add_drtresults or request.user.is_superuser %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.path == generate_drt_results %} active{% endif %}"
                                href="{% url 'generate_drt_results' %}">
@@ -123,20 +125,24 @@
                             </a>
                         </li>
                     {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == add_drt_results %} active{% endif %}"
-                           href="{% url 'add_drt_results' %}">
-                            <span data-feather="book-open" class="align-text-bottom"></span>
-                            DRT Results
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == add_histology_results %} active{% endif %}"
-                           href="{% url 'add_histology_results' %}">
-                            <span data-feather="book-open" class="align-text-bottom"></span>
-                            Histology Results
-                        </a>
-                    </li>
+                    {% if perms.labpulse.add_drtresults or perms.labpulse.view_drtresults or request.user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == add_drt_results %} active{% endif %}"
+                               href="{% url 'add_drt_results' %}">
+                                <span data-feather="book-open" class="align-text-bottom"></span>
+                                DRT Results
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if perms.labpulse.add_drtresults or perms.labpulse.view_histologyresults or request.user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == add_histology_results %} active{% endif %}"
+                               href="{% url 'add_histology_results' %}">
+                                <span data-feather="book-open" class="align-text-bottom"></span>
+                                Histology Results
+                            </a>
+                        </li>
+                    {% endif %}
                 {% endif %}
                 <hr>
                 {% if request.user.is_superuser %}

@@ -74,6 +74,16 @@ class TestChooseTestingLabs:
         url = reverse(url_path)
         lab = Cd4TestingLabs.objects.create(testing_lab_name='Test Lab', mfl_code=1234)
         form_data = {'testing_lab_name': lab.pk}
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
         response = group_client.post(url, form_data)
 
         # Assert the response status code
@@ -104,6 +114,16 @@ class TestChooseTestingLabs:
         # Make the POST request to the target URL with empty form data
         url = reverse(url_path)
         form_data = {}
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
         response = group_client.post(url, form_data)
 
         # Assert the response status code
@@ -161,6 +181,16 @@ class TestChooseTestingLabs:
             user.save()
 
         url = reverse(url_path)
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
         response = group_client.get(url)
 
         # Assert the response status code
@@ -184,6 +214,16 @@ class TestChooseTestingLabs:
             user.save()
 
         url = reverse(url_path)
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
         response = group_client.get(url)
 
         # Assert the response status code

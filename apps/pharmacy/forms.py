@@ -1,11 +1,12 @@
 import datetime
 
+from django.core.validators import MinValueValidator
 from django.forms import ModelForm, Textarea
 from django import forms
 
 from apps.cqi.models import Facilities
 from apps.dqa.form import AuditTeamForm
-from apps.pharmacy.models import PharmacyRecords, StockCards, UnitSupplied, BeginningBalance, \
+from apps.pharmacy.models import DeliveryNotes, PharmacyRecords, StockCards, UnitSupplied, BeginningBalance, \
     PositiveAdjustments, UnitIssued, NegativeAdjustment, ExpiredUnits, Expired, ExpiryTracking, \
     StockManagement, S11FormAvailability, S11FormEndorsed, WorkPlan, PharmacyAuditTeam
 
@@ -60,13 +61,12 @@ class BaseForm(forms.ModelForm):
         exclude = ['created_by', 'modified_by', 'quarter_year', 'facility_name']
         abstract = True
         widgets = {
-            'description': Textarea(attrs={'readonly': 'readonly', 'rows': '4','class': 'my-textarea',
+            'description': Textarea(attrs={'readonly': 'readonly', 'rows': '4', 'class': 'my-textarea',
                                            'style': 'width: 250px; font-weight: bold; background-color: #6c757d;color: '
                                                     'white; resize: none;padding: 8px; border: none; box-shadow: none;'
                                                     'border-radius: 10px;'}),
-            'comments': forms.Textarea(attrs={'size': '40', 'rows': '3','class': 'auditor-textarea',})
+            'comments': forms.Textarea(attrs={'size': '40', 'rows': '3', 'class': 'auditor-textarea', })
         }
-
 
 
 class PharmacyRecordsForm(forms.ModelForm):
@@ -87,6 +87,27 @@ class PharmacyRecordsForm(forms.ModelForm):
             'comments': '',
             'facility_name': '',
             'quarter_year': '',
+        }
+        widgets = {
+            'comments': Textarea(attrs={'id': 'auditor_note', 'class': 'auditor-textarea', 'rows': '5'}),
+        }
+
+
+class DeliveryNotesForm(forms.ModelForm):
+    class Meta(BaseForm.Meta):
+        model = DeliveryNotes
+        exclude = BaseForm.Meta.exclude + ['register_name']
+        labels = {
+            'date_of_interview': '',
+            'register_available': '',
+            # 'currently_in_use': '',
+            'last_month_copy': '',
+            'comments': '',
+            'facility_name': '',
+            'quarter_year': '',
+        }
+        widgets = {
+            'comments': Textarea(attrs={'id': 'auditor_note', 'class': 'auditor-textarea', 'rows': '5'}),
         }
 
 
@@ -248,3 +269,82 @@ class QuarterSelectForm(forms.Form):
         ],
         widget=forms.Select(attrs={'id': 'quarter-select'})
     )
+
+
+class BaseQuantitativeInventoryForm(forms.Form):
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={'readonly': 'readonly', 'size': '40', 'rows': '4', 'class': 'my-textarea', }))
+    comments = forms.CharField(required=False, label="",
+                               max_length=1000,
+                               widget=forms.Textarea(attrs={'size': '40', 'rows': '3', 'class': 'auditor-textarea'}))
+
+
+class QuantitativeInventoryForm(BaseQuantitativeInventoryForm):
+    adult_arv_tdf_3tc_dtg = forms.IntegerField(label="", min_value=0,
+                                               widget=forms.NumberInput(attrs={'min': '0'}))
+    pead_arv_dtg_10mg = forms.IntegerField(label="", min_value=0,
+                                           widget=forms.NumberInput(attrs={'min': '0'}))
+    paed_arv_abc_3tc_120_60mg = forms.IntegerField(label="", min_value=0,
+                                                   widget=forms.NumberInput(attrs={'min': '0'}))
+    # tdf_ftc = forms.IntegerField(required=False, label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+    tb_3hp = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+
+
+class QuantitativeFpForm(BaseQuantitativeInventoryForm):
+    family_planning_rod = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+    family_planning_rod2 = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+    dmpa_im = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+    dmpa_sc = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+
+
+class QuantitativeAntiMalariaForm(BaseQuantitativeInventoryForm):
+    al_24 = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+    al_6 = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+
+
+class BaseInventoryForm(forms.Form):
+    CHOICES = [
+        ("", "-"),
+        ("Yes", "Yes"),
+        ("No", "No"),
+        ("N/A", "N/A"),
+    ]
+
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'readonly': 'readonly', 'size': '40', 'rows': '4',
+                                                               'class': 'my-textarea', }))
+    comments = forms.CharField(required=False, label="",
+                               max_length=1000,
+                               widget=forms.Textarea(attrs={'size': '40', 'rows': '3', 'class': 'auditor-textarea', }))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            if field != 'description' and field != 'comments':
+                self.fields[field].widget = forms.Select(choices=self.CHOICES, attrs={'class': 'form-control'})
+
+    def clean(self):
+        cleaned_data = super().clean()
+        description = self.initial.get('description')
+        if description:
+            cleaned_data['description'] = description
+        return cleaned_data
+
+
+class QualitativeInventoryForm(BaseInventoryForm):
+    adult_arv_tdf_3tc_dtg = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+    pead_arv_dtg_10mg = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+    paed_arv_abc_3tc_120_60mg = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+    tb_3hp = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+
+
+class QualitativeFpForm(BaseInventoryForm):
+    family_planning_rod = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+    family_planning_rod2 = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+    dmpa_im = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+    dmpa_sc = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+
+
+class QualitativeAntiMalariaForm(BaseInventoryForm):
+    al_24 = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+    al_6 = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")

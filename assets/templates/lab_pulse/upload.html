@@ -33,7 +33,7 @@
                         <button type="submit" class="btn btn-primary mt-4">Upload</button>
                     </form>
                 {% elif title == "Results" %}
-                    {% if request.user|has_group_permission:"unitid_staffs_labpulse" or request.user.is_superuser %}
+                    {% if perms.labpulse.add_biochemistryresult or request.user.is_superuser %}
                         <div class="col-md-12 alert alert-primary text-center">
                             <h4>Upload Biochemistry Result (s)</h4>
                         </div>
@@ -203,18 +203,21 @@
                                         records </h6>
                                 {% endif %}
                             </div>
-                            {% if weekly_trend_fig is not None %}
+                            {% if perms.cqi.add_qi_managers %}
+                                {% if weekly_trend_fig is not None %}
+                                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
+                                        <a href="{% url 'download_biochem_lab' "all" %}?{{ request.GET.urlencode }}"
+                                           class="btn btn-secondary btn-block" role="button"> Download csv
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    </div>
+                                {% endif %}
                                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                    <a href="{% url 'download_biochem_lab' "all" %}?{{ request.GET.urlencode }}"
-                                       class="btn btn-secondary btn-block" role="button"> Download csv
-                                        <i class="fas fa-download"></i>
-                                    </a>
+                                    <a href="{% url 'generate_biochemistry_pdf' %}"
+                                       class="btn btn-warning btn-block mb-2"
+                                       role="button"> Download PDF</a>
                                 </div>
                             {% endif %}
-                            <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
-                                <a href="{% url 'generate_biochemistry_pdf' %}" class="btn btn-warning btn-block mb-2"
-                                   role="button"> Download PDF</a>
-                            </div>
                         </div>
                         {% if record_count != "all" or biochemistry_qs|length <= threshold_of_result_to_display %}
                             <table class="table table-striped table-hover" style="font-size: small;">
@@ -332,7 +335,7 @@
                         </div>
                     {% endif %}
                 {% elif title == "UPLOAD STANDFORD PDFS" %}
-                    {% if request.user|has_group_permission:"unitid_staffs_labpulse" or request.user.is_superuser %}
+                    {% if perms.labpulse.add_drtresults or request.user.is_superuser %}
                         <div class="col-md-12 alert alert-primary text-center">
                             <h4>Stanford DRT PDF Integration</h4>
                         </div>

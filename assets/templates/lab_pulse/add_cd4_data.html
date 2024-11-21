@@ -41,7 +41,7 @@
                         </div>
                     {% elif title == "CD4 TRACKER" %}
                         <p> Please select testing laboratory below and then submit </p>
-                        {% if perms.labpulse.view_choose_testing_lab %}
+                        {% if perms.labpulse.view_add_cd4_count %}
                             <div class="col-md-4 mt-2">
                                 {{ cd4_testing_lab_form.testing_lab_name|as_crispy_field }}
                             </div>

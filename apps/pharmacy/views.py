@@ -484,9 +484,9 @@ def generate_descriptions(report_name):
             'What is the stock balance on the stock card or electronic record on the day of the visit?',
             'What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
             'What quantity was dispensed, based the CDRR, at this facility during the review period?',
-            'What is the average monthly consumption?'
+            'What is the average monthly consumption?',
             'What number of active clients on ART were reported in MOH 731 in the period?',
-            'What number of active clients on ART were reported in MOH 729B in the period?'
+            'What number of active clients on ART were reported in MOH 729B in the period?',
         ]
         if "Arvs" not in report_name:
             descriptions = descriptions[0:-2]

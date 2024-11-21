@@ -78,24 +78,25 @@ def login_page(request):
             ##############################
             # Redirect labpulse Laboratory staffs #
             ##############################
-            if user.groups.filter(name='laboratory_staffs_labpulse').exists():
+            # if user.groups.filter(name='laboratory_staffs_labpulse').exists():
+            if user.has_perm('labpulse.view_add_cd4_count'):
                 return redirect("choose_testing_lab")
             ##########################################################################################
-            # Redirect labpulse facility, Program and Sub-county staffs, Referring Laboratory Staffs #
+            # Redirect user with permission of viewing CD4 results #
             ##########################################################################################
-            elif user.groups.filter(name__in=['laboratory_staffs_labpulse',
-                                              'facility_staffs_labpulse',
-                                              'referring_laboratory_staffs_labpulse']).exists():
+            elif user.has_perm('labpulse.view_show_results'):
                 return redirect("show_results")
             ##############################
             # Redirect UNITID lab staffs #
             ##############################
-            elif user.groups.filter(name='unitid_staffs_labpulse').exists():
+            elif user.has_perm('labpulse.add_biochemistryresult'):
                 return redirect("load_biochemistry_results")
             ##############################
             # Redirect Repo viewer       #
             ##############################
             elif user.groups.filter(name='repository_readers').exists():
+                return redirect("manuscript_list")
+            elif user.has_perm('repo.add_manuscript'):
                 return redirect("manuscript_list")
             elif user.groups.filter(name='subcounty_staffs_labpulse').exists():
                 # return redirect("facilities_landing_page", project_type="facility")

@@ -233,7 +233,7 @@
             </ul>
         {% endif %}
         <div class="container-fluid py-5">
-            {% if request.user|has_group_permission:"unitid_staffs_labpulse" or user.is_superuser %}
+            {% if perms.labpulse.add_biochemistryresult or user.is_superuser %}
                 <h1> {{ title }}</h1>
                 <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data'
                       autocomplete="off">

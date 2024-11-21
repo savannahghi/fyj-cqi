@@ -56,7 +56,7 @@
             <a class="nav-link px-3" href="{% url 'choose_testing_lab' %}">LabPulse</a>
         {% elif perms.labpulse.view_show_results %}
             <a class="nav-link px-3" href="{% url 'show_results' %}">LabPulse</a>
-        {% elif request.user|has_group_permission:"unitid_staffs_labpulse" or request.user.is_superuser %}
+        {% elif perms.labpulse.add_biochemistryresult or request.user.is_superuser %}
             <a class="nav-link px-3" href="{% url 'load_biochemistry_results' %}">LabPulse</a>
         {% endif %}
     </div>

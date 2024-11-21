@@ -15,7 +15,7 @@ import plotly.graph_objs as go
 import pytz
 import tzlocal
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.staticfiles.finders import find
 from django.core.cache import cache
@@ -214,7 +214,7 @@ def lab_pulse_update_button_settings(request):
 
 # Create your views here.
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
 def choose_testing_lab(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -247,7 +247,6 @@ def choose_testing_lab(request):
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse'])
 @permission_required('labpulse.view_add_retrospective_cd4_count', raise_exception=True)
 def choose_testing_lab_manual(request):
     if not request.user.first_name:
@@ -721,7 +720,8 @@ def handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_re
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+# @permission_required('labpulse.view_update_cd4_results', login_url='/login/')
+@user_passes_test(lambda u: u.has_perm('labpulse.view_update_cd4_results') or u.has_perm('labpulse.view_add_retrospective_cd4_count'), login_url='login')
 def add_cd4_count(request, report_type, pk_lab):
     if not request.user.first_name:
         return redirect("profile")
@@ -954,7 +954,7 @@ def update_commodities(request, form, post, report_type, pk, template_name, cont
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
 def update_cd4_results(request, report_type, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -1164,7 +1164,7 @@ def update_cd4_results(request, report_type, pk):
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
 def delete_reagents_stock(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2136,6 +2136,7 @@ def clear_cache():
 
 
 @login_required(login_url='login')
+@permission_required('cqi.add_qi_managers', login_url='/login/')
 def download_csv(request, filter_type):
     clear_cache()  # Clear the cache
     # clear_expired_cache_entries()
@@ -2288,9 +2289,10 @@ def store_dataframes_in_session(request, *dataframes):
 
 # @silk_profile(name='show results')
 @login_required(login_url='login')
-@group_required(
-    ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'
-        , 'referring_laboratory_staffs_labpulse'])
+# @group_required(
+#     ['project_technical_staffs', 'subcounty_staffs_labpulse', 'laboratory_staffs_labpulse', 'facility_staffs_labpulse'
+#         , 'referring_laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_show_results')
 def show_results(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -2672,7 +2674,7 @@ class GeneratePDF(LoginRequiredMixin, View):
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
 def add_testing_lab(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -2706,7 +2708,7 @@ def add_testing_lab(request):
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
 def update_testing_labs(request, pk):
     if not request.user.first_name:
         return redirect("profile")
@@ -2769,7 +2771,7 @@ def validate_commodity_form(form):
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
 def add_commodities(request, pk_lab):
     if not request.user.first_name:
         return redirect("profile")
@@ -3033,7 +3035,7 @@ class ReagentStockListView(ListView):
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
 def choose_lab(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -3062,7 +3064,8 @@ def choose_lab(request):
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse'])
+# @permission_required('labpulse.view_update_cd4_results', login_url='/login/')
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
 def add_facility(request):
     if not request.user.first_name:
         return redirect("profile")
@@ -3090,7 +3093,7 @@ def add_facility(request):
 
 
 @login_required(login_url='login')
-@group_required(['laboratory_staffs_labpulse', 'referring_laboratory_staffs_labpulse'])
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
 def update_reagent_stocks(request, pk):
     if not request.user.first_name:
         return redirect("profile")

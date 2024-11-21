@@ -1,4 +1,5 @@
 import pytest
+from django.contrib.auth.models import Permission
 from django.contrib.messages import get_messages
 from django.test import Client
 from django.urls import reverse
@@ -81,6 +82,17 @@ class TestAddTestingLabView:
         # Using reverse() to resolve the URL helps avoid hardcoding.
         url = reverse('add_testing_lab')
 
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
+
         # Make the request
         response = group_client.get(url)
 
@@ -102,7 +114,14 @@ class TestAddTestingLabView:
         # Remove first_name from user
         user = CustomUser.objects.get(username='test')
         user.first_name = ""
-        user.save()
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
 
         response = group_client.get(url)
 
@@ -122,6 +141,16 @@ class TestAddTestingLabView:
             'testing_lab_name': 'Test Lab',
             'mfl_code': 123456,
         }
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
         response = group_client.post(url, data=form_data)
 
         # Assert that the response redirects
@@ -140,6 +169,16 @@ class TestAddTestingLabView:
         """
         # Resolve update URL dynamically
         url = reverse('add_testing_lab')
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
         response = group_client.get(url)
 
         # Verify successful response
@@ -172,6 +211,16 @@ class TestAddTestingLabView:
             'testing_lab_name': 'Test Lab',
             'mfl_code': 1234567,
         }
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
         response = group_client.post(url, data=form_data)
 
         # Assert that the response renders the same page

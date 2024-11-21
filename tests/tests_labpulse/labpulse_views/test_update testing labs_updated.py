@@ -1,4 +1,5 @@
 import pytest
+from django.contrib.auth.models import Permission
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import Client
 from django.urls import reverse
@@ -64,6 +65,16 @@ class TestUpdateTestingLabsView:
         """
         # Using reverse() to resolve the URL helps avoid hardcoding.
         url = reverse('update_testing_labs', args=['123e4567-e89b-12d3-a456-426614174000'])
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
 
         # Make request
         response = group_client.get(url)
@@ -86,6 +97,17 @@ class TestUpdateTestingLabsView:
         user.first_name = ""
         user.save()
 
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
+
         response = group_client.get(url)
 
         # Assert redirection to the login page
@@ -98,6 +120,16 @@ class TestUpdateTestingLabsView:
 
         # Resolve update URL dynamically
         url = reverse('update_testing_labs', args=['123e4567-e89b-12d3-a456-426614174000'])
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
         response = group_client.get(url)
         # Verify successful response
         assert response.status_code == 200
@@ -133,6 +165,16 @@ class TestUpdateTestingLabsView:
             'testing_lab_name': 'Updated Lab',
             'mfl_code': 5678
         }
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
 
         # Submit POST request to update_testing_labs view
         response = group_client.post(
@@ -159,6 +201,16 @@ class TestUpdateTestingLabsView:
 
         # Verify ObjectDoesNotExist raised
         with pytest.raises(ObjectDoesNotExist):
+            # Ensure the user is authenticated
+            user = CustomUser.objects.get(username='test')
+            group_client.force_login(user)  # Log in the user
+
+            # Assign required permissions for the user
+            permission_current = Permission.objects.get(
+                codename='view_update_cd4_results')  # Adjust this codename as needed
+            user.user_permissions.add(permission_current)
+
+            user.save()  # Save the user with updated permissions
             group_client.get(
                 reverse('update_testing_labs', args=[invalid_pk])
             )
@@ -180,6 +232,16 @@ class TestUpdateTestingLabsView:
             'testing_lab_name': '',
             'mfl_code': 5678
         }
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
 
         response = group_client.post(
             reverse('update_testing_labs', args=[item.pk]),
@@ -207,6 +269,16 @@ class TestUpdateTestingLabsView:
             testing_lab_name='Lab 1',
             mfl_code=1234
         )
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+
+        user.save()  # Save the user with updated permissions
 
         # Set 'page_from' session var
         session = group_client.session

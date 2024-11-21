@@ -88,14 +88,21 @@ class TestAddCd4Counts:
         Checks current and retrospective report views display expected form fields.
         """
 
-        url = reverse('add_cd4_count', kwargs={'report_type': report_type, 'pk_lab': lab.id})
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
 
-        if report_type != "Current":
-            # Assign required permission for retrospective view
-            permission = Permission.objects.get(codename='view_add_retrospective_cd4_count')
-            user = CustomUser.objects.get(username='test')
-            user.user_permissions.add(permission)
-            user.save()
+        # Assign required permissions for the user
+        if report_type == "Current":
+            permission_current = Permission.objects.get(codename='view_update_cd4_results')  # Adjust this codename as needed
+            user.user_permissions.add(permission_current)
+        else:  # For "Retrospective"
+            permission_retrospective = Permission.objects.get(codename='view_add_retrospective_cd4_count')  # Adjust this codename as needed
+            user.user_permissions.add(permission_retrospective)
+
+        user.save()  # Save the user with updated permissions
+
+        url = reverse('add_cd4_count', kwargs={'report_type': report_type, 'pk_lab': lab.id})
 
         # Send GET request
         response = group_client.get(url)
@@ -105,17 +112,17 @@ class TestAddCd4Counts:
 
         # Check correct form is passed in context
         assert 'form' in response.context
-        if report_type != "Current":
-            assert isinstance(response.context['form'], Cd4trakerManualDispatchForm)
-        else:
+        if report_type == "Current":
             assert isinstance(response.context['form'], Cd4trakerForm)
+        else:
+            assert isinstance(response.context['form'], Cd4trakerManualDispatchForm)
 
         # Validate form field labels
         # assert response.context['title'] == f"Add CD4 Results for {lab.testing_lab_name.title()} (Testing Laboratory)"
         assert response.context['form'].fields['tb_lam_results'].label == 'TB LAM results'
         assert response.context['form'].fields['age'].label == 'Age'
         assert response.context['form'].fields['patient_unique_no'].label == 'Patient unique no'
-        if report_type != "Current":
+        if report_type == "Retrospective":
             assert response.context['form'].fields['date_dispatched'].label == 'Dispatch date'
 
         # Check correct template used
@@ -130,6 +137,22 @@ class TestAddCd4Counts:
         """
 
         url = reverse('add_cd4_count', kwargs={'report_type': 'Retrospective', 'pk_lab': lab.id})
+
+        # Ensure the user is authenticated
+        user = CustomUser.objects.get(username='test')
+        group_client.force_login(user)  # Log in the user
+
+        # Assign required permissions for the user
+        # if report_type == "Current":
+        permission_current = Permission.objects.get(
+            codename='view_update_cd4_results')  # Adjust this codename as needed
+        user.user_permissions.add(permission_current)
+        # else:  # For "Retrospective"
+        #     permission_retrospective = Permission.objects.get(
+        #         codename='view_add_retrospective_cd4_count')  # Adjust this codename as needed
+        #     user.user_permissions.add(permission_retrospective)
+
+        user.save()  # Save the user with updated permissions
 
         # Make request without view_add_retrospective permission
         response = group_client.get(url)

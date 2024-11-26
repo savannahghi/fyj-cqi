@@ -282,7 +282,8 @@ class DQAWorkPlan(models.Model):
         ("HTS/PREVENTION/PMTCT", "HTS/PREVENTION/PMTCT"),
         ("CHART ABSTRACTION", "CHART ABSTRACTION"),
         ("M&E SYSTEMS", "M&E SYSTEMS"),
-        ("Data Management Systems", "Data Management Systems")
+        ("Data Management Systems", "Data Management Systems"),
+        ("Service Quality Assessment", "Service Quality Assessment (SQA)")
     ]
     dqa_date = models.DateField()
     facility_name = models.ForeignKey(Facilities, on_delete=models.CASCADE, blank=True, null=True)

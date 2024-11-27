@@ -3411,7 +3411,8 @@ def dqa_work_plan_create(request, pk, quarter_year):
             dqa_work_plan.progress = (dqa_work_plan.due_complete_by - today).days
             dqa_work_plan.timeframe = (dqa_work_plan.due_complete_by - dqa_work_plan.dqa_date).days
             dqa_work_plan.save()
-            return redirect('show_dqa_work_plan')
+            messages.success(request, 'DQA Work Plan created successfully!')
+            return redirect('dqa_work_plan_create', pk=pk, quarter_year=quarter_year)
     else:
         form = DQAWorkPlanForm()
 

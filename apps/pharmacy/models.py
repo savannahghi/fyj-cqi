@@ -159,7 +159,6 @@ class BaseModel(models.Model):
         # the BaseModel won't create a separate database table
         abstract = True
         ordering = ['facility_name']
-
     def save(self, *args, **kwargs):
         if not self.pk:
             # Record is being created, set created_by and modified_by fields
@@ -182,12 +181,16 @@ class BaseBooleanModel(BaseModel):
     description = models.TextField()
     adult_arv_tdf_3tc_dtg = models.CharField(max_length=4, choices=CHOICES, default="N/A")
     pead_arv_dtg_10mg = models.CharField(max_length=4, choices=CHOICES, default="N/A")
+    pead_arv_dtg_50mg = models.CharField(max_length=4, choices=CHOICES, default="N/A")
     paed_arv_abc_3tc_120_60mg = models.CharField(max_length=4, choices=CHOICES, default="N/A")
     tb_3hp = models.CharField(max_length=4, choices=CHOICES, default="N/A")
+    r_inh = models.CharField(max_length=4, choices=CHOICES, default="N/A")
     comments = models.CharField(max_length=600, blank=True, null=True)
 
     class Meta:
         abstract = True
+        # unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
+
 
     def __str__(self):
         return f"{self.facility_name} {self.description} ({self.date_of_interview})"
@@ -197,8 +200,10 @@ class BaseReportModel(BaseModel):
     description = models.TextField()
     adult_arv_tdf_3tc_dtg = models.IntegerField(validators=[validate_non_negative], default=0)
     pead_arv_dtg_10mg = models.IntegerField(validators=[validate_non_negative], default=0)
+    pead_arv_dtg_50mg = models.IntegerField(validators=[validate_non_negative], default=0)
     paed_arv_abc_3tc_120_60mg = models.IntegerField(validators=[validate_non_negative], default=0)
     tb_3hp = models.IntegerField(validators=[validate_non_negative], default=0)
+    r_inh = models.IntegerField(validators=[validate_non_negative], default=0)
     comments = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -289,61 +294,73 @@ class PharmacyFpQualitativeModel(BaseModel):
 class StockCards(BaseBooleanModel):
     class Meta:
         verbose_name_plural = 'StockCards'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class UnitSupplied(BaseReportModel):
     class Meta:
         verbose_name_plural = 'Unit Supplied'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class BeginningBalance(BaseReportModel):
     class Meta:
         verbose_name_plural = 'Beginning Balance'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class PositiveAdjustments(BaseReportModel):
     class Meta:
         verbose_name_plural = 'Positive Adjustments'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class UnitIssued(BaseReportModel):
     class Meta:
         verbose_name_plural = 'Unit Issued'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class NegativeAdjustment(BaseReportModel):
     class Meta:
         verbose_name_plural = 'Negative Adjustment'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class ExpiredUnits(BaseReportModel):
     class Meta:
         verbose_name_plural = 'Expired Units'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class Expired(BaseBooleanModel):
     class Meta:
         verbose_name_plural = 'Expired'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class ExpiryTracking(BaseBooleanModel):
     class Meta:
         verbose_name_plural = 'ExpiryTracking'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class S11FormAvailability(BaseBooleanModel):
     class Meta:
         verbose_name_plural = 'S11 Form Availability'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class StockManagement(BaseReportModel):
     class Meta:
         verbose_name_plural = 'Stock Management'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class S11FormEndorsed(BaseReportModel):
     class Meta:
         verbose_name_plural = 'S11 Form Endorsed'
+        unique_together = (("quarter_year", "description", "facility_name", "date_of_interview"),)
 
 
 class WorkPlan(BaseModel):

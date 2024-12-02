@@ -4744,8 +4744,12 @@ def process_cd4_data(cd4_df, df, facility_mfl_code, one_year_ago):
     cd4_df = cd4_df.drop_duplicates(subset=['CCC NO.'], keep="last")
 
     # Ensure relevant columns in `df` are in datetime format
-    df['Latest CD4 Count Date '] = pd.to_datetime(df['Latest CD4 Count Date '], dayfirst=True)
-    df["Art Start Date"] = pd.to_datetime(df["Art Start Date"], dayfirst=True)
+    try:
+        df['Latest CD4 Count Date '] = pd.to_datetime(df['Latest CD4 Count Date '], dayfirst=True)
+        df["Art Start Date"] = pd.to_datetime(df["Art Start Date"], dayfirst=True)
+    except ValueError:
+        df['Latest CD4 Count Date '] = pd.to_datetime(df['Latest CD4 Count Date '], format='mixed')
+        df["Art Start Date"] = pd.to_datetime(df["Art Start Date"], format='mixed')
 
     # Ensure CD4 counts are in string format
     df['Latest CD4 Count'] = df['Latest CD4 Count'].astype(str)

@@ -288,6 +288,8 @@ class QuantitativeInventoryForm(BaseQuantitativeInventoryForm):
                                                    widget=forms.NumberInput(attrs={'min': '0'}))
     # tdf_ftc = forms.IntegerField(required=False, label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
     tb_3hp = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+    pead_arv_dtg_50mg = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
+    r_inh = forms.IntegerField(label="", min_value=0, widget=forms.NumberInput(attrs={'min': '0'}))
 
 
 class QuantitativeFpForm(BaseQuantitativeInventoryForm):
@@ -336,6 +338,8 @@ class QualitativeInventoryForm(BaseInventoryForm):
     pead_arv_dtg_10mg = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
     paed_arv_abc_3tc_120_60mg = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
     tb_3hp = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+    r_inh = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
+    pead_arv_dtg_50mg = forms.ChoiceField(choices=BaseInventoryForm.CHOICES, label="")
 
 
 class QualitativeFpForm(BaseInventoryForm):

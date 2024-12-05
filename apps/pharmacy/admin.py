@@ -19,7 +19,7 @@ class InventoryAdmin(admin.ModelAdmin):
         "facility_name__mfl_code",
         "quarter_year__quarter_year",
         "quarter_year__quarter",
-        "quarter_year__year",
+        "quarter_year__year", "date_of_interview"
     )
 
 

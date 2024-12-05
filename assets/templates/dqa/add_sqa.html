@@ -175,7 +175,7 @@
             <div class="container-fluid">
                 <div>
                     <div class="d-flex justify-content-between mb-3">
-                        {% if "stock_cards" in filtered_data %}
+                        {% if "gbv" in filtered_data %}
                         {% else %}
                             {% if report_name == "gbv" %}
                                 <a href="{% url 'sqa' report_name='gbv' quarter=quarter year=year pk=facility_id %}"

@@ -2,6 +2,7 @@ import ast
 import csv
 import re
 from collections import defaultdict
+from statistics import mean
 
 import matplotlib
 import numpy as np
@@ -1677,6 +1678,187 @@ def create_polar(df, pdf, selected_facility, quarter_year):
     plt.close()  # close the current figure
 
 
+def write_sqa(pdf, request, selected_facility, quarter_year):
+    # add the footer to each page of the document
+    pdf.showPage()
+    pdf.saveState()
+    add_footer(pdf, request.user)
+    pdf.restoreState()
+    pdf.setFont("Helvetica", 12)
+    pdf.setFillColor(colors.black)
+    # add action plan
+    pdf.drawString(200, 750, "Service Quality Assessment (SQA)")
+    # Add color code key
+    color_key_data = [
+        ["Color Code:", "Green >= 2.5 ", "Yellow >= 1.5 to < 2.5", "Red < 1.5"]
+    ]
+
+    color_key_style = TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('BACKGROUND', (1, 0), (1, 0), colors.green),
+        ('BACKGROUND', (2, 0), (2, 0), colors.yellow),
+        ('BACKGROUND', (3, 0), (3, 0), colors.red),
+    ])
+
+    color_key_table = Table(color_key_data, colWidths=[80, 80, 80, 80])
+    color_key_table.setStyle(color_key_style)
+
+    # Draw the color key table
+    color_key_table.wrapOn(pdf, 0, 0)
+    color_key_table.drawOn(pdf, 100, 720)  # Adjust position as needed
+
+    sqa_models = [Gbv, Vmmc, Hts, Prep, Tb, CareTreatment, Pharmacy, Cqi]
+
+    # Initialize an average dictionary
+    averages = {}
+
+    # Calculate averages for each model
+    for model in sqa_models:
+        sqa_plan = model.objects.filter(facility_name__id=selected_facility.id,
+                                        quarter_year__quarter_year=quarter_year)
+
+        # Filter out null or invalid calculations
+        valid_calculations = []
+        for plan in sqa_plan:
+            try:
+                valid_calculations.append(int(plan.calculations))
+            except (ValueError, TypeError):
+                continue
+
+        # Compute the average if there are valid calculations
+        if valid_calculations:
+            averages[model.__name__.upper()] = mean(valid_calculations)
+        else:
+            averages[model.__name__.upper()] = "N/A"
+
+    # Determine dynamic font size based on the number of columns
+    num_columns = len(averages.keys()) + 1  # +1 for the "Model" column
+    max_width = 496  # Total available width
+    col_width = max_width / num_columns  # Divide width equally across columns
+
+    # Adjust the font size dynamically based on column width
+    base_font_size = max(5, min(8, int(col_width / 10)))  # Ensure font size is within a readable range
+
+    # Prepare the average table data for horizontal orientation
+    average_table_data = [["Functional area"] + list(averages.keys()),  # Model names as headers
+                          ["Average Calculation"] + [
+                              f"{avg:.2f}" if isinstance(avg, float) else avg for avg in averages.values()
+                          ]]  # Corresponding average values
+
+    # Create the average table object with adjusted column widths
+    col_widths = [col_width for _ in range(num_columns)]
+    # Initialize base styles for the average table
+    average_table_style = [
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Header background
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), base_font_size),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 1), (-1, -1), base_font_size),
+    ]
+
+    # Add dynamic background colors for the average values
+    for col_idx, avg in enumerate(averages.values(), start=1):  # Start at 1 to skip the "Model" column
+        if isinstance(avg, (int, float)):
+            # Determine background color based on the float value
+            if avg >= 2.5:
+                calc_bg_color = colors.green
+            elif 1.5 <= avg < 2.5:
+                calc_bg_color = colors.yellow
+            else:
+                calc_bg_color = colors.red
+
+            # Add the background style for this cell
+            average_table_style.append(('BACKGROUND', (col_idx, 1), (col_idx, 1), calc_bg_color))
+    average_table = Table(average_table_data, colWidths=col_widths)
+    average_table.setStyle(average_table_style)
+
+    # Draw the average table
+    average_table.wrapOn(pdf, 0, 0)
+    average_table.drawOn(pdf, 80, 670)  # Adjust position as needed
+
+    cell_style = ParagraphStyle(name='cell_style', fontSize=6, leading=7, wordWrap='CJK')
+
+    # Define the initial position for the first table
+    x, y = 80, 660
+
+    for model in sqa_models:
+        sqa_plan = model.objects.filter(facility_name__id=selected_facility.id,
+                                        quarter_year__quarter_year=quarter_year)
+        # Check if all calculations are null
+        if not sqa_plan.exclude(Q(calculations__isnull=True)).exists():
+            continue  # Skip this model and continue to the next one
+
+        data = [[f'Description- {model.__name__.upper()}', 'Answer', 'Calculations', 'Auditors notes']]
+        table_style = [
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 5.5),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), .5, colors.black),
+            ('VALIGN', (0, 1), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('PARAGRAPHALIGN', (0, 1), (-1, -1), 'LEFT'),
+        ]
+
+        for plan in sqa_plan:
+            data.append([
+                Paragraph(plan.description or '', cell_style),
+                Paragraph(plan.dropdown_option or '', cell_style),
+                Paragraph(f"{plan.calculations or 'N/A'}", cell_style),
+                Paragraph(plan.auditor_note or '', cell_style),
+            ])
+
+        # Define the column widths
+        widths = [208, 40, 40, 208]
+        # Apply conditional background colors for calculations
+        for row_idx, plan in enumerate(sqa_plan, start=1):  # Start from the second row (row_idx 1)
+            calc_bg_color = {
+                3: colors.green,
+                2: colors.yellow,
+                1: colors.red,
+            }.get(plan.calculations, colors.white)  # Default white if no match
+
+            # Add a background style for the "Calculations" column of this specific row
+            table_style.append(('BACKGROUND', (1, row_idx), (1, row_idx), calc_bg_color))
+            table_style.append(('BACKGROUND', (2, row_idx), (2, row_idx), calc_bg_color))
+
+        # Create the table object with the column widths
+        table = Table(data, colWidths=widths)
+        table.setStyle(TableStyle(table_style))
+
+        # Calculate the table height
+        w, h = table.wrapOn(pdf, 0, 0)
+
+        # Check if there's enough space on the current page
+        if y - h < 50:  # Assuming 50 as minimum space needed at bottom
+            pdf.showPage()
+            pdf.saveState()
+            add_footer(pdf, request.user)
+            pdf.restoreState()
+            y = 740  # Reset y to top of new page
+
+        # Draw the table
+        table.drawOn(pdf, x, y - h)
+
+        # Update y for the next table
+        y = y - h - 20  # 20 is the space between tables
+
+
 class GeneratePDF(View):
     def get(self, request):
         if request.user.is_authenticated and not request.user.first_name:
@@ -2175,6 +2357,10 @@ class GeneratePDF(View):
         table.wrapOn(pdf, 0, 0)
         table_height = table._height
         table.drawOn(pdf, x, y - table_height)
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Write Service Quality Assessment
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++
+        write_sqa(pdf, request, selected_facility, quarter_year)
         pdf.save()
         return response
 
@@ -3203,6 +3389,8 @@ def dqa_summary(request):
                           f" verification and system assessment data has been entered before assigning an audit team. "
                           f"Once all data is verified, the 'Add audit team' button will be available on this page.")
 
+    sqa_context = show_sqa_summary(request)
+
     context = {
         "dicts": dicts,
         "dqa": dqa,
@@ -3217,6 +3405,9 @@ def dqa_summary(request):
         "audit_team": audit_team, "quarterly_trend_fig": quarterly_trend_fig,
         "system_assessments": system_assessments,
     }
+    # Add only the 'data' from sqa_context
+    if 'data' in sqa_context:
+        context['data'] = sqa_context['data']
     return render(request, 'dqa/dqa_summary.html', context)
 
 
@@ -4407,17 +4598,19 @@ def show_quarterly_trends(request, model, title):
                                                          'quarter_year__year').annotate(
         unique_facilities=Count('facility_name', distinct=True)).order_by('quarter_year__year', 'quarter_year__quarter')
 
-    # Convert the queryset to a pandas DataFrame
-    df = pd.DataFrame(unique_facilities_per_quarter)
+    try:
+        # Convert the queryset to a pandas DataFrame
+        df = pd.DataFrame(unique_facilities_per_quarter)
+        # Create a new column for the quarter and year
+        df['quarter_year'] = df['quarter_year__quarter'].astype(str) + '-' + df['quarter_year__year'].astype(str)
+        df = df.rename(columns={"unique_facilities": "Number of facilities"})
 
-    # Create a new column for the quarter and year
-    df['quarter_year'] = df['quarter_year__quarter'].astype(str) + '-' + df['quarter_year__year'].astype(str)
-    df = df.rename(columns={"unique_facilities": "Number of facilities"})
-
-    quarterly_trend_fig = line_chart_median_mean(df, "quarter_year", "Number of facilities",
-                                                 f"Number of Facilities with {title} Completed Per Quarter",
-                                                 time=104, xaxis_title=" FY Quarter - Year"
-                                                 )
+        quarterly_trend_fig = line_chart_median_mean(df, "quarter_year", "Number of facilities",
+                                                     f"Number of Facilities with {title} Completed Per Quarter",
+                                                     time=104, xaxis_title=" FY Quarter - Year"
+                                                     )
+    except KeyError:
+        quarterly_trend_fig = None
     return quarterly_trend_fig
 
 
@@ -4655,11 +4848,7 @@ def split_at_caps(s):
     return re.findall('[A-Z][^A-Z]*', s)
 
 
-@login_required(login_url='login')
-def sqa_table(request):
-    if not request.user.first_name:
-        return redirect("profile")
-
+def show_sqa_summary(request):
     # Get the query parameters from the URL
     quarter_form_initial = request.GET.get('quarter_form')
     year_form_initial = request.GET.get('year_form')
@@ -4758,6 +4947,15 @@ def sqa_table(request):
         "date_form": date_form,
         'data': data,
     }
+    return context
+
+
+@login_required(login_url='login')
+def sqa_table(request):
+    if not request.user.first_name:
+        return redirect("profile")
+
+    context = show_sqa_summary(request)
     return render(request, 'dqa/show_sqa.html', context)
 
 
@@ -5840,8 +6038,8 @@ def dqa_dashboard(request, dqa_type=None):
                 merged_df[i] = merged_df[i].astype(int)
             merged_df = merged_df.groupby(['indicator', 'quarter_year']).sum(numeric_only=True).reset_index()
             dicts, merged_viz_df = compare_data_verification(merged_df, 'DATIM', description_list)
-            indicator_list = ['TB_PREV', 'Gend_GBV_Physical and Emotional','CXCA_SCRN',
-                              'TB_PREV_N',  'Total Infant prophylaxis','Gend_GBV Sexual Violence']
+            indicator_list = ['TB_PREV', 'Gend_GBV_Physical and Emotional', 'CXCA_SCRN',
+                              'TB_PREV_N', 'Total Infant prophylaxis', 'Gend_GBV Sexual Violence']
             merged_viz_df = merged_viz_df[~merged_viz_df['indicator'].isin(indicator_list)]
             data_verification_viz = bar_chart_dqa(merged_viz_df, "indicator",
                                                   "Absolute difference proportion (Difference/Source*100)",

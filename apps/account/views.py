@@ -84,8 +84,10 @@ def login_page(request):
             ##########################################################################################
             # Redirect user with permission of viewing CD4 results #
             ##########################################################################################
-            elif user.has_perm('labpulse.view_show_results'):
-                return redirect("show_results")
+            elif user.groups.filter(name='project_technical_staffs').exists():
+                return redirect("home_page")
+            # elif user.has_perm('labpulse.view_show_results'):
+            #     return redirect("show_results")
             ##############################
             # Redirect UNITID lab staffs #
             ##############################
@@ -104,7 +106,7 @@ def login_page(request):
             else:
                 # Redirect to CQI app
                 # return redirect("facilities_landing_page", project_type="facility")
-                return redirect("home_page")
+                return redirect("show_results")
     return render(request, "account/login_page.html", {})
 
 

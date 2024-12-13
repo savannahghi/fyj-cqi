@@ -4,7 +4,8 @@ from django.forms import DateInput
 from django_filters import CharFilter, ChoiceFilter, DateFilter, NumberFilter
 
 from apps.cqi.models import Counties, Facilities, Sub_counties
-from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtPdfFile, DrtResults, \
+from apps.labpulse.models import BiochemistryResult, BiochemistryTestingLab, Cd4TestingLabs, Cd4traker, DrtPdfFile, \
+    DrtResults, \
     HistologyPdfFile, HistologyResults
 
 
@@ -98,6 +99,8 @@ class BiochemistryResultFilter(django_filters.FilterSet):
     results_interpretation = django_filters.ChoiceFilter(choices=[], label='Test Interpretation')
     facility = django_filters.ChoiceFilter(choices=[], label='Facility Name',
                                            widget=forms.Select(attrs={'class': 'form-control select2'}))
+    testing_lab = django_filters.ChoiceFilter(choices=[], label='Testing Lab',
+                                           widget=forms.Select(attrs={'class': 'form-control select2'}))
 
     sub_county = django_filters.ChoiceFilter(choices=[], label='Sub-County',
                                              widget=forms.Select(attrs={'class': 'form-control select2'}))
@@ -121,6 +124,7 @@ class BiochemistryResultFilter(django_filters.FilterSet):
         The 'test' choices are set for the 'full_name' filter.
         The 'test interpretation' choices are set for the 'results_interpretation' filter.
         """
+        testing_lab_queryset = kwargs.pop('testing_lab_queryset', None)
         super().__init__(*args, **kwargs)
 
         # Get unique 'test' values from the database
@@ -150,6 +154,63 @@ class BiochemistryResultFilter(django_filters.FilterSet):
 
         # Sort the choices and set them in the filter
         self.filters['facility'].extra['choices'] = sorted(unique_facility_choices, key=lambda x: x[1] if x[1] else '')
+        print("testing_lab_queryset:::::::::::::::::::::::::::::::::::::::::::::")
+        print(testing_lab_queryset)
+        # if testing_lab_queryset is not None:
+        #     self.filters['testing_lab'].queryset = testing_lab_queryset
+        # else:
+        #     # If no queryset is provided, use all labs associated with BiochemistryResult
+        #     lab_ids = BiochemistryResult.objects.exclude(testing_lab__isnull=True).values_list('testing_lab__id',
+        #                                                                                        flat=True).distinct()
+        #     self.filters['testing_lab'].queryset = BiochemistryTestingLab.objects.filter(id__in=lab_ids)
+        #
+        # # Filter to include only labs with associated BiochemistryResult data
+        # lab_ids_with_data = BiochemistryResult.objects.exclude(testing_lab__isnull=True).values_list(
+        #     'testing_lab__id', flat=True).distinct()
+        # self.filters['testing_lab'].queryset = base_queryset.filter(id__in=lab_ids_with_data)
+        #
+        # # Update choices based on the current queryset
+        # current_queryset = self.filters['testing_lab'].queryset
+        # unique_testing_lab = current_queryset.values_list('id', 'testing_lab_name').distinct()
+        # unique_testing_lab_choices = [(str(uuid), name) for uuid, name in unique_testing_lab]
+        #
+        # # Sort the choices and set them in the filter
+        # self.filters['testing_lab'].extra['choices'] = sorted(unique_testing_lab_choices,
+        #                                                       key=lambda x: x[1] if x[1] else '')
+        # Define base_queryset
+        if testing_lab_queryset is not None:
+            base_queryset = testing_lab_queryset
+        else:
+            base_queryset = BiochemistryTestingLab.objects.all()
+
+        # Filter to include only labs with associated BiochemistryResult data
+        lab_ids_with_data = BiochemistryResult.objects.exclude(testing_lab__isnull=True).values_list('testing_lab__id',
+                                                                                                     flat=True).distinct()
+        filtered_queryset = base_queryset.filter(id__in=lab_ids_with_data)
+
+        # Set the queryset for the testing_lab filter
+        self.filters['testing_lab'].queryset = filtered_queryset
+
+        # Update choices based on the filtered queryset
+        unique_testing_lab = filtered_queryset.values_list('id', 'testing_lab_name').distinct()
+        unique_testing_lab_choices = [(str(uuid), name) for uuid, name in unique_testing_lab]
+
+        # Sort the choices and set them in the filter
+        self.filters['testing_lab'].extra['choices'] = sorted(unique_testing_lab_choices,
+                                                              key=lambda x: x[1] if x[1] else '')
+
+        # # Get unique 'facility' values from the database, considering only those with related BiochemistryResult entries
+        # unique_testing_lab = BiochemistryResult.objects.exclude(testing_lab__isnull=True).values_list('testing_lab__id',
+        #                                                                                           'testing_lab__testing_lab_name').distinct()
+        #
+        # # Create the choices for the 'facility' field
+        # unique_testing_lab_choices = [(str(uuid), name) for uuid, name in unique_testing_lab]
+        #
+        # # Remove duplicates by converting to a set and back to a list
+        # unique_testing_lab_choices = list(set(unique_testing_lab_choices))
+        #
+        # # Sort the choices and set them in the filter
+        # self.filters['testing_lab'].extra['choices'] = sorted(unique_testing_lab_choices, key=lambda x: x[1] if x[1] else '')
 
         ##########################
         # Get unique 'facility' values from the database, considering only those with related BiochemistryResult entries

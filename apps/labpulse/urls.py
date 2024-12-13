@@ -3,7 +3,7 @@ from django.urls import include, path
 
 # from apps.data_analysis.views import download_csv
 from apps.labpulse.views import GenerateBioChemistryPDF, GenerateDrtPDF, HistologyResultDetailView, \
-    ReagentStockListView, add_commodities, \
+    ReagentStockListView, add_biochem_testing_lab, add_commodities, \
     add_drt_results, add_facility, \
     add_histology_results, choose_lab, \
     choose_testing_lab, \
@@ -21,6 +21,7 @@ urlpatterns = [
     path('choose-lab/', choose_lab, name="choose_lab"),
     path('choose-testing-lab-retrospective/', choose_testing_lab_manual, name="choose_testing_lab_manual"),
     path('add-testing-lab/', add_testing_lab, name="add_testing_lab"),
+    path('add-biochem-testing-lab/', add_biochem_testing_lab, name="add_biochem_testing_lab"),
     path('add-facility/laboratory/', add_facility, name="add_facility"),
     path('add-cd4-count-results/<str:report_type>/<uuid:pk_lab>/', add_cd4_count, name="add_cd4_count"),
     path('add-commodities/<uuid:pk_lab>/', add_commodities, name="add_commodities"),

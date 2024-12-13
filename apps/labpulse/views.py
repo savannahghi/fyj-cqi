@@ -39,7 +39,7 @@ from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
 
-from apps.cqi.forms import FacilitiesForm
+from apps.cqi.forms import BiochemTestingLabForm, FacilitiesForm
 from apps.cqi.models import Counties, Facilities, Sub_counties
 from apps.cqi.views import bar_chart
 from apps.data_analysis.views import get_key_from_session_names
@@ -50,7 +50,8 @@ from apps.labpulse.forms import BiochemistryForm, Cd4TestingLabForm, Cd4TestingL
     DrtForm, DrtPdfFileForm, DrtResultsForm, HistologyResultsForm, \
     LabPulseUpdateButtonSettingsForm, MultipleUploadForm, ReagentStockForm, \
     Spoke_facilities_lab_form, facilities_lab_Form
-from apps.labpulse.models import BiochemistryResult, Cd4TestingLabs, Cd4traker, DrtPdfFile, DrtProfile, DrtResults, \
+from apps.labpulse.models import BiochemistryResult, BiochemistryTestingLab, Cd4TestingLabs, Cd4traker, DrtPdfFile, \
+    DrtProfile, DrtResults, \
     EnableDisableCommodities, \
     HistologyPdfFile, HistologyResults, LabPulseUpdateButtonSettings, ReagentStock
 from config.settings.base import BASE_DIR
@@ -121,19 +122,29 @@ def biochemistry_data_prep(df):
         df = df.rename(columns={mfl_col[0]: "mfl_code"})
     if len(testing_date_col) > 0:
         df = df.rename(columns={testing_date_col[0]: "Result time"})
+        df['Result time'] = pd.to_datetime(df['Result time'])
     df['High Limit'] = df['High Limit'].astype(float)
     df['Low Limit'] = df['Low Limit'].astype(float)
     df['Result'] = df['Result'].astype(float)
     df = df[df['mfl_code'] != "EQA"]
     df['Collection'] = pd.to_datetime(df['Collection'])
     # Mapping dictionary
-    test_mapping = {'Chol': 'Cholesterol',
-                    'Crea': 'Creatinine',
-                    'GPT': 'ALAT/GPT',
-                    'LDL': 'LDL-Cholesterol',
-                    'UreaUV': 'Urea'}
-    # Create a new column 'Full name' by mapping 'Test' column using the mapping dictionary
-    df['Full name'] = df['Test'].map(test_mapping)
+    test_mapping = {'chol': 'Cholesterol',
+                    'cre': 'Creatinine',
+                    'gpt': 'ALAT/GPT',
+                    'ldl': 'LDL-Cholesterol',
+                    'ure': 'Urea'}
+
+    def map_test_name(test):
+        test_lower = test.lower()
+        if 'ldl' in test_lower:
+            return 'LDL-Cholesterol'
+        for key, value in test_mapping.items():
+            if key == test_lower or (key in test_lower and key != 'chol'):
+                return value
+        return test
+
+    df['Full name'] = df['Test'].map(map_test_name)
     if "Sex" in df.columns:
         df['Reference class'] = df['Sex']
         # Mapping dictionary for gender
@@ -721,7 +732,9 @@ def handle_commodity_errors(request, form, crag_total_remaining, tb_lam_total_re
 
 @login_required(login_url='login')
 # @permission_required('labpulse.view_update_cd4_results', login_url='/login/')
-@user_passes_test(lambda u: u.has_perm('labpulse.view_update_cd4_results') or u.has_perm('labpulse.view_add_retrospective_cd4_count'), login_url='login')
+@user_passes_test(
+    lambda u: u.has_perm('labpulse.view_update_cd4_results') or u.has_perm('labpulse.view_add_retrospective_cd4_count'),
+    login_url='login')
 def add_cd4_count(request, report_type, pk_lab):
     if not request.user.first_name:
         return redirect("profile")
@@ -782,7 +795,8 @@ def add_cd4_count(request, report_type, pk_lab):
             # Redirect or handle the case where the user doesn't have the permission
             return HttpResponseForbidden("You don't have permission to access this form.")
         if laboratory_type == "Spoke Laboratory":
-            form = Cd4trakerManualDispatchForm(request.POST or None, selected_lab=selected_lab, laboratory_type=laboratory_type)
+            form = Cd4trakerManualDispatchForm(request.POST or None, selected_lab=selected_lab,
+                                               laboratory_type=laboratory_type)
         else:
             form = Cd4trakerManualDispatchForm(request.POST or None)
         context = {
@@ -2688,10 +2702,6 @@ def add_testing_lab(request):
     form = Cd4TestingLabForm(request.POST or None)
     if form.is_valid():
         testing_lab_name = form.cleaned_data['testing_lab_name']
-
-        # Check for duplicate testing_lab_name (case-insensitive)
-        # existing_lab = Cd4TestingLabs.objects.annotate(lower_name=Lower('testing_lab_name')).filter(
-        #     lower_name=testing_lab_name.lower())
         existing_lab = Cd4TestingLabs.objects.filter(testing_lab_name__iexact=testing_lab_name)
         if existing_lab.exists():
             form.add_error('testing_lab_name', 'A CD4 Testing Lab with this name already exists.')
@@ -2700,8 +2710,38 @@ def add_testing_lab(request):
             messages.error(request, "Record saved successfully!")
             return redirect("choose_testing_lab")
     context = {
-        "form": form,
+        "form": form, "lab_type": "CD4",
         "title": f"Add CD4 Testing Lab",
+        "testing_labs": testing_labs,
+    }
+    return render(request, 'lab_pulse/add_cd4_data.html', context)
+
+
+@login_required(login_url='login')
+@permission_required('labpulse.view_update_cd4_results', login_url='/login/')
+def add_biochem_testing_lab(request):
+    if not request.user.first_name:
+        return redirect("profile")
+    if request.method == "GET":
+        request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
+
+    testing_labs = BiochemistryTestingLab.objects.all()
+    if testing_labs:
+        disable_update_buttons(request, testing_labs, 'date_created')
+
+    form = BiochemTestingLabForm(request.POST or None)
+    if form.is_valid():
+        mfl_code = form.cleaned_data['mfl_code']
+        existing_lab = BiochemistryTestingLab.objects.filter(mfl_code=mfl_code)
+        if existing_lab.exists():
+            form.add_error('testing_lab_name', 'A Biochemistry Testing Lab with this name/MFL Code already exists.')
+        else:
+            form.save()
+            messages.error(request, "Record saved successfully!")
+            return redirect("load_biochemistry_results")
+    context = {
+        "form": form, "lab_type": "Biochemistry",
+        "title": f"Add Biochemistry Testing Lab",
         "testing_labs": testing_labs,
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
@@ -2863,110 +2903,6 @@ def add_commodities(request, pk_lab):
         'current_year': current_date.year,
     }
     return render(request, 'lab_pulse/add_cd4_data.html', context)
-
-
-# class ReagentStockListView(ListView):
-#     model = ReagentStock
-#     template_name = 'lab_pulse/reagentstock_list.html'  # Customize this path as needed
-#     context_object_name = 'reagentstocks'
-#     paginate_by = 10  # Optional: For pagination
-#
-#     def get_queryset(self):
-#         # Customize this method to filter/sort data if needed
-#         queryset = ReagentStock.objects.all().order_by('-date_commodity_received')
-#         return queryset
-
-# class ReagentStockListView(ListView):
-#     model = ReagentStock
-#     template_name = 'lab_pulse/reagentstock_list.html'
-#     context_object_name = 'reagentstocks'
-#     paginate_by = 5
-#
-#     def get_queryset(self):
-#         queryset = ReagentStock.objects.all().order_by('-date_commodity_received')
-#         return queryset
-#
-#     def render_to_response(self, context, **response_kwargs):
-#         if self.request.is_ajax():
-#             html = render_to_string('lab_pulse/reagentstock_list_content.html', context, request=self.request)
-#             return JsonResponse({'html': html})
-#         else:
-#             return super().render_to_response(context, **response_kwargs)
-
-# from django.views.generic import ListView
-# from django.template.loader import render_to_string
-# from django.http import JsonResponse
-# from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
-
-# class ReagentStockListView(ListView):
-#     model = ReagentStock
-#     template_name = 'lab_pulse/reagentstock_list.html'
-#     context_object_name = 'reagentstocks'
-#     paginate_by = 5
-#
-#     def get_queryset(self):
-#         return ReagentStock.objects.all().order_by('-date_commodity_received')
-#
-#     def paginate_queryset(self, queryset, page_size):
-#         paginator = Paginator(queryset, page_size)
-#         page = self.request.GET.get('page', 1)
-#         try:
-#             page_number = int(page)
-#             page_obj = paginator.page(page_number)
-#         except (PageNotAnInteger, EmptyPage):
-#             page_obj = paginator.page(1)
-#
-#         return (paginator, page_obj, page_obj.object_list, page_obj.has_other_pages())
-#
-#     def render_to_response(self, context, **response_kwargs):
-#         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-#             html = render_to_string('lab_pulse/reagentstock_list_content.html', context, request=self.request)
-#             return JsonResponse({'html': html})
-#         else:
-#             return super().render_to_response(context, **response_kwargs)
-
-
-# from django.views.generic import ListView
-# from django.template.loader import render_to_string
-# from django.http import JsonResponse
-# from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-# from django.shortcuts import redirect
-
-
-# class ReagentStockListView(ListView):
-#     model = ReagentStock
-#     template_name = 'lab_pulse/reagentstock_list.html'
-#     context_object_name = 'reagentstocks'
-#     paginate_by = 5
-#
-#     def get_queryset(self):
-#         return ReagentStock.objects.all().order_by('-date_commodity_received')
-#
-#     def get(self, request, *args, **kwargs):
-#         page = self.request.GET.get('page', '1')
-#
-#         try:
-#             page = int(page)
-#             if page < 1:
-#                 return redirect(f"{request.path}?page=1")
-#         except ValueError:
-#             return redirect(f"{request.path}?page=1")
-#
-#         try:
-#             return super().get(request, *args, **kwargs)
-#         except EmptyPage:
-#             # If page is out of range, redirect to the last page
-#             last_page = self.get_paginator(self.get_queryset(), self.paginate_by).num_pages
-#             return redirect(f"{request.path}?page={last_page}")
-#
-#     def render_to_response(self, context, **response_kwargs):
-#         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-#             html = render_to_string('lab_pulse/reagentstock_list_content.html', context, request=self.request)
-#             return JsonResponse({'html': html})
-#         else:
-#             return super().render_to_response(context, **response_kwargs)
-
 
 class ReagentStockListView(ListView):
     model = ReagentStock
@@ -3161,8 +3097,16 @@ def track_records(df_specific):
 def load_biochemistry_results(request):
     if not request.user.first_name:
         return redirect("profile")
-    tests_summary_fig = summary_fig = summary_fig_per_text = weekly_trend_fig = test_trend_fig = \
-        age_distribution_fig = sex_fig = county_fig = sub_county_fig = None
+    tests_summary_fig = None
+    summary_fig = None
+    summary_fig_per_text = None
+    weekly_trend_fig = None
+    test_trend_fig = None
+    age_distribution_fig = None
+    sex_fig = None
+    county_fig = None
+    sub_county_fig = None
+    testing_lab_fig = None
 
     #####################################
     # Display existing data
@@ -3174,9 +3118,20 @@ def load_biochemistry_results(request):
     else:
         record_count = request.GET.get('record_count', '100')
 
-    biochemistry_qs = BiochemistryResult.objects.all()
+    # Check if the user is in a group containing "..."
+    if request.user.groups.filter(name__icontains="AHF").exists():
+        testing_lab_queryset = BiochemistryTestingLab.objects.filter(testing_lab_name__icontains="ahf")
+    elif request.user.groups.filter(name__icontains="UNITID").exists():
+        testing_lab_queryset = BiochemistryTestingLab.objects.filter(testing_lab_name__icontains="knh")
+    else:
+        # Show all testing labs for non-AHF/UNITID users
+        testing_lab_queryset = BiochemistryTestingLab.objects.all()
+
+    # biochemistry_qs = BiochemistryResult.objects.all()
+    biochemistry_qs = BiochemistryResult.objects.filter(testing_lab__in=testing_lab_queryset)
     record_count_options = [(str(i), str(i)) for i in [5, 10, 20, 30, 40, 50]] + [("all", "All"), ]
-    my_filters = BiochemistryResultFilter(request.GET, queryset=biochemistry_qs)
+    my_filters = BiochemistryResultFilter(request.GET, queryset=biochemistry_qs,
+                                          testing_lab_queryset=testing_lab_queryset)
     biochemistry_qs = pagination_(request, my_filters.qs, record_count)
     if "current_page_url" in request.session:
         del request.session['current_page_url']
@@ -3199,14 +3154,15 @@ def load_biochemistry_results(request):
             'facility__name', 'mfl_code', 'patient_id', 'test',
             'full_name', 'result', 'low_limit', 'high_limit', 'units',
             'reference_class', 'collection_date', 'result_time', 'mfl_code', 'results_interpretation',
-            'number_of_samples', 'date_created', 'performed_by', 'age',
+            'number_of_samples', 'date_created', 'performed_by', 'age','testing_lab__testing_lab_name'
         ))
 
         # Extract the data from the queryset using values()
         # data = my_filters.qs.values(*fields)
         df = pd.DataFrame(data)
         df = df.rename(columns={"full_name": "test_name", 'county__county_name': 'county',
-                                'sub_county__sub_counties': 'sub_county', 'facility__name': 'facility_name'})
+                                'sub_county__sub_counties': 'sub_county', 'facility__name': 'facility_name',
+                                'testing_lab__testing_lab_name':'testing_lab'})
         bio_chem_df = df.copy()
 
         try:
@@ -3275,154 +3231,61 @@ def load_biochemistry_results(request):
                                          height=350)
         df['results_interpretation'] = pd.Categorical(df['results_interpretation'],
                                                       ['Low', 'Normal', 'High'])
-        b = df.groupby("results_interpretation")['number_of_samples'].sum(numeric_only=True).reset_index()
-        b = add_percentage_and_count_string(b, col="number_of_samples")
 
-        fig = px.bar(b, x="results_interpretation", y="number_of_samples", text="number_of_samples (%)", height=350,
-                     title=f"Overall Results interpretation N={b['number_of_samples'].sum()}")
-        # fig.update_layout({
-        #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
-        #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',
-        # })
-        # Set the font size of the x-axis and y-axis labels
-        fig.update_layout(
-            xaxis=dict(
-                tickfont=dict(
-                    size=10
-                ),
-                title_font=dict(
-                    size=10
-                )
-            ),
-            yaxis=dict(
-                title_font=dict(
-                    size=10
-                )
-            ),
-            legend=dict(
-                font=dict(
-                    size=10
-                )
-            ),
-            title=dict(
-                # text="My Line Chart",
-                font=dict(
-                    size=12
-                )
-            )
-        )
-        summary_fig = plot(fig, include_plotlyjs=False, output_type="div")
+        def create_bar_chart(data, x, y, text, title, height=350):
+            fig = px.bar(data, x=x, y=y, text=text, height=height, title=title)
 
-        b = df.groupby("county").sum(numeric_only=True)['number_of_samples'].reset_index()
-        b = add_percentage_and_count_string(b, col="number_of_samples")
-        fig = px.bar(b, x="county", y="number_of_samples", text="number_of_samples (%)", height=350,
-                     title=f"Results by County N={b['number_of_samples'].sum()}")
-        # fig.update_layout({
-        #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
-        #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',
-        # })
-        # Set the font size of the x-axis and y-axis labels
-        fig.update_layout(
-            xaxis=dict(
-                tickfont=dict(
-                    size=10
+            fig.update_layout(
+                xaxis=dict(
+                    tickfont=dict(size=10),
+                    title_font=dict(size=10)
                 ),
-                title_font=dict(
-                    size=10
-                )
-            ),
-            yaxis=dict(
-                title_font=dict(
-                    size=10
-                )
-            ),
-            legend=dict(
-                font=dict(
-                    size=10
-                )
-            ),
-            title=dict(
-                # text="My Line Chart",
-                font=dict(
-                    size=12
-                )
+                yaxis=dict(title_font=dict(size=10)),
+                legend=dict(font=dict(size=10)),
+                title=dict(font=dict(size=12))
             )
-        )
-        county_fig = plot(fig, include_plotlyjs=False, output_type="div")
-        b = df.groupby("sub_county")['number_of_samples'].sum(numeric_only=True).reset_index()
-        b = add_percentage_and_count_string(b, col="number_of_samples").sort_values("number_of_samples")
-        fig = px.bar(b, x="sub_county", y="number_of_samples", text="number_of_samples (%)", height=350,
-                     title=f"Results by Sub-County N={b['number_of_samples'].sum()}")
-        # fig.update_layout({
-        #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
-        #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',
-        # })
-        # Set the font size of the x-axis and y-axis labels
-        fig.update_layout(
-            xaxis=dict(
-                tickfont=dict(
-                    size=10
-                ),
-                title_font=dict(
-                    size=10
-                )
-            ),
-            yaxis=dict(
-                title_font=dict(
-                    size=10
-                )
-            ),
-            legend=dict(
-                font=dict(
-                    size=10
-                )
-            ),
-            title=dict(
-                # text="My Line Chart",
-                font=dict(
-                    size=12
-                )
-            )
-        )
-        sub_county_fig = plot(fig, include_plotlyjs=False, output_type="div")
 
-        b = df.groupby("test_name")['number_of_samples'].sum(numeric_only=True).reset_index().sort_values(
-            "number_of_samples")
+            return plot(fig, include_plotlyjs=False, output_type="div")
 
-        fig = px.bar(b, x="test_name", y="number_of_samples", text="number_of_samples", height=350,
-                     title=f"Distribution of Tests Conducted N={b['number_of_samples'].sum()}")
-        # fig.update_layout({
-        #     'plot_bgcolor': 'rgba(0, 0, 0, 0)',
-        #     'paper_bgcolor': 'rgba(0, 0, 0, 0)',
-        # })
-        # Set the font size of the x-axis and y-axis labels
-        fig.update_layout(
-            xaxis=dict(
-                tickfont=dict(
-                    size=10
-                ),
-                title_font=dict(
-                    size=10
-                )
-            ),
-            yaxis=dict(
-                title_font=dict(
-                    size=10
-                )
-            ),
-            legend=dict(
-                font=dict(
-                    size=10
-                )
-            ),
-            title=dict(
-                # text="My Line Chart",
-                font=dict(
-                    size=12
-                )
-            )
-        )
-        summary_fig_per_text = plot(fig, include_plotlyjs=False, output_type="div")
+        def generate_chart(df, group_by, value_col='number_of_samples', chart_type='sub_county'):
+            """
+            Generate a bar chart based on the specified grouping and chart type.
+
+            Args:
+            df (pandas.DataFrame): Input DataFrame
+            group_by (str): Column name to group by
+            value_col (str): Column name for values to sum. Default is 'number_of_samples'
+            chart_type (str): Type of chart to generate. Either 'sub_county' or 'test_distribution'
+
+            Returns:
+            str: HTML string of the generated chart
+            """
+            b = df.groupby(group_by)[value_col].sum(numeric_only=True).reset_index()
+
+            if 'county' in chart_type or 'testing_lab' in chart_type:
+                b = add_percentage_and_count_string(b, col=value_col).sort_values(value_col)
+                title = f"Results by {group_by.replace('_', ' ').title()} N={b[value_col].sum()}"
+                text_col = f"{value_col} (%)"
+            elif chart_type == 'test_distribution':
+                b = b.sort_values(value_col)
+                title = f"Distribution of {group_by.replace('_', ' ').title()} N={b[value_col].sum()}"
+                text_col = value_col
+            elif chart_type == 'results_interpretation':
+                b = b.sort_values(value_col)
+                title = f"Overall {group_by.replace('_', ' ').title()} N={b[value_col].sum()}"
+                text_col = value_col
+            else:
+                raise ValueError("Invalid chart_type. Use 'sub_county' or 'test_distribution'")
+
+            return create_bar_chart(b, x=group_by, y=value_col, text=text_col, title=title)
+
+        # Generate charts
+        sub_county_fig = generate_chart(df, group_by="sub_county", chart_type="sub_county")
+        county_fig = generate_chart(df, group_by="county", chart_type="county")
+
+        summary_fig_per_text = generate_chart(df, group_by="test_name", chart_type="test_distribution")
+        summary_fig = generate_chart(df, group_by="results_interpretation", chart_type="results_interpretation")
+        testing_lab_fig = generate_chart(df, group_by="testing_lab", chart_type="testing_lab")
 
         ###################################
         # Weekly Trend viz
@@ -3460,23 +3323,24 @@ def load_biochemistry_results(request):
 
     title = "Results"
     threshold_of_result_to_display = 500
-    form = BiochemistryForm()
+    form = BiochemistryForm(testing_lab_queryset=testing_lab_queryset)
     context = {"title": title, "biochemistry_qs": biochemistry_qs, "record_count_options": record_count_options,
                "my_filters": my_filters, "record_count": record_count, "tests_summary_fig": tests_summary_fig,
                "threshold_of_result_to_display": threshold_of_result_to_display, "summary_fig": summary_fig,
                "summary_fig_per_text": summary_fig_per_text, "weekly_trend_fig": weekly_trend_fig, "form": form,
                "test_trend_fig": test_trend_fig, "sex_fig": sex_fig, "age_distribution_fig": age_distribution_fig,
-               "county_fig": county_fig, "sub_county_fig": sub_county_fig}
+               "county_fig": county_fig, "sub_county_fig": sub_county_fig,"testing_lab_fig":testing_lab_fig}
 
     #####################################
     # Load new data
     #####################################
     if request.method == 'POST':
-        form = BiochemistryForm(request.POST, request.FILES)
+        form = BiochemistryForm(request.POST, request.FILES, testing_lab_queryset=testing_lab_queryset)
         if form.is_valid():
             files = request.FILES.getlist('files')
             if files:
                 performed_by = form.cleaned_data['performed_by']
+                testing_lab = form.cleaned_data['testing_lab']
                 dfs = []
                 for file in files:
                     # csv_data = io.StringIO(file.read().decode('ISO-8859-1'))
@@ -3568,6 +3432,9 @@ def load_biochemistry_results(request):
                                             chemistry_results.number_of_samples = row[df_specific.columns[12]]
                                             chemistry_results.age = row[df_specific.columns[13]]
                                             chemistry_results.performed_by = performed_by
+                                            testing_lab = BiochemistryTestingLab.objects.filter(
+                                                testing_lab_name=testing_lab).first()
+                                            chemistry_results.testing_lab = testing_lab
                                             chemistry_results.save()
                                         except ObjectDoesNotExist:
                                             missing_mfl_codes.append(mfl_code)

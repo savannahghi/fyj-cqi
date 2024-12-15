@@ -41,6 +41,9 @@
                             {% csrf_token %}
                             <!-- Display Performed by input -->
                             <div class="col-12 col-md-6 col-lg-2 mt-4">
+                                {{ form.testing_lab|as_crispy_field }}
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-2 mt-4">
                                 {{ form.performed_by|as_crispy_field }}
                             </div>
                             <div class="col-12 col-md-6 col-lg-2 mt-5">
@@ -54,8 +57,16 @@
                             <ul id="uploaded-files-list"></ul>
                             <!-- Hidden input field to store files for server-side processing -->
                             <input type="hidden" name="uploaded_files" value="">
-                            <div class="col-12 col-md-6 col-lg-2">
-                                <button type="submit" class="btn btn-primary">Upload Results</button>
+                            <div class="d-flex align-content-md-end">
+                                <div class="col-12 col-md-6 col-lg-2">
+                                    <button type="submit" class="btn btn-primary">Upload Results</button>
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-2">
+                                    <a href="{% url 'add_biochem_testing_lab' %}"
+                                       class="btn btn-warning" role="button">
+                                        Add Biochem Testing Laboratory
+                                    </a>
+                                </div>
                             </div>
                         </form>
                         <hr>
@@ -65,6 +76,9 @@
                     </div>
                     <div class="mt-3">
                         <form id="filter-form" class="row g-3" autocomplete="off">
+                            <div class="col-12 col-md-6 col-lg-2">
+                                {{ my_filters.form.testing_lab|as_crispy_field }}
+                            </div>
                             <div class="col-12 col-md-6 col-lg-2">
                                 {{ my_filters.form.county|as_crispy_field }}
                             </div>
@@ -154,14 +168,20 @@
                                         {{ summary_fig|safe }}
                                     </div>
                                 {% endif %}
-                                <hr>
+                                <hr class="mt-3">
                                 {% if county_fig is not None %}
                                     <div class="col-6">
                                         {{ county_fig|safe }}
                                     </div>
                                 {% endif %}
-                                {% if sub_county_fig is not None %}
+                                {% if testing_lab_fig is not None %}
                                     <div class="col-6">
+                                        {{ testing_lab_fig|safe }}
+                                    </div>
+                                {% endif %}
+                                <hr class="mt-3">
+                                {% if sub_county_fig is not None %}
+                                    <div class="col-12">
                                         {{ sub_county_fig|safe }}
                                     </div>
                                 {% endif %}
@@ -332,6 +352,10 @@
                                     {% endif %}
                                 </ul>
                             {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="col-md-12 alert alert-info text-center">
+                            <h4>No Data entered yet!</h4>
                         </div>
                     {% endif %}
                 {% elif title == "UPLOAD STANDFORD PDFS" %}

@@ -5,7 +5,7 @@ from django.utils import timezone
 from multiupload.fields import MultiFileField
 
 from apps.cqi.models import Facilities
-from apps.labpulse.models import Cd4traker, Cd4TestingLabs, Commodities, DrtPdfFile, DrtResults, \
+from apps.labpulse.models import BiochemistryTestingLab, Cd4traker, Cd4TestingLabs, Commodities, DrtPdfFile, DrtResults, \
     HistologyPdfFile, HistologyResults, LabPulseUpdateButtonSettings, \
     ReagentStock
 
@@ -419,8 +419,26 @@ class DrtPdfFileForm(ModelForm):
         }
 
 
+# class BiochemistryForm(MultipleUploadForm):
+#     performed_by = forms.CharField(max_length=100, label="Test Performed by")
+#     testing_lab = forms.ModelChoiceField(
+#         queryset=BiochemistryTestingLab.objects.all(),
+#         empty_label="Select Testing Lab ...",
+#         widget=forms.Select(attrs={'class': 'form-control select2'}),
+#     )
 class BiochemistryForm(MultipleUploadForm):
     performed_by = forms.CharField(max_length=100, label="Test Performed by")
+    testing_lab = forms.ModelChoiceField(
+        queryset=None,
+        empty_label="Select Testing Lab ...",
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        testing_lab_queryset = kwargs.pop('testing_lab_queryset', None)
+        super(BiochemistryForm, self).__init__(*args, **kwargs)
+        if testing_lab_queryset is not None:
+            self.fields['testing_lab'].queryset = testing_lab_queryset
 
 
 class HistologyResultsForm(ModelForm):

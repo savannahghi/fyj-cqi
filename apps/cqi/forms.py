@@ -10,6 +10,8 @@ from django.forms import ModelForm, CheckboxSelectMultiple, Select
 from .models import *
 from django import forms
 
+from ..labpulse.models import BiochemistryTestingLab
+
 
 class QI_ProjectsForm(ModelForm):
     facility_name = forms.ModelChoiceField(
@@ -495,7 +497,14 @@ class FacilitiesForm(ModelForm):
     class Meta:
         model = Facilities
         fields = "__all__"
-        labels = {'name': "Facility Name", 'mfl_code': "MFL CODE"}
+        labels = {'testing_lab_name': "Facility Name", 'mfl_code': "MFL CODE"}
+
+
+class BiochemTestingLabForm(ModelForm):
+    class Meta:
+        model = BiochemistryTestingLab
+        fields = "__all__"
+        labels = {'name': "Testing Lab", 'mfl_code': "MFL CODE"}
 
 
 class CountiesForm(ModelForm):
@@ -630,6 +639,7 @@ class ActionPlanForm(ModelForm):
         label="Due Date",
         # required=False
     )
+
     # Define the form fields and their properties
     class Meta:
         model = ActionPlan  # specify the model that the form is based on
@@ -879,6 +889,8 @@ class BestPerformingForm(forms.Form):
         label="Choose threshold (%)",
         widget=forms.Select(attrs={'class': 'form-control select2'})
     )
+
+
 class PlatformUpdateForm(ModelForm):
     class Meta:
         model = PlatformUpdate

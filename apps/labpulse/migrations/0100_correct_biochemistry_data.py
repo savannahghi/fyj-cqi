@@ -39,7 +39,7 @@ def reverse_correct_biochemistry_data(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('labpulse', '0100_auto_20241213_1245'),
+        ('labpulse', '0099_biochemistryresult_testing_lab'),
     ]
 
     operations = [

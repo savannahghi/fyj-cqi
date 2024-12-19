@@ -59,7 +59,7 @@
                                 Add Testing Laboratory
                             </a>
                         </div>
-                    {% elif title == "Add CD4 Testing Lab" %}
+                    {% elif title == "Add CD4 Testing Lab"  or title == "Add Biochemistry Testing Lab" %}
                         <p> Please add a testing laboratory below and then submit </p>
                         <div class="col-md-4 mt-2">
                             {{ form.testing_lab_name|as_crispy_field }}
@@ -71,7 +71,7 @@
                             <input class="btn btn-success mt-1" type="submit" value="Submit">
                         </div>
                         <hr>
-                        <h4 class="fw-bold text-primary text-center"> CD4 Testing Laboratory </h4>
+                        <h4 class="fw-bold text-primary text-center"> {{ lab_type }} Testing Laboratory </h4>
                         <hr>
                         <table class="table table-striped table-hover" style="font-size: small;">
                             <thead class="thead-dark">

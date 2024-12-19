@@ -38,19 +38,41 @@ class BaseModel(models.Model):
         return super().save(*args, **kwargs)
 
 
-class Cd4TestingLabs(models.Model):
+# class Cd4TestingLabs(models.Model):
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+#     testing_lab_name = models.CharField(max_length=255, unique=True)
+#     mfl_code = models.IntegerField(unique=True, default=0)
+#     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+#                                    on_delete=models.CASCADE)
+#     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
+#                                     on_delete=models.CASCADE, related_name='+')
+#     date_created = models.DateTimeField(auto_now_add=True)
+#     date_updated = models.DateTimeField(auto_now=True)
+#
+#     class Meta:
+#         verbose_name_plural = "CD4 Testing Laboratories"
+#         ordering = ["testing_lab_name"]
+#
+#     def __str__(self):
+#         return str(self.testing_lab_name)
+#
+#     def save(self, *args, **kwargs):
+#         self.testing_lab_name = self.testing_lab_name.upper()
+#         super().save(*args, **kwargs)
+
+class BaseTestingLab(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-    testing_lab_name = models.CharField(max_length=255, unique=True)
-    mfl_code = models.IntegerField(unique=True, default=0)
+    testing_lab_name = models.CharField(max_length=255, default="", unique=True)
+    mfl_code = models.IntegerField(default=0, unique=True)
     created_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                    on_delete=models.CASCADE)
     modified_by = models.ForeignKey(CustomUser, blank=True, null=True, default=get_current_user,
                                     on_delete=models.CASCADE, related_name='+')
-    date_created = models.DateTimeField(auto_now_add=True)
+    date_created = models.DateTimeField(auto_now_add=True, null=True)
     date_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name_plural = "CD4 Testing Laboratories"
+        abstract = True
         ordering = ["testing_lab_name"]
 
     def __str__(self):
@@ -59,6 +81,16 @@ class Cd4TestingLabs(models.Model):
     def save(self, *args, **kwargs):
         self.testing_lab_name = self.testing_lab_name.upper()
         super().save(*args, **kwargs)
+
+
+class Cd4TestingLabs(BaseTestingLab):
+    class Meta:
+        verbose_name_plural = "CD4 Testing Laboratories"
+
+
+class BiochemistryTestingLab(BaseTestingLab):
+    class Meta:
+        verbose_name_plural = "Biochemistry testing Laboratories"
 
 
 # Create your models here.
@@ -315,12 +347,6 @@ class EnableDisableCommodities(BaseModel):
 
     def __str__(self):
         return str(self.use_commodities)
-
-
-class BiochemistryTestingLab(Cd4TestingLabs):
-    class Meta:
-        verbose_name_plural = "Biochemistry testing Laboratories"
-        ordering = ["testing_lab_name"]
 
 
 class BiochemistryResult(BaseModel):

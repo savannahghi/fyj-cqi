@@ -154,8 +154,6 @@ class BiochemistryResultFilter(django_filters.FilterSet):
 
         # Sort the choices and set them in the filter
         self.filters['facility'].extra['choices'] = sorted(unique_facility_choices, key=lambda x: x[1] if x[1] else '')
-        print("testing_lab_queryset:::::::::::::::::::::::::::::::::::::::::::::")
-        print(testing_lab_queryset)
         # if testing_lab_queryset is not None:
         #     self.filters['testing_lab'].queryset = testing_lab_queryset
         # else:

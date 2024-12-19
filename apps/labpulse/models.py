@@ -349,12 +349,6 @@ class EnableDisableCommodities(BaseModel):
         return str(self.use_commodities)
 
 
-class BiochemistryTestingLab(Cd4TestingLabs):
-    class Meta:
-        verbose_name_plural = "Biochemistry testing Laboratories"
-        ordering = ["testing_lab_name"]
-
-
 class BiochemistryResult(BaseModel):
     # sample_id = models.CharField(max_length=50)
     patient_id = models.CharField(max_length=10)

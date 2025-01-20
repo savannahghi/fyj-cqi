@@ -1565,38 +1565,38 @@ def hvl_trend(reporting_rates, x_axis, y_axis, title=None, color=None):
     return plot(fig, include_plotlyjs=False, output_type="div")
 
 
-def merge_county_program_df(df, df1):
+def merge_county_program_df(df, df1, year):
     df = df.merge(df1, left_on="organisationunitcode", right_on="MFL Code", how="left")
     df = df[['County',
              'Subcounty', 'organisationunitname', 'MFL Code',
              'periodid', 'periodname',
-             'F-MAPS Revision 2019 Reporting rate (%)']]
+             f'F-MAPS Revision {year} Reporting rate (%)']]
     df = df.rename(columns={"organisationunitname": "facility"})
     df = df.rename(columns={"periodname": "month/year"})
     return df
 
 
-def make_region_specific_df(nairobi_all, name):
+def make_region_specific_df(nairobi_all, name, year):
     nairobi_all = nairobi_all.rename(columns={"periodname": "month/year"})
     nairobi_all['date'] = pd.to_datetime(nairobi_all['month/year'])
     nairobi_all_rate = nairobi_all.groupby(['month/year', 'date'])[
-        'F-MAPS Revision 2019 Reporting rate (%)'].mean(numeric_only=True).reset_index().sort_values('date')
-    nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'] = round(
-        nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'], 1)
+        f'F-MAPS Revision {year} Reporting rate (%)'].mean(numeric_only=True).reset_index().sort_values('date')
+    nairobi_all_rate[f'F-MAPS Revision {year} Reporting rate (%)'] = round(
+        nairobi_all_rate[f'F-MAPS Revision {year} Reporting rate (%)'], 1)
     nairobi_all_rate.insert(0, "region", name)
-    average_reporting_rate = round(nairobi_all_rate['F-MAPS Revision 2019 Reporting rate (%)'].mean(), 1)
+    average_reporting_rate = round(nairobi_all_rate[f'F-MAPS Revision {year} Reporting rate (%)'].mean(), 1)
 
     return nairobi_all_rate, average_reporting_rate
 
 
-def make_county_specific_charts(df, nairobi_facitities_mfl_code, county):
+def make_county_specific_charts(df, nairobi_facitities_mfl_code, county, year):
     nairobi_all = df[df['orgunitlevel2'] == f'{county} County']
-    nairobi_all_rate, nairobi_average_reporting_rate = make_region_specific_df(nairobi_all, county)
+    nairobi_all_rate, nairobi_average_reporting_rate = make_region_specific_df(nairobi_all, county, year)
     fyj_nairobi_facilities = nairobi_all[nairobi_all['organisationunitcode'].isin(nairobi_facitities_mfl_code)]
     fyj_nairobi_facilities_rate, fyj_nrb_average_reporting_rate = make_region_specific_df(fyj_nairobi_facilities,
-                                                                                          "FYJ")
+                                                                                          "FYJ", year)
     reporting_rates = pd.concat([fyj_nairobi_facilities_rate, nairobi_all_rate])
-    fig = fmarp_trend(reporting_rates, "month/year", "F-MAPS Revision 2019 Reporting rate (%)",
+    fig = fmarp_trend(reporting_rates, "month/year", f"F-MAPS Revision {year} Reporting rate (%)",
                       title=f'F-MAPS reporting rate trends. FYJ {county} Average reporting rate {fyj_nrb_average_reporting_rate}%  '
                             f'{county} county Average reporting rate {nairobi_average_reporting_rate}%',
                       color="region")
@@ -1729,13 +1729,13 @@ def prepare_program_facilities_df(df1, fyj_facility_mfl_code):
     return df
 
 
-def missing_fcdrr(program_facilities, total_fmaps):
+def missing_fcdrr(program_facilities, total_fmaps, year):
     no_fcdrr = program_facilities[
-        (program_facilities['Facility - CDRR Revision 2019 Reporting rate (%)'].isnull())
-        | (program_facilities['Facility - CDRR Revision 2019 Reporting rate (%)'] == 0)]
+        (program_facilities[f'Facility - CDRR Revision {year} Reporting rate (%)'].isnull())
+        | (program_facilities[f'Facility - CDRR Revision {year} Reporting rate (%)'] == 0)]
     no_fcdrr_copy = no_fcdrr.copy()
     no_fcdrr = no_fcdrr.groupby(['facility', 'MFL Code', 'month/year'])[
-        'Facility - CDRR Revision 2019 Reporting rate (%)'].count().reset_index()
+        f'Facility - CDRR Revision {year} Reporting rate (%)'].count().reset_index()
 
     no_fcdrr_df = no_fcdrr_copy.groupby(['month/year'])['facility'].count().reset_index()
     no_fcdrr_df = no_fcdrr_df.rename(columns={"facility": "facilities"})
@@ -1750,12 +1750,12 @@ def missing_fcdrr(program_facilities, total_fmaps):
     return no_fcdrr_df, total_fcdrr, no_fcdrr, total
 
 
-def missing_fmaps(program_facilities):
-    no_fmaps = program_facilities[(program_facilities['F-MAPS Revision 2019 Reporting rate (%)'].isnull())
-                                  | (program_facilities['F-MAPS Revision 2019 Reporting rate (%)'] == 0)]
+def missing_fmaps(program_facilities, year):
+    no_fmaps = program_facilities[(program_facilities[f'F-MAPS Revision {year} Reporting rate (%)'].isnull())
+                                  | (program_facilities[f'F-MAPS Revision {year} Reporting rate (%)'] == 0)]
     no_fmaps_copy = no_fmaps.copy()
     no_fmaps = no_fmaps.groupby(['facility', 'MFL Code', 'month/year'])[
-        'F-MAPS Revision 2019 Reporting rate (%)'].count().reset_index()
+        f'F-MAPS Revision {year} Reporting rate (%)'].count().reset_index()
 
     no_fmaps_df = no_fmaps_copy.groupby(['month/year'])['facility'].count().reset_index()
     no_fmaps_df = no_fmaps_df.rename(columns={"facility": "facilities"})
@@ -1835,7 +1835,7 @@ def create_counties_reporting_rate(fyj_kajiado_facilities, fyj_nairobi_facilitie
     return nairobi_average_reporting_rate, kajiado_average_reporting_rate, fyj_nairobi_facilities_rate, fyj_kajiado_facilities_rate
 
 
-def analyse_fmaps_fcdrr(df, df1):
+def analyse_fmaps_fcdrr(df, df1, year):
     all_facilities = df.copy()
     all_facilities = all_facilities.rename(columns={"organisationunitname": "facility"})
     all_facilities = all_facilities.rename(columns={"periodname": "month/year"})
@@ -1851,24 +1851,25 @@ def analyse_fmaps_fcdrr(df, df1):
     kajiado_facitities_mfl_code = list(kajiado_facitities_df['MFL Code'].unique())
 
     df = df.rename(columns={
-        "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate": "F-MAPS Revision 2019 Reporting rate (%)",
-        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate": "Facility - CDRR Revision 2019 Reporting rate (%)"})
+        f"MoH 729B Facility - F'MAPS Revision {year} - Reporting rate": f"F-MAPS Revision {year} Reporting rate (%)",
+        f"MoH 730B Facility - CDRR Revision {year} - Reporting rate": f"Facility - CDRR Revision {year} Reporting rate (%)"})
 
     df = df[['organisationunitid', 'organisationunitname', 'organisationunitcode', 'orgunitlevel2',
              'organisationunitdescription', 'periodid', 'periodname', 'periodcode',
-             'F-MAPS Revision 2019 Reporting rate (%)', "Facility - CDRR Revision 2019 Reporting rate (%)"]]
+             f'F-MAPS Revision {year} Reporting rate (%)', f"Facility - CDRR Revision {year} Reporting rate (%)"]]
     # drop the rows containing letters and convert to int
     df = convert_mfl_code_to_int(df)
 
-    all_data = merge_county_program_df(df, df1)
+    all_data = merge_county_program_df(df, df1, year)
     all_data['date'] = pd.to_datetime(all_data['month/year'])
     # overall
     overall_df = all_data.groupby(['month/year', 'date'])[
-        'F-MAPS Revision 2019 Reporting rate (%)'].mean(numeric_only=True).reset_index().sort_values('date')
-    overall_df['F-MAPS Revision 2019 Reporting rate (%)'] = round(overall_df['F-MAPS Revision 2019 Reporting rate (%)'],
-                                                                  1)
+        f'F-MAPS Revision {year} Reporting rate (%)'].mean(numeric_only=True).reset_index().sort_values('date')
+    overall_df[f'F-MAPS Revision {year} Reporting rate (%)'] = round(
+        overall_df[f'F-MAPS Revision {year} Reporting rate (%)'],
+        1)
     overall_df.insert(0, "region", "Nairobi/Kajiado counties")
-    average_reporting_rate_all = round(overall_df['F-MAPS Revision 2019 Reporting rate (%)'].mean(), 1)
+    average_reporting_rate_all = round(overall_df[f'F-MAPS Revision {year} Reporting rate (%)'].mean(), 1)
     program_facilities = all_data[all_data['MFL Code'].isin(fyj_facility_mfl_code)]
 
     fyj_df = prepare_program_facilities_df(all_facilities, fyj_facility_mfl_code)
@@ -1883,15 +1884,15 @@ def analyse_fmaps_fcdrr(df, df1):
         fyj_729b = transform_make_charts(all_facilities, cols_729b, "729b", fyj_facility_mfl_code)
 
     program_facilities_rate = program_facilities.groupby(['month/year', 'date'])[
-        'F-MAPS Revision 2019 Reporting rate (%)'].mean(numeric_only=True).reset_index().sort_values('date')
-    program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'] = round(
-        program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'], 1)
+        f'F-MAPS Revision {year} Reporting rate (%)'].mean(numeric_only=True).reset_index().sort_values('date')
+    program_facilities_rate[f'F-MAPS Revision {year} Reporting rate (%)'] = round(
+        program_facilities_rate[f'F-MAPS Revision {year} Reporting rate (%)'], 1)
     program_facilities_rate.insert(0, "region", "FYJ")
-    average_reporting_rate = round(program_facilities_rate['F-MAPS Revision 2019 Reporting rate (%)'].mean(), 1)
+    average_reporting_rate = round(program_facilities_rate[f'F-MAPS Revision {year} Reporting rate (%)'].mean(), 1)
 
     reporting_rates = pd.concat([overall_df, program_facilities_rate])
 
-    overall_fig = fmarp_trend(reporting_rates, "month/year", "F-MAPS Revision 2019 Reporting rate (%)",
+    overall_fig = fmarp_trend(reporting_rates, "month/year", f"F-MAPS Revision {year} Reporting rate (%)",
                               title=f'F-MAPS reporting rate trends. FYJ Average reporting rate {average_reporting_rate}% '
                                     f' Overall Average reporting rate {average_reporting_rate_all}%',
                               color='region')
@@ -1899,18 +1900,18 @@ def analyse_fmaps_fcdrr(df, df1):
     # Nairobi reporting rate
     #######################################
     county = "Nairobi"
-    nairobi_reporting_rate_fig = make_county_specific_charts(df, nairobi_facitities_mfl_code, county)
+    nairobi_reporting_rate_fig = make_county_specific_charts(df, nairobi_facitities_mfl_code, county, year)
 
     #######################################
     # Kajiado reporting rate
     #######################################
     county = "Kajiado"
-    kajiado_reporting_rate_fig = make_county_specific_charts(df, kajiado_facitities_mfl_code, county)
+    kajiado_reporting_rate_fig = make_county_specific_charts(df, kajiado_facitities_mfl_code, county, year)
     ########################
     # No F-MAPS REPORTING
     ########################
-    no_fmaps_df_all, no_fmaps_all, total_fmaps_all = missing_fmaps(all_data)
-    no_fmaps_df, no_fmaps, total_fmaps = missing_fmaps(program_facilities)
+    no_fmaps_df_all, no_fmaps_all, total_fmaps_all = missing_fmaps(all_data, year)
+    no_fmaps_df, no_fmaps, total_fmaps = missing_fmaps(program_facilities, year)
     #######################################
     # Reporting rate on time FYJ Nairobi and Kajiado
     #######################################
@@ -1919,8 +1920,8 @@ def analyse_fmaps_fcdrr(df, df1):
     all_on_time = all_on_time.rename(columns={"periodname": "month/year"})
     all_on_time = all_on_time.rename(columns={"organisationunitcode": "MFL Code"})
     all_on_time = all_on_time.rename(columns={
-        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time":
-            "Facility - CDRR Revision 2019 Reporting rate (%)"})
+        f"MoH 730B Facility - CDRR Revision {year} - Reporting rate on time":
+            f"Facility - CDRR Revision {year} Reporting rate (%)"})
     program_facilities = all_on_time[all_on_time['MFL Code'].isin(fyj_facility_mfl_code)]
     # Nairobi vs FYJ
     fyj_nairobi_facilities = program_facilities[program_facilities['MFL Code'].isin(nairobi_facitities_mfl_code)]
@@ -1931,9 +1932,9 @@ def analyse_fmaps_fcdrr(df, df1):
     ################################
     nairobi_average_reporting_rate, kajiado_average_reporting_rate, fyj_nairobi_facilities_rate, \
         fyj_kajiado_facilities_rate = create_counties_reporting_rate(fyj_kajiado_facilities, fyj_nairobi_facilities,
-                                                                     'Facility - CDRR Revision 2019 Reporting rate (%)')
+                                                                     f'Facility - CDRR Revision {year} Reporting rate (%)')
     reporting_rates = pd.concat([fyj_nairobi_facilities_rate, fyj_kajiado_facilities_rate])
-    fcdrr_fig = fmarp_trend(reporting_rates, "month/year", 'Facility - CDRR Revision 2019 Reporting rate (%)',
+    fcdrr_fig = fmarp_trend(reporting_rates, "month/year", f'Facility - CDRR Revision {year} Reporting rate (%)',
                             title=f'F-CDRR reporting rate on time trends. FYJ Kajiado mean :  {kajiado_average_reporting_rate}%   '
                                   f'FYJ Nairobi mean :  {nairobi_average_reporting_rate}%',
                             color="region")
@@ -1942,9 +1943,9 @@ def analyse_fmaps_fcdrr(df, df1):
     ################################
     nairobi_average_reporting_rate, kajiado_average_reporting_rate, fyj_nairobi_facilities_rate, \
         fyj_kajiado_facilities_rate = create_counties_reporting_rate(fyj_kajiado_facilities, fyj_nairobi_facilities,
-                                                                     'F-MAPS Revision 2019 Reporting rate (%)')
+                                                                     f'F-MAPS Revision {year} Reporting rate (%)')
     reporting_rates = pd.concat([fyj_nairobi_facilities_rate, fyj_kajiado_facilities_rate])
-    fmaps_fig = fmarp_trend(reporting_rates, "month/year", 'F-MAPS Revision 2019 Reporting rate (%)',
+    fmaps_fig = fmarp_trend(reporting_rates, "month/year", f'F-MAPS Revision {year} Reporting rate (%)',
                             title=f'F-MAPS reporting rate on time trends. FYJ Kajiado mean :  {kajiado_average_reporting_rate}%   '
                                   f'FYJ Nairobi mean :  {nairobi_average_reporting_rate}%',
                             color="region")
@@ -1952,8 +1953,8 @@ def analyse_fmaps_fcdrr(df, df1):
     ########################
     # No F-CDRR REPORTING
     ########################
-    no_fcdrr_df_all, total_fcdrr_all, no_fcdrr_all, total_all = missing_fcdrr(all_on_time, total_fmaps_all)
-    no_fcdrr_df, total_fcdrr, no_fcdrr, total = missing_fcdrr(program_facilities, total_fmaps)
+    no_fcdrr_df_all, total_fcdrr_all, no_fcdrr_all, total_all = missing_fcdrr(all_on_time, total_fmaps_all, year)
+    no_fcdrr_df, total_fcdrr, no_fcdrr, total = missing_fcdrr(program_facilities, total_fmaps, year)
 
     no_reports = pd.concat([no_fcdrr_df, no_fmaps_df])
     no_reports_all = pd.concat([no_fcdrr_df_all, no_fmaps_df_all])
@@ -2001,10 +2002,11 @@ def fmaps_reporting_rate(request):
     other_paeds_bottles_df_file = pd.DataFrame()
     reporting_errors_df = pd.DataFrame()
     form = FileUploadForm(request.POST or None)
-    datasets = ["MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate <strong>and</strong>",
-                "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate on time data <strong>and</strong>",
-                "MoH 730B Facility - CDRR Revision 2019 - Reporting rate <strong>and</strong>",
-                "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time",
+    datasets = ["MoH 729B Facility - F'MAPS Revision <strong>Year</strong> - Reporting rate <strong>and</strong>",
+                "MoH 729B Facility - F'MAPS Revision <strong>Year</strong> - Reporting rate on time data "
+                "<strong>and</strong>",
+                "MoH 730B Facility - CDRR Revision <strong>Year</strong> - Reporting rate <strong>and</strong>",
+                "MoH 730B Facility - CDRR Revision <strong>Year</strong> - Reporting rate on time",
                 ]
     dqa_type = "reporting_rate_fmaps_fcdrr"
     report_name = "Facility Reporting Metrics for ARVs: F-MAPS and F-CDRR"
@@ -2040,6 +2042,18 @@ def fmaps_reporting_rate(request):
                       "reporting rate on time data. Please generate these files and ensure they are in CSV format " \
                       "before uploading them. You can find detailed instructions on how to upload the files below. " \
                       "Thank you. "
+
+            def extract_year_from_columns(df):
+                """
+                Extracts the year from a DataFrame column that has 'Revision' followed by 4 digits
+                Returns the year as an integer if found else returns None.
+                """
+                for col in df.columns:
+                    match = re.search(r'Revision (\d{4})', col)
+                    if match:
+                        return int(match.group(1))
+                return None
+
             if form.is_valid():
                 file = request.FILES['file']
                 if "csv" in file.name:
@@ -2047,37 +2061,42 @@ def fmaps_reporting_rate(request):
                 else:
                     messages.success(request, message)
                     return redirect('fmaps_reporting_rate')
-                # Check if required columns exist in the DataFrame
-                if all(col_name in df.columns for col_name in
-                       ["organisationunitname", "orgunitlevel2", "organisationunitcode", "periodname",
-                        "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate",
-                        "MoH 729B Facility - F'MAPS Revision 2019 - Reporting rate on time",
-                        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate",
-                        "MoH 730B Facility - CDRR Revision 2019 - Reporting rate on time",
-                        ]):
-                    # Read data from FYJHealthFacility model into a pandas DataFrame
-                    qs = FYJHealthFacility.objects.all()
-                    df1 = pd.DataFrame.from_records(qs.values())
+                year = extract_year_from_columns(df)
 
-                    df1 = df1.rename(columns={
-                        "mfl_code": "MFL Code", "county": "County", 'health_subcounty': 'Health Subcounty',
-                        'subcounty': 'Subcounty', 'hub': 'Hub(1,2,3 o 4)', 'm_and_e_mentor': 'M&E Mentor/SI associate',
-                        'm_and_e_assistant': 'M&E Assistant', 'care_and_treatment': 'Care & Treatment(Yes/No)',
-                        'hts': 'HTS(Yes/No)', 'vmmc': 'VMMC(Yes/No)', 'key_pop': 'Key Pop(Yes/No)',
-                        'facility_type': 'Faclity Type', 'category': 'Category (HVF/MVF/LVF)', 'emr': 'EMR'
-                    })
-                    if df.shape[0] > 0 and df1.shape[0] > 0:
-                        fcdrr_fig, kajiado_reporting_rate_fig, nairobi_reporting_rate_fig, no_fmaps, no_fcdrr, \
-                            overall_fig, no_fcdrr_fmaps_fig, nairobi_730b_fig, kajiado_730b_fig, \
-                            nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, nairobi_729b_fig, \
-                            kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
-                            nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
-                            nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, \
-                            no_fcdrr_fmaps_fig_all, no_fcdrr_all, no_fmaps_all, program_facilities_730b_fig, fyj_730b, \
-                            program_facilities_729b_fig, fyj_729b, fmaps_fig = analyse_fmaps_fcdrr(df, df1)
-                else:
-                    messages.success(request, message)
-                    return redirect('fmaps_reporting_rate')
+                if year:
+                    required_columns = [
+                        "organisationunitname", "orgunitlevel2", "organisationunitcode", "periodname",
+                        f"MoH 729B Facility - F'MAPS Revision {year} - Reporting rate",
+                        f"MoH 729B Facility - F'MAPS Revision {year} - Reporting rate on time",
+                        f"MoH 730B Facility - CDRR Revision {year} - Reporting rate",
+                        f"MoH 730B Facility - CDRR Revision {year} - Reporting rate on time",
+                    ]
+                    # Check if required columns exist in the DataFrame
+                    if all(col_name in df.columns for col_name in required_columns):
+                        # Read data from FYJHealthFacility model into a pandas DataFrame
+                        qs = FYJHealthFacility.objects.all()
+                        df1 = pd.DataFrame.from_records(qs.values())
+
+                        df1 = df1.rename(columns={
+                            "mfl_code": "MFL Code", "county": "County", 'health_subcounty': 'Health Subcounty',
+                            'subcounty': 'Subcounty', 'hub': 'Hub(1,2,3 o 4)',
+                            'm_and_e_mentor': 'M&E Mentor/SI associate',
+                            'm_and_e_assistant': 'M&E Assistant', 'care_and_treatment': 'Care & Treatment(Yes/No)',
+                            'hts': 'HTS(Yes/No)', 'vmmc': 'VMMC(Yes/No)', 'key_pop': 'Key Pop(Yes/No)',
+                            'facility_type': 'Faclity Type', 'category': 'Category (HVF/MVF/LVF)', 'emr': 'EMR'
+                        })
+                        if df.shape[0] > 0 and df1.shape[0] > 0:
+                            fcdrr_fig, kajiado_reporting_rate_fig, nairobi_reporting_rate_fig, no_fmaps, no_fcdrr, \
+                                overall_fig, no_fcdrr_fmaps_fig, nairobi_730b_fig, kajiado_730b_fig, \
+                                nairobi_program_facilities_730b_fig, kajiado_program_facilities_730b_fig, nairobi_729b_fig, \
+                                kajiado_729b_fig, nairobi_program_facilities_729b_fig, kajiado_program_facilities_729b_fig, \
+                                nairobi_730b_overall, kajiado_730b_overall, fyj_nairobi_730, fyj_kajiado_730, \
+                                nairobi_729b_overall, kajiado_729b_overall, fyj_nairobi_729b, fyj_kajiado_729b, \
+                                no_fcdrr_fmaps_fig_all, no_fcdrr_all, no_fmaps_all, program_facilities_730b_fig, fyj_730b, \
+                                program_facilities_729b_fig, fyj_729b, fmaps_fig = analyse_fmaps_fcdrr(df, df1, year)
+                    else:
+                        messages.success(request, message)
+                        return redirect('fmaps_reporting_rate')
             else:
                 messages.success(request, message)
                 return redirect('fmaps_reporting_rate')
@@ -5287,7 +5306,7 @@ def create_county_status_chart(county_status, level):
 
     county_names = county_status_sorted[level].tolist()
     facilities_without_variances = (
-                county_status_sorted['ART sites'] - county_status_sorted['# Facility with variances']).tolist()
+            county_status_sorted['ART sites'] - county_status_sorted['# Facility with variances']).tolist()
     facilities_with_variances = county_status_sorted['# Facility with variances'].tolist()
     total_facilities = county_status_sorted['ART sites'].tolist()
 

@@ -607,6 +607,8 @@ def analyse_pharmacy_data(request, df, df1):
                        "issued this month":"DTG 10 60s",
                        "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 90s Total Quantity "
                        "issued this month": "DTG 10 90s",
+                       "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 90s  Total Quantity "
+                       "issued this month": "DTG 10 90s",
                        }
     sc_curr_cols = {
         "MoH 730B Revision 2017 Adult preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) FDC ("
@@ -658,6 +660,7 @@ def analyse_pharmacy_data(request, df, df1):
         "Tablets 90s End of Month Physical Stock Count": "ABC/3TC/DTG 60/30/5 90s",
         "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 60s End of Month Physical Stock Count": "DTG 10 60s",
         "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 90s End of Month Physical Stock Count": "DTG 10 90s",
+        "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 90s  End of Month Physical Stock Count": "DTG 10 90s",
     }
 
     if len(dispensed_cols) > 0:

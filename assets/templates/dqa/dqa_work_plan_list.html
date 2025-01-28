@@ -24,7 +24,7 @@
                         {% for message in messages|slice:":1" %}
                             {% if "dqa" in message|lower %}
                                 <div class="mb-3">
-                                    <a href="{% url 'add_data_verification' %}" class="btn btn-success flicker-button"
+                                    <a href="{% url 'add_data_verification' %}" class="btn btn-sm btn-success flicker-button"
                                        role="button"> ADD FACILITY DQA DATA </a>
                                 </div>
                             {% endif %}
@@ -57,14 +57,14 @@
                     {{ facility_form.name|as_crispy_field }}
                 </div>
 {#                <div class="col-md-3 mt-2 pt-3">#}
-{#                    <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">#}
+{#                    <input class="btn btn-sm btn-success mt-1" type="submit" name="submit_data" value="Submit">#}
 {#                </div>#}
             </form>
             <div class="row">
                 {% if work_plan_qs %}
                     <div class="col-md-4">
                         <div>
-                            <a class="btn btn-success flicker-button" data-bs-toggle="collapse"
+                            <a class="btn btn-sm btn-success flicker-button" data-bs-toggle="collapse"
                                href="#collapsepreviousworkplans"
                                role="button" aria-expanded="false" aria-controls="collapsepreviousworkplans">
                                 View Other Work Plans
@@ -161,13 +161,13 @@
                                     {{ action_plan.comments }}
                                 </td>
                                 <td>
-                                    <a href="{% url 'update_dqa_workplan' action_plan.id %}" class="btn btn-info"
+                                    <a href="{% url 'update_dqa_workplan' action_plan.id %}" class="btn btn-sm btn-info"
                                        role="button">Update</a>
                                 </td>
                                 {% if user.is_authenticated %}
                                     {% if user.id == action_plan.created_by.id %}
                                         <td>
-                                            {#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-danger" role="button">Delete</a>#}
+                                            {#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-sm btn-danger" role="button">Delete</a>#}
                                         </td>
                                     {% endif %}
                                 {% endif %}
@@ -325,13 +325,13 @@
                                     {{ action_plan.comments }}
                                 </td>
                                 <td>
-                                    <a href="{% url 'update_dqa_workplan' action_plan.id %}" class="btn btn-info"
+                                    <a href="{% url 'update_dqa_workplan' action_plan.id %}" class="btn btn-sm btn-info"
                                        role="button">Update</a>
                                 </td>
                                 {% if user.is_authenticated %}
                                     {% if user.id == action_plan.created_by.id %}
                                         <td>
-                                            {#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-danger" role="button">Delete</a>#}
+                                            {#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-sm btn-danger" role="button">Delete</a>#}
                                         </td>
                                     {% endif %}
                                 {% endif %}

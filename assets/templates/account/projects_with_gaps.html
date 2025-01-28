@@ -414,16 +414,16 @@
 <div class="btn-group hub-button-group" role="group" aria-label="Hub selection">
     {% if available_hubs %}
         {% for hub in available_hubs %}
-            <button type="button" class="btn btn-outline-primary hub-button {% if hub.hub == hub_name %}active{% endif %}" data-hub="{{ hub.hub }}">
+            <button type="button" class="btn btn-sm btn-outline-primary hub-button {% if hub.hub == hub_name %}active{% endif %}" data-hub="{{ hub.hub }}">
                 {{ hub.hub }}
             </button>
         {% endfor %}
     {% else %}
-        <button type="button" class="btn btn-outline-secondary" disabled>No hubs available</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" disabled>No hubs available</button>
     {% endif %}
 </div>
 </div>
-<button onclick="clearCacheWithoutReload()" class="btn btn-outline-secondary clear-cache-btn">
+<button onclick="clearCacheWithoutReload()" class="btn btn-sm btn-outline-secondary clear-cache-btn">
     <i class="fas fa-sync-alt"></i>
 </button>
 </div>

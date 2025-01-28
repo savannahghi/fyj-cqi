@@ -30,12 +30,12 @@
                     </div>
                     {% if not hide_submit_button %}
                         <div class="col-md-3 mt-4 pt-2">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                     {% else %}
                         <div class="col pt-3">
                             <a href="{% url "add_data_concordance" %}"
-                               class="btn btn-success">Refresh the page</a>
+                               class="btn btn-sm btn-success">Refresh the page</a>
                         </div>
                     {% endif %}
                 </form>
@@ -95,7 +95,7 @@
                                     </tbody>
                                 </table>
                                 <div class="col-md-3 mt-4 pt-2">
-                                    <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+                                    <input class="btn btn-sm btn-success mt-1" type="submit" name="submit_data" value="Submit">
                                 </div>
                             </form>
                         {% endif %}

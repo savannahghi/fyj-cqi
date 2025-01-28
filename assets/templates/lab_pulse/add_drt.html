@@ -30,7 +30,7 @@
                             {{ drt_file_form.result|as_crispy_field }}
                         </div>
                         <div class="col-md-4 mt-4">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                         {% if form.errors %}
                             <div class="alert alert-danger mt-4">
@@ -98,7 +98,7 @@
                         <div class="col-12 col-md-6 col-lg-2">
                             <div class="row">
                                 <div class="mt-4">
-                                    <button class="btn btn-outline-primary btn-sm" type="submit">
+                                    <button class="btn btn-sm btn-outline-primary btn-sm" type="submit">
                                         <i class="fas fa-search"></i> Search
                                     </button>
                                 </div>
@@ -122,7 +122,7 @@
                 <div class="row mb-3">
                     <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
                         <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"
-                           class="btn btn-secondary btn-block" role="button"> All records
+                           class="btn btn-sm btn-secondary btn-block" role="button"> All records
                             <i class="fas fa-download"></i>
                         </a>
                     </div>
@@ -225,7 +225,7 @@
             <div class="row mt-3">
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-2">
                     <a href="{% url 'download_csv_lab' "all" %}?{{ request.GET.urlencode }}"
-                       class="btn btn-secondary btn-block" role="button"> All records
+                       class="btn btn-sm btn-secondary btn-block" role="button"> All records
                         <i class="fas fa-download"></i>
                     </a>
                 </div>
@@ -261,7 +261,7 @@
 
                                         <div>
                                             <a href="{{ result.result.url }}">
-                                                <button type="button" class="btn btn-outline-success btn-floating mr-2"
+                                                <button type="button" class="btn btn-sm btn-outline-success btn-floating mr-2"
                                                         data-mdb-ripple-color="dark">
                                                     Download <i class="fas fa-download"></i>
                                                 </button>
@@ -269,7 +269,7 @@
                                             {% if user.id == result.created_by.id or user.is_superuser %}
                                                 <a href="{% url 'update_drt_results' result.id %}">
                                                     <button type="button"
-                                                            class="btn btn-outline-warning btn-floating mr-2"
+                                                            class="btn btn-sm btn-outline-warning btn-floating mr-2"
                                                             data-mdb-ripple-color="dark">
                                                         EDIT
                                                     </button>
@@ -278,7 +278,7 @@
                                             {% if user.id == result.created_by.id or user.is_superuser %}
                                                 <a href="{% url 'delete_drt_result' result.id %}">
                                                     <button type="button"
-                                                            class="btn btn-outline-danger btn-floating mr-2"
+                                                            class="btn btn-sm btn-outline-danger btn-floating mr-2"
                                                             data-mdb-ripple-color="dark">
                                                         DELETE
                                                     </button>

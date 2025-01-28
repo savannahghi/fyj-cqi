@@ -6,16 +6,16 @@
 
 
 {% block content %}
+    <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.min.js"></script>
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
         <div class="p-5 mb-4 bg-light rounded-3">
-
             {% if messages %}
                 <ul class="messages">
                     {% for message in messages %}
                         <div class="alert alert-info col-12" role="alert">
                             <h5 class="d-flex justify-content-evenly" style="font-size: x-small">{{ message }}</h5>
                         </div>
-                        {#            <li{% if message.0.tags %} class="{{ message.0.tags }}"{% endif %}>{{ message }}</li>#}
                     {% endfor %}
                 </ul>
             {% endif %}
@@ -30,7 +30,7 @@
                     <div class="row mb-4">
                         {#              <div class="col d-flex justify-content-between">#}
                         <div class="col-md-6">
-                            <strong>OBJECTIVE: </strong>{{ qi_project.objective|safe  }}
+                            <strong>OBJECTIVE: </strong>{{ qi_project.objective|safe }}
                         </div>
                         <div class="col-md-6">
                             <strong>SUB-COUNTY: </strong>{{ qi_project.sub_county }}
@@ -44,9 +44,10 @@
                     </div>
                 {% endif %}
                 {% for stock_card in stock_card_data|slice:":1" %}
-                    <h6 class="mb-4 mt-4">FACILITY: {{ stock_card.facility_name.name }}</h6>
-                    <h6 class="mb-4 mt-4">MFL CODE: {{ stock_card.facility_name.mfl_code }}</h6>
-                    <h6 class="mb-4 mt-4">Interview date: {{ stock_card.date_modified }}</h6>
+                    <h6 class="mb-4 mt-4">FACILITY : {{ stock_card.facility_name.name }}</h6>
+                    <h6 class="mb-4 mt-4">MFL CODE : {{ stock_card.facility_name.mfl_code }}</h6>
+                    <h6 class="mb-4 mt-4">Interview date : {{ stock_card.date_modified }}</h6>
+                    <h6 class="mb-4 mt-4">Activity : {{ fetched_objects.register_name }}</h6>
                 {% endfor %}
                 {% if title == "Commodity records/registers" %}
                     <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
@@ -62,122 +63,22 @@
                             {{ facility_form.name|as_crispy_field }}
                         </div>
                         <div class="col-md-3 mt-2 pt-3">
-                            <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+                            <input class="btn btn-sm btn-sm btn-success mt-1" type="submit" name="submit_data"
+                                   value="Submit">
                         </div>
                     </form>
                     {% if pharmacy_records %}
-                        <table class="table table-striped table-hover">
-                            <thead>
-                            <tr>
-                                {% if "Add" not in title %}
-                                    <th></th>
-                                {% endif %}
-                                <th style="font-size: xx-small">Register Name</th>
-                                <th style="font-size: xx-small">Register Availability</th>
-                                <th style="font-size: xx-small">Register Usage</th>
-                                <th style="font-size: xx-small">Last Month's Report Copy</th>
-                                <th style="font-size: xx-small">Date of Last Report Submission</th>
-                                <th style="font-size: xx-small">Comments</th>
-                                {% if "Add" not in title %}
-                                    <th></th>
-                                {% endif %}
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for pharmacy_record in pharmacy_records %}
-                                <tr>
-                                    {% if "Add" not in title %}
-                                        <td class="text-danger fw-bold">{{ forloop.counter }}.</td>
-                                    {% endif %}
-                                    <td style="width: calc((40%) );"> {{ pharmacy_record.register_name }} </td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 70%) / 4);"> {{ pharmacy_record.register_available }}</td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 70%) / 4);"> {{ pharmacy_record.currently_in_use }} </td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 70%) / 4);"> {{ pharmacy_record.last_month_copy }} </td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 70%) / 4);"> {{ pharmacy_record.date_report_submitted }} </td>
-                                    <td style="width: calc((15%));"> {{ pharmacy_record.comments }} </td>
-                                    {#                                    {% if "Add" not in title %}#}
-                                    <td style="width: calc((15%));">
-                                        <div>
-                                            <a href="{% url 'update_pharmacy_records' pharmacy_record.id pharmacy_record.register_name %}"
-                                               class="btn btn-info glow-button"
-                                               role="button" id="update-btn-{{ stock_card.id }}">Update</a>
-                                        </div>
-                                        {#                                    {{ work_plan_pharmacy_records_ids }}#}
-                                        {#                                        {% for pharmacy_records_without_workplan in pharmacy_records_without_workplans %}#}
-                                        {#                                            {{ pharmacy_records_without_workplan.id }}#}
-                                        {#                                            pahra:{{ pharmacy_record.id }}#}
-                                        {% if pharmacy_record.id in pharmacy_records_without_workplans %}
-                                            <div class="mt-2">
-                                                {#                                                    {{ pharmacy_record.id }}#}
-                                                <a href="{% url 'create_commodity_work_plans' pharmacy_record.id %}"
-                                                   class="btn btn-info flicker-button"
-                                                   role="button" id="update-btn-{{ pharmacy_record.id }}">Add work
-                                                    plan</a>
-                                            </div>
-                                        {% endif %}
-                                        {#                                        {% endfor %}#}
-                                    </td>
-                                    {#                                    {% endif %}#}
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                        {% if not supply_chain_target_100.empty %}
+                        {% block comm_summary %}
+                            {% include "partial_html/pharmacy_dqa/commodity_registers_summary.html" %}
+                        {% endblock %}
+                        {% if work_plans %}
                             <hr>
-                            <h6 class=" fw-bold text-primary text-center">Supply chain KPIs with a target of 100% </h6>
+                            <h4 class="fw-bold text-primary text-center"> Inventory and Commodity Records/Registers Work
+                                Plan</h4>
                             <hr>
-                            <!--SUPPLY CHAIN KPIs WITH A TARGET OF 100-->
-                            <table class="table table-striped table-hover">
-                                <thead class="thead-dark">
-                                <th scope="col"></th>
-                                {% for col in supply_chain_target_100.columns %}
-                                    <th class="text-center" scope="col">{{ col }}</th>
-                                {% endfor %}
-                                </thead>
-                                <tbody>
-                                </tr>
-                                {% for index, row in supply_chain_target_100.iterrows %}
-                                    <tr>
-                                        <th scope="row">{{ index }}</th>
-                                        {% for cell in row %}
-                                            {% if forloop.last %}
-                                                {% if cell == 1  and cell not in sort_focus_areas %}
-                                                    <td class="text-center fw-bold" style="background-color: green">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% elif cell < 1 and cell not in sort_focus_areas %}
-                                                    <td class="text-center fw-bold" style="background-color: red">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% endif %}
-                                            {% elif forloop.first %}
-                                                <td class="text-center fw-bold">
-                                                    {{ cell }}
-                                                </td>
-                                            {% else %}
-                                                {% if cell == 100  and cell not in sort_focus_areas %}
-                                                    <td class="text-center" style="background-color: green">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% elif cell < 100 and cell not in sort_focus_areas %}
-                                                    <td class="text-center" style="background-color: red">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% else %}
-                                                    <td class="text-center">
-                                                        {{ cell }}
-                                                    </td>
-                                                {% endif %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
+                            {% block workplans %}
+                                {% include "partial_html/pharmacy_dqa/pharmacy_workplan.html" %}
+                            {% endblock %}
                         {% endif %}
                     {% endif %}
                 {% endif %}
@@ -199,9 +100,8 @@
                         <div class="col-md-6 mt-4">
                             {{ form.complete_date|as_crispy_field }}
                         </div>
-
                         <div class="col-md-4 mt-4 pt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                         {% if form.errors %}
                             <div class="alert alert-danger mt-4">
@@ -224,7 +124,8 @@
                             {{ facility_form.name|as_crispy_field }}
                         </div>
                         <div class="col-md-3 mt-2 pt-3">
-                            <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+                            <input class="btn btn-sm btn-sm btn-success mt-1" type="submit" name="submit_data"
+                                   value="Submit">
                         </div>
                     </form>
                     {% if work_plans %}
@@ -232,77 +133,9 @@
                         <h4 class="fw-bold text-primary text-center"> Inventory and Commodity Records/Registers Work
                             Plan</h4>
                         <hr>
-                        <table class="table table-striped table-hover">
-                            <thead>
-                            <tr>
-                                <th></th>
-                                <th style="font-size:xx-small">Focus Area</th>
-                                <th style="font-size:xx-small">Immediate corrective action</th>
-                                <th style="font-size:xx-small">Corrective action</th>
-                                <th style="font-size:xx-small">Responsible person</th>
-                                {#                                <th style="font-size:xx-small">Complete date</th>#}
-                                <th style="font-size:xx-small">Follow-up plan</th>
-                                <th></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-
-                            {% for work_plan in work_plans|slice:":1" %}
-                                <div class="mt-2">
-                                    <a href="{% url 'add_pharmacy_audit_team' selected_facility.id quarter_year %}"
-                                       class="btn btn-success flicker-button mb-2" role="button">Add audit team</a>
-                                </div>
-                            {% endfor %}
-                            {% for work_plan in work_plans %}
-                                <tr>
-                                    <td class="text-danger fw-bold" style="width: 3%">{{ forloop.counter }}.</td>
-                                    {% if work_plan.model_name.model_name|remove_underscores != "" %}
-                                        <td style="width: calc((100% - 6%) / 6);">
-                                            {{ work_plan.model_name.model_name|remove_underscores }}
-                                            <br>
-                                            <br>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-warning">Start date: {{ work_plan.date_created|date:"M d, Y" }}
-                                            </span>
-                                            <br>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-info">Due date: {{ work_plan.complete_date }}
-                                            </span>
-
-                                        </td>
-                                    {% else %}
-                                        <td style="width: calc((100% - 6%) / 6);">
-                                            {{ work_plan.pharmacy_records.register_name }}
-                                            <br>
-                                            <br>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-warning">Start date: {{ work_plan.date_created|date:"M d, Y" }}
-                                            </span>
-                                            <br>
-                                            <span style="font-size: 8px"
-                                                  class="badge alert-info">Due date: {{ work_plan.complete_date }}
-                                            </span>
-                                        </td>
-                                    {% endif %}
-                                    <td style="width: calc((100% - 6%) / 7);"> {{ work_plan.immediate_corrective_actions }} </td>
-                                    <td style="width: calc((100% - 6%) / 7);"> {{ work_plan.action_plan }} </td>
-                                    <td style="width: calc((100% - 6%) / 7);"> {{ work_plan.responsible_person }}
-                                        <br>
-                                        <span style="font-size: 8px"
-                                              class="badge alert-warning">Remaining days: {{ work_plan.progress }}</span>
-                                    </td>
-                                    <td style="width: calc((100% - 6%) / 7);"> {{ work_plan.follow_up_plan }} </td>
-                                    <td style="width: calc((3%));">
-                                        <div>
-                                            <a href="{% url 'update_workplan' work_plan.id %}"
-                                               class="btn btn-info glow-button"
-                                               role="button" id="update-btn-{{ work_plan.id }}">Update</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                        {% block workplan %}
+                            {% include "partial_html/pharmacy_dqa/pharmacy_workplan.html" %}
+                        {% endblock %}
                     {% endif %}
 
                 {% endif %}
@@ -339,11 +172,36 @@
                             </tbody>
                         </table>
                         <div class="col-md-2 mt-2 pt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Save">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Save">
                         </div>
                     </form>
                 {% endif %}
             </div>
         </div>
+
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const input = document.querySelector('.tagify');
+                new Tagify(input, {
+                    delimiters: ',',  // Use commas to separate tags
+                    pattern: /^[a-zA-Z\s]+$/,  // Allow only letters and spaces
+                    dropdown: {
+                        enabled: 0,  // Disable dropdown
+                    }
+                });
+            });
+        </script>
+        <script>
+            document.querySelector('.collapsible').addEventListener('click', function () {
+                this.classList.toggle('active');
+                const content = this.nextElementSibling;
+                if (content.style.display === 'block') {
+                    content.style.display = 'none';
+                } else {
+                    content.style.display = 'block';
+                }
+            });
+        </script>
     </main>
 {% endblock %}

@@ -30,13 +30,13 @@
       {% endif %}
       </div>
 {#          <div class="d-flex justify-content-between">#}
-{#              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>#}
-{#              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>#}
-{#              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>#}
-{#              <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>#}
-{#              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>#}
-{#              <a href="{% url 'add_hub' %}" class="btn btn-success" role="button">ADD HUB</a>#}
-{#              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
+{#              <a href="{% url 'add_qi_manager' %}" class="btn btn-sm btn-success" role="button">ADD QI MANAGER</a>#}
+{#              <a href="{% url 'add_department' %}" class="btn btn-sm btn-success" role="button">ADD DEPARTMENT</a>#}
+{#              <a href="{% url 'add_category' %}" class="btn btn-sm btn-success" role="button">ADD PROJECT COMPONENT</a>#}
+{#              <a href="{% url 'add_facility' %}" class="btn btn-sm btn-success" role="button">ADD FACILITY</a>#}
+{#              <a href="{% url 'add_county' %}" class="btn btn-sm btn-success" role="button">ADD COUNTY</a>#}
+{#              <a href="{% url 'add_hub' %}" class="btn btn-sm btn-success" role="button">ADD HUB</a>#}
+{#              <a href="{% url 'add_subcounty' %}" class="btn btn-sm btn-success" role="button">ADD SUBCOUNTY</a>#}
 {#          </div>#}
       <div>
           <h6>Facility : {{ patient.facility_name }}</h6>
@@ -128,9 +128,9 @@
       </div>
       {% if risk_category %}
           {% if "HIGH" in risk_category %}
-            <button class="btn btn-success flicker-button">Client risk category: {{ risk_category }}</button>
+            <button class="btn btn-sm btn-success flicker-button">Client risk category: {{ risk_category }}</button>
             {% else %}
-            <button class="btn btn-success">Client risk category: {{ risk_category }}</button>
+            <button class="btn btn-sm btn-success">Client risk category: {{ risk_category }}</button>
         {% endif %}
       {% endif %}
 
@@ -254,7 +254,7 @@
 {#                <td>{{ form.twelve_month_assessment }}</td>#}
 {#                <td>{{ form.eighteen_month_assessment }}</td>#}
 {#                <td>{{ form.twenty_four_month_assessment }}</td>#}
-          <td><a href="{% url 'update_client_characteristics_trial' form.id %}" class="btn btn-info" role="button">update</a></td>
+          <td><a href="{% url 'update_client_characteristics_trial' form.id %}" class="btn btn-sm btn-info" role="button">update</a></td>
           </tr>
 
       </tbody>
@@ -310,7 +310,7 @@
       </tbody>
     </table>
     <div class="col-md-2 mt-2 pt-3">
-      <input class="btn btn-success mt-1" type="submit" value="Submit">
+      <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
     </div>
 {#  {% endif %}#}
 </form>

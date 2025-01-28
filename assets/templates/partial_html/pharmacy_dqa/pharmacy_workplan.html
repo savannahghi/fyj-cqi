@@ -1,0 +1,171 @@
+<style>
+    .collapsible {
+        background-color: #f1f1f1;
+        color: #333;
+        cursor: pointer;
+        padding: 10px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 16px;
+    }
+
+    .collapsible-section h3 {
+        font-size: 18px; /* Slightly larger for headings */
+        margin-bottom: 12px; /* Consistent spacing */
+    }
+
+    .collapsible-section h4 {
+        font-size: 16px; /* Consistent subheading size */
+        margin-top: 12px; /* Consistent spacing */
+        margin-bottom: 8px; /* Consistent spacing */
+    }
+
+    .collapsible-section ul {
+        list-style-type: disc; /* Bullet points */
+        padding-left: 20px; /* Consistent indentation */
+    }
+
+    .collapsible-section li {
+        margin-bottom: 8px; /* Consistent spacing */
+    }
+
+    .active, .collapsible-section:hover {
+        background-color: #ddd;
+    }
+
+    .content {
+        padding: 0 18px;
+        display: none;
+        overflow: hidden;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+    }
+</style>
+<div class="collapsible-section">
+    <button type="button" class="collapsible btn btn-info mb-3">Show User Guide</button>
+    <div class="content">
+        <h3>User Guide for Interpreting the Workplan</h3>
+        <p>The <strong>Inventory and Commodity Records/Registers Work Plan</strong> is used
+            to
+            track tasks, responsibilities, and timelines for managing inventory and
+            commodity
+            records. Each row in the table represents a specific task or focus area.</p>
+
+        <h4>Table Columns Explained</h4>
+        <ul>
+            <li><strong>#</strong>: The task number (e.g., 1, 2).</li>
+            <li><strong>Focus Area</strong>: The specific register or activity being managed
+                (e.g., DADR-Anti TB register).
+            </li>
+            <li><strong>Immediate Corrective Action</strong>: The first steps to address any
+                issues.
+            </li>
+            <li><strong>Corrective Action</strong>: Detailed steps to resolve issues.</li>
+            <li><strong>Responsible Person</strong>: The individuals responsible for
+                completing
+                the task.
+            </li>
+            <li><strong>Follow-up Plan</strong>: The plan for monitoring progress.</li>
+            <li><strong>Update button</strong>: Update the activity bing managed.</li>
+        </ul>
+
+        <h4>Key Information</h4>
+        <ul>
+            <li><strong>Start Date</strong>: The date when the task begins (e.g., "Jan 23,
+                2025").
+            </li>
+            <li><strong>Due Date</strong>: The date by which the task should be completed
+                (e.g.,
+                "Feb 28, 2025").
+            </li>
+            <li><strong>Remaining Days</strong>: The number of days left until the due date
+                (e.g., "36.0"). If "Remaining days" is 0 or negative, the task is overdue.
+                Contact the responsible person to understand the delay and take corrective
+                action.
+            </li>
+        </ul>
+        <h4>Best Practices</h4>
+        <ul>
+            <li><strong>Regular Updates</strong>: Ensure the workplan is updated regularly
+                to
+                reflect
+                the latest progress and deadlines.
+            </li>
+            <li><strong>Communication</strong>: Maintain clear communication with the
+                responsible
+                person for each task.
+            </li>
+        </ul>
+    </div>
+</div>
+<table class="table table-striped table-hover">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th style="font-size:xx-small">Focus Area</th>
+        <th style="font-size:xx-small">Immediate corrective action</th>
+        <th style="font-size:xx-small">Corrective action</th>
+        <th style="font-size:xx-small">Responsible person</th>
+        <th style="font-size:xx-small">Follow-up plan</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for work_plan in work_plans|slice:":1" %}
+        <div class="mt-2">
+            <a href="{% url 'add_pharmacy_audit_team' selected_facility.id quarter_year %}"
+               class="btn btn-sm btn-success flicker-button mb-2" role="button">Add audit
+                team</a>
+        </div>
+    {% endfor %}
+    {% for work_plan in work_plans %}
+        <tr>
+            <td class="text-danger fw-bold" style="width: 3%">{{ forloop.counter }}.</td>
+            {% if work_plan.delivery_notes %}
+                <td style="width: calc((100% - 6%) / 6);">
+                    {{ work_plan.delivery_notes.register_name }}
+                    <br>
+                    <br>
+                    <span style="font-size: 8px"
+                          class="badge alert-warning">Start date: {{ work_plan.date_created|date:"M d, Y" }}
+                                            </span>
+                    <br>
+                    <span style="font-size: 8px"
+                          class="badge alert-info">Due date: {{ work_plan.complete_date }}
+                                            </span>
+                </td>
+            {% else %}
+                <td style="width: calc((100% - 6%) / 6);">
+                    {{ work_plan.pharmacy_records.register_name }}
+                    <br>
+                    <br>
+                    <span style="font-size: 8px"
+                          class="badge alert-warning">Start date: {{ work_plan.date_created|date:"M d, Y" }}
+                                            </span>
+                    <br>
+                    <span style="font-size: 8px"
+                          class="badge alert-info">Due date: {{ work_plan.complete_date }}
+                                            </span>
+                </td>
+            {% endif %}
+            <td style="width: calc((100% - 6%) / 7);"> {{ work_plan.immediate_corrective_actions }} </td>
+            <td style="width: calc((100% - 6%) / 7);"> {{ work_plan.action_plan }} </td>
+            <td style="width: calc((100% - 6%) / 7);"> {{ work_plan.responsible_person }}
+                <br>
+                <span style="font-size: 8px"
+                      class="badge alert-warning">Remaining days: {{ work_plan.progress }}</span>
+            </td>
+            <td style="width: calc((100% - 6%) / 7);"> {{ work_plan.follow_up_plan }} </td>
+            <td style="width: calc((3%));">
+                <div>
+                    <a href="{% url 'update_workplan' work_plan.id %}"
+                       class="btn btn-sm btn-info glow-button"
+                       role="button" id="update-btn-{{ work_plan.id }}">Update</a>
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

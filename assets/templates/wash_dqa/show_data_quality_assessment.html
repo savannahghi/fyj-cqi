@@ -30,16 +30,16 @@
                     <div class="col-md-3">
                         {% if report_type == "documentation" %}
                             <a href="{% url 'show_wash_dqa' "documentation" %}"
-                               class="btn btn-success">Documentation</a>
+                               class="btn btn-sm btn-success">Documentation</a>
                         {% else %}
                             <a href="{% url 'show_wash_dqa' "documentation" %}"
-                               class="btn btn-outline-success">Documentation</a>
+                               class="btn btn-sm btn-outline-success">Documentation</a>
                         {% endif %}
                     </div>
                     <div class="col-md-3">
                         {% if report_type == "data-quality" %}
                             <a href="{% url 'show_wash_dqa' 'data-quality' %}"
-                               class="btn btn-success">Data Quality Systems</a>
+                               class="btn btn-sm btn-success">Data Quality Systems</a>
                         {% else %}
                             <a href="{% url 'show_wash_dqa' 'data-quality' %}"
                                class="btn btn-outline-success">Data Quality Systems</a>

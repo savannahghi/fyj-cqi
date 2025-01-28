@@ -198,7 +198,7 @@
                         <div class="col-md-4 mb-3">
                             {% if show_buttons.Arvs_choices %}
                                 <a href="{% url 'add_inventory' report_name='Arvs_choices' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-primary {% if report_name == 'Arvs_choices' %}active{% endif %}">
+                                   class="btn btn-sm btn-primary {% if report_name == 'Arvs_choices' %}active{% endif %}">
                                     <i class="fas fa-clipboard-check"></i> HAART Quality Assessment
                                 </a>
                             {% endif %}
@@ -206,7 +206,7 @@
                         <div class="col-md-4 mb-3">
                             {% if show_buttons.fp_choices %}
                                 <a href="{% url 'add_inventory' report_name='fp_choices' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-info {% if report_name == 'fp_choices' %}active{% endif %}">
+                                   class="btn btn-sm btn-info {% if report_name == 'fp_choices' %}active{% endif %}">
                                     <i class="fas fa-calculator"></i> Family Planning Quality Assessment
                                 </a>
                             {% endif %}
@@ -214,7 +214,7 @@
                         <div class="col-md-4 mb-3">
                             {% if show_buttons.malaria_choices %}
                                 <a href="{% url 'add_inventory' report_name='malaria_choices' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-info {% if report_name == 'malaria_choices' %}active{% endif %}">
+                                   class="btn btn-sm btn-info {% if report_name == 'malaria_choices' %}active{% endif %}">
                                     <i class="fas fa-calculator"></i> Anti-Malaria Quality Assessment
                                 </a>
                             {% endif %}
@@ -226,7 +226,7 @@
                         <div class="col-md-4 mb-3">
                             {% if show_buttons.Arvs_integers %}
                                 <a href="{% url 'add_inventory' report_name='Arvs_integers' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-primary {% if report_name == 'Arvs_integers' %}active{% endif %}">
+                                   class="btn btn-sm btn-primary {% if report_name == 'Arvs_integers' %}active{% endif %}">
                                     <i class="fas fa-clipboard-check"></i> HAART Quantity Inventory
                                 </a>
                             {% endif %}
@@ -234,7 +234,7 @@
                         <div class="col-md-4 mb-3">
                             {% if show_buttons.fp_integers %}
                                 <a href="{% url 'add_inventory' report_name='fp_integers' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-info {% if report_name == 'fp_integers' %}active{% endif %}">
+                                   class="btn btn-sm btn-info {% if report_name == 'fp_integers' %}active{% endif %}">
                                     <i class="fas fa-calculator"></i> Family Planning Quantity Inventory
                                 </a>
                             {% endif %}
@@ -242,7 +242,7 @@
                         <div class="col-md-4 mb-3">
                             {% if show_buttons.malaria_integers %}
                                 <a href="{% url 'add_inventory' report_name='malaria_integers' quarter=quarter year=year pk=facility_id date=date %}"
-                                   class="btn btn-info {% if report_name == 'malaria_integers' %}active{% endif %}">
+                                   class="btn btn-sm btn-info {% if report_name == 'malaria_integers' %}active{% endif %}">
                                     <i class="fas fa-calculator"></i> Anti-Malaria Quantity Inventory
                                 </a>
                             {% endif %}
@@ -339,7 +339,7 @@
                         </table>
                     {% endif %}
                     <div class="col-md-2 mt-2 pt-3">
-                        <input class="btn btn-success mt-1" type="submit" value="Save">
+                        <input class="btn btn-sm btn-success mt-1" type="submit" value="Save">
                     </div>
                 </form>
             </div>

@@ -6,7 +6,7 @@
        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h4>QI Managers on the platform supervising QI projects</h4>
         <div class="btn-toolbar mb-2 mb-md-0">
-          <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
+          <a href="{% url 'add_qi_manager' %}" class="btn btn-sm btn-success" role="button">ADD QI MANAGER</a>
         </div>
       </div>
 
@@ -59,8 +59,8 @@
 {#                    	<td><span class="label label-warning">Not Active</span></td>#}
 {##}
 {##}
-{#                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-info" role="button">Edit</a></td>#}
-{#                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-danger" role="button">Delete</a></td>#}
+{#                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-sm btn-info" role="button">Edit</a></td>#}
+{#                        <td><a href="https://getbootstrap.com/docs/5.0/utilities/flex/" class="btn btn-sm btn-danger" role="button">Delete</a></td>#}
 {#                    </tr>#}
 {##}
 {#	               </tbody>#}
@@ -127,11 +127,11 @@
 {#              <td>#}
 {#                  {{ row.7 }}#}
 {#                   {% if row.7 > 0 %}#}
-{#                    <a href="{% url 'qi_managers_filter_project' row.QI_manager_id %}" class="btn btn-secondary" role="button">View Projects</a>#}
+{#                    <a href="{% url 'qi_managers_filter_project' row.QI_manager_id %}" class="btn btn-sm btn-secondary" role="button">View Projects</a>#}
 {#                  {% endif %}#}
 {#              </td>#}
 {#              <td>#}
-{#                  <a href="{% url 'update_qi_managers' row.QI_manager_id %}" class="btn btn-info" role="button">Update profile</a>#}
+{#                  <a href="{% url 'update_qi_managers' row.QI_manager_id %}" class="btn btn-sm btn-info" role="button">Update profile</a>#}
 {#              </td>#}
 {#              </tr>#}
 {#        {% endfor %}#}
@@ -174,11 +174,11 @@
             <td>{{ qi_manager.date_created|date:"D j M Y H:i" }}</td>
             <td>
                 {% if qi_manager.combined_sum > 0 %}
-                    <a href="{% url 'qi_managers_filter_project' qi_manager.id %}" class="btn btn-secondary" role="button">View Projects</a>
+                    <a href="{% url 'qi_managers_filter_project' qi_manager.id %}" class="btn btn-sm btn-secondary" role="button">View Projects</a>
                   {% endif %}
             </td>
             <td>
-                <a href="{% url 'update_qi_managers' qi_manager.id %}" class="btn btn-info" role="button">Update profile</a>
+                <a href="{% url 'update_qi_managers' qi_manager.id %}" class="btn btn-sm btn-info" role="button">Update profile</a>
             </td>
 
             </tr>

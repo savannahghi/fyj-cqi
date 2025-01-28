@@ -85,7 +85,7 @@
                             {% endif %}
                         {% endfor %}
                         <div class="col-md-4 mt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                   {% if form.errors %}
                     <div class="alert alert-danger mt-4">
@@ -109,7 +109,7 @@
                             {% endif %}
                         {% endfor %}
                         <div class="col-md-4 mt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                   {% if form.errors %}
                     <div class="alert alert-danger mt-4">
@@ -133,7 +133,7 @@
                             {% endif %}
                         {% endfor %}
                         <div class="col-md-12 mt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                   {% if form.errors %}
                     <div class="alert alert-danger mt-4">
@@ -184,7 +184,7 @@
                                 </div>
 
                         <div class="col-md-12 mt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                   {% if form.errors %}
                     <div class="alert alert-danger mt-4">
@@ -197,12 +197,12 @@
                 {% elif "SUSTAINMENT PLAN" in title %}
                  <div class="d-flex justify-content-between">
                         <div>
-                            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapserootcause" role="button" aria-expanded="false" aria-controls="collapserootcause">
+                            <a class="btn btn-sm btn-primary" data-bs-toggle="collapse" href="#collapserootcause" role="button" aria-expanded="false" aria-controls="collapserootcause">
                         SUSTAINMENT PLAN IN BRIEF
                         </a>
                         </div>
 
-{#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-outline-primary">View QI Project comments</a>#}
+{#                        <a href="{% url 'single_project_comments' facility_project.id %}" class="btn btn-sm btn-outline-primary">View QI Project comments</a>#}
                     </div>
 
                 <div class="collapse bg-light mt-2" id="collapserootcause">
@@ -298,7 +298,7 @@
                             {{ form.informed|as_crispy_field }}
                         </div>
                         <div class="col-md-12 mt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                   {% if form.errors %}
                     <div class="alert alert-danger mt-4">
@@ -311,7 +311,7 @@
                 <form method="POST" class="mt-5" enctype='multipart/form-data'>
                     {% csrf_token %}
                      {{ form|crispy}}
-                     <input class="btn btn-success mt-1" type="submit" value="Submit">
+                     <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                 </form>
             
             {% endif %}

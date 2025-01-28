@@ -8,10 +8,10 @@
         <h4>Comments</h4>
 {#        <div class="btn-toolbar mb-2 mb-md-0">#}
 {#          <div class="btn-group me-2">#}
-{#            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>#}
-{#            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>#}
+{#            <button type="button" class="btn btn-sm btn-sm btn-outline-secondary">Share</button>#}
+{#            <button type="button" class="btn btn-sm btn-sm btn-outline-secondary">Export</button>#}
 {#          </div>#}
-{#          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">#}
+{#          <button type="button" class="btn btn-sm btn-sm btn-outline-secondary dropdown-toggle">#}
 {#            <span data-feather="calendar" class="align-text-bottom"></span>#}
 {#            This week#}
 {#          </button>#}
@@ -39,9 +39,9 @@
 {#                <h5 class="d-flex justify-content-evenly">You are viewing comments sent to QI Team members regarding QI Initiatives that they are implementing.</h5>#}
 {#            {% endif %}#}
 {#        <div class="d-flex justify-content-evenly">#}
-{#            <a class="btn btn-outline-success btn-sm" href="{% url 'comments' %}">ALL COMMENTS</a>#}
-{#            <a class="btn btn-outline-secondary btn-sm" href="{% url 'comments_with_response' %}">COMMENTS WITH RESPONSES</a>#}
-{#            <a class="btn btn-outline-danger btn-sm" href="{% url 'comments_no_response' %}">COMMENTS WITHOUT RESPONSES</a>#}
+{#            <a class="btn btn-sm btn-outline-success btn-sm" href="{% url 'comments' %}">ALL COMMENTS</a>#}
+{#            <a class="btn btn-sm btn-outline-secondary btn-sm" href="{% url 'comments_with_response' %}">COMMENTS WITH RESPONSES</a>#}
+{#            <a class="btn btn-sm btn-outline-danger btn-sm" href="{% url 'comments_no_response' %}">COMMENTS WITHOUT RESPONSES</a>#}
 {##}
 {##}
 {#        </div>#}
@@ -49,7 +49,7 @@
 {#        <form action="" method="POST">#}
 {#            {% csrf_token %}#}
 {#            {{ form|crispy }}#}
-{#            <input type="submit" class="btn btn-success">#}
+{#            <input type="submit" class="btn btn-sm btn-success">#}
 {#        </form>#}
 {#</div>#}
 {#        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">#}
@@ -77,7 +77,7 @@
 {#              </ul>#}
 {#          <div class="d-flex justify-content-evenly">#}
 {#                {% if comment.id not in all_responses and user.id == comment.qi_project_title.created_by_id %}#}
-{#                    <a class="btn btn-secondary btn-sm" href="{% url 'comments_response' comment.id %}">NO RESPONSE YET</a>#}
+{#                    <a class="btn btn-sm btn-secondary btn-sm" href="{% url 'comments_response' comment.id %}">NO RESPONSE YET</a>#}
 {#                {% endif %}#}
 {##}
 {##}
@@ -88,14 +88,14 @@
 {#              {% if user.is_authenticated %}#}
 {#                  {% if user.id == comment.commented_by.id %}#}
 {#                      {% if comment.id not in all_responses %}#}
-{#                    <a class="btn btn-info btn-sm" href="{% url 'update_comments' comment.id %}">Edit</a>#}
+{#                    <a class="btn btn-sm btn-info btn-sm" href="{% url 'update_comments' comment.id %}">Edit</a>#}
 {##}
-{#              <a class="btn btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>#}
+{#              <a class="btn btn-sm btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>#}
 {#                      {% endif %}#}
 {#                      {% endif %}#}
 {#                   </div>#}
     {#                  {% if user.id == comment.qi_project_title.created_by_id %}#}
-    {#                  <a class="btn btn-primary btn-sm" href="{% url 'comments_response' comment.id %}">Respond</a>#}
+    {#                  <a class="btn btn-sm btn-primary btn-sm" href="{% url 'comments_response' comment.id %}">Respond</a>#}
     {#          {% endif %}#}
 {##}
 {#              {% endif %}#}
@@ -117,7 +117,7 @@
 {#        </p>#}
 {#        <p>#}
 {#            <div class="d-flex justify-content-evenly">#}
-{#            <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
+{#            <a class="btn btn-sm btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
 {#                Yes#}
 {#            </a>#}
 {#            </div>#}
@@ -126,7 +126,7 @@
 {#            <form action="" method="POST">#}
 {#                {% csrf_token %}#}
 {#                {{ form|crispy }}#}
-{#                <input type="submit" class="btn btn-success">#}
+{#                <input type="submit" class="btn btn-sm btn-success">#}
 {#            </form>#}
 {#        </div>#}
 {#{% endif %}#}

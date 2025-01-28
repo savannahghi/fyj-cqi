@@ -16,10 +16,10 @@
 
         <div class="btn-toolbar mb-2 mb-md-0">
           <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+            <button type="button" class="btn btn-sm btn-sm btn-outline-secondary">Share</button>
+            <button type="button" class="btn btn-sm btn-sm btn-outline-secondary">Export</button>
           </div>
-          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+          <button type="button" class="btn btn-sm btn-sm btn-outline-secondary dropdown-toggle">
             <span data-feather="calendar" class="align-text-bottom"></span>
             This week
           </button>
@@ -29,16 +29,16 @@
       </div>
         <div class="d-flex justify-content-between">
                <h4>Facility name: {{ facility_project.facility }}</h4>
-            <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-primary">All projects</a>
+            <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-sm btn-primary">All projects</a>
             {% if request.user.is_superuser %}
-                    <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                    <a href="{% url 'add_project' %}" class="btn btn-sm btn-secondary">Add QI PROJECT</a>
                       {% else %}
-                    <a href="{% url 'choose_project_level' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                    <a href="{% url 'choose_project_level' %}" class="btn btn-sm btn-secondary">Add QI PROJECT</a>
                   {% endif %}
             {% if user.is_authenticated %}
                 {% if user.id == facility_project.created_by.id %}
-                    <a href="{% url 'update_project' facility_project.id %}" class="btn btn-warning">Update project</a>
-                    <a href="{% url 'close_project' facility_project.id %}" class="btn btn-danger">Close project</a>
+                    <a href="{% url 'update_project' facility_project.id %}" class="btn btn-sm btn-warning">Update project</a>
+                    <a href="{% url 'close_project' facility_project.id %}" class="btn btn-sm btn-danger">Close project</a>
                 {% endif %}
 
             {% endif %}
@@ -157,10 +157,10 @@
 <p>Do you have any comments regarding the above QI Initiative? Click the button below to send your comment to the QI team members implementing this QI initiative.</p>
 
 <p>
-  <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+  <a class="btn btn-sm btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
     Yes
   </a>
-{#  <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">#}
+{#  <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">#}
 {#    Button with data-bs-target#}
 {#  </button>#}
 </p>
@@ -173,7 +173,7 @@
   <label for="floatingTextarea"></label>
 </div>
 <div class="mt-2">
-    <input type="submit" class="btn btn-success" value="Submit Button">
+    <input type="submit" class="btn btn-sm btn-success" value="Submit Button">
 </div>
 
 </div>
@@ -193,8 +193,8 @@
         <h6 class="card-title">Card title</h6>
         <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>
           <div class="d-flex justify-content-evenly" >
-          <a href="#" class="btn btn-secondary disabled" >started on</a>
-          <a href="#" class="btn btn-primary">View</a>
+          <a href="#" class="btn btn-sm btn-secondary disabled" >started on</a>
+          <a href="#" class="btn btn-sm btn-primary">View</a>
       </div>
       </div>
       <div class="card-footer">
@@ -209,8 +209,8 @@
         <h6 class="card-title">Card title</h6>
         <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>
           <div class="d-flex justify-content-evenly" >
-          <a href="#" class="btn btn-secondary disabled" >started on</a>
-          <a href="#" class="btn btn-primary">View</a>
+          <a href="#" class="btn btn-sm btn-secondary disabled" >started on</a>
+          <a href="#" class="btn btn-sm btn-primary">View</a>
       </div>
       </div>
       <div class="card-footer">
@@ -225,8 +225,8 @@
         <h6 class="card-title">Card title</h6>
         <p class="card-text">This card has supporting text below as a natural lead-in to additional content.</p>
           <div class="d-flex justify-content-evenly" >
-          <a href="#" class="btn btn-secondary disabled" >started on</a>
-          <a href="#" class="btn btn-primary">View</a>
+          <a href="#" class="btn btn-sm btn-secondary disabled" >started on</a>
+          <a href="#" class="btn btn-sm btn-primary">View</a>
       </div>
       </div>
       <div class="card-footer">

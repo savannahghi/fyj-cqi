@@ -241,7 +241,7 @@
                                         <div class="d-flex justify-content-evenly">
                                             {% if qi.measurement_status == "Canceled" %}
                                                 <a href="{% url 'canceled_projects' qi.measurement_status %}"
-                                                   class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
+                                                   class="btn btn-sm btn-warning">STATUS: {{ qi.measurement_status }}</a>
                                             {% elif qi.measurement_status == "Completed-or-Closed" %}
                                                 {% if qi.facility_name %}
                                                     <a href="{% url 'completed_closed' qi.measurement_status %}"
@@ -366,17 +366,17 @@
 
                                                     {% if qi.measurement_status == "Canceled" %}
                                                         <a href="{% url 'canceled_projects' qi.measurement_status %}"
-                                                           class="btn btn-warning">STATUS: {{ qi.measurement_status }}</a>
+                                                           class="btn btn-sm btn-warning">STATUS: {{ qi.measurement_status }}</a>
                                                     {% elif qi.measurement_status == "Completed-or-Closed" %}
                                                         <a href="{% url 'completed_closed' qi.measurement_status %}"
                                                            class="action-btn delete-btn">STATUS: {{ qi.measurement_status }}</a>
                                                     {% elif qi.measurement_status == "Postponed" %}
                                                         <a href="{% url 'postponed' qi.measurement_status %}"
-                                                           class="btn btn-info">STATUS: {{ qi.measurement_status }}</a>
+                                                           class="btn btn-sm btn-info">STATUS: {{ qi.measurement_status }}</a>
 
                                                     {% elif qi.measurement_status == 'Not started' %}
                                                         <a href="{% url 'not_started' qi.measurement_status %}"
-                                                           class="btn btn-info">STATUS: {{ qi.measurement_status }}</a>
+                                                           class="btn btn-sm btn-info">STATUS: {{ qi.measurement_status }}</a>
                                                     {% else %}
                                                         <a href="{% url 'ongoing' qi.measurement_status %}"
                                                            class="action-btn success-btn">Ongoing</a>

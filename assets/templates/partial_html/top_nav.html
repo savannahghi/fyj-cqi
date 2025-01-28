@@ -18,13 +18,16 @@
 
     .action-btn {
         display: inline-block;
-        padding: 0.3rem 0.3rem;
+        {#padding: 0.3rem 0.3rem;#}
         border-radius: 4px;
         text-decoration: none;
         color: var(--white);
         font-weight: bold;
         transition: background-color 0.3s ease;
         margin-right: 0.5rem;
+
+        padding: 0.25rem 0.5rem; /* Reduce padding */
+        font-size: 0.5rem; /* Smaller font size */
     }
 
     .view-btn {
@@ -309,6 +312,16 @@
         .dropdown.active .dropdown-content {
             display: block;
         }
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem; /* Reduce padding */
+        font-size: 0.5rem; /* Smaller font size */
+    }
+
+    /* Ensure buttons are inline and have a small gap */
+    .d-flex.gap-2 {
+        gap: 0.5rem; /* Adjust the gap between buttons */
     }
 </style>
 </head>

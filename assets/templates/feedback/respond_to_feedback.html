@@ -27,16 +27,16 @@
                 </div>
                 <div class="d-flex justify-content-around mt-3">
                     {% if view_type == "submit" %}
-                        <a href="{% url 'submit_feedback' %}" class="btn btn-success">Add feedback</a>
+                        <a href="{% url 'submit_feedback' %}" class="btn btn-sm btn-success">Add feedback</a>
                     {% else %}
                         <a href="{% url 'submit_feedback' %}"
-                           class="btn btn-outline-success">Add feedback</a>
+                           class="btn btn-sm btn-outline-success">Add feedback</a>
                     {% endif %}
                     {% if view_type == "view" %}
-                        <a href="{% url 'feedback_list' %}" class="btn btn-success">View Feedback</a>
+                        <a href="{% url 'feedback_list' %}" class="btn btn-sm btn-success">View Feedback</a>
                     {% else %}
                         <a href="{% url 'feedback_list' %}"
-                           class="btn btn-outline-success">View Feedback</a>
+                           class="btn btn-sm btn-outline-success">View Feedback</a>
                     {% endif %}
                 </div>
                 <div class="card-body">
@@ -76,7 +76,7 @@
                                                 {{ response.date_created }}
                                             </li>
                                             <a href="{% url 'update_response' pk=response.id %}"
-                                               class="btn btn-primary mt-3">Update</a>
+                                               class="btn btn-sm btn-primary mt-3">Update</a>
                                         </ul>
                                     {% else %}
                                         <form action="#" method="post" enctype="multipart/form-data">
@@ -87,7 +87,7 @@
                                             {% if form.app_name.errors %}
                                                 <span class="text-danger">{{ form.app_name.errors }}</span>
                                             {% endif %}
-                                            <button type="submit" class="btn btn-primary btn-lg mt-2">Submit Response
+                                            <button type="submit" class="btn btn-sm btn-primary btn-lg mt-2">Submit Response
                                             </button>
                                         </form>
                                     {% endif %}

@@ -29,37 +29,37 @@
                     <div class="col-md-3">
                         {% if report_type == "documentation" %}
                             <a href="{% url 'add_documentation' "documentation" %}"
-                               class="btn btn-success">Documentation</a>
+                               class="btn btn-sm btn-success">Documentation</a>
                         {% else %}
                             <a href="{% url 'add_documentation' "documentation" %}"
-                               class="btn btn-outline-success">Documentation</a>
+                               class="btn btn-sm btn-outline-success">Documentation</a>
                         {% endif %}
                     </div>
                     <div class="col-md-3">
                         {% if report_type == "data-quality" %}
                             <a href="{% url 'add_documentation' 'data-quality' %}"
-                               class="btn btn-success">Data Quality Systems</a>
+                               class="btn btn-sm btn-success">Data Quality Systems</a>
                         {% else %}
                             <a href="{% url 'add_documentation' 'data-quality' %}"
-                               class="btn btn-outline-success">Data Quality Systems</a>
+                               class="btn btn-sm btn-outline-success">Data Quality Systems</a>
                         {% endif %}
                     </div>
                     <div class="col-md-3">
                         {% if report_type == 'data-collection' %}
                             <a href="{% url 'add_documentation' 'data-collection' %}"
-                               class="btn btn-success">Data Collection, Reporting and Management</a>
+                               class="btn btn-sm btn-success">Data Collection, Reporting and Management</a>
                         {% else %}
                             <a href="{% url 'add_documentation' 'data-collection' %}"
-                               class="btn btn-outline-success">Data Collection, Reporting and Management</a>
+                               class="btn btn-sm btn-outline-success">Data Collection, Reporting and Management</a>
                         {% endif %}
                     </div>
                     <div class="col-md-3">
                         {% if report_type == 'data-quality-assessment' %}
                             <a href="{% url 'add_documentation' 'data-quality-assessment' %}"
-                               class="btn btn-success">Data Quality Assessment by Data Source</a>
+                               class="btn btn-sm btn-success">Data Quality Assessment by Data Source</a>
                         {% else %}
                             <a href="{% url 'add_documentation' 'data-quality-assessment' %}"
-                               class="btn btn-outline-success">Data Quality Assessment by Data Source</a>
+                               class="btn btn-sm btn-outline-success">Data Quality Assessment by Data Source</a>
                         {% endif %}
                     </div>
                 </div>
@@ -153,7 +153,7 @@
                         </tbody>
                     </table>
                     <div class="col-md-2 mt-2 pt-3">
-                        <button class="btn btn-success mt-1" type="submit">Submit</button>
+                        <button class="btn btn-sm btn-success mt-1" type="submit">Submit</button>
                     </div>
                 </form>
             </div>

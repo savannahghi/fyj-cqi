@@ -55,7 +55,7 @@
                                         {% if manuscript.pdf_file %}
                                             <a href="{{ manuscript.pdf_file.url }}">
                                                 <button type="button"
-                                                        class="btn btn-outline-success btn-floating"
+                                                        class="btn btn-sm btn-outline-success btn-floating"
                                                         data-mdb-ripple-color="dark">
                                                     Download ({{ manuscript.number_of_pages }} pages File
                                                     Size: {{ manuscript.file_size|format_file_size }})<i
@@ -68,7 +68,7 @@
                                     <div class="col-md-1">
                                         <a href="{% url 'manuscript_update' manuscript.id %}">
                                             <button type="button"
-                                                    class="btn btn-outline-warning btn-floating mr-2 mt-2"
+                                                    class="btn btn-sm btn-outline-warning btn-floating mr-2 mt-2"
                                                     data-mdb-ripple-color="dark">
                                                 EDIT
                                             </button>
@@ -78,7 +78,7 @@
                                         <a href="{% url 'manuscript_delete' manuscript.id %}">
                                             {% if user.is_superuser or resource.date_modified > time_to_hide_button %}
                                                 <button type="button"
-                                                        class="btn btn-outline-danger btn-floating mr-2 mt-2"
+                                                        class="btn btn-sm btn-outline-danger btn-floating mr-2 mt-2"
                                                         data-mdb-ripple-color="dark">
                                                     DELETE
                                                 </button>

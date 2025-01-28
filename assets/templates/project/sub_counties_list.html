@@ -9,8 +9,8 @@
            </div>
  {% if request.user.is_superuser %}
         <div class="col-md-4 d-flex justify-content-between">
-            <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
-            <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>
+            <a href="{% url 'add_facility' %}" class="btn btn-sm btn-success" role="button">ADD FACILITY</a>
+            <a href="{% url 'add_subcounty' %}" class="btn btn-sm btn-success" role="button">ADD SUBCOUNTY</a>
         </div>
            {% endif %}
       </div>
@@ -67,7 +67,7 @@
          {% if request.user.is_superuser %}
             <td>
 
-                <a href="{% url 'update_sub_counties' sub_county.id  %}" class="btn btn-info" role="button">Update</a>
+                <a href="{% url 'update_sub_counties' sub_county.id  %}" class="btn btn-sm btn-info" role="button">Update</a>
             </td>
         {% endif %}
         </tr>

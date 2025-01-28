@@ -305,11 +305,13 @@ def analyse_pharmacy_data(request, df, df1):
     lpvr_cols = [col for col in dispensed_df.columns if "lpv/" in col.lower()]
     lpvr_cols_200_50 = [col for col in dispensed_df.columns if "200/50mg" in col]
     dtg_50_cols = [col for col in dispensed_df.columns if "50mg tabs 30s" in col]
+    tafld_cols = [col for col in dispensed_df.columns if "tafld" in col.lower()]
 
     nvp_cols = [col for col in dispensed_df.columns if "nvp" in col.lower()]
     ctx_cols = [col for col in dispensed_df.columns if "Cotrimoxazole" in col]
     rifapentine_cols = [col for col in dispensed_df.columns if "Rifapentine" in col]
     dtg_df, tld_df, non_tld_in_dtg_df = make_dfs(df1, dtg_cols, "(TDF/3TC/DTG)", default_cols)
+    # dtg_df, abc__df, non_tld_in_dtg_df = make_dfs(df1, dtg_cols, "(ABC/3TC/DTG)", default_cols)
     tld_180s_cols = [col for col in tld_df.columns if "180s" in col]
 
     if len(dispensed_cols) > 0:
@@ -346,6 +348,8 @@ def analyse_pharmacy_data(request, df, df1):
         tld_df = tld_df.merge(ctx_df, on=["organisationunitname", "organisationunitcode", "periodname"])
     else:
         tld_df = tld_df.merge(ctx_df, on=["organisationunitname", "organisationunitcode"])
+
+
     #########################################
     # MERGE TLE
     #########################################
@@ -494,6 +498,15 @@ def analyse_pharmacy_data(request, df, df1):
         "organisationunitcode",
         "periodname"])
 
+    tafld, tafld_df, non_tafld_in_tafld_df = make_dfs(df1, tafld_cols, "TAFLD", default_cols)
+
+    tafld_df = tafld_df[default_cols + tafld_cols]
+
+    other_adult_df = other_adult_df.merge(tafld_df, on=[
+        "organisationunitname",
+        "organisationunitcode",
+        "periodname"])
+
     # Drop columns containing the substring 'FTC' and '3TC/3TC
     substring_to_drop = 'FTC'
     filtered_df = other_adult_df.filter(like=substring_to_drop, axis=1)
@@ -551,7 +564,7 @@ def analyse_pharmacy_data(request, df, df1):
                        "MoH 730B Revision 2017 Paediatric preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) "
                        "FDC (60/30/50mg) Tablets 60s Total Quantity issued this month": "AZT/3TC/NVP (Pediatric) bottles",
                        "MoH 730B Revision 2019Dolutegravir(DTG) 10mg Dispersible.Scored 30s Total Quantity issued this "
-                       "month": "DTG 10",
+                       "month": "DTG 10 30s",
                        "MoH 730B Revision 2017 Adult preparations Dolutegravir(DTG) 50mg tabs 30s Total Quantity issued "
                        "this month": "DTG 50",
                        "MoH 730B Revision 2019Lopinavir/ritonavir (LPV/r) 40/10mg Caps(Pellets) 120s Total Quantity "
@@ -578,14 +591,22 @@ def analyse_pharmacy_data(request, df, df1):
                        "Tablets 30s Total Quantity issued this month": "(ABC/3TC) 120mg/60mg",
                        "MoH 730B Revision 2017 Adult preparations Nevirapine (NVP) 200mg Tablets 60s Total Quantity "
                        "issued this month": "NVP 200",
-                       "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole suspension 240mg/5ml  100ml bottle Total "
+                       "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole suspension 240mg/5ml  100ml bottle Total"
                        "Quantity issued this month": "CTX 240mg/5ml",
-                       "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole 960mg Tablets 100s Total Quantity issued "
+                       "MoH 730B Revision 2017 Medicines for OIs Cotrimoxazole 960mg Tablets 100s Total Quantity issued"
                        "this month": "CTX 960",
                        "MoH 730B Revision 2017 Adult preparations Lopinavir/ritonavir (LPV/r) 200/50mg Tablets 120s "
                        "Total Quantity issued this month": "LPV/r 200/50",
                        "MoH 730B Revision 2017 Paediatric preparations Lopinavir/ritonavir (LPV/r) 40/10mg Caps 120s "
-                       "Total Quantity issued this month": "LPV/r 40/10 Caps 120s"
+                       "Total Quantity issued this month": "LPV/r 40/10 Caps 120s",
+                       "MoH 730B Revision 2019Abacavir/Lamivudine/Dolutegravir (ABC/3TC/DTG) 60mg/30mg/5mg FDC "
+                       "Tablets 60s Total Quantity issued this month":"ABC/3TC/DTG 60/30/5 60s",
+                       "MoH 730B Revision 2019Abacavir/Lamivudine/Dolutegravir (ABC/3TC/DTG) 60mg/30mg/5mg FDC "
+                       "Tablets 90s Total Quantity issued this month": "ABC/3TC/DTG 60/30/5 90s",
+                       "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 60s Total Quantity "
+                       "issued this month":"DTG 10 60s",
+                       "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 90s Total Quantity "
+                       "issued this month": "DTG 10 90s",
                        }
     sc_curr_cols = {
         "MoH 730B Revision 2017 Adult preparations Zidovudine/Lamivudine/Nevirapine (AZT/3TC/NVP) FDC ("
@@ -594,7 +615,7 @@ def analyse_pharmacy_data(request, df, df1):
         "FDC (60/30/50mg) Tablets 60s End of Month Physical Stock Count": "AZT/3TC/NVP (Pediatric) "
                                                                           "bottles",
         "MoH 730B Revision 2019Dolutegravir(DTG) 10mg Dispersible.Scored 30s End of Month Physical Stock "
-        "Count": "DTG 10",
+        "Count": "DTG 10 30s",
         "MoH 730B Revision 2017 Adult preparations Dolutegravir(DTG) 50mg tabs 30s End of Month Physical "
         "Stock Count": "DTG 50",
         "MoH 730B Revision 2019Lopinavir/ritonavir (LPV/r) 40/10mg Caps(Pellets) 120s End of Month "
@@ -630,8 +651,15 @@ def analyse_pharmacy_data(request, df, df1):
         "MoH 730B Revision 2017 Adult preparations Lopinavir/ritonavir (LPV/r) 200/50mg Tablets 120s End of "
         "Month Physical Stock Count": "LPV/r 200/50",
         "MoH 730B Revision 2017 Paediatric preparations Lopinavir/ritonavir (LPV/r) 40/10mg Caps 120s "
-        "End of Month Physical Stock Count": "LPV/r 40/10 Caps 120s"
+        "End of Month Physical Stock Count": "LPV/r 40/10 Caps 120s",
+        "MoH 730B Revision 2019Abacavir/Lamivudine/Dolutegravir (ABC/3TC/DTG) 60mg/30mg/5mg FDC "
+        "Tablets 60s End of Month Physical Stock Count": "ABC/3TC/DTG 60/30/5 60s",
+        "MoH 730B Revision 2019Abacavir/Lamivudine/Dolutegravir (ABC/3TC/DTG) 60mg/30mg/5mg FDC "
+        "Tablets 90s End of Month Physical Stock Count": "ABC/3TC/DTG 60/30/5 90s",
+        "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 60s End of Month Physical Stock Count": "DTG 10 60s",
+        "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 90s End of Month Physical Stock Count": "DTG 10 90s",
     }
+
     if len(dispensed_cols) > 0:
         tld_tle_lpv_dtg10_nvp_others_df = tld_tle_lpv_dtg10_nvp_others_df.rename(columns=sc_arvdisp_cols)
 
@@ -669,7 +697,9 @@ def analyse_pharmacy_data(request, df, df1):
                  'Hub(1,2,3 o 4)', "periodname",
                  'TLD 30s', 'TLD 90s', 'TLD 180s',
                  'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
-                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10', 'NVP 200', 'NVP (Pediatric) bottles',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s','DTG 10 60s','DTG 10 90s','ABC/3TC/DTG 60/30/5 60s',
+                 'ABC/3TC/DTG 60/30/5 90s',
+                 'NVP 200', 'NVP (Pediatric) bottles',
                  'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
                  'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
                  'M&E Mentor/SI associate',
@@ -689,7 +719,9 @@ def analyse_pharmacy_data(request, df, df1):
                  'Hub(1,2,3 o 4)', "periodname",
                  'TLD 30s', 'TLD 90s', 'TLD 180s',
                  'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
-                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10', 'NVP 200', 'NVP (Pediatric) bottles',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s','DTG 10 60s','DTG 10 90s','ABC/3TC/DTG 60/30/5 60s',
+                 'ABC/3TC/DTG 60/30/5 90s',
+                 'NVP 200', 'NVP (Pediatric) bottles',
                  'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
                  'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
                  'M&E Mentor/SI associate',
@@ -703,7 +735,8 @@ def analyse_pharmacy_data(request, df, df1):
                  'Hub(1,2,3 o 4)',
                  'TLD 30s', 'TLD 90s', 'TLD 180s',
                  'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
-                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10', 'NVP 200', 'NVP (Pediatric) bottles',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s','DTG 10 60s','DTG 10 90s','ABC/3TC/DTG 60/30/5 60s','ABC/3TC/DTG 60/30/5 90s',
+                 'NVP 200', 'NVP (Pediatric) bottles',
                  'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
                  'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
                  'M&E Mentor/SI associate', 'M&E Assistant',
@@ -722,7 +755,8 @@ def analyse_pharmacy_data(request, df, df1):
                  'Hub(1,2,3 o 4)',
                  'TLD 30s', 'TLD 90s', 'TLD 180s',
                  'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
-                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10', 'NVP 200', 'NVP (Pediatric) bottles',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s','DTG 10 60s','ABC/3TC/DTG 60/30/5 60s', 'ABC/3TC/DTG 60/30/5 90s',
+                 'NVP 200', 'NVP (Pediatric) bottles',
                  'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
                  'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
                  'M&E Assistant', 'Care & Treatment(Yes/No)', 'HTS(Yes/No)',
@@ -2719,22 +2753,35 @@ def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
         '3TC 150mg Tablets 60s', 'RAL 400mg Tablets 60s',
         'RTV 100mg Tablets 60s', 'TDF/3TC FDC (300/300mg) Tablets 30s',
         'AZT 300mg Tablets 60s', 'AZT/3TC FDC (300/150mg) Tablets 30s',
-        'LPV/r 200/50mg Tablets 120s', 'DTG 50mg tabs 30s',
+        'LPV/r 200/50mg Tablets 120s', 'DTG 50mg tabs 30s','TAFLD 25/300/50',
         'Other (Adult) bottles'
     ]
-
-    other_paeds_df.columns = [
-        'County', 'Subcounty', 'organisationunitname',
-        'MFL Code', 'periodname', 'ABC/3TC 120mg/60mg',
-        'ABC/3TC 60mg/30mg FDC Tablets 60s', 'ATV 100mg Caps 60s',
-        'DRV 150mg Tablets 240s', 'DRV 75mg Tablets 480s',
-        'DRV susp 100mg/ml  (200ml Bottles) 200ml bottle',
-        'ETV 100mg Tablets 60s', 'ETV 25mg Tablets 60s',
-        '3TC liquid 10mg/ml (240ml Bottles) 240ml bottle',
-        'RAL 25mg Tablets 60s',
-        'Ritonavir liquid 80mg/ml (90ml Bottles) 90ml bottle',
-        'AZT/3TC FDC (60/30mg) Tablets 60s', 'Other (Pediatric) bottles'
-    ]
+    try:
+        other_paeds_df.columns = [
+            'County', 'Subcounty', 'organisationunitname',
+            'MFL Code', 'periodname', 'ABC/3TC 120mg/60mg',
+            'ABC/3TC 60mg/30mg FDC Tablets 60s', 'ATV 100mg Caps 60s',
+            'DRV 150mg Tablets 240s', 'DRV 75mg Tablets 480s',
+            'DRV susp 100mg/ml  (200ml Bottles) 200ml bottle',
+            'ETV 100mg Tablets 60s', 'ETV 25mg Tablets 60s',
+            '3TC liquid 10mg/ml (240ml Bottles) 240ml bottle',
+            'RAL 25mg Tablets 60s',
+            'Ritonavir liquid 80mg/ml (90ml Bottles) 90ml bottle',
+            'AZT/3TC FDC (60/30mg) Tablets 60s', 'Other (Pediatric) bottles'
+        ]
+    except ValueError:
+        other_paeds_df.columns = [
+            'County', 'Subcounty', 'organisationunitname',
+            'MFL Code', 'periodname', 'ABC/3TC 120mg/60mg',
+            'ABC/3TC 60mg/30mg FDC Tablets 60s', 'ATV 100mg Caps 60s',
+            'DRV 150mg Tablets 240s', 'DRV 75mg Tablets 480s',
+            'DRV susp 100mg/ml  (200ml Bottles) 200ml bottle',
+            'ETV 100mg Tablets 60s', 'ETV 25mg Tablets 60s',
+            '3TC liquid 10mg/ml (240ml Bottles) 240ml bottle',
+            'RAL 100mg Tablets 60s', 'RAL 25mg Tablets 60s',
+            'Ritonavir liquid 80mg/ml (90ml Bottles) 90ml bottle',
+            'AZT/3TC FDC (60/30mg) Tablets 60s', 'Other (Pediatric) bottles'
+        ]
     # Convert MFL code to int
     main_df = main_df[main_df["County"] != ""]
     main_df['MFL Code'] = main_df['MFL Code'].astype(int)
@@ -2745,7 +2792,7 @@ def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
         'County', 'Health Subcounty', 'Subcounty',
         'organisationunitname', 'MFL Code', 'Hub(1,2,3 o 4)', 'periodname',
         'TLD 30s', 'TLD 90s', 'TLD 180s', 'TL_400 30', 'TLE_400 90s',
-        'TLE_600 30s', 'LPV/r 40/10', 'LPV/r 100/25', 'DTG 10', 'NVP 200',
+        'TLE_600 30s', 'LPV/r 40/10', 'LPV/r 100/25', 'DTG 10 30s','DTG 10 60s','DTG 10 90s', 'NVP 200',
         'NVP (Pediatric) bottles', 'Other (Adult) bottles',
         'Other (Pediatric) bottles'
     ]]
@@ -2757,7 +2804,7 @@ def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
         value_vars=[
             'TLD 30s', 'TLD 90s', 'TLD 180s', 'TL_400 30',
             'TLE_400 90s', 'TLE_600 30s', 'LPV/r 40/10',
-            'LPV/r 100/25', 'DTG 10', 'NVP 200',
+            'LPV/r 100/25', 'DTG 10 30s','DTG 10 60s','DTG 10 90s', 'NVP 200',
             'NVP (Pediatric) bottles',
             'Other (Adult) bottles',
             'Other (Pediatric) bottles'
@@ -2779,7 +2826,7 @@ def compile_pmp_report(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
     """Compile the PMP report"""
     prepared_data, total_df = prepare_data(main_df, other_adult_df, other_paeds_df, filename)
     pmp = prepared_data.groupby(['County'])[[
-        'TLD 90s', 'DTG 10', 'DTG 50mg tabs 30s', 'ABC/3TC 120mg/60mg', 'CTX 240mg/5ml', '3HP 300/300',
+        'TLD 90s', 'DTG 10 30s','DTG 10 60s', 'DTG 10 90s','DTG 50mg tabs 30s', 'ABC/3TC 120mg/60mg', 'CTX 240mg/5ml', '3HP 300/300',
     ]].sum().reset_index()
     pmp = total_df.merge(pmp, on="County", how="left")
     pmp.index += 1

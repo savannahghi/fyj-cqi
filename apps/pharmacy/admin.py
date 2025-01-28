@@ -19,11 +19,11 @@ class InventoryAdmin(admin.ModelAdmin):
         "facility_name__mfl_code",
         "quarter_year__quarter_year",
         "quarter_year__quarter",
-        "quarter_year__year", "date_of_interview"
+        "quarter_year__year", "date_of_interview","date_created"
     )
 
 
-admin.site.register(PharmacyRecords)
+admin.site.register(PharmacyRecords,InventoryAdmin)
 admin.site.register(StockCards, InventoryAdmin)
 admin.site.register(UnitSupplied, InventoryAdmin)
 admin.site.register(BeginningBalance, InventoryAdmin)
@@ -36,10 +36,10 @@ admin.site.register(ExpiryTracking, InventoryAdmin)
 admin.site.register(S11FormAvailability, InventoryAdmin)
 admin.site.register(S11FormEndorsed, InventoryAdmin)
 admin.site.register(StockManagement, InventoryAdmin)
-admin.site.register(WorkPlan)
+admin.site.register(WorkPlan, InventoryAdmin)
 admin.site.register(PharmacyFpQualitativeModel, InventoryAdmin)
 admin.site.register(PharmacyMalariaModel, InventoryAdmin)
 admin.site.register(PharmacyMalariaQualitativeModel, InventoryAdmin)
-admin.site.register(DeliveryNotes)
+admin.site.register(DeliveryNotes, InventoryAdmin)
 admin.site.register(TableNames)
 admin.site.register(PharmacyFpModel, InventoryAdmin)

@@ -166,7 +166,7 @@
                         </div>
                     </div>
                     <div class="col-md-4 text-md-right">
-                        <a href="{% url 'choose_facilities_sqa' %}" class="btn btn-secondary" role="button">Add SQA data
+                        <a href="{% url 'choose_facilities_sqa' %}" class="btn btn-sm btn-secondary" role="button">Add SQA data
                             for another facility</a>
                     </div>
                 </div>
@@ -179,11 +179,11 @@
                         {% else %}
                             {% if report_name == "gbv" %}
                                 <a href="{% url 'sqa' report_name='gbv' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-success">1.
+                                   class="btn btn-sm btn-success">1.
                                     GBV SQA</a>
                             {% else %}
                                 <a href="{% url 'sqa' report_name='gbv' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-outline-success">1.
+                                   class="btn btn-sm btn-outline-success">1.
                                     GBV SQA</a>
                             {% endif %}
                         {% endif %}
@@ -191,11 +191,11 @@
                         {% else %}
                             {% if report_name == "vmmc" %}
                                 <a href="{% url 'sqa' report_name='vmmc' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-success">2.
+                                   class="btn btn-sm btn-success">2.
                                     VMMC SQA</a>
                             {% else %}
                                 <a href="{% url 'sqa' report_name='vmmc' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-outline-success">2.
+                                   class="btn btn-sm btn-outline-success">2.
                                     VMMC SQA</a>
                             {% endif %}
                         {% endif %}
@@ -203,33 +203,33 @@
                         {% else %}
                             {% if report_name == "hts" %}
                                 <a href="{% url 'sqa' report_name='hts' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-success">3.
+                                   class="btn btn-sm btn-success">3.
                                     HTS SQA</a>
                             {% else %}
                                 <a href="{% url 'sqa' report_name='hts' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-outline-success">3. HTS SQA</a>
+                                   class="btn btn-sm btn-outline-success">3. HTS SQA</a>
                             {% endif %}
                         {% endif %}
                         {% if "prep" in filtered_data %}
                         {% else %}
                             {% if report_name == "prep" %}
                                 <a href="{% url 'sqa' report_name='prep' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-success">
+                                   class="btn btn-sm btn-success">
                                     4. PrEP SQA</a>
                             {% else %}
                                 <a href="{% url 'sqa' report_name='prep' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-outline-success">4. PrEP SQA</a>
+                                   class="btn btn-sm btn-outline-success">4. PrEP SQA</a>
                             {% endif %}
                         {% endif %}
                         {% if "tb" in filtered_data %}
                         {% else %}
                             {% if report_name == "tb" %}
                                 <a href="{% url 'sqa' report_name='tb' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-success">5.
+                                   class="btn btn-sm btn-success">5.
                                     TB SQA</a>
                             {% else %}
                                 <a href="{% url 'sqa' report_name='tb' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-outline-success">5.
+                                   class="btn btn-sm btn-outline-success">5.
                                     TB SQA</a>
                             {% endif %}
                         {% endif %}
@@ -237,22 +237,22 @@
                         {% else %}
                             {% if report_name == "care_treatment" %}
                                 <a href="{% url 'sqa' report_name='care_treatment' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-success">6.
+                                   class="btn btn-sm btn-success">6.
                                     CARE & TREATMENT SQA</a>
                             {% else %}
                                 <a href="{% url 'sqa' report_name='care_treatment' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-outline-success">6. CARE & TREATMENT SQA</a>
+                                   class="btn btn-sm btn-outline-success">6. CARE & TREATMENT SQA</a>
                             {% endif %}
                         {% endif %}
                         {% if "pharmacy" in filtered_data %}
                         {% else %}
                             {% if report_name == "pharmacy" %}
                                 <a href="{% url 'sqa' report_name='pharmacy' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-success">7.
+                                   class="btn btn-sm btn-success">7.
                                     PHARMACY SQA</a>
                             {% else %}
                                 <a href="{% url 'sqa' report_name='pharmacy' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-outline-success">7.
+                                   class="btn btn-sm btn-outline-success">7.
                                     PHARMACY SQA</a>
                             {% endif %}
                         {% endif %}
@@ -260,11 +260,11 @@
                         {% else %}
                             {% if report_name == "cqi" %}
                                 <a href="{% url 'sqa' report_name='cqi' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-success">8.
+                                   class="btn btn-sm btn-success">8.
                                     CQI SQA</a>
                             {% else %}
                                 <a href="{% url 'sqa' report_name='cqi' quarter=quarter year=year pk=facility_id %}"
-                                   class="btn btn-outline-success">8.
+                                   class="btn btn-sm btn-outline-success">8.
                                     CQI SQA</a>
                             {% endif %}
                         {% endif %}
@@ -318,7 +318,7 @@
                         </tbody>
                     </table>
                     <div class="col-md-2 mt-2 pt-3">
-                        <input class="btn btn-success mt-1" type="submit" value="Save">
+                        <input class="btn btn-sm btn-success mt-1" type="submit" value="Save">
                     </div>
                 </form>
             </div>

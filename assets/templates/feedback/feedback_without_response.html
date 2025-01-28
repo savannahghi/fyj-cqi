@@ -28,16 +28,16 @@
                 </div>
                 <div class="d-flex justify-content-around mt-3">
                     {% if view_type == "submit" %}
-                        <a href="{% url 'submit_feedback' %}" class="btn btn-success">Add feedback</a>
+                        <a href="{% url 'submit_feedback' %}" class="btn btn-sm btn-success">Add feedback</a>
                     {% else %}
                         <a href="{% url 'submit_feedback' %}"
-                           class="btn btn-outline-success">Add feedback</a>
+                           class="btn btn-sm btn-outline-success">Add feedback</a>
                     {% endif %}
                     {% if view_type == "view" %}
-                        <a href="{% url 'feedback_list' %}" class="btn btn-success">View Feedback</a>
+                        <a href="{% url 'feedback_list' %}" class="btn btn-sm btn-success">View Feedback</a>
                     {% else %}
                         <a href="{% url 'feedback_list' %}"
-                           class="btn btn-outline-success">View Feedback</a>
+                           class="btn btn-sm btn-outline-success">View Feedback</a>
                     {% endif %}
                 </div>
                 <div class="card-body">
@@ -62,9 +62,9 @@
                                         <div class="d-flex justify-content-around mt-3 align-items-stretch">
                                             {% if feedback.num_responses == 0 or request.user.is_superuser %}
                                                 <a href="{% url 'update_feedback' pk=feedback.id %}"
-                                                   class="btn btn-primary">Update</a>
+                                                   class="btn btn-sm btn-primary">Update</a>
                                                 <a href="{% url 'respond_to_feedback' pk=feedback.id %}"
-                                                   class="btn btn-secondary">Respond</a>
+                                                   class="btn btn-sm btn-secondary">Respond</a>
                                             {% endif %}
                                         </div>
                                     </div>

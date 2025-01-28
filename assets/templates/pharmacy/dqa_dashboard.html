@@ -24,37 +24,37 @@
             {% endif %}
             <div class="d-flex justify-content-around mb-3">
                 {% if dqa_type == "facility" %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-success">FACILITY
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-sm btn-success">FACILITY
                         DQA</a>
                 {% else %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-outline-success">FACILITY
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-sm btn-outline-success">FACILITY
                         DQA</a>
                 {% endif %}
                 {% if dqa_type == "hub" %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='hub' %}" class="btn btn-success">HUB DQA</a>
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='hub' %}" class="btn btn-sm btn-success">HUB DQA</a>
                 {% else %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='hub' %}" class="btn btn-outline-success">HUB
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='hub' %}" class="btn btn-sm btn-outline-success">HUB
                         DQA</a>
                 {% endif %}
                 {% if dqa_type == "subcounty" %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-success">SUB-COUNTIES
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-sm btn-success">SUB-COUNTIES
                         DQA</a>
                 {% else %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-outline-success">SUB-COUNTIES
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-sm btn-outline-success">SUB-COUNTIES
                         DQA</a>
                 {% endif %}
                 {% if dqa_type == "county" %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='county' %}" class="btn btn-success">COUNTY
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='county' %}" class="btn btn-sm btn-success">COUNTY
                         DQA</a>
                 {% else %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='county' %}" class="btn btn-outline-success">COUNTY
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='county' %}" class="btn btn-sm btn-outline-success">COUNTY
                         DQA</a>
                 {% endif %}
                 {% if dqa_type == "program" %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='program' %}" class="btn btn-success">PROGRAM
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='program' %}" class="btn btn-sm btn-success">PROGRAM
                         DQA</a>
                 {% else %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='program' %}" class="btn btn-outline-success">PROGRAM
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='program' %}" class="btn btn-sm btn-outline-success">PROGRAM
                         DQA</a>
                 {% endif %}
             </div>

@@ -12,38 +12,38 @@
                 <div class="d-flex justify-content-around">
                     {% if section == "introduction" %}
                         <a href="{% url 'instructions_lab' section='introduction' %}"
-                           class="btn btn-success">1. Introduction</a>
+                           class="btn btn-sm btn-success">1. Introduction</a>
                     {% else %}
                         <a href="{% url 'instructions_lab' section='introduction' %}"
-                           class="btn btn-outline-success">1. Introduction</a>
+                           class="btn btn-sm btn-outline-success">1. Introduction</a>
                     {% endif %}
                     {% if section == "getting_started" %}
                         <a href="{% url 'instructions_lab' section='getting_started' %}"
-                           class="btn btn-success">2. Getting Started</a>
+                           class="btn btn-sm btn-success">2. Getting Started</a>
                     {% else %}
                         <a href="{% url 'instructions_lab' section='getting_started' %}"
-                           class="btn btn-outline-success">2. Getting Started</a>
+                           class="btn btn-sm btn-outline-success">2. Getting Started</a>
                     {% endif %}
                     {% if section == "entering_results" %}
                         <a href="{% url 'instructions_lab' section='entering_results' %}"
-                           class="btn btn-success">3. Entering Results</a>
+                           class="btn btn-sm btn-success">3. Entering Results</a>
                     {% else %}
                         <a href="{% url 'instructions_lab' section='entering_results' %}"
-                           class="btn btn-outline-success">3. Entering Results</a>
+                           class="btn btn-sm btn-outline-success">3. Entering Results</a>
                     {% endif %}
                     {% if section == "viewing_results" %}
                         <a href="{% url 'instructions_lab' section='viewing_results' %}"
-                           class="btn btn-success">4. Viewing Results</a>
+                           class="btn btn-sm btn-success">4. Viewing Results</a>
                     {% else %}
                         <a href="{% url 'instructions_lab' section='viewing_results' %}"
-                           class="btn btn-outline-success">4. Viewing Results</a>
+                           class="btn btn-sm btn-outline-success">4. Viewing Results</a>
                     {% endif %}
                     {% if section == "recommendations" %}
                         <a href="{% url 'instructions_lab' section='recommendations' %}"
-                           class="btn btn-success">5. Maximizing The Platform</a>
+                           class="btn btn-sm btn-success">5. Maximizing The Platform</a>
                     {% else %}
                         <a href="{% url 'instructions_lab' section='recommendations' %}"
-                           class="btn btn-outline-success">5. Maximizing The Platform</a>
+                           class="btn btn-sm btn-outline-success">5. Maximizing The Platform</a>
                     {% endif %}
                 </div>
                 {% if section == "introduction" %}
@@ -75,7 +75,7 @@
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#whatlabpulsedoes"
                                            role="button"
                                            aria-expanded="false" aria-controls="whatlabpulsedoes">
@@ -104,7 +104,7 @@
 
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#howlabpulseimprovesahd"
                                            role="button"
                                            aria-expanded="false" aria-controls="howlabpulseimprovesahd">
@@ -158,7 +158,7 @@
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#wholabpulseisfor"
                                            role="button"
                                            aria-expanded="false" aria-controls="wholabpulseisfor">
@@ -218,7 +218,7 @@
 
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse" href="#gettinglogin"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse" href="#gettinglogin"
                                            role="button"
                                            aria-expanded="false" aria-controls="gettinglogin">
                                             1.4 Getting Login Credentials
@@ -237,7 +237,7 @@
                                         get the most out of this powerful tool. Let’s get started!
                                     </p>
                                     <a href="{% url 'instructions_lab' section='getting_started' %}"
-                                       class="btn btn-success">2. Getting Started
+                                       class="btn btn-sm btn-success">2. Getting Started
                                     </a>
                                 </div>
                             </div>
@@ -270,7 +270,7 @@
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#whatlabpulsedoes"
                                            role="button"
                                            aria-expanded="false" aria-controls="whatlabpulsedoes">
@@ -298,7 +298,7 @@
 
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#howlabpulseimprovesahd"
                                            role="button"
                                            aria-expanded="false" aria-controls="howlabpulseimprovesahd">
@@ -332,7 +332,7 @@
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#wholabpulseisfor"
                                            role="button"
                                            aria-expanded="false" aria-controls="wholabpulseisfor">
@@ -365,7 +365,7 @@
                                         we’ll explore all the sections in detail. Let’s go - your journey with LabPulse
                                         starts now!</p>
                                     <a href="{% url 'instructions_lab' section='entering_results' %}"
-                                       class="btn btn-success">3. Entering Results
+                                       class="btn btn-sm btn-success">3. Entering Results
                                     </a>
                                 </div>
                             </div>
@@ -399,7 +399,7 @@
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#whatlabpulsedoes"
                                            role="button"
                                            aria-expanded="false" aria-controls="whatlabpulsedoes">
@@ -453,7 +453,7 @@
 
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#howlabpulseimprovesahd"
                                            role="button"
                                            aria-expanded="false" aria-controls="howlabpulseimprovesahd">
@@ -479,7 +479,7 @@
                                         effectively utilizing viewing CD4 results features. Let’s continue exploring
                                         LabPulse!</p>
                                     <a href="{% url 'instructions_lab' section='viewing_results' %}"
-                                       class="btn btn-success">4. Viewing Results
+                                       class="btn btn-sm btn-success">4. Viewing Results
                                     </a>
                                 </div>
                             </div>
@@ -512,7 +512,7 @@
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#whatlabpulsedoes"
                                            role="button"
                                            aria-expanded="false" aria-controls="whatlabpulsedoes">
@@ -545,7 +545,7 @@
 
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#howlabpulseimprovesahd"
                                            role="button"
                                            aria-expanded="false" aria-controls="howlabpulseimprovesahd">
@@ -592,7 +592,7 @@
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <a class="btn btn-primary mt-3" data-bs-toggle="collapse"
+                                        <a class="btn btn-sm btn-primary mt-3" data-bs-toggle="collapse"
                                            href="#wholabpulseisfor"
                                            role="button"
                                            aria-expanded="false" aria-controls="wholabpulseisfor">
@@ -624,7 +624,7 @@
                                         and care.
                                     </p>
                                     <a href="{% url 'instructions_lab' section='recommendations' %}"
-                                       class="btn btn-success">5. Maximizing The Platform
+                                       class="btn btn-sm btn-success">5. Maximizing The Platform
                                     </a>
                                 </div>
                             </div>

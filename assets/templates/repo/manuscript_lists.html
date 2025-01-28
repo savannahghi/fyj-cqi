@@ -10,7 +10,7 @@
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h6>UON FYJ Research & Evaluation Hub</h6>
                 {% if perms.repo.add_manuscript %}
-                    <a href="{% url 'create_manuscript' %}" class="btn btn-success" role="button">ADD RESOURCES</a>
+                    <a href="{% url 'create_manuscript' %}" class="btn btn-sm btn-success" role="button">ADD RESOURCES</a>
                 {% endif %}
             </div>
             <div>
@@ -94,7 +94,7 @@
                     </div>
                 </div>
                 <div class="col-md-1 mt-4 pt-2">
-                    <button class="btn btn-outline-primary" type="submit">search</button>
+                    <button class="btn btn-sm btn-outline-primary" type="submit">search</button>
                 </div>
             </form>
         </div>
@@ -141,7 +141,7 @@
                                 <div class="mt-2">
                                     {% if resource.pdf_file %}
                                         <a href="{{ resource.pdf_file.url }}">
-                                            <button type="button" class="btn btn-outline-success btn-floating ml-2"
+                                            <button type="button" class="btn btn-sm btn-outline-success btn-floating ml-2"
                                                     data-mdb-ripple-color="dark">
                                                 Download ({{ resource.number_of_pages }} pages File
                                                 Size: {{ resource.file_size|format_file_size }})<i
@@ -151,7 +151,7 @@
                                     {% endif %}
                                     {% if user.id == resource.uploaded_by.id or user.is_superuser %}
                                         <a href="{% url 'manuscript_update' resource.id %}">
-                                            <button type="button" class="btn btn-outline-warning btn-floating mr-2"
+                                            <button type="button" class="btn btn-sm btn-outline-warning btn-floating mr-2"
                                                     data-mdb-ripple-color="dark">
                                                 EDIT
                                             </button>
@@ -159,7 +159,7 @@
                                         <a href="{% url 'manuscript_delete' resource.id %}">
                                             {% if user.is_superuser or resource.date_modified > time_to_hide_button %}
                                                 <button type="button"
-                                                        class="btn btn-outline-danger btn-floating mr-2"
+                                                        class="btn btn-sm btn-outline-danger btn-floating mr-2"
                                                         data-mdb-ripple-color="dark">
                                                     DELETE
                                                 </button>

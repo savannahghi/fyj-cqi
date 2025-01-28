@@ -6,7 +6,7 @@
 
 {% block content %}
     <style>
-    .auditor-textarea {
+        .auditor-textarea {
             height: auto !important;
             width: 100%;
             max-width: 600px;
@@ -18,164 +18,164 @@
             margin-bottom: 20px;
         }
 
-    .container-fluid {
-        padding: 20px;
-        background-color: #ffffff; /* White background for the main container */
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-    }
+        .container-fluid {
+            padding: 20px;
+            background-color: #ffffff; /* White background for the main container */
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+        }
 
-    /* Button styles */
-    .btn {
-        display: inline-flex; /* Flexbox for alignment */
-        align-items: center; /* Center icon and text */
-        border: none;
-        border-radius: 20px; /* Slightly rounded corners */
-        padding: 8px 15px; /* Reduced padding for smaller buttons */
-        font-size: 12px; /* Smaller font size */
-        cursor: pointer;
-        transition: all 0.3s ease; /* Smooth transition */
-        text-transform: uppercase; /* Uppercase text */
-        text-decoration: none; /* Remove underline for links */
-        color: #fff; /* Default text color for buttons */
-        background-color: #BA0C2F; /* Inactive button background color */
-        width: 120px; /* Fixed width for all buttons */
-        text-align: center; /* Center text */
-    }
+        /* Button styles */
+        .btn {
+            display: inline-flex; /* Flexbox for alignment */
+            align-items: center; /* Center icon and text */
+            border: none;
+            border-radius: 20px; /* Slightly rounded corners */
+            padding: 8px 15px; /* Reduced padding for smaller buttons */
+            font-size: 12px; /* Smaller font size */
+            cursor: pointer;
+            transition: all 0.3s ease; /* Smooth transition */
+            text-transform: uppercase; /* Uppercase text */
+            text-decoration: none; /* Remove underline for links */
+            color: #fff; /* Default text color for buttons */
+            background-color: #BA0C2F; /* Inactive button background color */
+            width: 120px; /* Fixed width for all buttons */
+            text-align: center; /* Center text */
+        }
 
-    .btn:hover {
-        background-color: #d68aaf; /* Slightly darker shade on hover */
-        transform: scale(1.03); /* Slightly enlarge on hover */
-    }
+        .btn:hover {
+            background-color: #d68aaf; /* Slightly darker shade on hover */
+            transform: scale(1.03); /* Slightly enlarge on hover */
+        }
 
-    .btn.active {
-        background: #002f6c; /* Active button background color */
-        color: white; /* Active button text color */
-        border: 2px solid #004494; /* Optional: border for active button */
-    }
+        .btn.active {
+            background: #002f6c; /* Active button background color */
+            color: white; /* Active button text color */
+            border: 2px solid #004494; /* Optional: border for active button */
+        }
 
-    .btn-outline-success {
-        background: transparent; /* Transparent background */
-        color: #28a745; /* Text color */
-        border: 2px solid #28a745; /* Border color */
-    }
+        .btn-outline-success {
+            background: transparent; /* Transparent background */
+            color: #28a745; /* Text color */
+            border: 2px solid #28a745; /* Border color */
+        }
 
-    .btn-outline-success:hover {
-        background-color: #28a745; /* Background color on hover */
-        color: white; /* Text color on hover */
-    }
+        .btn-outline-success:hover {
+            background-color: #28a745; /* Background color on hover */
+            color: white; /* Text color on hover */
+        }
 
-    /* Additional styles for better legibility */
-    .btn:not(.active) {
-        color: #fff; /* Text color for inactive buttons */
-        background-color: #BA0C2F; /* Background color for inactive buttons */
-        border: 2px solid #BA0C2F; /* Border color for inactive buttons */
-    }
+        /* Additional styles for better legibility */
+        .btn:not(.active) {
+            color: #fff; /* Text color for inactive buttons */
+            background-color: #BA0C2F; /* Background color for inactive buttons */
+            border: 2px solid #BA0C2F; /* Border color for inactive buttons */
+        }
 
-    /* Icon styles */
-    .btn i {
-        margin-right: 5px; /* Space between icon and text */
-    }
+        /* Icon styles */
+        .btn i {
+            margin-right: 5px; /* Space between icon and text */
+        }
 
-    /* New styles for tables */
-    .table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-bottom: 20px;
-    }
+        /* New styles for tables */
+        .table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
 
-    .table th, .table td {
-        border: 1px solid #dee2e6;
-        padding: 8px;
-        text-align: center;
-    }
+        .table th, .table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
 
-    .table th {
-        /* background-color: #f8f9fa; */
-        font-weight: bold;
-    }
+        .table th {
+            /* background-color: #f8f9fa; */
+            font-weight: bold;
+        }
 
-    /* New styles for alerts */
-    .alert {
-        margin-bottom: 20px;
-        border-radius: 5px;
-    }
+        /* New styles for alerts */
+        .alert {
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
 
-    /* New styles for main container */
-    .container-fluid {
-        padding: 20px;
-        background-color: #f1f1f1;
-        border-radius: 10px;
-    }
+        /* New styles for main container */
+        .container-fluid {
+            padding: 20px;
+            background-color: #f1f1f1;
+            border-radius: 10px;
+        }
 
-    .btn-outline-success {
-        color: #28a745; /* Outline button text color */
-        border-color: #28a745; /* Outline button border color */
-        color: white; /* Text color on hover */
-    }
+        .btn-outline-success {
+            color: #28a745; /* Outline button text color */
+            border-color: #28a745; /* Outline button border color */
+            color: white; /* Text color on hover */
+        }
 
-    .btn-outline-success:hover {
-        background-color: #28a745; /* Background color on hover */
-        color: white; /* Text color on hover */
-    }
+        .btn-outline-success:hover {
+            background-color: #28a745; /* Background color on hover */
+            color: white; /* Text color on hover */
+        }
 
-    .button-container {
-        display: flex; /* Use flexbox for layout */
-        justify-content: space-between; /* Space buttons evenly */
-    }
+        .button-container {
+            display: flex; /* Use flexbox for layout */
+            justify-content: space-between; /* Space buttons evenly */
+        }
 
-    .btn {
-        flex: 1; /* Make buttons take equal space */
-        margin: 0 5px; /* Add some margin between buttons */
-        border: none;
-        border-radius: 25px; /* Rounded corners */
-        padding: 10px 20px; /* Padding for better touch area */
-        font-size: 14px; /* Font size */
-        cursor: pointer;
-        transition: all 0.3s ease; /* Smooth transition */
-        text-transform: uppercase; /* Uppercase text */
-        text-decoration: none; /* Remove underline for links */
-        color: #fff; /* Default text color for buttons */
-        background-color: #BA0C2F; /* Default background color */
-        text-align: center; /* Center text */
-    }
+        .btn {
+            flex: 1; /* Make buttons take equal space */
+            margin: 0 5px; /* Add some margin between buttons */
+            border: none;
+            border-radius: 25px; /* Rounded corners */
+        {#padding: 10px 20px; /* Padding for better touch area */#}{#font-size: 14px; /* Font size */#} cursor: pointer;
+            transition: all 0.3s ease; /* Smooth transition */
+            text-transform: uppercase; /* Uppercase text */
+            text-decoration: none; /* Remove underline for links */
+            color: #fff; /* Default text color for buttons */
+            background-color: #BA0C2F; /* Default background color */
+            text-align: center; /* Center text */
 
-    .btn:hover {
-        background-color: #218838; /* Darker green on hover */
-        transform: scale(1.05); /* Slightly enlarge on hover */
-    }
 
-    .btn.active {
-        background: #002f6c; /* Active button background color */
-        color: white; /* Active button text color */
-        border: 2px solid #004494; /* Optional: border for active button */
-    }
+        }
 
-    .btn-outline-success {
-        background: transparent; /* Transparent background */
-        color: #28a745; /* Text color */
-        border: 2px solid #28a745; /* Border color */
-    }
+        .btn:hover {
+            background-color: #218838; /* Darker green on hover */
+            transform: scale(1.05); /* Slightly enlarge on hover */
+        }
 
-    .btn-outline-success:hover {
-        background-color: #28a745; /* Background color on hover */
-        color: white; /* Text color on hover */
-    }
+        .btn.active {
+            background: #002f6c; /* Active button background color */
+            color: white; /* Active button text color */
+            border: 2px solid #004494; /* Optional: border for active button */
+        }
 
-    /* Additional styles for better legibility */
-    .btn:not(.active) {
-        color: white; /* Text color for inactive buttons */
-        background-color: #BA0C2F; /* Light background for inactive buttons */
-        border: 2px solid #28a745; /* Border color for inactive buttons */
-    }
+        .btn-outline-success {
+            background: transparent; /* Transparent background */
+            color: #28a745; /* Text color */
+            border: 2px solid #28a745; /* Border color */
+        }
 
-    /* Icon styles */
-    .btn i {
-        margin-right: 8px; /* Space between icon and text */
-    }
+        .btn-outline-success:hover {
+            background-color: #28a745; /* Background color on hover */
+            color: white; /* Text color on hover */
+        }
+
+        /* Additional styles for better legibility */
+        .btn:not(.active) {
+            color: white; /* Text color for inactive buttons */
+            background-color: #BA0C2F; /* Light background for inactive buttons */
+            border: 2px solid #28a745; /* Border color for inactive buttons */
+        }
+
+        /* Icon styles */
+        .btn i {
+            margin-right: 8px; /* Space between icon and text */
+        }
     </style>
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-        <h6 class="display-6 text-primary text-center">Supply Chain Spot Check Dashboard (Register/Records)</h6>
+        <h6 class="display-6 text-primary text-center">{{ title }}</h6>
         <hr>
         <div class="p-5 mb-4 bg-light rounded-3">
             <div class="container-fluid">
@@ -187,36 +187,36 @@
                             </div>
                         {% endfor %}
                     </ul>
-                {% endif %}                
+                {% endif %}
                 <div class="button-container mb-3">
-                {% if "Malaria Commodities DAR (MoH 645)" in filtered_data %}
-                {% else %}
-                    <a href="{% url 'add_pharmacy_records' register_name='Malaria Commodities DAR (MoH 645)' quarter=quarter year=year pk=facility_id date=date %}"
-                       class="btn {% if report_name == 'Malaria Commodities DAR (MoH 645)' %}active{% endif %}">
-                       <i class="fas fa-plus"></i> Anti-Malaria
-                    </a>
-                {% endif %}
-                {% if "ARV Daily Activity Register (DAR) (MOH 367A) or WebADT" in filtered_data %}
-                {% else %}
-                    <a href="{% url 'add_pharmacy_records' register_name='ARV Daily Activity Register (DAR) (MOH 367A) or WebADT' quarter=quarter year=year pk=facility_id date=date %}"
-                       class="btn {% if register_name == 'ARV Daily Activity Register (DAR) (MOH 367A) or WebADT' %}active{% endif %}">
-                       <i class="fas fa-prescription-bottle"></i> ARVs
-                    </a>
-                {% endif %}
-                {% if "DADR-Anti TB register" in filtered_data %}
-                {% else %}
-                    <a href="{% url 'add_pharmacy_records' register_name='DADR-Anti TB register' quarter=quarter year=year pk=facility_id date=date %}"
-                       class="btn {% if register_name == 'DADR-Anti TB register' %}active{% endif %}">
-                       <i class="fas fa-lungs"></i> Anti TB
-                    </a>
-                {% endif %}
-                {% if "Family Planning Commodities Daily Activity Register (DAR) (MOH 512)" in filtered_data %}
-                {% else %}
-                    <a href="{% url 'add_pharmacy_records' register_name='Family Planning Commodities Daily Activity Register (DAR) (MOH 512)' quarter=quarter year=year pk=facility_id date=date %}"
-                       class="btn {% if register_name == 'Family Planning Commodities Daily Activity Register (DAR) (MOH 512)' %}active{% endif %}">
-                       <i class="fas fa-user-friends"></i> FP
-                    </a>
-                {% endif %}
+                    {% if "Malaria Commodities DAR (MoH 645)" in filtered_data %}
+                    {% else %}
+                        <a href="{% url 'add_pharmacy_records' register_name='Malaria Commodities DAR (MoH 645)' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn {% if report_name == 'Malaria Commodities DAR (MoH 645)' %}active{% endif %}">
+                            <i class="fas fa-plus"></i> Anti-Malaria
+                        </a>
+                    {% endif %}
+                    {% if "ARV Daily Activity Register (DAR) (MOH 367A) or WebADT" in filtered_data %}
+                    {% else %}
+                        <a href="{% url 'add_pharmacy_records' register_name='ARV Daily Activity Register (DAR) (MOH 367A) or WebADT' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn {% if register_name == 'ARV Daily Activity Register (DAR) (MOH 367A) or WebADT' %}active{% endif %}">
+                            <i class="fas fa-prescription-bottle"></i> ARVs
+                        </a>
+                    {% endif %}
+                    {% if "DADR-Anti TB register" in filtered_data %}
+                    {% else %}
+                        <a href="{% url 'add_pharmacy_records' register_name='DADR-Anti TB register' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn {% if register_name == 'DADR-Anti TB register' %}active{% endif %}">
+                            <i class="fas fa-lungs"></i> Anti TB
+                        </a>
+                    {% endif %}
+                    {% if "Family Planning Commodities Daily Activity Register (DAR) (MOH 512)" in filtered_data %}
+                    {% else %}
+                        <a href="{% url 'add_pharmacy_records' register_name='Family Planning Commodities Daily Activity Register (DAR) (MOH 512)' quarter=quarter year=year pk=facility_id date=date %}"
+                           class="btn {% if register_name == 'Family Planning Commodities Daily Activity Register (DAR) (MOH 512)' %}active{% endif %}">
+                            <i class="fas fa-user-friends"></i> FP
+                        </a>
+                    {% endif %}
                 </div>
                 {% if register_name %}
                     {% for key,months in commodity_questions.items %}
@@ -260,9 +260,6 @@
                                     </thead>
                                     <tbody>
                                     <tr>
-                                        <td> {{ form2.register_available|as_crispy_field }} </td>
-                                        <td> {{ form2.currently_in_use|as_crispy_field }} </td>
-                                        <td> {{ form2.last_month_copy|as_crispy_field }} </td>
                                         <td> {{ form2.date_report_submitted|as_crispy_field }} </td>
                                         <td> {{ form2.comments|as_crispy_field }} </td>
                                     </tr>
@@ -333,12 +330,21 @@
                                 </table>
                             {% endif %}
                             <div class="col-md-3 mt-4 pt-2">
-                                <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+                                <input class="btn btn-sm btn-success mt-1" type="submit" name="submit_data"
+                                       value="Submit">
                             </div>
                         </form>
                     {% endfor %}
                 {% endif %}
             </div>
+            {% if pharmacy_records %}
+                <hr>
+                <h1 class="display-6 text-primary text-center">Commodity records/registers (Summary)</h1>
+                <hr>
+                {% block comm_summaries %}
+                    {% include "partial_html/pharmacy_dqa/commodity_registers_summary.html" %}
+                {% endblock %}
+            {% endif %}
         </div>
     </main>
 {% endblock %}

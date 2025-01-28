@@ -35,7 +35,7 @@
                 {{ my_filters.form.measurement_frequency|as_crispy_field }}
             </div>
             <div class="col-md-2 mt-4 pt-2">
-                <button class="btn btn-outline-primary" type="submit">search</button>
+                <button class="btn btn-sm btn-outline-primary" type="submit">search</button>
             </div>
       </form>
     {% endif %}
@@ -135,7 +135,7 @@
                       {% if user.id == qi.created_by.id %}
         {#                                      <div class="d-flex justify-content-start" >#}
                                       {% for project_archived in qi.archiveproject_set.all %}
-        {#                                              <a href="{% url 'toggle_archive_project' project_archived.qi_project_id %}" class="btn btn-secondary">Unarchive project</a>#}
+        {#                                              <a href="{% url 'toggle_archive_project' project_archived.qi_project_id %}" class="btn btn-sm btn-secondary">Unarchive project</a>#}
                                       {% endfor %}
         {#                                      </div>#}
                             {% endif %}
@@ -200,7 +200,7 @@
                       {% if user.id == qi.created_by.id %}
         {#                                      <div class="d-flex justify-content-start" >#}
                                       {% for project_archived in qi.archiveproject_set.all %}
-        {#                                              <a href="{% url 'toggle_archive_project' project_archived.qi_project_id %}" class="btn btn-secondary">Unarchive project</a>#}
+        {#                                              <a href="{% url 'toggle_archive_project' project_archived.qi_project_id %}" class="btn btn-sm btn-secondary">Unarchive project</a>#}
                                       {% endfor %}
         {#                                      </div>#}
                             {% endif %}

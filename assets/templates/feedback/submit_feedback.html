@@ -33,16 +33,16 @@
                 {% endif %}
                 <div class="d-flex justify-content-around mt-3">
                     {% if view_type == "submit" %}
-                        <a href="{% url 'submit_feedback' %}" class="btn btn-success">Add feedback</a>
+                        <a href="{% url 'submit_feedback' %}" class="btn btn-sm btn-success">Add feedback</a>
                     {% else %}
                         <a href="{% url 'submit_feedback' %}"
-                           class="btn btn-outline-success">Add feedback</a>
+                           class="btn btn-sm btn-outline-success">Add feedback</a>
                     {% endif %}
                     {% if view_type == "view" %}
-                        <a href="{% url 'feedback_list' %}" class="btn btn-success">View Feedback</a>
+                        <a href="{% url 'feedback_list' %}" class="btn btn-sm btn-success">View Feedback</a>
                     {% else %}
                         <a href="{% url 'feedback_list' %}"
-                           class="btn btn-outline-success">View Feedback</a>
+                           class="btn btn-sm btn-outline-success">View Feedback</a>
                     {% endif %}
                 </div>
                 <div class="card-body">
@@ -69,11 +69,11 @@
                             {% if form.app_name.errors %}
                                 <span class="text-danger">{{ form.app_name.errors }}</span>
                             {% endif %}
-                            <button type="submit" class="btn btn-primary btn-lg mt-2">Provide feedback</button>
+                            <button type="submit" class="btn btn-sm btn-primary btn-lg mt-2">Provide feedback</button>
                         {% elif view_type == "add_app" %}
                             <div class="mt-4">
                                 {{ form.name|as_crispy_field }}
-                            <button type="submit" class="btn btn-primary btn-lg mt-2">Submit</button>
+                            <button type="submit" class="btn btn-sm btn-primary btn-lg mt-2">Submit</button>
                             </div>
                         {% endif %}
 
@@ -108,11 +108,11 @@
                                             {% if not apps.hide_update_button or request.user.is_superuser %}
                                                 <td class="text-end">
                                                     <a href="{% url 'update_app' pk=app.id %}"
-                                                       class="btn btn-info glow-button" role="button">
+                                                       class="btn btn-sm btn-info glow-button" role="button">
                                                         <i class="fas fa-edit"> Edit </i>
                                                     </a>
                                                 <a href="{% url 'delete_app' pk=app.id %}"
-                                                       class="btn btn-danger glow-button" role="button">
+                                                       class="btn btn-sm btn-danger glow-button" role="button">
                                                         <i class="fas fa-edit"> Delete </i>
                                                     </a>
                                                 </td>

@@ -24,71 +24,47 @@
                 <hr>
                 <h1 class="display-6 fw-bold text-primary text-center">{{ title }} </h1>
                 <hr>
-{#                {% if title == "Update Inventory" %}#}
-{#                    <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">#}
-{#                        {% csrf_token %}#}
-{#                        {{ formset.management_form }}#}
-{#                        <table class="table table-striped table-hover" style="font-size: x-small;">#}
-{#                            <thead class="thead-dark text-center">#}
-{#                            <tr>#}
-{#                                <th>DESCRIPTION</th>#}
-{#                                <th>TLD 90s</th>#}
-{#                                <th>DTG 10</th>#}
-{#                                <th>ABC/3TC 120/60</th>#}
-{#                                <th>3HP</th>#}
-{#                                <th>IMPLANT 1 ROD</th>#}
-{#                                <th>AL 24</th>#}
-{#                                <th>COMMENTS</th>#}
-{#                            </tr>#}
-{#                            </thead>#}
-{#                            <tbody>#}
-{#                            <tr>#}
-{#                                <td class="fw-bold">#}
-{#                                    {{ form.description }}#}
-{#                                </td>#}
-{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.adult_arv_tdf_3tc_dtg|as_crispy_field }}</td>#}
-{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.pead_arv_dtg_10mg|as_crispy_field }}</td>#}
-{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.paed_arv_abc_3tc_120_60mg|as_crispy_field }}</td>#}
-{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.tb_3hp|as_crispy_field }}</td>#}
-{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.family_planning_rod|as_crispy_field }}</td>#}
-{#                                <td style="width: calc((100% - 35%) / 6);">{{ form.al_24|as_crispy_field }}</td>#}
-{#                                <td style="width: 20%;height: 100px;">{{ form.comments|as_crispy_field }}</td>#}
-{#                            </tr>#}
-{#                            </tbody>#}
-{#                        </table>#}
-{#                        <div class="col-md-2 mt-2 pt-3">#}
-{#                            <input class="btn btn-success mt-1" type="submit" value="Save">#}
-{#                        </div>#}
-{#                    </form>#}
-{#                {% endif %}#}
+                {% if fetched_object.pharmacy_records.record_type %}
+                    <h6 class="mb-4 mt-4">FACILITY : {{ fetched_object.pharmacy_records.facility_name.name }}</h6>
+                    <h6 class="mb-4 mt-4">MFL CODE : {{ fetched_object.pharmacy_records.facility_name.mfl_code }}</h6>
+                    <h6 class="mb-4 mt-4">Interview date : {{ fetched_object.pharmacy_records.date_modified }}</h6>
+                    <h6 class="mb-4 mt-4">Activity : {{ fetched_object.pharmacy_records.register_name }}</h6>
+                    <h6 class="mb-4 mt-4">Comment : {{ fetched_object.pharmacy_records.comments }}</h6>
+                {% endif %}
+                {% if fetched_object.delivery_notes.record_type %}
+                    <h6 class="mb-4 mt-4">FACILITY : {{ fetched_object.delivery_notes.facility_name.name }}</h6>
+                    <h6 class="mb-4 mt-4">MFL CODE : {{ fetched_object.delivery_notes.facility_name.mfl_code }}</h6>
+                    <h6 class="mb-4 mt-4">Interview date : {{ fetched_object.delivery_notes.date_modified }}</h6>
+                    <h6 class="mb-4 mt-4">Activity : {{ fetched_object.delivery_notes.register_name }}</h6>
+                    <h6 class="mb-4 mt-4">Comment : {{ fetched_object.delivery_notes.comments }}</h6>
+                {% endif %}
                 <form class="row mt-5" method="POST" enctype='multipart/form-data' autocomplete="off">
-                        {% csrf_token %}
-                        <div class="col-md-6 mt-4">
-                            {{ form.immediate_corrective_actions|as_crispy_field }}
-                        </div>
-                        <div class="col-md-6 mt-4">
-                            {{ form.action_plan|as_crispy_field }}
-                        </div>
-                        <div class="col-md-6 mt-4">
-                            {{ form.responsible_person|as_crispy_field }}
-                        </div>
-                        <div class="col-md-6 mt-4">
-                            {{ form.follow_up_plan|as_crispy_field }}
-                        </div>
-                        <div class="col-md-6 mt-4">
-                            {{ form.complete_date|as_crispy_field }}
-                        </div>
+                    {% csrf_token %}
+                    <div class="col-md-6 mt-4">
+                        {{ form.immediate_corrective_actions|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6 mt-4">
+                        {{ form.action_plan|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6 mt-4">
+                        {{ form.responsible_person|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6 mt-4">
+                        {{ form.follow_up_plan|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6 mt-4">
+                        {{ form.complete_date|as_crispy_field }}
+                    </div>
 
-                        <div class="col-md-4 mt-4 pt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                    <div class="col-md-4 mt-4 pt-3">
+                        <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
+                    </div>
+                    {% if form.errors %}
+                        <div class="alert alert-danger mt-4">
+                            {{ form.errors }}
                         </div>
-                        {% if form.errors %}
-                            <div class="alert alert-danger mt-4">
-                                {{ form.errors }}
-                            </div>
-                        {% endif %}
-                    </form>
-
+                    {% endif %}
+                </form>
             </div>
         </div>
     </main>

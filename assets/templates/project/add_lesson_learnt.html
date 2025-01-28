@@ -54,7 +54,7 @@
 
         {% endfor %}
         <div class="col-md-1 mt-4 pt-2">
-            <button class="btn btn-outline-primary" type="submit">SUBMIT</button>
+            <button class="btn btn-sm btn-outline-primary" type="submit">SUBMIT</button>
         </div>
   </form>
 
@@ -108,31 +108,31 @@
                             </div>
                             <div>
                                 <a href="{{ resource.resource.url }}">
-                                    <button type="button" class="btn btn-outline-success btn-floating mr-2" data-mdb-ripple-color="dark">
+                                    <button type="button" class="btn btn-sm btn-outline-success btn-floating mr-2" data-mdb-ripple-color="dark">
                                         Download <i class="fas fa-download"></i>
                                     </button>
                                 </a>
                                 {% if user.id == resource.uploaded_by.id or user.is_superuser %}
                                     <a href="{% url 'update_resource' resource.id %}">
-                                        <button type="button" class="btn btn-outline-warning btn-floating mr-2" data-mdb-ripple-color="dark">
+                                        <button type="button" class="btn btn-sm btn-outline-warning btn-floating mr-2" data-mdb-ripple-color="dark">
                                             EDIT
                                         </button>
                                     </a>
 
                                     <a href="{% url 'delete_resource' resource.id %}">
-                                        <button type="button" class="btn btn-outline-danger btn-floating mr-2" data-mdb-ripple-color="dark">
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-floating mr-2" data-mdb-ripple-color="dark">
                                             DELETE
                                         </button>
                                     </a>
 {#                                    {% elif user.is_superuser %}#}
 {#                                        <a href="{{ resource.resource.url }}">#}
-{#                                            <button type="button" class="btn btn-outline-warning btn-floating mr-2" data-mdb-ripple-color="dark">#}
+{#                                            <button type="button" class="btn btn-sm btn-outline-warning btn-floating mr-2" data-mdb-ripple-color="dark">#}
 {#                                                EDIT <i class="fas fa-download"></i>#}
 {#                                            </button>#}
 {#                                        </a>#}
 {##}
 {#                                        <a href="{{ resource.resource.url }}">#}
-{#                                            <button type="button" class="btn btn-outline-danger btn-floating mr-2" data-mdb-ripple-color="dark">#}
+{#                                            <button type="button" class="btn btn-sm btn-outline-danger btn-floating mr-2" data-mdb-ripple-color="dark">#}
 {#                                                DELETE <i class="fas fa-download"></i>#}
 {#                                            </button>#}
 {#                                        </a>#}

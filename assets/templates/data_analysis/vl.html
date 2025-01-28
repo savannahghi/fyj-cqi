@@ -20,12 +20,12 @@
                 {% endif %}
                 <div class="d-flex justify-content-around mb-3">
                     {% if dqa_type == "tat" %}
-                        <a href="{% url 'tat' %}" class="btn btn-success">Turn Around Time (TAT)</a>
+                        <a href="{% url 'tat' %}" class="btn btn-sm btn-success">Turn Around Time (TAT)</a>
                     {% else %}
-                        <a href="{% url 'tat' %}" class="btn btn-outline-success">Turn Around Time (TAT)</a>
+                        <a href="{% url 'tat' %}" class="btn btn-sm btn-outline-success">Turn Around Time (TAT)</a>
                     {% endif %}
                     {% if dqa_type == "viral_load" %}
-                        <a href="{% url 'viral_load' %}" class="btn btn-success">VL Analyzer</a>
+                        <a href="{% url 'viral_load' %}" class="btn btn-sm btn-success">VL Analyzer</a>
                     {% else %}
                         <a href="{% url 'viral_load' %}" class="btn btn-outline-success">VL Analyzer</a>
                     {% endif %}

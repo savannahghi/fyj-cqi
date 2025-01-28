@@ -24,26 +24,26 @@
             {% endif %}
             <div class="d-flex justify-content-around mb-3">
                 {% if dqa_type == "hub" %}
-                    <a href="{% url 'dqa_dashboard' dqa_type='hub' %}" class="btn btn-success">HUB DQA</a>
+                    <a href="{% url 'dqa_dashboard' dqa_type='hub' %}" class="btn btn-sm btn-success">HUB DQA</a>
                 {% else %}
-                    <a href="{% url 'dqa_dashboard' dqa_type='hub' %}" class="btn btn-outline-success">HUB DQA</a>
+                    <a href="{% url 'dqa_dashboard' dqa_type='hub' %}" class="btn btn-sm btn-outline-success">HUB DQA</a>
                 {% endif %}
                 {% if dqa_type == "subcounty" %}
-                    <a href="{% url 'dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-success">SUB-COUNTIES
+                    <a href="{% url 'dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-sm btn-success">SUB-COUNTIES
                         DQA</a>
                 {% else %}
-                    <a href="{% url 'dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-outline-success">SUB-COUNTIES
+                    <a href="{% url 'dqa_dashboard' dqa_type='subcounty' %}" class="btn btn-sm btn-outline-success">SUB-COUNTIES
                         DQA</a>
                 {% endif %}
                 {% if dqa_type == "county" %}
-                    <a href="{% url 'dqa_dashboard' dqa_type='county' %}" class="btn btn-success">COUNTY DQA</a>
+                    <a href="{% url 'dqa_dashboard' dqa_type='county' %}" class="btn btn-sm btn-success">COUNTY DQA</a>
                 {% else %}
-                    <a href="{% url 'dqa_dashboard' dqa_type='county' %}" class="btn btn-outline-success">COUNTY DQA</a>
+                    <a href="{% url 'dqa_dashboard' dqa_type='county' %}" class="btn btn-sm btn-outline-success">COUNTY DQA</a>
                 {% endif %}
                 {% if dqa_type == "program" %}
-                    <a href="{% url 'dqa_dashboard' dqa_type='program' %}" class="btn btn-success">PROGRAM DQA</a>
+                    <a href="{% url 'dqa_dashboard' dqa_type='program' %}" class="btn btn-sm btn-success">PROGRAM DQA</a>
                 {% else %}
-                    <a href="{% url 'dqa_dashboard' dqa_type='program' %}" class="btn btn-outline-success">PROGRAM
+                    <a href="{% url 'dqa_dashboard' dqa_type='program' %}" class="btn btn-sm btn-outline-success">PROGRAM
                         DQA</a>
                 {% endif %}
             </div>
@@ -75,7 +75,7 @@
                     </div>
                 {% endif %}
                 <div class="col-md-2 mt-2 pt-3">
-                    <input class="btn btn-success mt-1" type="submit" value="Submit">
+                    <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                 </div>
             </form>
 
@@ -157,7 +157,7 @@
 
                 {% if not yellow.empty %}
                     <div>
-                        <a class="btn btn-warning mt-3" data-bs-toggle="collapse" href="#collapseyellowscores"
+                        <a class="btn btn-sm btn-warning mt-3" data-bs-toggle="collapse" href="#collapseyellowscores"
                            role="button"
                            aria-expanded="false" aria-controls="collapseyellowscores">
                             Details of the yellow scores
@@ -171,7 +171,7 @@
                         {{ yellow_viz_quest|safe }}
                         {#                        </div>#}
                         <div>
-                            <a class="btn btn-info mt-3" data-bs-toggle="collapse" href="#collapseyellowscoreslinelist"
+                            <a class="btn btn-sm btn-info mt-3" data-bs-toggle="collapse" href="#collapseyellowscoreslinelist"
                                role="button"
                                aria-expanded="false" aria-controls="collapseyellowscoreslinelist"
                                style="font-size: xx-small">
@@ -216,7 +216,7 @@
                 {% if not red.empty %}
 
                     <div>
-                        <a class="btn btn-danger mt-3" data-bs-toggle="collapse" href="#collapseredscores" role="button"
+                        <a class="btn btn-sm btn-danger mt-3" data-bs-toggle="collapse" href="#collapseredscores" role="button"
                            aria-expanded="false" aria-controls="collapseredscores">
                             Details of the red scores <span class="badge bg-secondary" data-bs-toggle="tooltip"
                                                             title="Number of RED scores. Click to view">{{ red|length }} </span>
@@ -230,7 +230,7 @@
 
                         {#                        </div>#}
                         <div>
-                            <a class="btn btn-info mt-3" data-bs-toggle="collapse" href="#collapseredscoreslinelist"
+                            <a class="btn btn-sm btn-info mt-3" data-bs-toggle="collapse" href="#collapseredscoreslinelist"
                                role="button"
                                aria-expanded="false" aria-controls="collapseredscoreslinelist"
                                style="font-size: xx-small">
@@ -275,7 +275,7 @@
                 {% endif %}
                 {% if not na_df.empty %}
                     <div>
-                        <a class="btn btn-secondary mt-3 mb-3" data-bs-toggle="collapse" href="#collapse_na_scores"
+                        <a class="btn btn-sm btn-secondary mt-3 mb-3" data-bs-toggle="collapse" href="#collapse_na_scores"
                            role="button"
                            aria-expanded="false" aria-controls="collapse_na_scores">
                             Details of the not applicable scores <span class="badge bg-primary"
@@ -289,7 +289,7 @@
                         {{ na_viz_quest|safe }}
                         {#                        </div>#}
                         <div>
-                            <a class="btn btn-info mt-3 justify-content-end" data-bs-toggle="collapse"
+                            <a class="btn btn-sm btn-info mt-3 justify-content-end" data-bs-toggle="collapse"
                                href="#collapse_na_scoreslist"
                                role="button"
                                aria-expanded="false" aria-controls="collapse_na_scoreslist"
@@ -422,7 +422,7 @@
                 </div>
                 {% if request.user.is_superuser %}
                     <div>
-                        <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse" href="#collapseauditteam"
+                        <a class="btn btn-sm btn-warning mt-3 mb-3" data-bs-toggle="collapse" href="#collapseauditteam"
                            role="button" aria-expanded="false" aria-controls="collapseauditteam">
                             Distribution of audit team
                         </a>
@@ -463,7 +463,7 @@
                         {{ work_plan_areas_reviewed_viz|safe }}
                         <div>
                             <div>
-                                <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse" href="#chart-abstraction"
+                                <a class="btn btn-sm btn-warning mt-3 mb-3" data-bs-toggle="collapse" href="#chart-abstraction"
                                    role="button" aria-expanded="false" aria-controls="chart-abstraction">
                                     CHART ABSTRACTION
                                 </a>
@@ -555,7 +555,7 @@
                                 <hr>
                             </div>
                             <div>
-                                <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse"
+                                <a class="btn btn-sm btn-warning mt-3 mb-3" data-bs-toggle="collapse"
                                    href="#data-management-system"
                                    role="button" aria-expanded="false" aria-controls="data-management-system">
                                     Data Management Systems
@@ -647,7 +647,7 @@
                                 <hr>
                             </div>
                             <div>
-                                <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse"
+                                <a class="btn btn-sm btn-warning mt-3 mb-3" data-bs-toggle="collapse"
                                    href="#hts-prevention-pmtct"
                                    role="button" aria-expanded="false" aria-controls="hts-prevention-pmtct">
                                     HTS/PREVENTION/PMTCT
@@ -741,7 +741,7 @@
                             </div>
 
                             <div>
-                                <a class="btn btn-warning mt-3 mb-3" data-bs-toggle="collapse" href="#me-systems"
+                                <a class="btn btn-sm btn-warning mt-3 mb-3" data-bs-toggle="collapse" href="#me-systems"
                                    role="button" aria-expanded="false" aria-controls="me-systems">
                                     M&E SYSTEMS
                                 </a>
@@ -842,7 +842,7 @@
                     <!-- Row with possible 4 buttons -->
                     <div class="col-3 p-2">
                         <a href="{% url 'download_dqa_workplan' quarter_year selected_level %}">
-                            <button type="button" class="btn btn-warning btn-floating w-100"
+                            <button type="button" class="btn btn-sm btn-warning btn-floating w-100"
                                     data-mdb-ripple-color="dark">
                                 Download Workplan <i class="fas fa-download"></i>
                             </button>
@@ -850,7 +850,7 @@
                     </div>
                     <div class="col-3 p-2">
                         <a href="{% url 'download_sqa_data' quarter_year selected_level %}">
-                            <button type="button" class="btn btn-warning btn-floating w-100"
+                            <button type="button" class="btn btn-sm btn-warning btn-floating w-100"
                                     data-mdb-ripple-color="dark">
                                 Download SQA Data <i class="fas fa-download"></i>
                             </button>

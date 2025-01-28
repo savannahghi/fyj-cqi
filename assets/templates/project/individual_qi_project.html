@@ -46,48 +46,48 @@
                         <h6>Hub name: {{ facility_project.hub|upper }}</h6>
                     {% endif %}
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 d-flex gap-2">
                     <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="action-btn view-btn">All
                         projects</a>
                     {% if request.user.is_superuser %}
-                        <a href="{% url 'add_project' %}" class="action-btn secondary-btn">Add QI PROJECT</a>
+                        <a href="{% url 'add_project' %}" class="action-btn secondary-btn btn-sm">Add QI PROJECT</a>
                     {% else %}
-                        <a href="{% url 'choose_project_level' %}" class="action-btn secondary-btn">Add QI PROJECT</a>
+                        <a href="{% url 'choose_project_level' %}" class="action-btn secondary-btn btn-sm">Add QI PROJECT</a>
                     {% endif %}
                     {% if facility_project.measurement_status != "Completed-or-Closed" %}
                         {% if user.is_authenticated %}
                             {% if user.id == facility_project.created_by.id or request.user.is_superuser %}
                                 {% if facility_name %}
                                     <a href="{% url 'update_project_facility' facility_project.id facility_project.facility_name.name %}"
-                                       class="action-btn warning-btn">Update project</a>
+                                       class="action-btn warning-btn btn-sm">Update project</a>
                                 {% elif program_name %}
                                     <a href="{% url 'update_project_program' facility_project.id facility_project.program.program %}"
-                                       class="action-btn warning-btn">Update project</a>
+                                       class="action-btn warning-btn btn-sm">Update project</a>
                                 {% elif subcounty_name %}
                                     <a href="{% url 'update_project_subcounty' facility_project.id facility_project.sub_county %}"
-                                       class="action-btn warning-btn">Update project</a>
+                                       class="action-btn warning-btn btn-sm">Update project</a>
                                 {% elif county_name %}
                                     <a href="{% url 'update_project_county' facility_project.id facility_project.county.county_name %}"
-                                       class="action-btn warning-btn">Update project</a>
+                                       class="action-btn warning-btn btn-sm">Update project</a>
                                 {% elif hub_name %}
                                     <a href="{% url 'update_project_hub' facility_project.id facility_project.hub %}"
-                                       class="action-btn warning-btn">Update project</a>
+                                       class="action-btn warning-btn btn-sm">Update project</a>
                                 {% endif %}
                                 {% if facility_name  and request.user.is_superuser %}
                                     <a href="{% url 'delete_project' facility_project.id facility_name %}"
-                                       class="action-btn secondary-btn">Delete project</a>
+                                       class="action-btn secondary-btn btn-sm">Delete project</a>
                                 {% elif program_name and request.user.is_superuser %}
                                     <a href="{% url 'delete_project' facility_project.id program_name %}"
-                                       class="action-btn secondary-btn">Delete project</a>
+                                       class="action-btn secondary-btn btn-sm">Delete project</a>
                                 {% elif subcounty_name and request.user.is_superuser %}
                                     <a href="{% url 'delete_project' facility_project.id subcounty_name %}"
-                                       class="action-btn secondary-btn">Delete project</a>
+                                       class="action-btn secondary-btn btn-sm">Delete project</a>
                                 {% elif county_name and request.user.is_superuser %}
                                     <a href="{% url 'delete_project' facility_project.id county_name %}"
-                                       class="action-btn secondary-btn">Delete project</a>
+                                       class="action-btn secondary-btn btn-sm">Delete project</a>
                                 {% elif hub_name and request.user.is_superuser %}
                                     <a href="{% url 'delete_project' facility_project.id hub_name %}"
-                                       class="action-btn secondary-btn">Delete project</a>
+                                       class="action-btn secondary-btn btn-sm">Delete project</a>
                                 {% endif %}
                                 {% if all_archived %}
                                     {% if facility_project.id in all_archived %}
@@ -664,7 +664,7 @@
                     </div>
                 {% endif %}
                 <div>
-                    <a class="action-btn view-btn" data-bs-toggle="collapse" href="#collapsestakeholders" role="button"
+                    <a class="action-btn view-btn mb-2" data-bs-toggle="collapse" href="#collapsestakeholders" role="button"
                        aria-expanded="false" aria-controls="collapsestakeholders">
                         STAKEHOLDERS IN BRIEF
                     </a>
@@ -851,7 +851,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <a class="action-btn view-btn" data-bs-toggle="collapse" href="#collapseactionplan"
+                        <a class="action-btn view-btn mb-2" data-bs-toggle="collapse" href="#collapseactionplan"
                            role="button"
                            aria-expanded="false" aria-controls="collapseactionplan">
                             ACTION PLAN IN BRIEF
@@ -1032,7 +1032,7 @@
                     {% endif %}
                 </div>
                 <div>
-                    <a class="action-btn view-btn" data-bs-toggle="collapse" href="#collapsemilestone" role="button"
+                    <a class="action-btn view-btn mb-2" data-bs-toggle="collapse" href="#collapsemilestone" role="button"
                        aria-expanded="false" aria-controls="collapsemilestone">
                         PROJECT MILESTONES IN BRIEF
                     </a>
@@ -1435,7 +1435,7 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ facility_project.id }}">
                                 <textarea name="content" class="form-control" style="width: 100%;"></textarea>
-                                <button class="btn btn-secondary mt-2" type="submit">Submit</button>
+                                <button class="btn btn-sm btn-secondary mt-2" type="submit">Submit</button>
                             </form>
                         {% elif program_name %}
                             <form action="{% url 'create_comment_program' facility_project.id facility_project.program.program %}"
@@ -1443,7 +1443,7 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ facility_project.id }}">
                                 <textarea name="content" class="form-control" style="width: 100%;"></textarea>
-                                <button class="btn btn-secondary mt-2" type="submit">Submit</button>
+                                <button class="btn btn-sm btn-secondary mt-2" type="submit">Submit</button>
                             </form>
                         {% elif subcounty_name %}
                             <form action="{% url 'create_comment_subcounty' facility_project.id facility_project.sub_county %}"
@@ -1451,7 +1451,7 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ facility_project.id }}">
                                 <textarea name="content" class="form-control" style="width: 100%;"></textarea>
-                                <button class="btn btn-secondary mt-2" type="submit">Submit</button>
+                                <button class="btn btn-sm btn-secondary mt-2" type="submit">Submit</button>
                             </form>
                         {% elif county_name %}
                             <form action="{% url 'create_comment_county' facility_project.id facility_project.county.county_name %}"
@@ -1459,7 +1459,7 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ facility_project.id }}">
                                 <textarea name="content" class="form-control" style="width: 100%;"></textarea>
-                                <button class="btn btn-secondary mt-2" type="submit">Submit</button>
+                                <button class="btn btn-sm btn-secondary mt-2" type="submit">Submit</button>
                             </form>
                         {% elif hub_name %}
                             <form action="{% url 'create_comment_hub' facility_project.id facility_project.hub %}"
@@ -1467,7 +1467,7 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="parent" value="{{ facility_project.id }}">
                                 <textarea name="content" class="form-control" style="width: 100%;"></textarea>
-                                <button class="btn btn-secondary mt-2" type="submit">Submit</button>
+                                <button class="btn btn-sm btn-secondary mt-2" type="submit">Submit</button>
                             </form>
                         {% endif %}
                     </div>

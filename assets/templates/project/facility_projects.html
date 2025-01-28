@@ -14,13 +14,13 @@
 
  <div class="p-5 mb-4 bg-light rounded-3">
     <div class="row mt-5">
-    <div class="d-flex justify-content-evenly">
+    <div class="d-flex gap-2">
         <h5 >{{ projects.count }} Ongoing QI projects</h5>
-        <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-primary">All projects</a>
+        <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-sm btn-primary">All projects</a>
      {% if request.user.is_superuser %}
-                    <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                    <a href="{% url 'add_project' %}" class="btn btn-sm btn-secondary">Add QI PROJECT</a>
                       {% else %}
-                    <a href="{% url 'choose_project_level' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                    <a href="{% url 'choose_project_level' %}" class="btn btn-sm btn-secondary">Add QI PROJECT</a>
                   {% endif %}
     </div>
 
@@ -50,22 +50,22 @@
 
           </ul>
           <div class="d-flex justify-content-evenly" >
-          <a href="#" class="btn btn-success">Not started/started/archived</a>
-          <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>
-{#          <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>#}
+          <a href="#" class="btn btn-sm btn-success">Not started/started/archived</a>
+          <a href="#" class="btn btn-sm btn-primary">Last updated on {{ qi.date_updated}} </a>
+{#          <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>#}
           {% if "facility" in project_type %}
-                          <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% elif "program" in project_type %}
-                          <a href="{% url 'single_project_program' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project_program' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% elif project_type == "county" %}
-                          <a href="{% url 'single_project_county' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project_county' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% elif project_type == "subcounty" %}
-                          <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% elif "hub" in project_type %}
-                          <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% endif %}
               {% if user.id == qi.created_by.id %}
-{#          <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>#}
+{#          <a href="{% url 'update_project' qi.id %}" class="btn btn-sm btn-warning">Update project</a>#}
               {% endif %}
       </div>
       </div>
@@ -106,35 +106,35 @@
 
           </ul>
           <div class="d-flex justify-content-evenly" >
-          <a href="#" class="btn btn-success">Not started/started/archived</a>
-          <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated|date}} </a>
-{#          <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>#}
+          <a href="#" class="btn btn-sm btn-success">Not started/started/archived</a>
+          <a href="#" class="btn btn-sm btn-primary">Last updated on {{ qi.date_updated|date}} </a>
+{#          <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>#}
           {% if "facility" in project_type %}
-                          <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% elif "program" in project_type %}
-                          <a href="{% url 'single_project_program' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project_program' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% elif project_type == "county" %}
-                          <a href="{% url 'single_project_county' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project_county' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% elif project_type == "subcounty" %}
-                          <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% elif "hub" in project_type %}
-                          <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-secondary">View QI project</a>
+                          <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-sm btn-secondary">View QI project</a>
                        {% endif %}
               {% if user.id == qi.created_by.id %}
-{#          <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update project</a>#}
+{#          <a href="{% url 'update_project' qi.id %}" class="btn btn-sm btn-warning">Update project</a>#}
               {% endif %}
           {% if qi.id not in tracked_projects %}
-{#            <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>#}
+{#            <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-danger">UNTRACKED QI PROJECT</a>#}
               {% if "facility" in project_type %}
-                          <a href="{% url 'single_project' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                          <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-danger">UNTRACKED QI PROJECT</a>
                        {% elif "program" in project_type %}
-                          <a href="{% url 'single_project_program' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                          <a href="{% url 'single_project_program' qi.id %}" class="btn btn-sm btn-danger">UNTRACKED QI PROJECT</a>
                        {% elif project_type == "county" %}
-                          <a href="{% url 'single_project_county' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                          <a href="{% url 'single_project_county' qi.id %}" class="btn btn-sm btn-danger">UNTRACKED QI PROJECT</a>
                        {% elif project_type == "subcounty" %}
-                          <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                          <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-sm btn-danger">UNTRACKED QI PROJECT</a>
                        {% elif "hub" in project_type %}
-                          <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-danger">UNTRACKED QI PROJECT</a>
+                          <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-sm btn-danger">UNTRACKED QI PROJECT</a>
                        {% endif %}
           {% endif %}
       </div>
@@ -177,11 +177,11 @@
 {##}
 {#          </ul>#}
 {#          <div class="d-flex justify-content-evenly" >#}
-{#          <a href="#" class="btn btn-success">Not started/started/archived</a>#}
-{#          <a href="#" class="btn btn-primary">Last updated on {{ qi.date_updated}} </a>#}
-{#          <a href="{% url 'single_project' qi.id %}" class="btn btn-secondary">View QI cqi</a>#}
+{#          <a href="#" class="btn btn-sm btn-success">Not started/started/archived</a>#}
+{#          <a href="#" class="btn btn-sm btn-primary">Last updated on {{ qi.date_updated}} </a>#}
+{#          <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-secondary">View QI cqi</a>#}
 {#              {% if user.id == qi.created_by.id %}#}
-{#          <a href="{% url 'update_project' qi.id %}" class="btn btn-warning">Update cqi</a>#}
+{#          <a href="{% url 'update_project' qi.id %}" class="btn btn-sm btn-warning">Update cqi</a>#}
 {#              {% endif %}#}
 {#      </div>#}
 {#      </div>#}
@@ -204,7 +204,7 @@
 {#         <form method="post">#}
 {#        {% csrf_token %}#}
 {#        {{ form|crispy}}#}
-{#         <input class="btn btn-success mt-1" type="submit" value="Add QI cqi">#}
+{#         <input class="btn btn-sm btn-success mt-1" type="submit" value="Add QI cqi">#}
 {#    </form>#}
 {#</div>#}
 

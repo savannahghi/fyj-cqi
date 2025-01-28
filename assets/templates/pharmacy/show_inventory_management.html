@@ -6,6 +6,18 @@
 
 
 {% block content %}
+    <style>
+        .small-table th, td {
+            font-size: 0.6rem;
+            width: auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+        }
+    </style>
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
         <div class="p-5 mb-4 bg-light rounded-3">
 
@@ -43,11 +55,11 @@
                         </div>
                     </div>
                 {% endif %}
-                {% for stock_card in stock_card_data|slice:":1" %}
-                    <h6 class="mb-4 mt-4">FACILITY: {{ stock_card.facility_name.name }}</h6>
-                    <h6 class="mb-4 mt-4">MFL CODE: {{ stock_card.facility_name.mfl_code }}</h6>
-                    <h6 class="mb-4 mt-4">Interview date: {{ stock_card.date_modified }}</h6>
-                {% endfor %}
+                {% if most_recent_item %}
+                    <h6 class="mb-4 mt-4">FACILITY: {{ most_recent_item.facility_name.name }}</h6>
+                    <h6 class="mb-4 mt-4">MFL CODE: {{ most_recent_item.facility_name.mfl_code }}</h6>
+                    <h6 class="mb-4 mt-4">Interview date: {{ most_recent_item.date_modified }}</h6>
+                {% endif %}
                 {% if title == "Inventory Management" %}
                     <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
@@ -62,70 +74,76 @@
                             {{ facility_form.name|as_crispy_field }}
                         </div>
                         <div class="col-md-3 mt-2 pt-3">
-                            <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" name="submit_data" value="Submit">
                         </div>
                     </form>
                     {% if stock_card_data %}
-                        <table class="table table-striped table-hover">
-                            <thead>
-                            <tr>
-                                {% if "Add" not in title %}
-                                    <th></th>
-                                {% endif %}
-                                <th style="font-size:xx-small">DESCRIPTION</th>
-                                <th style="font-size:xx-small">TLD 90s</th>
-                                <th style="font-size:xx-small">DTG 10</th>
-                                <th style="font-size:xx-small">ABC/3TC 120/60</th>
-                                <th style="font-size:xx-small">3HP</th>
-                                <th style="font-size:xx-small">IMPLANT 1 ROD</th>
-                                <th style="font-size:xx-small">AL 24</th>
-                                <th style="font-size:xx-small">COMMENTS</th>
-                                {% if "Add" not in title %}
-                                    <th></th>
-                                {% endif %}
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for stock_card in stock_card_data %}
-                                <tr>
-                                    {% if "Add" not in title %}
-                                        <td class="text-danger fw-bold">{{ forloop.counter }}.</td>
-                                    {% endif %}
-                                    <td style="width: calc((20%) );"> {{ stock_card.description }} </td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.adult_arv_tdf_3tc_dtg }}</td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.pead_arv_dtg_10mg }} </td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.paed_arv_abc_3tc_120_60mg }} </td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.tb_3hp }} </td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.family_planning_rod }} </td>
-                                    <td class="text-center"
-                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.al_24 }} </td>
-                                    <td class="text-center" style="width: calc((15%));">{{ stock_card.comments }}</td>
-                                    {% if "Add" not in title %}
-                                        <td style="width: calc((15%));">
-                                            <div>
-                                                <a href="{% url 'update_inventory' stock_card.id stock_card.model_name.model_name %}"
-                                                   class="btn btn-info glow-button"
-                                                   role="button" id="update-btn-{{ stock_card.id }}">Update</a>
-                                            </div>
-                                            {% if stock_card.id not in field_values %}
-                                                <div class="mt-2">
-                                                    <a href="{% url 'create_work_plan' stock_card.id stock_card.model_name.model_name %}"
-                                                       class="btn btn-info flicker-button"
-                                                       role="button" id="update-btn-{{ stock_card.id }}">Add work
-                                                        plan</a>
-                                                </div>
-                                            {% endif %}
-                                        </td>
-                                    {% endif %}
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                        <div class="mt-2">
+                            {{ df_html|safe }}
+                        </div>
+{#                        {% if stock_card_data %}#}
+{#                        <table class="table table-striped table-hover">#}
+{#                            <thead>#}
+{#                            <tr>#}
+{#                                {% if "Add" not in title %}#}
+{#                                    <th></th>#}
+{#                                {% endif %}#}
+{#                                <th style="font-size:xx-small">DESCRIPTION</th>#}
+{#                                <th style="font-size:xx-small">TLD 90s</th>#}
+{#                                <th style="font-size:xx-small">DTG 10</th>#}
+{#                                <th style="font-size:xx-small">ABC/3TC 120/60</th>#}
+{#                                <th style="font-size:xx-small">3HP</th>#}
+{#                                <th style="font-size:xx-small">IMPLANT 1 ROD</th>#}
+{#                                <th style="font-size:xx-small">AL 24</th>#}
+{#                                <th style="font-size:xx-small">COMMENTS</th>#}
+{#                                {% if "Add" not in title %}#}
+{#                                    <th></th>#}
+{#                                {% endif %}#}
+{#                            </tr>#}
+{#                            </thead>#}
+{#                            <tbody>#}
+{#                            {% for keys,values in stock_card_data.items %}#}
+{#                            {% for stock_card in values %}#}
+{#                                <tr>#}
+{#                                    {% if "Add" not in title %}#}
+{#                                        <td class="text-danger fw-bold">{{ forloop.counter }}.</td>#}
+{#                                    {% endif %}#}
+{#                                    <td style="width: calc((20%) );"> {{ stock_card.description }} </td>#}
+{#                                    <td class="text-center"#}
+{#                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.adult_arv_tdf_3tc_dtg }}</td>#}
+{#                                    <td class="text-center"#}
+{#                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.pead_arv_dtg_10mg }} </td>#}
+{#                                    <td class="text-center"#}
+{#                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.paed_arv_abc_3tc_120_60mg }} </td>#}
+{#                                    <td class="text-center"#}
+{#                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.tb_3hp }} </td>#}
+{#                                    <td class="text-center"#}
+{#                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.family_planning_rod }} </td>#}
+{#                                    <td class="text-center"#}
+{#                                        style="width: calc((100% - 50%) / 6);"> {{ stock_card.al_24 }} </td>#}
+{#                                    <td class="text-center" style="width: calc((15%));">{{ stock_card.comments }}</td>#}
+{#                                    {% if "Add" not in title %}#}
+{#                                        <td style="width: calc((15%));">#}
+{#                                            <div>#}
+{#                                                <a href="{% url 'update_inventory' stock_card.id stock_card.model_name.model_name %}"#}
+{#                                                   class="btn btn-info glow-button"#}
+{#                                                   role="button" id="update-btn-{{ stock_card.id }}">Update</a>#}
+{#                                            </div>#}
+{#                                            {% if stock_card.id not in field_values %}#}
+{#                                                <div class="mt-2">#}
+{#                                                    <a href="{% url 'create_work_plan' stock_card.id stock_card.model_name.model_name %}"#}
+{#                                                       class="btn btn-info flicker-button"#}
+{#                                                       role="button" id="update-btn-{{ stock_card.id }}">Add work#}
+{#                                                        plan</a>#}
+{#                                                </div>#}
+{#                                            {% endif %}#}
+{#                                        </td>#}
+{#                                    {% endif %}#}
+{#                                </tr>#}
+{#                            {% endfor %}#}
+{#                            {% endfor %}#}
+{#                            </tbody>#}
+{#                        </table>#}
                         {% if not supply_chain_target_100.empty %}
                             <hr>
                             <h6 class=" fw-bold text-primary text-center">Supply chain KPIs with a target of 100% </h6>
@@ -175,7 +193,7 @@
                                 </table>
                             </div>
                             <!--SUPPLY CHAIN KPIs WITH A TARGET OF 100-->
-                            <table class="table table-striped table-hover">
+                            <table class="table table-striped table-hover small-table">
                                 <thead class="thead-dark">
                                 <th scope="col"></th>
                                 {% for col in supply_chain_target_100.columns %}
@@ -238,6 +256,11 @@
                                                             style="background-color: red">
                                                             {{ cell }}
                                                         </td>
+                                                    {% elif cell > 0  and cell not in sort_focus_areas %}
+                                                        <td class="text-center text-light"
+                                                            style="background-color: red">
+                                                            {{ cell }}
+                                                        </td>
                                                     {% elif cell < 0 and cell not in sort_focus_areas %}
                                                         <td class="text-center text-light"
                                                             style="background-color: red">
@@ -261,6 +284,7 @@
                                                         </td>
                                                     {% endif %}
                                                 {% endif %}
+
                                             {% endif %}
                                         {% endfor %}
                                     </tr>
@@ -290,7 +314,7 @@
                         </div>
 
                         <div class="col-md-4 mt-4 pt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                         {% if form.errors %}
                             <div class="alert alert-danger mt-4">
@@ -300,7 +324,7 @@
                     </form>
                 {% endif %}
                 {% if title == "Work Plan" %}
-                    <table class="table table-striped table-hover">
+                    <table class="table table-striped table-hover small-table">
                         <thead>
                         <tr>
                             <th></th>
@@ -334,7 +358,7 @@
                     <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
                         {% csrf_token %}
                         {{ formset.management_form }}
-                        <table class="table table-striped table-hover" style="font-size: x-small;">
+                        <table class="table table-striped table-hover small-table">
                             <thead class="thead-dark text-center">
                             <tr>
                                 <th>DESCRIPTION</th>
@@ -363,7 +387,7 @@
                             </tbody>
                         </table>
                         <div class="col-md-2 mt-2 pt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Save">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Save">
                         </div>
                     </form>
                 {% endif %}

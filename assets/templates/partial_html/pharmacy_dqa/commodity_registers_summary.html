@@ -1,0 +1,89 @@
+<style>
+    /* New styles for tables */
+    .table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .table th, .table td {
+        border: 1px solid #dee2e6;
+        padding: 8px;
+        text-align: center;
+        font-size: 0.6rem;
+    }
+
+    .table th {
+        font-weight: bold;
+    {#background-color: #f8f9fa; /* Light gray background for headers */#}
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.05); /* Zebra striping for rows */
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.075); /* Hover effect for rows */
+    }
+
+    /* Glow Button Effect */
+    .glow-button {
+        transition: all 0.3s ease;
+    }
+
+    .glow-button:hover {
+        box-shadow: 0 0 10px rgba(13, 202, 240, 0.8); /* Bootstrap's info color */
+        transform: scale(1.05);
+    }
+</style>
+<table class="table table-striped table-hover mt-2">
+    <thead>
+    <tr>
+        {% if "Add" not in title %}
+            <th>#</th>
+        {% endif %}
+        <th>Register Name</th>
+        <th>Register Availability</th>
+        <th>Register Usage</th>
+        <th>Last Month's Report Copy</th>
+        <th>Date of Last Report Submission</th>
+        <th>Comments</th>
+        {% if "Add" not in title %}
+            <th></th>
+        {% endif %}
+    </tr>
+    </thead>
+    <tbody>
+    {% for pharmacy_record in combined_records %}
+        <tr>
+            {% if "Add" not in title %}
+                <td class="text-danger fw-bold">{{ forloop.counter }}.</td>
+            {% endif %}
+            <td>{{ pharmacy_record.register_name }}</td>
+            <td class="text-center">{{ pharmacy_record.register_available }}</td>
+            {% if pharmacy_record.record_type == "PharmacyRecord" %}
+                <td class="text-center">{{ pharmacy_record.currently_in_use }}</td>
+                <td class="text-center">{{ pharmacy_record.date_report_submitted }}</td>
+            {% else %}
+                <td class="text-center">-</td>
+                <td class="text-center">-</td>
+            {% endif %}
+            <td class="text-center">{{ pharmacy_record.last_month_copy }}</td>
+            <td>{{ pharmacy_record.comments }}</td>
+            <td>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'update_pharmacy_records' pharmacy_record.id pharmacy_record.register_name %}"
+                       class="btn btn-sm btn-sm btn-outline-info glow-button"
+                       role="button" id="update-btn-{{ stock_card.id }}">Update</a>
+                    {% if pharmacy_record.comments and pharmacy_record.id in missing_in_workplans %}
+                        <a href="{% url 'create_commodity_work_plans' pharmacy_record.id %}"
+                           class="btn btn-sm btn-sm btn-outline-success flicker-button"
+                           role="button"
+                           id="update-btn-{{ pharmacy_record.id }}">WorkPlan</a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

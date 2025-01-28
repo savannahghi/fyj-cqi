@@ -27,7 +27,7 @@
                     <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
                 {% endif %}
                 <div>
-                    <a href="{% url 'show_data_verification' %}" class="btn btn-secondary mb-5" role="button">VIEW DQA
+                    <a href="{% url 'show_data_verification' %}" class="btn btn-sm btn-secondary mb-5" role="button">VIEW DQA
                         DATA</a>
                 </div>
                 <form class="row g-3" method="POST" class="mt-5" enctype='multipart/form-data' autocomplete="off">
@@ -73,7 +73,7 @@
                         </tbody>
                     </table>
                     <div class="col-md-3 mt-4 pt-2">
-                        <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+                        <input class="btn btn-sm btn-success mt-1" type="submit" name="submit_data" value="Submit">
                     </div>
                 </form>
             </div>

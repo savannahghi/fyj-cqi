@@ -28,16 +28,16 @@
                 </div>
                 <div class="d-flex justify-content-around mt-3">
                     {% if view_type == "submit" %}
-                        <a href="{% url 'submit_feedback' %}" class="btn btn-success">Add feedback</a>
+                        <a href="{% url 'submit_feedback' %}" class="btn btn-sm btn-success">Add feedback</a>
                     {% else %}
                         <a href="{% url 'submit_feedback' %}"
-                           class="btn btn-outline-success">Add feedback</a>
+                           class="btn btn-sm btn-outline-success">Add feedback</a>
                     {% endif %}
                     {% if view_type == "view" %}
-                        <a href="{% url 'feedback_list' %}" class="btn btn-success">View Feedback</a>
+                        <a href="{% url 'feedback_list' %}" class="btn btn-sm btn-success">View Feedback</a>
                     {% else %}
                         <a href="{% url 'feedback_list' %}"
-                           class="btn btn-outline-success">View Feedback</a>
+                           class="btn btn-sm btn-outline-success">View Feedback</a>
                     {% endif %}
                 </div>
                 <div class="container-fluid py-5">
@@ -91,23 +91,23 @@
                                                 {% if feedback.num_responses > 0 %}
                                                     <a href="{% url 'feedback_with_response' %}"
                                                             {#                                                       <a href="{% url 'respond_to_feedback' pk=feedback.id %}"#}
-                                                       class="btn btn-success">With Response</a>
+                                                       class="btn btn-sm btn-success">With Response</a>
                                                 {% else %}
                                                     <a href="{% url 'feedback_without_response'%}"
-                                                       class="btn btn-danger">Without Response</a>
+                                                       class="btn btn-sm btn-danger">Without Response</a>
                                                     {% if request.user.is_superuser %}
                                                         <a href="{% url 'respond_to_feedback' pk=feedback.id %}"
-                                                           class="btn btn-secondary">Respond</a>
+                                                           class="btn btn-sm btn-secondary">Respond</a>
                                                     {% endif %}
                                                 {% endif %}
                                             {% else %}
 {#                                                <a href="{% url 'respond_to_feedback' pk=feedback.id %}"#}
                                                 <a href="{% url 'feedback_without_response'%}"
-                                                   class="btn btn-danger">Without Response</a>
+                                                   class="btn btn-sm btn-danger">Without Response</a>
                                             {% endif %}
                                             {% if feedback.num_responses == 0 %}
                                                 <a href="{% url 'update_feedback' pk=feedback.id %}"
-                                                   class="btn btn-primary">Update</a>
+                                                   class="btn btn-sm btn-primary">Update</a>
                                             {% endif %}
                                         </div>
                                     </div>

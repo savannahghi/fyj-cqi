@@ -31,7 +31,7 @@
                                 at <strong>{{ comment.qi_project_title.facility_name|title }}</strong>?
                                 Click the button below to send your comment.</p>
                         {% endfor %}
-                        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button"
+                        <a class="btn btn-sm btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button"
                            aria-expanded="false" aria-controls="collapseExample">
                             Yes
                         </a>
@@ -40,7 +40,7 @@
                         <form action="" method="POST" class="mw-100">
                             {% csrf_token %}
                             {{ form|crispy }}
-                            <input type="submit" class="btn btn-success mt-2">
+                            <input type="submit" class="btn btn-sm btn-success mt-2">
                         </form>
                     </div>
                 {% endif %}
@@ -52,7 +52,7 @@
                         {{ comment.qi_project_title.created_by.last_name|title }}</strong>
                     at <strong>{{ facility_project.facility_name|title }}</strong>?
                     Click the button below to send your comment.</p>
-                <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button"
+                <a class="btn btn-sm btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button"
                    aria-expanded="false" aria-controls="collapseExample">
                     Yes
                 </a>
@@ -61,7 +61,7 @@
                 <form action="" method="POST" class="mw-100">
                     {% csrf_token %}
                     {{ form|crispy }}
-                    <input type="submit" class="btn btn-success mt-2">
+                    <input type="submit" class="btn btn-sm btn-success mt-2">
                 </form>
             </div>
         {% endif %}
@@ -107,7 +107,7 @@
                                             -->
                                             {% if not comment.projectresponses_set.all %}
                                                 <div class="d-flex justify-content-lg-around">
-                                                    <a class="btn btn-info btn-sm"
+                                                    <a class="btn btn-sm btn-info btn-sm"
                                                        href="{% url 'update_comments' comment.id %}">Edit</a>
                                                 </div>
                                             {% endif %}
@@ -130,7 +130,7 @@
                                     your comment to the QI team members implementing this QI initiative.</p>
                                 <p>
                                 <div class="d-flex justify-content-evenly">
-                                    <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample"
+                                    <a class="btn btn-sm btn-primary" data-bs-toggle="collapse" href="#collapseExample"
                                        role="button" aria-expanded="false" aria-controls="collapseExample">
                                         Yes
                                     </a>
@@ -140,7 +140,7 @@
                                     <form action="" method="POST">
                                         {% csrf_token %}
                                         {{ form|crispy }}
-                                        <input type="submit" class="btn btn-success">
+                                        <input type="submit" class="btn btn-sm btn-success">
                                     </form>
                                 </div>
                             {% endif %}
@@ -170,12 +170,12 @@
                                     {% if user.is_authenticated %}
                                         {% if user.id == response.response_by_id %}
                                             {% if comment.id not in all_responses_ids %}
-                                                <a class="btn btn-info btn-sm"
+                                                <a class="btn btn-sm btn-info btn-sm"
                                                    href="{% url 'update_response' response.id %}">Edit</a>
                                             {% endif %}
                                         {% endif %}
                                         {% if user.id == response.qi_project_title.created_by_id %}
-                                            <a class="btn btn-primary btn-sm"
+                                            <a class="btn btn-sm btn-primary btn-sm"
                                                href="{% url 'comments_response' response.id %}">Respond</a>
                                         {% endif %}
                                     {% endif %}
@@ -194,7 +194,7 @@
                                 <p>
                                 <div class="d-flex justify-content-evenly">
                                     {% for comment in all_comments %}
-                                        <a class="btn btn-primary btn-sm"
+                                        <a class="btn btn-sm btn-primary btn-sm"
                                            href="{% url 'comments_response' comment.id %}">Yes</a>
                                     {% endfor %}
                                 </div>

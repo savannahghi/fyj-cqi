@@ -29,13 +29,13 @@
           <h6 class="display-6 fw-bold text-primary">CREATE {{ title|upper }} QI</h6>
       {% endif %}
 {#          <div class="d-flex justify-content-between">#}
-{#              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>#}
-{#              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>#}
-{#              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>#}
-{#              <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>#}
-{#              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>#}
-{#              <a href="{% url 'add_hub' %}" class="btn btn-success" role="button">ADD HUB</a>#}
-{#              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
+{#              <a href="{% url 'add_qi_manager' %}" class="btn btn-sm btn-success" role="button">ADD QI MANAGER</a>#}
+{#              <a href="{% url 'add_department' %}" class="btn btn-sm btn-success" role="button">ADD DEPARTMENT</a>#}
+{#              <a href="{% url 'add_category' %}" class="btn btn-sm btn-success" role="button">ADD PROJECT COMPONENT</a>#}
+{#              <a href="{% url 'add_facility' %}" class="btn btn-sm btn-success" role="button">ADD FACILITY</a>#}
+{#              <a href="{% url 'add_county' %}" class="btn btn-sm btn-success" role="button">ADD COUNTY</a>#}
+{#              <a href="{% url 'add_hub' %}" class="btn btn-sm btn-success" role="button">ADD HUB</a>#}
+{#              <a href="{% url 'add_subcounty' %}" class="btn btn-sm btn-success" role="button">ADD SUBCOUNTY</a>#}
 {#          </div>#}
       <div>
 
@@ -135,8 +135,8 @@
     </table>
       {% for form in data_info|slice:"1" %}
     <div class="col-md-2 mt-2 pt-3">
-        <a href="{% url 'update_client_characteristics_trial' form.pmtct_mother.id %}" class="btn btn-success" role="button">Update</a>
-{#      <input class="btn btn-success mt-1" type="submit" value="Update">#}
+        <a href="{% url 'update_client_characteristics_trial' form.pmtct_mother.id %}" class="btn btn-sm btn-success" role="button">Update</a>
+{#      <input class="btn btn-sm btn-success mt-1" type="submit" value="Update">#}
     </div>
        {% endfor %}
       </div>

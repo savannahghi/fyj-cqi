@@ -25,13 +25,13 @@
 {% endif %}
 
 {#          <div class="d-flex justify-content-between">#}
-{#              <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>#}
-{#              <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>#}
-{#              <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>#}
-{#              <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>#}
-{#              <a href="{% url 'add_county' %}" class="btn btn-success" role="button">ADD COUNTY</a>#}
-{#              <a href="{% url 'add_hub' %}" class="btn btn-success" role="button">ADD HUB</a>#}
-{#              <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
+{#              <a href="{% url 'add_qi_manager' %}" class="btn btn-sm btn-success" role="button">ADD QI MANAGER</a>#}
+{#              <a href="{% url 'add_department' %}" class="btn btn-sm btn-success" role="button">ADD DEPARTMENT</a>#}
+{#              <a href="{% url 'add_category' %}" class="btn btn-sm btn-success" role="button">ADD PROJECT COMPONENT</a>#}
+{#              <a href="{% url 'add_facility' %}" class="btn btn-sm btn-success" role="button">ADD FACILITY</a>#}
+{#              <a href="{% url 'add_county' %}" class="btn btn-sm btn-success" role="button">ADD COUNTY</a>#}
+{#              <a href="{% url 'add_hub' %}" class="btn btn-sm btn-success" role="button">ADD HUB</a>#}
+{#              <a href="{% url 'add_subcounty' %}" class="btn btn-sm btn-success" role="button">ADD SUBCOUNTY</a>#}
 {#          </div>#}
 {% if title == "update time" %}
     <form method="post" enctype="multipart/form-data">
@@ -39,7 +39,7 @@
            <div class="col-md-4 mt-2 pr-5">
             {{ form.hide_button_time|as_crispy_field }}
         </div>
-          <button type="submit" class="btn btn-primary mt-4">Upload</button>
+          <button type="submit" class="btn btn-sm btn-primary mt-4">Upload</button>
           </form>
 {% else %}
     <form method="post" enctype="multipart/form-data">
@@ -51,7 +51,7 @@
           <label class="custom-file-label" for="fileInput">Choose file</label>
         </div>
       </div>
-      <button type="submit" class="btn btn-primary mt-4">Upload</button>
+      <button type="submit" class="btn btn-sm btn-primary mt-4">Upload</button>
     </form>
       {% endif %}
 

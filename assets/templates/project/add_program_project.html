@@ -14,13 +14,13 @@
       {% endif %}
           <div class="d-flex justify-content-between">
               {% if "qi team" in title %}
-                  <a href="{% url 'add_facility' %}" class="btn btn-success" role="button">ADD FACILITY</a>
+                  <a href="{% url 'add_facility' %}" class="btn btn-sm btn-success" role="button">ADD FACILITY</a>
               {% else %}
-                  <a href="{% url 'add_qi_manager' %}" class="btn btn-success" role="button">ADD QI MANAGER</a>
-                  <a href="{% url 'add_department' %}" class="btn btn-success" role="button">ADD DEPARTMENT</a>
-                  <a href="{% url 'add_category' %}" class="btn btn-success" role="button">ADD PROJECT COMPONENT</a>
-{#                  <a href="{% url 'add_program' %}" class="btn btn-success" role="button">ADD PROGRAM</a>#}
-{#                  <a href="{% url 'add_subcounty' %}" class="btn btn-success" role="button">ADD SUBCOUNTY</a>#}
+                  <a href="{% url 'add_qi_manager' %}" class="btn btn-sm btn-success" role="button">ADD QI MANAGER</a>
+                  <a href="{% url 'add_department' %}" class="btn btn-sm btn-success" role="button">ADD DEPARTMENT</a>
+                  <a href="{% url 'add_category' %}" class="btn btn-sm btn-success" role="button">ADD PROJECT COMPONENT</a>
+{#                  <a href="{% url 'add_program' %}" class="btn btn-sm btn-success" role="button">ADD PROGRAM</a>#}
+{#                  <a href="{% url 'add_subcounty' %}" class="btn btn-sm btn-success" role="button">ADD SUBCOUNTY</a>#}
               {% endif %}
           </div>
 
@@ -28,7 +28,7 @@
         <form method="POST" class="row g-3" enctype='multipart/form-data'>
             {% csrf_token %}
 {#            {{ form|crispy}}#}
-{#            <input class="btn btn-success mt-1" type="submit" value="Submit">#}
+{#            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">#}
             <div class="col-md-3 mt-4">
                 {{ form.program|as_crispy_field }}
             </div>
@@ -85,7 +85,7 @@
                   {% endfor %}
             </div>
             <div class="col-md-3 mt-4 pt-2">
-                <input class="btn btn-success mt-1" type="submit" value="Submit">
+                <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
             </div>
         </form>
       </div>

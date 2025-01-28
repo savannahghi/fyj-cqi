@@ -259,11 +259,11 @@
 
             <div class="action-buttons">
                 {% if histology_result.result.result.url %}
-                    <a href="{{ histology_result.result.result.url }}" class="btn btn-primary">Download Report</a>
+                    <a href="{{ histology_result.result.result.url }}" class="btn btn-sm btn-primary">Download Report</a>
                 {% else %}
                     <p>No PDF file available</p>
                 {% endif %}
-                <a href="{% url 'add_histology_results' %}" class="btn btn-secondary">Back</a>
+                <a href="{% url 'add_histology_results' %}" class="btn btn-sm btn-secondary">Back</a>
             </div>
         </section>
     </main>

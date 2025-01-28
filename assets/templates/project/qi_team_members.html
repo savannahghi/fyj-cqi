@@ -46,10 +46,10 @@
                         </td>
                         <td>
                             <a href="{% url 'action_plans_for_responsible_person' team.user__id %}"
-                               class="btn btn-secondary" role="button">Action plans</a>
+                               class="btn btn-sm btn-secondary" role="button">Action plans</a>
                         </td>
                         <td>
-                            <a href="{% url 'qiteam_member_filter_project' team.user__id %}" class="btn btn-secondary"
+                            <a href="{% url 'qiteam_member_filter_project' team.user__id %}" class="btn btn-sm btn-secondary"
                                role="button">View Projects</a>
                         </td>
                     </tr>
@@ -141,26 +141,26 @@
                             {% if facility_project.measurement_status != "Completed-or-Closed" %}
                                 {% if facility_name %}
                                     <a href="{% url 'update_action_plan_facility' action_plan.id action_plan.qi_project.facility_name.name %}"
-                                       class="btn btn-info" role="button">Update</a>
+                                       class="btn btn-sm btn-info" role="button">Update</a>
                                 {% elif program_name %}
                                     <a href="{% url 'update_action_plan_program' action_plan.id action_plan.program_qi_project.program.program %}"
-                                       class="btn btn-info" role="button">Update</a>
+                                       class="btn btn-sm btn-info" role="button">Update</a>
                                 {% elif subcounty_name %}
                                     <a href="{% url 'update_action_plan_subcounty' action_plan.id action_plan.subcounty_qi_project.sub_county %}"
-                                       class="btn btn-info" role="button">Update</a>
+                                       class="btn btn-sm btn-info" role="button">Update</a>
                                 {% elif county_name %}
                                     <a href="{% url 'update_action_plan_county' action_plan.id action_plan.county_qi_project.county.county_name %}"
-                                       class="btn btn-info" role="button">Update</a>
+                                       class="btn btn-sm btn-info" role="button">Update</a>
                                 {% elif hub_name %}
                                     <a href="{% url 'update_action_plan_hub' action_plan.id action_plan.hub_qi_project.hub.hub %}"
-                                       class="btn btn-info" role="button">Update</a>
+                                       class="btn btn-sm btn-info" role="button">Update</a>
                                 {% endif %}
                             {% endif %}
                         </td>
                         {% if user.is_authenticated %}
                             {% if user.id == action_plan.created_by.id %}
                                 <td>
-                                    {#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-danger" role="button">Delete</a>#}
+                                    {#                              <a href="{% url 'delete_action_plan' action_plan.id %}" class="btn btn-sm btn-danger" role="button">Delete</a>#}
                                 </td>
                             {% endif %}
                         {% endif %}

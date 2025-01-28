@@ -54,13 +54,13 @@ class PharmacyRecords(models.Model):
     # register_name = models.CharField(max_length=150)
     register_name = models.ForeignKey(Registers, on_delete=models.CASCADE, blank=True, null=True)
     register_available = models.CharField(max_length=10,
-                                          choices=CHOICES
+                                          choices=CHOICES, blank=True, null=True, default="N/A"
                                           )
     currently_in_use = models.CharField(max_length=10, choices=[("", "-"), ("Yes", "Yes"), ("No", "No"), ("N/A", "N/A")]
                                         , blank=True, null=True,
                                         )
     last_month_copy = models.CharField(max_length=10,
-                                       choices=CHOICES
+                                       choices=CHOICES, blank=True, null=True, default="N/A"
                                        )
     comments = models.TextField(blank=True)
     date_report_submitted = models.DateField(null=True, blank=True)
@@ -92,6 +92,9 @@ class PharmacyRecords(models.Model):
             self.modified_by = get_current_user()
 
         return super().save(*args, **kwargs)
+
+    def record_type(self):
+        return "PharmacyRecord"
 
 
 class DeliveryNotes(models.Model):
@@ -140,6 +143,9 @@ class DeliveryNotes(models.Model):
             self.modified_by = get_current_user()
 
         return super().save(*args, **kwargs)
+
+    def record_type(self):
+        return "DeliveryNote"
 
 
 class BaseModel(models.Model):
@@ -375,6 +381,7 @@ class WorkPlan(BaseModel):
     unit_supplied = models.ForeignKey(UnitSupplied, on_delete=models.CASCADE, blank=True, null=True)
     beginning_balance = models.ForeignKey(BeginningBalance, on_delete=models.CASCADE, blank=True, null=True)
     pharmacy_records = models.ForeignKey(PharmacyRecords, on_delete=models.CASCADE, blank=True, null=True)
+    delivery_notes = models.ForeignKey(DeliveryNotes, on_delete=models.CASCADE, blank=True, null=True)
     positive_adjustments = models.ForeignKey(PositiveAdjustments, on_delete=models.CASCADE, blank=True, null=True)
     unit_issued = models.ForeignKey(UnitIssued, on_delete=models.CASCADE, blank=True, null=True)
     negative_adjustment = models.ForeignKey(NegativeAdjustment, on_delete=models.CASCADE, blank=True, null=True)
@@ -390,7 +397,11 @@ class WorkPlan(BaseModel):
         ordering = ['facility_name']
 
     def __str__(self):
-        return f"{self.facility_name}  ({self.immediate_corrective_actions})"
+        if self.pharmacy_records:
+            return f"{self.facility_name}  ({self.pharmacy_records.quarter_year.quarter_year})"
+        else:
+            return f"{self.facility_name}  ({self.delivery_notes})"
+
 
 
 class PharmacyAuditTeam(models.Model):

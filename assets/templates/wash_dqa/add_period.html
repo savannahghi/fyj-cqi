@@ -78,7 +78,7 @@
                         </div>
                     {% endif %}
                     <div class="col-md-3 mt-4">
-                        <input class="btn btn-success" type="submit" value="Submit">
+                        <input class="btn btn-sm btn-success" type="submit" value="Submit">
                     </div>
 
                 </form>
@@ -122,7 +122,7 @@
                                     {% if user.id == team.created_by.id or user.is_superuser %}
                                         {% if not team.hide_update_button or request.user.is_superuser %}
                                             <td class="text-center">
-                                                <a href="{% url 'update_audit_team_wash' team.id %}" class="btn btn-info"
+                                                <a href="{% url 'update_audit_team_wash' team.id %}" class="btn btn-sm btn-info"
                                                    role="button">Update</a>
                                             </td>
                                         {% endif %}

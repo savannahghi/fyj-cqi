@@ -45,8 +45,8 @@
 
 
 <div class="mt-2 " style="display:inline-block;">
-                    <a href="{% url 'download_lessons' %}" class="btn btn-info mb-4" role="button" >Download CSV</a>
-{#                    <a href="{% url 'download_pdf' %}" class="btn btn-info mb-4" role="button" >Download PDF</a>#}
+                    <a href="{% url 'download_lessons' %}" class="btn btn-sm btn-info mb-4" role="button" >Download CSV</a>
+{#                    <a href="{% url 'download_pdf' %}" class="btn btn-sm btn-info mb-4" role="button" >Download PDF</a>#}
 
                 </div>
 {% if lesson_learnt %}
@@ -165,27 +165,27 @@
                 {% if field.created_by.id == request.user.id %}
                     {% if field.project_name%}
                          {% if field.project_name_id not in facility_plan %}
-                             <a href="{% url 'update_lesson_learnt_facility' field.id field.project_name.facility_name.name %}" class="btn btn-info" role="button" >Update</a>
+                             <a href="{% url 'update_lesson_learnt_facility' field.id field.project_name.facility_name.name %}" class="btn btn-sm btn-info" role="button" >Update</a>
                          {% endif %}
                     {% elif field.program %}
                          {% if field.program_id not in program_plan %}
-                            <a href="{% url 'update_lesson_learnt_program' field.id field.program.program %}" class="btn btn-info" role="button" >Update</a>
+                            <a href="{% url 'update_lesson_learnt_program' field.id field.program.program %}" class="btn btn-sm btn-info" role="button" >Update</a>
                          {% endif %}
                     {% elif field.subcounty %}
                         {% if field.subcounty_id not in subcounty_plan %}
-                        <a href="{% url 'update_lesson_learnt_subcounty' field.id field.subcounty.sub_county.sub_counties %}" class="btn btn-info" role="button" >Update</a>
+                        <a href="{% url 'update_lesson_learnt_subcounty' field.id field.subcounty.sub_county.sub_counties %}" class="btn btn-sm btn-info" role="button" >Update</a>
                         {% endif %}
                     {% elif field.county %}
                         {% if field.county_id not in county_plan %}
-                        <a href="{% url 'update_lesson_learnt_county' field.id field.county.county.county_name %}" class="btn btn-info" role="button" >Update</a>
+                        <a href="{% url 'update_lesson_learnt_county' field.id field.county.county.county_name %}" class="btn btn-sm btn-info" role="button" >Update</a>
                         {% endif %}
                     {% elif field.hub %}
                         {% if field.hub_id not in hub_plan %}
-                        <a href="{% url 'update_lesson_learnt_hub' field.id field.hub.hub.hub %}" class="btn btn-info" role="button" >Update</a>
+                        <a href="{% url 'update_lesson_learnt_hub' field.id field.hub.hub.hub %}" class="btn btn-sm btn-info" role="button" >Update</a>
                         {% endif %}
                    {% endif %}
                 {% endif %}
-{#                    <a href="{% url 'delete_lesson_learnt' field.id %}" class="btn btn-danger" role="button">Delete</a>#}
+{#                    <a href="{% url 'delete_lesson_learnt' field.id %}" class="btn btn-sm btn-danger" role="button">Delete</a>#}
                 </div>
 
                 </td>

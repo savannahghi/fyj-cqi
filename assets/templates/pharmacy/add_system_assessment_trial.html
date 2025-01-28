@@ -24,72 +24,72 @@
                     <div class="d-flex justify-content-between mb-3">
                         {% if report_name == "stock_cards" %}
                             <a href="{% url 'add_inventory' report_name='stock_cards' %}"
-                               class="btn btn-success">1.
+                               class="btn btn-sm btn-success">1.
                                 Stock
                                 Cards</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='stock_cards' %}"
-                               class="btn btn-outline-success">1.
+                               class="btn btn-sm btn-outline-success">1.
                                 Stock Cards</a>
                         {% endif %}
 
                         {% if report_name == "unit_supplied" %}
                             <a href="{% url 'add_inventory' report_name='unit_supplied' %}"
-                               class="btn btn-success">2.
+                               class="btn btn-sm btn-success">2.
                                 Unit
                                 Supplied</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='unit_supplied' %}"
-                               class="btn btn-outline-success">2.
+                               class="btn btn-sm btn-outline-success">2.
                                 Unit Supplied</a>
                         {% endif %}
 
 {#                        {% if report_name == "quantity_delivered" %}#}
 {#                            <a href="{% url 'add_inventory' report_name='quantity_delivered' %}"#}
-{#                               class="btn btn-success">3.#}
+{#                               class="btn btn-sm btn-success">3.#}
 {#                                Quantity Delivered</a>#}
 {#                        {% else %}#}
 {#                            <a href="{% url 'add_inventory' report_name='quantity_delivered' %}"#}
-{#                               class="btn btn-outline-success">3. Quantity Delivered</a>#}
+{#                               class="btn btn-sm btn-outline-success">3. Quantity Delivered</a>#}
 {#                        {% endif %}#}
 
                         {% if report_name == "beginning_balance" %}
                             <a href="{% url 'add_inventory' report_name='beginning_balance' %}"
-                               class="btn btn-success">4.
+                               class="btn btn-sm btn-success">4.
                                 Beginning Balance</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='beginning_balance' %}"
-                               class="btn btn-outline-success">4. Beginning Balance</a>
+                               class="btn btn-sm btn-outline-success">4. Beginning Balance</a>
                         {% endif %}
 
                         {% if report_name == "unit_received" %}
                             <a href="{% url 'add_inventory' report_name='unit_received' %}"
-                               class="btn btn-success">5.
+                               class="btn btn-sm btn-success">5.
                                 Unit
                                 Received</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='unit_received' %}"
-                               class="btn btn-outline-success">
+                               class="btn btn-sm btn-outline-success">
                                 5.Unit Received </a>
                         {% endif %}
 
                         {% if report_name == "positive_adjustments" %}
                             <a href="{% url 'add_inventory' report_name='positive_adjustments' %}"
-                               class="btn btn-success">
+                               class="btn btn-sm btn-success">
                                 6. +ve Adjustments</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='positive_adjustments' %}"
-                               class="btn btn-outline-success">6. +ve Adjustments</a>
+                               class="btn btn-sm btn-outline-success">6. +ve Adjustments</a>
                         {% endif %}
 
                         {% if report_name == "unit_issued" %}
                             <a href="{% url 'add_inventory' report_name='unit_issued' %}"
-                               class="btn btn-success">7.
+                               class="btn btn-sm btn-success">7.
                                 Unit
                                 Issued to others</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='unit_issued' %}"
-                               class="btn btn-outline-success">7.
+                               class="btn btn-sm btn-outline-success">7.
                                 Unit Issued to others</a>
                         {% endif %}
 
@@ -98,11 +98,11 @@
 
                         {% if report_name == "negative_adjustment" %}
                             <a href="{% url 'add_inventory' report_name='negative_adjustment' %}"
-                               class="btn btn-success">8.
+                               class="btn btn-sm btn-success">8.
                                 -ve Adjustment</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='negative_adjustment' %}"
-                               class="btn btn-outline-success">8. -ve Adjustment</a>
+                               class="btn btn-sm btn-outline-success">8. -ve Adjustment</a>
                         {% endif %}
                         {#                                {% endif %}#}
                         {#                            {% endif %}#}
@@ -110,12 +110,12 @@
                         {#                                {% if not result %}#}
                         {% if report_name == "s11_form_availability" %}
                             <a href="{% url 'add_inventory' report_name='s11_form_availability' %}"
-                               class="btn btn-success">9.
+                               class="btn btn-sm btn-success">9.
                                 S11
                                 Form </a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='s11_form_availability' %}"
-                               class="btn btn-outline-success">9.
+                               class="btn btn-sm btn-outline-success">9.
                                 S11 Form </a>
                         {% endif %}
                         {#                                {% endif %}#}
@@ -124,11 +124,11 @@
                         {#                                {% if not result %}#}
                         {% if report_name == "s11_form_endorsed" %}
                             <a href="{% url 'add_inventory' report_name='s11_form_endorsed' %}"
-                               class="btn btn-success">10.
+                               class="btn btn-sm btn-success">10.
                                 S11 Form Endorsed</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='s11_form_endorsed' %}"
-                               class="btn btn-outline-success">10.
+                               class="btn btn-sm btn-outline-success">10.
                                 S11 Form Endorsed</a>
                         {% endif %}
                         {#                                {% endif %}#}
@@ -137,11 +137,11 @@
                         {#                                {% if not result %}#}
                         {% if report_name == "expired" %}
                             <a href="{% url 'add_inventory' report_name='expired' %}"
-                               class="btn btn-success">11.
+                               class="btn btn-sm btn-success">11.
                                 Stock outs & Expiries</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='expired' %}"
-                               class="btn btn-outline-success">11.
+                               class="btn btn-sm btn-outline-success">11.
                                 Stock outs & Expiries</a>
                         {% endif %}
                         {#                                {% endif %}#}
@@ -150,11 +150,11 @@
                         {#                                {% if not result %}#}
                         {% if report_name == "expired_units" %}
                             <a href="{% url 'add_inventory' report_name='expired_units' %}"
-                               class="btn btn-success">12.
+                               class="btn btn-sm btn-success">12.
                                 Stock outs & Expired Units</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='expired_units' %}"
-                               class="btn btn-outline-success">12.
+                               class="btn btn-sm btn-outline-success">12.
                                 Stock outs & Expired Units</a>
                         {% endif %}
                         {#                                {% endif %}#}
@@ -163,11 +163,11 @@
                         {#                                {% if not result %}#}
                         {% if report_name == "expiry_tracking" %}
                             <a href="{% url 'add_inventory' report_name='expiry_tracking' %}"
-                               class="btn btn-success">13.
+                               class="btn btn-sm btn-success">13.
                                 Expiry Tracking</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='expiry_tracking' %}"
-                               class="btn btn-outline-success">13. Expiry Tracking</a>
+                               class="btn btn-sm btn-outline-success">13. Expiry Tracking</a>
                         {% endif %}
                         {#                                {% endif %}#}
                         {#                            {% endif %}#}
@@ -175,11 +175,11 @@
                         {#                                {% if not result %}#}
                         {% if report_name == "stock_management" %}
                             <a href="{% url 'add_inventory' report_name='stock_management' %}"
-                               class="btn btn-success">14.
+                               class="btn btn-sm btn-success">14.
                                 Stock Management</a>
                         {% else %}
                             <a href="{% url 'add_inventory' report_name='stock_management' %}"
-                               class="btn btn-outline-success">14. Stock Management</a>
+                               class="btn btn-sm btn-outline-success">14. Stock Management</a>
                         {% endif %}
                         {#                                {% endif %}#}
                         {#                            {% endif %}#}
@@ -242,7 +242,7 @@
                         </tbody>
                     </table>
                     <div class="col-md-2 mt-2 pt-3">
-                        <input class="btn btn-success mt-1" type="submit" value="Submit">
+                        <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                     </div>
                 </form>
             </div>

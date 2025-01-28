@@ -24,10 +24,10 @@
             {% endif %}
             <div class="d-flex justify-content-around mb-3">
                 {% if dqa_type == "facility" %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-success">FACILITY
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-sm btn-success">FACILITY
                         DQA</a>
                 {% else %}
-                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-outline-success">FACILITY
+                    <a href="{% url 'pharmacy_dqa_dashboard' dqa_type='facility' %}" class="btn btn-sm btn-outline-success">FACILITY
                         DQA</a>
                 {% endif %}
                 {% if dqa_type == "hub" %}

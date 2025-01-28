@@ -76,6 +76,25 @@ class PharmacyRecordsForm(forms.ModelForm):
         required=False
     )
 
+    def __init__(self, *args, **kwargs):
+        is_required = kwargs.pop('is_required', True)  # Default to required for form1
+        super(PharmacyRecordsForm, self).__init__(*args, **kwargs)
+        # Set the initial value for 'last_month_copy' and 'register_available' to an empty string
+        self.fields['last_month_copy'].initial = None
+        self.fields['register_available'].initial = None
+
+        # Set fields as required or optional based on the form type
+        if is_required:
+            self.fields['register_available'].required = True
+            self.fields['currently_in_use'].required = True
+            self.fields['last_month_copy'].required = True
+            self.fields['date_report_submitted'].required = True
+        else:
+            self.fields['register_available'].required = False
+            self.fields['currently_in_use'].required = False
+            self.fields['last_month_copy'].required = False
+            self.fields['date_report_submitted'].required = True
+
     class Meta(BaseForm.Meta):
         model = PharmacyRecords
         exclude = BaseForm.Meta.exclude + ['register_name']
@@ -191,18 +210,51 @@ class S11FormEndorsedForm(BaseReportForm):
 
 
 class WorkPlanForm(BaseForm):
+    immediate_corrective_actions = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'placeholder': 'Enter the immediate corrective actions to be taken.',
+            'aria-label': 'Immediate Corrective Actions',
+            'aria-describedby': 'immediate-corrective-actions-help'
+        }),
+        help_text="Describe the first steps to address the issue."
+    )
+    responsible_person = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'tagify',
+            'placeholder': 'Enter responsible persons, separated by commas.',
+            'aria-label': 'Responsible Persons',
+            'aria-describedby': 'responsible-persons-help',
+        }),
+        help_text="Enter the names of all responsible persons, separated by commas."
+    )
     complete_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
         label="Due Date for Action Plan Completion",
-        required=False
+        help_text="Select the date by which this action should be completed."
     )
+    action_plan = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'placeholder': 'Describe the detailed action plan.',
+            'aria-label': 'Action Plan',
+            'aria-describedby': 'action-plan-help'
+        }),
+        help_text="Provide a detailed plan for resolving the issue."
+    )
+    follow_up_plan = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'placeholder': 'Describe the follow-up plan.',
+            'aria-label': 'Follow-up Plan',
+            'aria-describedby': 'follow-up-plan-help'
+        }),
+        help_text="Outline how progress will be monitored and verified.",
+        required=False  # Optional field
+    )
+    pharmacy_records = forms.ModelChoiceField(queryset=PharmacyRecords.objects.all(), required=False)
+    delivery_notes = forms.ModelChoiceField(queryset=DeliveryNotes.objects.all(), required=False)
 
     class Meta(BaseReportForm.Meta):
         model = WorkPlan
-        # exclude = ['stock_cards', 'unit_supplied', 'beginning_balance', 'pharmacy_records',
-        #            'positive_adjustments', 'unit_issued', 'negative_adjustment', 'expired_units',
-        #            'expired', 'expiry_tracking', 's11_form_availability', 's11_form_endorsed',
-        #            'stock_management']
+        fields = '__all__'
 
 
 class PharmacyAuditTeamForm(ModelForm):

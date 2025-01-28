@@ -8,10 +8,10 @@
 {#        <h2 class="h2">Comments</h2>#}
 {#        <div class="btn-toolbar mb-2 mb-md-0">#}
 {#          <div class="btn-group me-2">#}
-{#            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>#}
-{#            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>#}
+{#            <button type="button" class="btn btn-sm btn-sm btn-outline-secondary">Share</button>#}
+{#            <button type="button" class="btn btn-sm btn-sm btn-outline-secondary">Export</button>#}
 {#          </div>#}
-{#          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">#}
+{#          <button type="button" class="btn btn-sm btn-sm btn-outline-secondary dropdown-toggle">#}
 {#            <span data-feather="calendar" class="align-text-bottom"></span>#}
 {#            This week#}
 {#          </button>#}
@@ -35,7 +35,7 @@
 {#                {% for comment in all_comments|slice:":1"  %}#}
 {#                    <p>Do you have any comments regarding the <strong>{{ comment.qi_project_title.project_title }}</strong> QI Initiative? Click the button below to send your comment to the QI team members implementing this QI initiative.</p>#}
 {#                {% endfor %}#}
-{#                 <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
+{#                 <a class="btn btn-sm btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
 {#                    Respond?#}
 {#                  </a>#}
 {#            </div>#}
@@ -43,7 +43,7 @@
         <form action="" method="POST" class="mw-100">
             {% csrf_token %}
             {{ form|crispy }}
-            <input type="submit" class="btn btn-success mt-2">
+            <input type="submit" class="btn btn-sm btn-success mt-2">
         </form>
 </div>
         <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
@@ -67,9 +67,9 @@
           </ul>
           {% if user.is_authenticated %}
               {% if user.id == comment.commented_by.id %}
-                <a class="btn btn-info btn-sm" href="{% url 'update_comments' comment.id %}">Edit</a>
-                <a class="btn btn-primary btn-sm" href="{% url 'comments_response' comment.id %}">Respond</a>
-{#          <a class="btn btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>#}
+                <a class="btn btn-sm btn-info btn-sm" href="{% url 'update_comments' comment.id %}">Edit</a>
+                <a class="btn btn-sm btn-primary btn-sm" href="{% url 'comments_response' comment.id %}">Respond</a>
+{#          <a class="btn btn-sm btn-danger btn-sm" href="{% url 'delete_comment' comment.id %}">Delete</a>#}
           {% endif %}
           {% endif %}
 
@@ -89,7 +89,7 @@
 {##}
 {#<p>#}
 {#    <div class="d-flex justify-content-evenly">#}
-{#    <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
+{#    <a class="btn btn-sm btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">#}
 {#    Yes#}
 {#  </a>#}
 </div>
@@ -98,7 +98,7 @@
         <form action="" method="POST">
             {% csrf_token %}
             {{ form|crispy }}
-            <input type="submit" class="btn btn-success">
+            <input type="submit" class="btn btn-sm btn-success">
         </form>
 </div>
 {% endif %}

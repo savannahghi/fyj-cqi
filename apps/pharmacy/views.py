@@ -3,24 +3,28 @@
 # from datetime import datetime
 # from urllib.parse import urlencode
 import ast
+import json
+import re
 import uuid
-from datetime import datetime
+from datetime import date, datetime
+from itertools import chain
+from urllib.parse import urlencode
 
 import numpy as np
 import pandas as pd
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Q
-from django.forms import formset_factory, modelformset_factory
-from django.http import HttpResponseRedirect, JsonResponse
+from django.forms import formset_factory
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 # Create your views here.
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.cqi.models import Counties, Facilities, Hub, Sub_counties
+from apps.cqi.models import Facilities, Sub_counties
 from apps.dqa.form import CountySelectionForm, FacilitySelectionForm, HubSelectionForm, ProgramSelectionForm, \
     QuarterSelectionForm, \
     SubcountySelectionForm, \
@@ -37,13 +41,15 @@ from apps.pharmacy.forms import BeginningBalanceForm, DateSelectionForm, Deliver
     S11FormAvailabilityForm, S11FormEndorsedForm, \
     StockCardsForm, \
     StockManagementForm, UnitIssuedForm, UnitSuppliedForm, WorkPlanForm, YearSelectForm
-from apps.pharmacy.models import BeginningBalance, Expired, ExpiredUnits, ExpiryTracking, NegativeAdjustment, \
+from apps.pharmacy.models import BeginningBalance, DeliveryNotes, Expired, ExpiredUnits, ExpiryTracking, \
+    NegativeAdjustment, \
     PharmacyAuditTeam, PharmacyFpModel, PharmacyFpQualitativeModel, PharmacyMalariaModel, \
     PharmacyMalariaQualitativeModel, PharmacyRecords, \
     PositiveAdjustments, \
     Registers, S11FormAvailability, \
     S11FormEndorsed, \
     StockCards, StockManagement, TableNames, UnitIssued, UnitSupplied, WorkPlan
+from apps.pharmacy.utils import handle_foreign_keys
 
 
 # from silk.profiling.profiler import silk_profile
@@ -123,6 +129,8 @@ def validate_form(form, facility):
     last_month_copy = form.cleaned_data.get('last_month_copy')
     comments = form.cleaned_data.get('comments')
     register_name = form.cleaned_data.get('register_name')
+    date_report_submitted = form.cleaned_data.get('date_report_submitted')
+    today = timezone.now().date()
 
     if register_available == 'No' and not comments:
         error_message = f"Please specify which register is used instead of {register_name}" if register_name != "Delivery notes file" else f"Please specify how {facility.name} stores delivery notes."
@@ -134,6 +142,15 @@ def validate_form(form, facility):
         form.add_error('comments', error_message)
         return False
 
+    if date_report_submitted and date_report_submitted > today:
+        error_message = (
+            f"Report's submission ({date_report_submitted}) date cannot be greater than today's date ({today})."
+            if register_name != "Delivery notes file"
+            else f"The date commodities ({date_report_submitted}) were last received cannot be "
+                 f"greater than today's date ({today})."
+        )
+        form.add_error('date_report_submitted', error_message)
+        return False
     return True
 
 
@@ -169,6 +186,9 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
     period_check, created = Period.objects.get_or_create(quarter=quarter, year=year)
     quarter_year_id = period_check.id
 
+    missing_in_workplans, combined_records, pharmacy_records = fetch_and_check_workplans(facility_name.name,
+                                                                                         period_check.quarter_year)
+
     def get_expected_records():
         # Get the model class from the models_to_check dictionary
         register_names = PharmacyRecords.objects.filter(
@@ -180,23 +200,6 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
         return filtered_data
 
     filtered_data = get_expected_records()
-    expected_register_names = ["Malaria Commodities DAR (MoH 645)",
-                               "ARV Daily Activity Register (DAR) (MOH 367A) or WebADT",
-                               "DADR-Anti TB register",
-                               "Family Planning Commodities Daily Activity Register (DAR) (MOH 512)",
-                               ]
-    missing = [item for item in expected_register_names if item not in filtered_data]
-    if len(missing) == 0:
-        messages.success(request, f"All data for {facility_name} {period_check} is successfully saved! "
-                                  f"Please select a different facility.")
-        return redirect("choose_facilities_pharmacy")
-
-    if register_name == "None":
-        # Redirect to the URL with the first missing item as the report_name
-        url = reverse('add_pharmacy_records',
-                      kwargs={"register_name": missing[0], 'quarter': quarter, 'year': year, 'pk': pk, 'date': date})
-        return redirect(url)
-
     # Initialize the commodity_questions dictionary
     commodity_questions = {
         register_name: [[
@@ -208,32 +211,33 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
             'If the facility has the Malaria CDRR for the last month of the review period, please indicate the '
             'date when it was submitted (DD/MM/YY)'
         ], [
-            "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
-            "arranged chronologically?",
-            "Does the facility have a copy of the delivery notes for commodities received during the last month "
-            "of the review period?",
+            "Are delivery notes from MEDS / KEMSA maintained in a separate file from "
+            "S11s, and are they arranged chronologically?",
+            "Does the facility have a copy of the delivery notes for commodities last received during the review "
+            "period?",
         ]] if register_name == "Malaria Commodities DAR (MoH 645)" else [[
             'Is there a MANUAL ARV Daily Activity Register (DAR) (MOH 367A) or an electronic dispensing tool '
-            '(WebADT) in this facility? Specify which one in the comments section',
+            ' in this facility? Specify which one in the comments section',
             'Is the MANUAL ARV Daily Activity Register (DAR) (MOH 367A) or an electronic dispensing tool '
-            '(WebADT) currently in use?',
+            ' currently in use?',
             'Does the facility have a copy of the ARV F-CDRR (MOH 730B) that was prepared for the last month of '
             'the review period',
             'If “Yes”, when was the ARV F-CDRR (MOH 730B) for the last month of the review period submitted?'
             '(DD/MM/YY)',
         ], [
-            'Does the facility have a copy of the ARV F-MAPS (MOH 729B) that was prepared for the last month of '
-            'the review period?',
-            'Is the ARV F-MAPS (MOH 729B) currently being used by the facility?',
-            'Does the facility have a copy of the ARV F-MAPS (MOH 729B) that was prepared for the last month of '
-            'the review period?',
+            # 'Does the facility have a copy of the ARV F-MAPS (MOH 729B) that was prepared for the last month of '
+            # 'the review period?',
+            # 'Is the ARV F-MAPS (MOH 729B) currently being used by the facility?',
+            # 'Does the facility have a copy of the ARV F-MAPS (MOH 729B) that was prepared for the last month of '
+            # 'the review period?',
             'If the facility has the ARV F-MAPS (MOH 729B) for the last month of the review period, please indicate'
             ' the date when it was submitted'
         ], [
-            "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
-            "arranged chronologically?",
-            "Does the facility have a copy of the delivery notes for commodities received during the last month "
-            "of the review period?",
+            "Are delivery notes from MEDS / KEMSA maintained in a separate file from "
+            "S11s, and are they"
+            " arranged chronologically?",
+            "Does the facility have a copy of the delivery notes for commodities last received during the review "
+            "period?",
         ]] if register_name == 'ARV Daily Activity Register (DAR) (MOH 367A) or WebADT'
         else [[
             'Is there a DADR-Anti TB register in this facility? If no, specifiy which register is used '
@@ -243,10 +247,10 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
             'review period?',
             'If “Yes”, when was the Anti TB F-CDRR for the last month of the review period submitted?'
         ], [
-            "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
-            "arranged chronologically?",
-            "Does the facility have a copy of the delivery notes for commodities received during the last month "
-            "of the review period?",
+            "Are delivery notes from MEDS / KEMSA maintained in a separate file from "
+            "S11s, and are they arranged chronologically?",
+            "Does the facility have a copy of the delivery notes for commodities last received during the review "
+            "period?",
         ]] if register_name == "DADR-Anti TB register" else [[
             'Is there a Family Planning Commodities Daily Activity Register (DAR) (MOH 512) in this facility? If '
             'no, specifiy which register is used to capture dispensing of Family Planning commodities in the '
@@ -256,23 +260,53 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
             'prepared and submitted for the last month of the review period?',
             'If “Yes”, when was the FP CDRR for the last month of the review period submitted?'
         ], [
-            "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
-            "arranged chronologically?",
-            "Does the facility have a copy of the delivery notes for commodities received during the last month "
-            "of the review period?",
+            "Are delivery notes from MEDS / KEMSA maintained in a separate file from "
+            "S11s, and are they arranged chronologically?",
+            "Does the facility have a copy of the delivery notes for commodities last received during the review "
+            "period?",
         ]] if register_name == "Family Planning Commodities Daily Activity Register (DAR) (MOH 512)" else [
-            "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
-            "arranged chronologically?",
-            "Does the facility have a copy of the delivery notes for commodities received during the last month "
-            "of the review period?",
+            "Are delivery notes from MEDS / KEMSA maintained in a separate file from "
+            "S11s, and are they arranged chronologically?",
+            "Does the facility have a copy of the delivery notes for commodities last received during the review "
+            "period?",
         ]
     }
+    context = {
+        "form": form, 'form1': form1, 'form2': form2, 'form3': form3,
+        "register_name": register_name, "missing_in_workplans": missing_in_workplans,
+        "combined_records": combined_records,
+        "date_form": date_form, "pharmacy_records": pharmacy_records,
+        "report_name": register_name, "title": "Supply Chain Spot Check Dashboard (Register/Records)",
+        "quarter": quarter,
+        "year": year,
+        "facility_id": pk,
+        "date": date,
+        "filtered_data": filtered_data
+    }
+    expected_register_names = ["Malaria Commodities DAR (MoH 645)",
+                               "ARV Daily Activity Register (DAR) (MOH 367A) or WebADT", "DADR-Anti TB register",
+                               "Family Planning Commodities Daily Activity Register (DAR) (MOH 512)",
+                               ]
+    missing = [item for item in expected_register_names if item not in filtered_data]
+    if len(missing) == 0:
+        messages.success(request, f"All data for {facility_name} {period_check} is successfully saved! "
+                                  f"Please select a different facility.")
+        # return redirect("choose_facilities_pharmacy")
+
+        return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
+
+    if register_name == "None":
+        # Redirect to the URL with the first missing item as the report_name
+        url = reverse('add_pharmacy_records',
+                      kwargs={"register_name": missing[0], 'quarter': quarter, 'year': year, 'pk': pk, 'date': date})
+        return redirect(url)
+
     # Check if the request method is POST and the submit_dta button was pressed
     if 'submit_data' in request.POST:
         # Create an instance of the DataVerificationForm with the submitted data
-        form = PharmacyRecordsForm(request.POST)
-        form1 = PharmacyRecordsForm(request.POST, prefix='form1')
-        form2 = PharmacyRecordsForm(request.POST, prefix='form2')
+        form = PharmacyRecordsForm(request.POST, is_required=True)
+        form1 = PharmacyRecordsForm(request.POST, prefix='form1', is_required=True)
+        form2 = PharmacyRecordsForm(request.POST, prefix='form2', is_required=False)
         form3 = DeliveryNotesForm(request.POST, prefix='form3')
 
         if (form1.is_valid() and form2.is_valid() and form3.is_valid()) or (form.is_valid() and form3.is_valid()):
@@ -343,101 +377,12 @@ def add_pharmacy_records(request, register_name=None, quarter=None, year=None, p
                 messages.error(request,
                                f"Data for {facility_name} {period_check} already exists!")
         else:
-            for error in form.errors:
-                messages.error(request, form.errors[error])
+            for error in [form.errors, form1.errors, form2.errors, form3.errors]:
+                messages.error(request, error)
                 return redirect(request.path)
-
-    context = {
-        "form": form, 'form1': form1, 'form2': form2, 'form3': form3,
-        "register_name": register_name,
-        "commodity_questions": commodity_questions,
-        "date_form": date_form,
-        "report_name": register_name,
-        "quarter": quarter,
-        "year": year,
-        "facility_id": pk,
-        "date": date,
-        "filtered_data": filtered_data
-    }
+    context["commodity_questions"] = commodity_questions
     return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
 
-
-# def generate_descriptions(report_name):
-#     if report_name == "stock_cards":
-#         descriptions = [
-#             'Is there currently a stock card or electronic record available for?',
-#             'Does the stock card or electronic record cover the entire period under review, '
-#             'which began on {start_date} to {end_date}?'
-#         ]
-#     elif report_name == "unit_supplied":
-#         descriptions = [
-#             'How many units were supplied by MEDS/KEMSA to this facility during the period under review from '
-#             'delivery notes?',
-#             'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
-#         ]
-#     elif report_name == "beginning_balance":
-#         descriptions = [
-#             'What was the beginning balance? (At the start of the review period)',
-#         ]
-#     elif report_name == "s11_form_availability":
-#         descriptions = [
-#             'Is there a corresponding S11 form at this facility for each of the positive adjustment transactions?',
-#             'Is there a corresponding S11 form at this facility for each of the negative adjustment transactions?',
-#         ]
-#     elif report_name == "positive_adjustments":
-#         descriptions = [
-#             'How many units were received from other facilities (Positive Adjustments) during the period under review?',
-#             'How many positive adjustment transactions do not have a corresponding S11 form?',
-#         ]
-#     elif report_name == "unit_issued":
-#         descriptions = [
-#             'How many units were issued from the storage areas to service delivery/dispensing point(s) within '
-#             'this facility during the period under review?',
-#         ]
-#     elif report_name == "negative_adjustment":
-#         descriptions = [
-#             'How many units were issued to other facilities (Negative Adjustments) during the period under review?',
-#             'How many negative adjustment transactions were made on the stock card for transfers to other health '
-#             'facilities during the period under review?',
-#             'How many negative adjustment transactions do not have a corresponding S11 form?',
-#         ]
-#     elif report_name == "s11_form_endorsed":
-#         descriptions = [
-#             'Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this '
-#             'facility?',
-#             'Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at '
-#             'this facility?',
-#         ]
-#     elif report_name == "expired":
-#         descriptions = [
-#             'Has there been a stock out during the period under review?',
-#             'Were there any expiries during the period under review?',
-#             'Are there any expires in the facility?',
-#         ]
-#     elif report_name == "expired_units":
-#         descriptions = [
-#             'How many days out of stock?',
-#             'How many expired units  were in the facility during the review period?',
-#         ]
-#     elif report_name == "expiry_tracking":
-#         descriptions = [
-#             'Is there a current expiry tracking chart/register in this facility (wall chart or electronic)?',
-#             'Are there units with less than 6 months to expiry?',
-#             'Are the units (with less than 6 months to expiry) captured on the expiry chart?',
-#         ]
-#
-#     elif report_name == "stock_management":
-#         descriptions = [
-#             'What is the ending balance on the stock card or electronic record on the last day of the review period?',
-#             'What was the actual physical count of this on the day of the visit?',
-#             'What is the stock balance on the stock card or electronic record on the day of the visit?',
-#             'What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
-#             'What quantity was dispensed, based the CDRR, at this facility during the review period?',
-#             'What is the average monthly consumption?'
-#         ]
-#     else:
-#         descriptions = []
-#     return descriptions
 
 def generate_descriptions(report_name):
     if "choices" in report_name:
@@ -466,33 +411,35 @@ def generate_descriptions(report_name):
             '3. What was the beginning balance? (At the start of the review period)',
 
             '4. How many units were received from other facilities (Positive Adjustments) during the period under review?',
-            '5. How many positive adjustment transactions do not have a corresponding S11 form?',
+            '5. How many positive adjustment transactions were made on the stock card for transfers to other health '
+            'facilities during the period under review?',
+            '6. How many positive adjustment transactions do not have a corresponding S11 form?',
 
-            '6. How many units were issued from the storage areas to service delivery/dispensing point(s) within '
+            '7. How many units were issued from the storage areas to service delivery/dispensing point(s) within '
             'this facility during the period under review?',
 
-            '7. How many units were issued to other facilities (Negative Adjustments) during the period under review?',
-            '8. How many negative adjustment transactions were made on the stock card for transfers to other health '
+            '8. How many units were issued to other facilities (Negative Adjustments) during the period under review?',
+            '9. How many negative adjustment transactions were made on the stock card for transfers to other health '
             'facilities during the period under review?',
-            '9. How many negative adjustment transactions do not have a corresponding S11 form?',
+            '10. How many negative adjustment transactions do not have a corresponding S11 form?',
 
-            '10. Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this '
+            '11. Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this '
             'facility?',
-            '11. Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at '
+            '12. Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at '
             'this facility?',
 
-            '12. How many days out of stock?',
-            '13. How many expired units  were in the facility during the review period?',
+            '13. How many days out of stock?',
+            '14. How many expired units  were in the facility during the review period?',
 
-            '14. What is the ending balance on the stock card or electronic record on the last day of the review '
+            '15. What is the ending balance on the stock card or electronic record on the last day of the review '
             'period?',
-            '15. What was the actual physical count of this on the day of the visit?',
-            '16. What is the stock balance on the stock card or electronic record on the day of the visit?',
-            '17. What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
-            '18. What quantity was dispensed, based the CDRR, at this facility during the review period?',
-            '19. What is the average monthly consumption?',
-            '20. What number of active clients on ART were reported in MOH 731 in the period?',
-            '21. What number of active clients on ART were reported in MOH 729B in the period?',
+            '16. What was the actual physical count of this on the day of the visit?',
+            '17. What is the stock balance on the stock card or electronic record on the day of the visit?',
+            '18. What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
+            '19. What quantity was dispensed, based the CDRR, at this facility during the review period?',
+            '20. What is the average monthly consumption?',
+            '21. What number of active clients on ART were reported in MOH 731 in the period?',
+            '22. What number of active clients on ART were reported in MOH 729B in the period?',
         ]
         if "Arvs" not in report_name:
             descriptions = descriptions[0:-2]
@@ -1139,7 +1086,8 @@ def show_work_plan(request):
             filtered_data.extend(objects)
 
         work_plans = WorkPlan.objects.filter(facility_name_id=selected_facility.id,
-                                             quarter_year__id=quarter_year.id)
+                                             quarter_year__id=quarter_year.id
+                                             )
         field_values = []
 
         # Iterate over the work plans
@@ -1181,7 +1129,6 @@ def show_work_plan(request):
         "facility_form": facility_form,
         "quarter_form": quarter_form,
         "selected_facility": selected_facility,
-        # "quarter_year":quarter_year.astype(str).split(" ")[0]+"-"+quarter_year.split(" ")[-1][-2:]
         "quarter_year": selected_quarter_year
     }
     return render(request, 'pharmacy/show_commodity_management.html', context)
@@ -1189,12 +1136,20 @@ def show_work_plan(request):
 
 def create_df(df, title, row_index):
     data = []
-    for i in range(1, 7):
-        stock_card_tld = df.iloc[row_index, i]
-        if pd.isna(stock_card_tld):
-            data.append(0)
-        else:
-            data.append(int(stock_card_tld))
+    try:
+        for i in range(1, len(df.columns)):
+            stock_card_tld = df.iloc[row_index, i]
+            if pd.isna(stock_card_tld):
+                data.append(0)
+            else:
+                data.append(int(stock_card_tld))
+    except IndexError:
+        for i in range(1, 7):
+            stock_card_tld = df.iloc[row_index, i]
+            if pd.isna(stock_card_tld):
+                data.append(0)
+            else:
+                data.append(int(stock_card_tld))
     # Create DataFrame
     df7 = pd.DataFrame(data, columns=[title])
     df7 = df7.T
@@ -1206,7 +1161,7 @@ def add_new_row(a, division_row, title):
     division_row.insert(0, title)
     division_row = pd.DataFrame(division_row).T.reset_index(drop=True)
     division_row = division_row.set_index(0)
-    division_row.columns = [0, 1, 2, 3, 4, 5]
+    division_row.columns = a.columns
     a = pd.concat([a, division_row])
     return a
 
@@ -1305,11 +1260,12 @@ def process_levels(df, expected_description_order):
 def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facility"):
     # Replace values in the DataFrame
     df = df.replace({"No": 0, "Yes": 100, "N/A": 9999, np.nan: 9999})
+    df['description'] = df['description'].apply(lambda x: re.sub(r'^\d+\.\s*', '', x))
 
     # Convert columns to integer type
     # Identify float columns
     # float_cols = df.select_dtypes(include=['float']).columns
-    float_cols = df.columns[-6:]
+    float_cols = df.columns[1:]
 
     # Convert float columns to integers
     df[float_cols] = df[float_cols].astype(int)
@@ -1318,14 +1274,16 @@ def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facili
 
     # Set 'description' column as categorical
     df['description'] = pd.Categorical(df['description'], categories=expected_description_order, ordered=True)
+    # df.to_csv("df.csv", index=False)
 
     # Sort the DataFrame by 'description'
     df.sort_values('description', inplace=True)
+    df = df[df['description'].notnull()]
 
     # Create DataFrames df1, df2, df3
     df1 = create_df(df, 'Stock card available', 0)
-    df2 = create_df(df, 'in bin cards', 3)
-    df3 = create_df(df, 'supp kemsa', 2)
+    df2 = create_df(df, 'in bin cards', 4)
+    df3 = create_df(df, 'supp kemsa', 3)
 
     # Concatenate df1, df2, df3 into a single DataFrame 'a'
     a = pd.concat([df1, df2, df3])
@@ -1335,8 +1293,8 @@ def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facili
     a = add_new_row(a, division_row, "Delivery Captured on Stock Card")
 
     # Create DataFrames df4, df5
-    df4 = create_df(df, 'physical count', 24)
-    df5 = create_df(df, 'stock card balance', 25)
+    df4 = create_df(df, 'physical count', 10)
+    df5 = create_df(df, 'stock card balance', 9)
 
     # Concatenate a, df4, df5 into a single DataFrame 'a'
     a = pd.concat([a, df4, df5])
@@ -1345,13 +1303,13 @@ def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facili
     a = add_new_row(a, division_row, "Stock balance accuracy")
 
     # Create DataFrames df6, df7, df8, df9, df10, df11
-    df6 = create_df(df, 'begining bal', 4)
-    df7 = create_df(df, 'kemsa supply', 2)
+    df6 = create_df(df, 'begining bal', 2)
+    df7 = create_df(df, 'kemsa supply', 3)
     df8 = create_df(df, 'received from other facilities', 5)
-    df9 = create_df(df, 'units issued to SDPs', 7)
-    df10 = create_df(df, 'units issued to other facilities', 8)
-    df11 = create_df(df, 'units expired', 12)
-    df_end_bal = create_df(df, 'ending balance on bin card', 23)
+    df9 = create_df(df, 'units issued to SDPs', 6)
+    df10 = create_df(df, 'units issued to other facilities', 7)
+    df11 = create_df(df, 'units expired', 8)
+    df_end_bal = create_df(df, 'ending balance on bin card', 9)
 
     # Concatenate a, df6, df7, df8, df9, df10, df11 into a single DataFrame 'a'
     a = pd.concat([a, df6, df7, df8, df9, df10, df11, df_end_bal])
@@ -1372,19 +1330,12 @@ def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facili
 
     a = add_new_row(a, division_row, "Transaction recording accuracy")
 
-    # Create DataFrames df12,df13
-    df12 = create_df(df, 'captured in the bin card', 3)
-    df13 = create_df(df, 'quantity supplied', 2)
-    a = pd.concat([a, df13, df12])
-
     # Create a new row for the division 'Delivered in full'
-    # division_row = divide_rows(a, 15, 14)
     division_row = pd.Series(index=a.columns)
 
     # Iterate over the columns
     for col in a.columns:
         numerator = a.iloc[5, col] - a.iloc[4, col]
-        # print(numerator)
         denominator = a.iloc[4, col]
 
         # Check if the denominator is non-zero
@@ -1395,15 +1346,15 @@ def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facili
     a = add_new_row(a, division_row, "Inventory variation")
 
     # a = add_new_row(a, division_row, "Delivered in full")
-    df_cdrr = create_df(df, 'CDRR', 27)
-    df_dar = create_df(df, 'DAR', 26)
+    df_cdrr = create_df(df, 'CDRR', 19)
+    df_dar = create_df(df, 'DAR', 18)
     a = pd.concat([a, df_dar, df_cdrr])
 
     division_row = pd.Series(index=a.columns)
 
     # Iterate over the columns
     for col in a.columns:
-        numerator = a.iloc[19, col] - a.iloc[18, col]
+        numerator = a.iloc[17, col] - a.iloc[16, col]
 
         denominator = a.iloc[7, col] + a.iloc[8, col] + a.iloc[9, col]
 
@@ -1417,13 +1368,14 @@ def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facili
 
     # Reset index, rename columns, and filter unwanted rows
     a = a.reset_index()
+    # df.to_csv("df_col.csv", index=False)
+    # a.to_csv("a_col.csv", index=False)
     a.columns = list(df.columns)
     a = a[~a['description'].str.contains('in bin cards|supp kemsa|physical count|stock card balance|'
                                          'begining bal|kemsa supply|received from other facilities|'
                                          'units issued to SDPs|units issued to other facilities|units expired|'
                                          'quantity supplied|captured in the bin card|ending balance on bin card')]
     a = a[(a['description'] != "DAR") & (a['description'] != "CDRR")]
-    # a.to_csv("supply_chain.csv",index=False)
     last_two_rows = a[a["description"].str.contains("Inventory variation|DAR vs CDRR Quantity Dispensed")]
     a = a[~a["description"].str.contains("Inventory variation|DAR vs CDRR Quantity Dispensed")]
     a = calculate_facility_score(a, dqa_type=dqa_type)
@@ -1436,7 +1388,8 @@ def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facili
     # Rename the 'description' column to 'Focus area'
     a = a.rename(
         columns={"description": "Focus area", "tld_90": "TLD 90s", "dtg_10": "DTG 10", "abc_3tc": "ABC/3TC 120/60",
-                 "3hp": "3HP", "fp": "IMPLANT 1 ROD", "al": "AL 24"})
+                 "3hp": "3HP", "fp": "IMPLANT 1 ROD", "al_24": "AL 24", "dtg_50": "DTG 50", "fp_1_rod": "FP 1 Rod",
+                 "fp_2_rods": "FP 2 Rods", "al_6": "AL 6", "rh_75_50": "RH 75/50"})
 
     # Convert 'Facility mean score' column to numeric and round to 2 decimal places
     a[f'{dqa_type.title()} mean score'] = pd.to_numeric(a[f'{dqa_type.title()} mean score'], errors='coerce')
@@ -1463,6 +1416,219 @@ def calculate_supply_chain_kpis(df, expected_description_order, dqa_type="facili
     return a, sort_focus_area, facility_mean
 
 
+def process_filtered_data(filtered_data):
+    # Define field mappings
+    field_mappings = {
+        'default': {
+            'description': 'description',
+            'tld_90': 'adult_arv_tdf_3tc_dtg',
+            'dtg_10': 'pead_arv_dtg_10mg',
+            'dtg_50': 'pead_arv_dtg_50mg',
+            'abc_3tc': 'paed_arv_abc_3tc_120_60mg',
+            '3hp': 'tb_3hp',
+            'rh_75_50': 'r_inh',
+        },
+        'mal': {
+            'description': 'description',
+            'al_24': 'al_24',
+            'al_6': 'al_24',
+        },
+        'fp': {
+            'description': 'description',
+            'fp_1_rod': 'family_planning_rod',
+            'fp_2_rods': 'family_planning_rod',
+        }
+    }
+
+    # Process the filtered data
+    data_dict = {key: [] for key in ['default', 'mal', 'fp']}
+
+    for model_name, model_objects in filtered_data.items():
+        category = 'mal' if 'mal' in model_name else 'fp' if 'fp' in model_name else 'default'
+        mapping = field_mappings[category]
+
+        data_dict[category].extend([
+            {new_key: getattr(model_data, old_key) for new_key, old_key in mapping.items()}
+            for model_data in model_objects
+        ])
+
+    # Create DataFrames
+    dfs = {key: pd.DataFrame(value) for key, value in data_dict.items() if value}
+
+    # Clean description column
+    for df in dfs.values():
+        df['description'] = df['description'].apply(lambda x: re.sub(r'^\d+\.\s*', '', x))
+
+    # Merge DataFrames
+    df = dfs.get('default', pd.DataFrame())
+    for other_df in ['fp', 'mal']:
+        if other_df in dfs:
+            df = df.merge(dfs[other_df], on="description", how="left")
+    expected_description_order = [
+        'Is there currently a stock card or electronic record available for?',
+        'Does the stock card or electronic record cover the entire period under review, which began on {'
+        'start_date} to {end_date}?',
+        'What was the beginning balance? (At the start of the review period)',
+        'How many units were supplied by MEDS/KEMSA to this facility during the period under review from delivery '
+        'notes?',
+        'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
+        'How many units were received from other facilities (Positive Adjustments) during the period under review?',
+        'How many units were issued from the storage areas to service delivery/dispensing point(s) within this '
+        'facility during the period under review?',
+        'How many units were issued to other facilities (Negative Adjustments) during the period under review?',
+        'How many expired units  were in the facility during the review period?',
+        'What is the ending balance on the stock card or electronic record on the last day of the review period?',
+        'What was the actual physical count of this on the day of the visit?',
+        'What is the average monthly consumption?',
+        'How many positive adjustment transactions were made on the stock card for transfers to other health '
+        'facilities during the period under review?',
+        'How many positive adjustment transactions do not have a corresponding S11 form?',
+        'How many negative adjustment transactions were made on the stock card for transfers to other health '
+        'facilities during the period under review?',
+        'How many negative adjustment transactions do not have a corresponding S11 form?',
+        'Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this '
+        'facility?',
+        'Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at '
+        'this facility?',
+        'What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
+        'What quantity was dispensed, based the CDRR, at this facility during the review period?',
+        'Has there been a stock out during the period under review?',
+        'How many days out of stock?',
+        'Were there any expiries during the period under review?',
+    ]
+
+    return df, expected_description_order
+
+
+def prepare_dataframe(dataframe, column_mapping={}):
+    # Reset the index to add row numbers
+    dataframe = dataframe.reset_index(drop=True)
+    # Add a new column for row numbers
+    dataframe.index = dataframe.index + 1  # This makes the row numbers start from 1 instead of 0
+    dataframe.index.name = 'No.'  # This names the index column
+    dataframe = dataframe.reset_index()
+    dataframe = dataframe.rename(columns=column_mapping)
+    return dataframe
+
+
+def generate_html_table(dataframe):
+    # Generate HTML table
+    dataframe_html = dataframe.fillna("-").to_html(
+        classes='table table-responsive table-striped table-hover small-table',
+        index=False,
+        escape=False
+    )
+
+    # Remove the inline style from the header row
+    dataframe_html = re.sub(r'<tr style="text-align: right;">', '<tr>', dataframe_html)
+
+    return dataframe_html
+
+
+def filter_models_by_facility_and_quarter(models_to_check, selected_facility, quarter_year):
+    """
+        Filter models based on facility name and quarter year.
+        """
+    return {
+        model_name: model.objects.filter(
+            facility_name__name=selected_facility,
+            quarter_year__quarter_year=quarter_year,
+            # quarter_year__year__gte=2025
+        ).order_by('date_created')
+        for model_name, model in models_to_check.items()
+    }
+
+
+def get_field_values_from_work_plans(work_plans, models_to_check):
+    """
+    Extract field values from work plans based on model names.
+    """
+    return [
+        getattr(work_plan, f"{field_name}_id")
+        for work_plan in work_plans
+        for field_name in models_to_check
+        if getattr(work_plan, f"{field_name}_id", None) is not None
+    ]
+
+
+def find_most_recent_item(filtered_data):
+    """
+    Find the most recent item across all filtered querysets.
+    """
+    most_recent_item = None
+    most_recent_date = None
+
+    for queryset in filtered_data.values():
+        if queryset.exists():
+            latest_item = queryset.latest('date_modified')
+            if most_recent_date is None or latest_item.date_modified > most_recent_date:
+                most_recent_item = latest_item
+                most_recent_date = latest_item.date_modified
+
+    return most_recent_item, most_recent_date
+
+
+def check_missing_data(request, filtered_data, selected_facility, quarter_year):
+    """
+    Check if filtered data is missing and display a message.
+    """
+    if not any(filtered_data.values()) and quarter_year is not None:
+        messages.success(
+            request,
+            f"Inventory management data for {selected_facility} {quarter_year} is missing! "
+            f"Kindly enter data using the form provided in the 'DATA ENTRY' section."
+        )
+
+
+def process_inventory_data(request, selected_facility, quarter_year, MODELS_TO_CHECK):
+    """
+    Main function to process inventory data.
+    """
+    # Step 1: Filter models by facility and quarter
+    filtered_data = filter_models_by_facility_and_quarter(MODELS_TO_CHECK, selected_facility, quarter_year)
+
+    # Step 2: Check for missing data
+    check_missing_data(request, filtered_data, selected_facility, quarter_year)
+
+    # Step 3: Get field values from work plans
+    work_plans = WorkPlan.objects.all()
+    field_values = get_field_values_from_work_plans(work_plans, MODELS_TO_CHECK)
+
+    # Step 4: Find the most recent item
+    most_recent_item, most_recent_date = find_most_recent_item(filtered_data)
+
+    return filtered_data, field_values, most_recent_item, most_recent_date
+
+
+def handle_selected_facility(selected_facility, filtered_data):
+    """
+    Handle logic when a facility is selected.
+    """
+    if selected_facility and any(queryset.exists() for queryset in filtered_data.values()):
+        df, expected_description_order = process_filtered_data(filtered_data)
+
+        supply_chain_target_100, sort_focus_area, facility_mean = calculate_supply_chain_kpis(
+            df, expected_description_order
+        )
+
+        # Rename columns
+        column_mapping = {
+            "description": "Description", "tld_90": "TLD 90s", "dtg_10": "DTG 10", "abc_3tc": "ABC/3TC 120/60",
+            "3hp": "3HP", "fp": "IMPLANT 1 ROD", "al_24": "AL 24", "dtg_50": "DTG 50", "fp_1_rod": "FP 1 Rod",
+            "fp_2_rods": "FP 2 Rods", "al_6": "AL 6", "rh_75_50": "RH 75/50"
+        }
+
+        df = prepare_dataframe(df, column_mapping)
+        df_html = generate_html_table(df)
+    else:
+        df_html = ""
+        supply_chain_target_100 = pd.DataFrame()
+        sort_focus_area = None
+        facility_mean = 0
+
+    return df_html, supply_chain_target_100, sort_focus_area, facility_mean
+
+
 @login_required(login_url='login')
 def show_inventory(request):
     if not request.user.first_name:
@@ -1482,13 +1648,8 @@ def show_inventory(request):
     year_form = YearSelectionForm(request.POST or None, initial=year_form_initial)
     facility_form = FacilitySelectionForm(request.POST or None, initial=facility_form_initial)
 
-    # date_form = DateSelectionForm(request.POST or None)
-
-    supply_chain_target_100 = pd.DataFrame()
-    sort_focus_area = None
     selected_facility = None
     quarter_year = None
-    facility_mean = 0
 
     if quarter_form.is_valid() and year_form.is_valid() and facility_form.is_valid():
         selected_quarter = quarter_form.cleaned_data['quarter']
@@ -1501,7 +1662,8 @@ def show_inventory(request):
         selected_facility = facility_form_initial["name"]
         quarter_year = quarter_form_initial['quarter']
 
-    models_to_check = {
+    # Define the models to check
+    MODELS_TO_CHECK = {
         "stock_cards": StockCards,
         "unit_supplied": UnitSupplied,
         "beginning_balance": BeginningBalance,
@@ -1514,97 +1676,27 @@ def show_inventory(request):
         "s11_form_availability": S11FormAvailability,
         "s11_form_endorsed": S11FormEndorsed,
         "stock_management": StockManagement,
+        "pharmacy_fp": PharmacyFpModel,
+        "pharmacy_fp_qualitative": PharmacyFpQualitativeModel,
+        "pharmacy_malaria_qualitative": PharmacyMalariaQualitativeModel,
+        "pharmacy_malaria": PharmacyMalariaModel,
     }
-    model_names = list(models_to_check.keys())
 
-    # Create an empty list to store the filtered objects
-    filtered_data = []
+    # Example usage
+    filtered_data, field_values, most_recent_item, most_recent_date = process_inventory_data(request, selected_facility,
+                                                                                             quarter_year,
+                                                                                             MODELS_TO_CHECK)
 
-    # Iterate over the model names
-    for model_name in model_names:
-        # Get the model class from the models_to_check dictionary
-        model_class = models_to_check[model_name]
-        objects = model_class.objects.filter(facility_name__name=selected_facility,
-                                             quarter_year__quarter_year=quarter_year
-                                             ).order_by('date_created')
 
-        # Append the filtered objects to the list
-        filtered_data.extend(objects)
-
-    work_plans = WorkPlan.objects.all()
-    if len(filtered_data) == 0 and quarter_year is not None:
-        messages.success(request, f"Inventory management data for {selected_facility} {quarter_year} is missing! "
-                                  f"Kindly enter data using the form provided in the 'DATA ENTRY' section.")
-    field_values = []
-
-    # Iterate over the work plans
-    for work_plan in work_plans:
-        # Iterate over the models in models_to_check dictionary
-        for field_name, model in models_to_check.items():
-            field_id = getattr(work_plan, field_name + "_id", None)
-            if field_id is not None:
-                field_values.append(field_id)
-    if len(filtered_data) == 29:
-        data = []
-        for model_data in filtered_data:
-            record = {
-                'description': model_data.description,
-                'tld_90': model_data.adult_arv_tdf_3tc_dtg,
-                'dtg_10': model_data.pead_arv_dtg_10mg,
-                'abc_3tc': model_data.paed_arv_abc_3tc_120_60mg,
-                '3hp': model_data.tb_3hp,
-                'fp': model_data.family_planning_rod,
-                'al': model_data.al_24,
-            }
-            data.append(record)
-            # break
-        # Create DataFrame
-        df = pd.DataFrame(data)
-        expected_description_order = ['Is there currently a stock card or electronic record available for?',
-                                      'Does the stock card or electronic record cover the entire period under review, which began on {start_date} to {end_date}?',
-                                      'How many units were supplied by MEDS/KEMSA to this facility during the period under review from delivery notes?',
-                                      'What quantity delivered from MEDS/KEMSA was captured in the bin card?',
-                                      'What was the beginning balance? (At the start of the review period)',
-                                      'How many units were supplied by MEDS/KEMSA to this facility during the period under review?',
-                                      'How many units were received from other facilities (Positive Adjustments) during the period under review?',
-                                      'How many positive adjustment transactions do not have a corresponding S11 form?',
-                                      'How many units were issued from the storage areas to service delivery/dispensing point(s) within this facility during the period under review?',
-                                      'How many units were issued to other facilities (Negative Adjustments) during the period under review?',
-                                      'How many negative adjustment transactions were made on the stock card for transfers to other health facilities during the period under review?',
-                                      'How many negative adjustment transactions do not have a corresponding S11 form?',
-                                      'How many days out of stock?',
-                                      'How many expired units  were in the facility during the review period?',
-                                      'Has there been a stock out during the period under review?',
-                                      'Were there any expiries during the period under review?',
-                                      'Are there any expires in the facility?',
-                                      'Is there a current expiry tracking chart/register in this facility (wall chart or electronic)?',
-                                      'Are there units with less than 6 months to expiry?',
-                                      'Are the units (with less than 6 months to expiry) captured on the expiry chart?',
-                                      'Is there a corresponding S11 form at this facility for each of the positive adjustment transactions?',
-                                      'Is there a corresponding S11 form at this facility for each of the negative adjustment transactions?',
-                                      'Of the available S11 forms for positive adjustments, how many are endorsed (signed) by someone at this facility?',
-                                      'Of the available S11 forms for the negative adjustments, how many are endorsed (signed) by someone at this facility?',
-                                      'What is the ending balance on the stock card or electronic record on the last day of the review period?',
-                                      'What was the actual physical count of this on the day of the visit?',
-                                      'What is the stock balance on the stock card or electronic record on the day of the visit?',
-                                      'What quantity was dispensed at this facility based on the DAR/ADT during the review period?',
-                                      'What quantity was dispensed, based the CDRR, at this facility during the review period?',
-                                      'What is the average monthly consumption?']
-
-        supply_chain_target_100, sort_focus_area, facility_mean = calculate_supply_chain_kpis(df,
-                                                                                              expected_description_order)
+    df_html, supply_chain_target_100, sort_focus_area, facility_mean = handle_selected_facility(selected_facility,
+                                                                                                filtered_data)
 
     context = {
-        # 'form': form,
-        'title': 'Inventory Management',
-        "stock_card_data": filtered_data,
-        "quarter_form": quarter_form,
-        "year_form": year_form,
-        "facility_form": facility_form,
-        "models_to_check": models_to_check,
-        "field_values": field_values,
-        "supply_chain_target_100": supply_chain_target_100, "facility_mean": facility_mean,
-        "sort_focus_areas": sort_focus_area,
+        'title': 'Inventory Management', "stock_card_data": filtered_data, "df_html": df_html,
+        "quarter_form": quarter_form, 'most_recent_item': most_recent_item, "year_form": year_form,
+        "facility_form": facility_form, "models_to_check": MODELS_TO_CHECK,
+        "field_values": field_values, "supply_chain_target_100": supply_chain_target_100,
+        "facility_mean": facility_mean, "sort_focus_areas": sort_focus_area,
     }
 
     return render(request, 'pharmacy/show_inventory_management.html', context)
@@ -1778,15 +1870,9 @@ def dqa_dashboard(request, dqa_type=None):
     if len(filtered_data) >= 29:
         df = pd.concat(filtered_data_all)
         df = df.rename(columns={"facility_name__name": "facility", "quarter_year__quarter_year": "quarter_year"})
-        # print(f"selected_facility:::::::::::::::::::::{selected_facility}")
-        # print(f"selected_facility:::::::::::::::::::::{type(selected_facility)}")
-        # print(f"selected_facility columns:::::::::::::::::::::{df.columns}")
-        # print(f"selected_facility unique():::::::::::::::::::::{df['facility'].unique()}")
         if selected_facility:
             selected_facility_name = selected_facility.name
             df = df[df['facility'] == selected_facility_name]
-        # print(f"selected_facility shape:::::::::::::::::::::{df.shape}")
-        # df.to_csv("df.csv", index=False)
         # if
         quarterly_trend_fig = prepare_trend(df, "quarter_year", "Quarter Year", selected_facility)
 
@@ -1954,6 +2040,53 @@ def update_inventory(request, pk, model):
     return render(request, 'pharmacy/update inventory.html', context)
 
 
+def fetch_and_check_workplans(selected_facility, quarter_year):
+    """
+    Fetches pharmacy_records and delivery_notes_records for a given facility and quarter year,
+    checks for missing WorkPlan entries, and returns combined records.
+
+    :param selected_facility: The name of the selected facility.
+    :param quarter_year: The quarter year to filter records.
+    :return: A tuple containing (missing_in_workplans, combined_records).
+    """
+    # Fetch pharmacy_records and delivery_notes_records
+    pharmacy_records = PharmacyRecords.objects.filter(
+        facility_name__name=selected_facility,
+        quarter_year__quarter_year=quarter_year
+    ).order_by('date_created')
+
+    delivery_notes_records = DeliveryNotes.objects.filter(
+        facility_name__name=selected_facility,
+        quarter_year__quarter_year=quarter_year
+    )
+
+    # Get IDs for pharmacy_records and delivery_notes_records
+    pharmacy_record_ids = pharmacy_records.values_list('id', flat=True)
+    delivery_note_ids = delivery_notes_records.values_list('id', flat=True)
+
+    # Fetch WorkPlan objects linked to pharmacy_records and delivery_notes
+    work_plans_pharmacy = WorkPlan.objects.filter(pharmacy_records__in=pharmacy_record_ids)
+    work_plans_delivery_notes = WorkPlan.objects.filter(delivery_notes__in=delivery_note_ids)
+
+    # Find pharmacy_records and delivery_notes without WorkPlan
+    pharmacy_records_without_workplans = pharmacy_records.exclude(
+        id__in=work_plans_pharmacy.values_list('pharmacy_records', flat=True)
+    ).values_list('id', flat=True)
+
+    delivery_notes_without_workplans = delivery_notes_records.exclude(
+        id__in=work_plans_delivery_notes.values_list('delivery_notes', flat=True)
+    ).values_list('id', flat=True)
+
+    # Combine the two querysets into a list
+    missing_in_workplans = list(chain(delivery_notes_without_workplans, pharmacy_records_without_workplans))
+
+    # Combine pharmacy_records and delivery_notes_records into a single list
+    combined_records = list(chain(pharmacy_records, delivery_notes_records))
+    combined_records.sort(key=lambda x: x.register_name.register_name)
+
+    return missing_in_workplans, combined_records, pharmacy_records
+
+
 @login_required(login_url='login')
 def show_commodity_records(request):
     if not request.user.first_name:
@@ -2005,29 +2138,70 @@ def show_commodity_records(request):
         "s11_form_endorsed": S11FormEndorsed,
         "stock_management": StockManagement,
     }
+
+    # Fetch pharmacy_records and delivery_notes_records
     pharmacy_records = PharmacyRecords.objects.filter(
         facility_name__name=selected_facility,
         quarter_year__quarter_year=quarter_year
     ).order_by('date_created')
 
-    pharmacy_records_ids = pharmacy_records.values_list('id', flat=True)
+    delivery_notes_records = DeliveryNotes.objects.filter(
+        facility_name__name=selected_facility,
+        quarter_year__quarter_year=quarter_year
+    )
 
-    work_plans = WorkPlan.objects.filter(pharmacy_records__in=pharmacy_records_ids)
+    # Get IDs for pharmacy_records and delivery_notes_records
+    pharmacy_record_ids = pharmacy_records.values_list('id', flat=True)
+    delivery_note_ids = delivery_notes_records.values_list('id', flat=True)
 
+    # Fetch WorkPlan objects linked to pharmacy_records and delivery_notes
+    work_plans_pharmacy = WorkPlan.objects.filter(pharmacy_records__in=pharmacy_record_ids)
+    work_plans_delivery_notes = WorkPlan.objects.filter(delivery_notes__in=delivery_note_ids)
+
+    # Find pharmacy_records and delivery_notes without WorkPlan
     pharmacy_records_without_workplans = pharmacy_records.exclude(
-        id__in=work_plans.values_list('pharmacy_records', flat=True)).values_list('id', flat=True)
+        id__in=work_plans_pharmacy.values_list('pharmacy_records', flat=True)
+    ).values_list('id', flat=True)
 
+    delivery_notes_without_workplans = delivery_notes_records.exclude(
+        id__in=work_plans_delivery_notes.values_list('delivery_notes', flat=True)
+    ).values_list('id', flat=True)
+
+    # Combine the two querysets into a list
+    missing_in_workplans = list(chain(delivery_notes_without_workplans, pharmacy_records_without_workplans))
+
+    # Combine pharmacy_records and delivery_notes_records into a single queryset (if compatible)
+    combined_records = list(chain(pharmacy_records, delivery_notes_records))
+    combined_records.sort(key=lambda x: x.register_name.register_name)
+
+    if selected_facility:
+        facility, created = Facilities.objects.get_or_create(name=selected_facility)
+        period, created = Period.objects.get_or_create(quarter_year=quarter_year)
+
+        work_plans = WorkPlan.objects.filter(facility_name_id=facility.id,
+                                             quarter_year__id=period.id
+                                             )
+    else:
+        work_plans = {}
+        facility = None
+        period = None
+
+    # Prepare context
     context = {
-        # 'form': form,
         'title': 'Commodity records/registers',
-        "pharmacy_records": pharmacy_records,
+        "pharmacy_records": pharmacy_records, "work_plans": work_plans,
+        # "delivery_notes_records": delivery_notes_records,
         "quarter_form": quarter_form,
+        "combined_records": combined_records,
+        "missing_in_workplans": missing_in_workplans,
         "year_form": year_form,
         "facility_form": facility_form,
         "models_to_check": models_to_check,
-        "pharmacy_records_without_workplans": pharmacy_records_without_workplans,
+        # "delivery_notes_without_workplans": delivery_notes_without_workplans,
         "supply_chain_target_100": supply_chain_target_100,
         "sort_focus_areas": sort_focus_area,
+        "selected_facility": facility,
+        "quarter_year": period
     }
 
     return render(request, 'pharmacy/show_commodity_management.html', context)
@@ -2040,11 +2214,21 @@ def update_pharmacy_records(request, pk, register_name):
         return redirect("profile")
 
     commodity_questions = {}
+    try:
+        item = PharmacyRecords.objects.get(id=pk)
+    except ObjectDoesNotExist:
+        item = DeliveryNotes.objects.get(id=pk)
+    model_name = item.__class__.__name__
+
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
-        # Initialize the commodity_questions dictionary
         commodity_questions = {
             register_name: [
+                "Are delivery notes from MEDS / KEMSA maintained in a separate file "
+                "from S11s, and are they arranged chronologically?",
+                "Does the facility have a copy of the delivery notes for commodities last received during the review "
+                "period?",
+            ] if model_name == "DeliveryNotes" else [
                 'Does the facility have a Malaria Commodities DAR (MoH 645) register? If not, please specify which '
                 'register is used to capture dispensing of Malaria commodities in the comment section.',
                 'Is the Malaria Commodity DAR (MoH 645) currently being used by the facility?',
@@ -2054,15 +2238,15 @@ def update_pharmacy_records(request, pk, register_name):
                 'date when it was submitted (DD/MM/YY)'
             ] if register_name == "Malaria Commodities DAR (MoH 645)" else [
                 'Is there a MANUAL ARV Daily Activity Register (DAR) (MOH 367A) or an electronic dispensing tool '
-                '(WebADT) in this facility? Specify which one in the comments section',
+                ' in this facility? Specify which one in the comments section',
                 'Is the MANUAL ARV Daily Activity Register (DAR) (MOH 367A) or an electronic dispensing tool '
-                '(WebADT) currently in use?',
+                ' currently in use?',
                 'Does the facility have a copy of the ARV F-CDRR (MOH 730B) that was prepared for the last month of '
                 'the review period',
                 'If “Yes”, when was the ARV F-CDRR (MOH 730B) for the last month of the review period submitted?'
                 '(DD/MM/YY)',
             ] if register_name == 'ARV Daily Activity Register (DAR) (MOH 367A) or WebADT' else [
-                'Is there a DADR-Anti TB register in this facility? If no, specifiy which register is used '
+                'Is there a DADR-Anti TB register in this facility? If no, specify which register is used '
                 'to capture dispensing of TB commodities in the comment section',
                 'Is the DADR-Anti TB register currently in use?',
                 'Does the facility have a copy of the Anti TB F-CDRR that was prepared for the last month of the '
@@ -2077,104 +2261,39 @@ def update_pharmacy_records(request, pk, register_name):
                 'prepared and submitted for the last month of the review period?',
                 'If “Yes”, when was the FP CDRR for the last month of the review period submitted?'
             ] if register_name == "Family Planning Commodities Daily Activity Register (DAR) (MOH 512)" else [
-                'Does the facility have a copy of the ARV F-MAPS (MOH 729B) that was prepared for the last month of '
-                'the review period?',
-                'Is the ARV F-MAPS (MOH 729B) currently being used by the facility?',
-                'Does the facility have a copy of the ARV F-MAPS (MOH 729B) that was prepared for the last month of '
-                'the review period?',
                 'If the facility has the ARV F-MAPS (MOH 729B) for the last month of the review period, please indicate'
                 ' the date when it was submitted'
             ] if register_name == "ARV F-MAPS (MOH 729B)" else [
-                "Are delivery notes from MEDS / KEMSA for ART maintained in a separate file from S11s, and are they "
-                "arranged chronologically?",
-                "Is the file containing delivery notes currently being used by the facility?",
-                "Does the facility have a copy of the delivery notes for commodities received during the last month "
-                "of the review period?",
-                "If the facility has the delivery notes for the last month of the review period, please indicate the "
-                "date when the commodities were last received."
-            ]
+                "Are delivery notes from MEDS / KEMSA maintained in a separate file "
+                "from S11s, and are they arranged chronologically?",
+                "Does the facility have a copy of the delivery notes for commodities last received during the review "
+                "period?"]
         }
         request.session['commodity_questions'] = commodity_questions
-    item = PharmacyRecords.objects.get(id=pk)
+
     request.session['date_of_interview'] = item.date_of_interview.strftime('%Y-%m-%d')  # Convert date to string
     facility_name = item.facility_name
 
     if request.method == "POST":
-        form = PharmacyRecordsForm(request.POST, instance=item)
+        if model_name == "DeliveryNotes":
+            form = DeliveryNotesForm(request.POST, instance=item)
+        elif "F-MAPS" in register_name:
+            form = PharmacyRecordsForm(request.POST, instance=item, is_required=False)
+        else:
+            form = PharmacyRecordsForm(request.POST, instance=item, is_required=True)
+
         if form.is_valid():
             instance = form.save(commit=False)
             # Initialize the commodity_questions dictionary
             commodity_questions = request.session['commodity_questions']
+
             context = {
-                "form": form,
+                "form": form, "register_name": register_name,
                 "title": "Update commodity records/registers",
                 "commodity_questions": commodity_questions,
             }
-            template_name = 'pharmacy/update records.html'
-            # for form in form.forms:
-            register_available = form.cleaned_data.get('register_available')
-            currently_in_use = form.cleaned_data.get('currently_in_use')
-            last_month_copy = form.cleaned_data.get('last_month_copy')
-            date_report_submitted = form.cleaned_data.get('date_report_submitted')
-            comments = form.cleaned_data.get('comments')
-            today = timezone.now().date()
-
-            if register_available == 'No':
-                if comments == "":
-                    if register_name != "Delivery notes file":
-                        error_message = f"Please specify which register is used instead of {register_name}"
-                        form.add_error('comments', error_message)
-                        return render(request, template_name, context)
-                    else:
-                        error_message = f"Please specify how {facility_name} stores delivery notes."
-                        form.add_error('comments', error_message)
-                        return render(request, template_name, context)
-                if currently_in_use == "Yes":
-                    error_message = f"Please confirm whether the register, {register_name}, is available." \
-                                    f" The information seems inconsistent."
-                    form.add_error('currently_in_use', error_message)
-                    return render(request, template_name, context)
-            if currently_in_use == 'No':
-                if comments == "":
-                    error_message = f"Please specify why {register_name} is not in use at {facility_name}"
-                    form.add_error('comments', error_message)
-                    return render(request, template_name, context)
-            if last_month_copy == 'No':
-                if comments == "":
-                    error_message = f"Please indicate why {facility_name} do not have a copy of the " \
-                                    f"{register_name} report that was prepared for the last month of the review period."
-                    form.add_error('comments', error_message)
-                    return render(request, 'pharmacy/update records.html', context)
-                if date_report_submitted is not None:
-                    if register_name != "Delivery notes file":
-                        error_message = f"Since there was no report submitted for the last month of the review period," \
-                                        f" please clear the date you provided."
-                        form.add_error('date_report_submitted', error_message)
-                    else:
-                        error_message = f"Since there was no copy of the commodities received for the last month of " \
-                                        f"the review period, please clear the date you provided."
-                        form.add_error('date_report_submitted', error_message)
-
-                    return render(request, template_name, context)
-            if last_month_copy == "Yes" and date_report_submitted is None:
-                if register_name != "Delivery notes file":
-                    error_message = f"Please indicate the date when monthly report was submitted."
-                    form.add_error('date_report_submitted', error_message)
-                else:
-                    error_message = f"Please indicate the date when the commodities were last received"
-                    form.add_error('date_report_submitted', error_message)
-                return render(request, template_name, context)
-            if date_report_submitted is not None:
-                if date_report_submitted > today:
-                    if register_name != "Delivery notes file":
-                        error_message = f"Report's submission ({date_report_submitted}) date cannot be greater than " \
-                                        f"today\'s date ({today})."
-                        form.add_error('date_report_submitted', error_message)
-                    else:
-                        error_message = f"The date commodities ({date_report_submitted}) were last received cannot be " \
-                                        f"greater than today\'s date ({today})."
-                        form.add_error('date_report_submitted', error_message)
-                    return render(request, template_name, context)
+            if not validate_form(form, facility_name):
+                return render(request, 'pharmacy/add_pharmacy_commodities.html', context)
 
             # # Retrieve the date_of_interview value from the session
             date_of_interview_str = request.session.get('date_of_interview')
@@ -2191,44 +2310,77 @@ def update_pharmacy_records(request, pk, register_name):
             url = reverse('show_commodity_records')
             url = f'{url}?quarter_form={quarter_form_initial}&year_form={year_form_initial}&facility_form={facility_form_initial}'
             return redirect(url)
+        else:
+            form = PharmacyRecordsForm(instance=item)
     else:
         form = PharmacyRecordsForm(instance=item)
+
     context = {
-        "form": form,
+        "form": form, "register_name": register_name, "model_name": model_name,
         "title": "Update commodity records/registers",
         "commodity_questions": commodity_questions,
     }
     return render(request, 'pharmacy/update records.html', context)
 
 
+def get_joined_values_from_json(json_str):
+    """
+    Extracts 'value' fields from a JSON array of objects and joins them into a comma-separated string.
+
+    Args:
+        json_str (str): JSON string representing an array of objects with 'value' keys
+
+    Returns:
+        str: Comma-separated string of values
+    """
+    items = json.loads(json_str)
+    return ', '.join(item['value'] for item in items)
+
+
 @login_required(login_url='login')
 def create_commodity_work_plans(request, pk):
+    # Redirect if user doesn't have a first name
     if not request.user.first_name:
         return redirect("profile")
 
-    pharmacy_objects = get_object_or_404(PharmacyRecords, id=pk)
+    # Try to fetch the object from PharmacyRecords or DeliveryNotes
+    try:
+        fetched_objects = get_object_or_404(PharmacyRecords, id=pk)
+    except Http404:
+        fetched_objects = get_object_or_404(DeliveryNotes, id=pk)
 
     if request.method == 'POST':
         form = WorkPlanForm(request.POST)
         today = timezone.now().date()
+
         if form.is_valid():
             work_plan = form.save(commit=False)
-            work_plan.facility_name = pharmacy_objects.facility_name
-            work_plan.quarter_year = pharmacy_objects.quarter_year
-            work_plan.pharmacy_records = pharmacy_objects
+            work_plan.facility_name = fetched_objects.facility_name
+            work_plan.quarter_year = fetched_objects.quarter_year
+            responsible_persons_json = form.cleaned_data['responsible_person']
+            work_plan.responsible_person = get_joined_values_from_json(responsible_persons_json)
+            try:
+                work_plan.pharmacy_records = fetched_objects
+            except ValueError:
+                work_plan.delivery_notes = fetched_objects
             work_plan.progress = (work_plan.complete_date - today).days
+
             try:
                 work_plan.save()
+                messages.success(request, 'Work plan created successfully!')
             except IntegrityError:
-                messages.error(request, 'Work plan already exists!')
+                messages.error(request, 'A work plan for this record already exists!')
 
-            # Set the initial values for the forms
-            quarter_form_initial = {'quarter': pharmacy_objects.quarter_year.quarter_year}
-            year_form_initial = {'year': pharmacy_objects.quarter_year.year}
-            facility_form_initial = {"name": pharmacy_objects.facility_name.name}
-            # Redirect to the show_commodity_records view with the initial values for the forms
+            # Set initial values for the forms
+            initial_data = {
+                'quarter_form': {'quarter': fetched_objects.quarter_year.quarter_year},
+                'year_form': {'year': fetched_objects.quarter_year.year},
+                'facility_form': {'name': fetched_objects.facility_name.name},
+            }
+
+            # Redirect to the show_commodity_records view with initial values
             url = reverse('show_commodity_records')
-            url = f'{url}?quarter_form={quarter_form_initial}&year_form={year_form_initial}&facility_form={facility_form_initial}'
+            url = f'{url}?{urlencode(initial_data)}'
             return redirect(url)
     else:
         form = WorkPlanForm()
@@ -2236,11 +2388,55 @@ def create_commodity_work_plans(request, pk):
     context = {
         'form': form,
         'title': 'Add DQA Work Plan',
-        'facility': pharmacy_objects,
-        "stock_card_data": [pharmacy_objects],
+        'facility': fetched_objects, "fetched_objects": fetched_objects,
+        "stock_card_data": [fetched_objects],
     }
 
     return render(request, 'pharmacy/show_commodity_management.html', context)
+
+
+# def create_commodity_work_plans(request, pk):
+#     if not request.user.first_name:
+#         return redirect("profile")
+#
+#     try:
+#         pharmacy_objects = get_object_or_404(PharmacyRecords, id=pk)
+#     except:
+#         pharmacy_objects = get_object_or_404(DeliveryNotes, id=pk)
+#
+#     if request.method == 'POST':
+#         form = WorkPlanForm(request.POST)
+#         today = timezone.now().date()
+#         if form.is_valid():
+#             work_plan = form.save(commit=False)
+#             work_plan.facility_name = pharmacy_objects.facility_name
+#             work_plan.quarter_year = pharmacy_objects.quarter_year
+#             work_plan.pharmacy_records = pharmacy_objects
+#             work_plan.progress = (work_plan.complete_date - today).days
+#             try:
+#                 work_plan.save()
+#             except IntegrityError:
+#                 messages.error(request, 'Work plan already exists!')
+#
+#             # Set the initial values for the forms
+#             quarter_form_initial = {'quarter': pharmacy_objects.quarter_year.quarter_year}
+#             year_form_initial = {'year': pharmacy_objects.quarter_year.year}
+#             facility_form_initial = {"name": pharmacy_objects.facility_name.name}
+#             # Redirect to the show_commodity_records view with the initial values for the forms
+#             url = reverse('show_commodity_records')
+#             url = f'{url}?quarter_form={quarter_form_initial}&year_form={year_form_initial}&facility_form={facility_form_initial}'
+#             return redirect(url)
+#     else:
+#         form = WorkPlanForm()
+#
+#     context = {
+#         'form': form,
+#         'title': 'Add DQA Work Plan',
+#         'facility': pharmacy_objects,
+#         "stock_card_data": [pharmacy_objects],
+#     }
+#
+#     return render(request, 'pharmacy/show_commodity_management.html', context)
 
 
 @login_required(login_url='login')
@@ -2250,27 +2446,15 @@ def update_workplan(request, pk):
     if request.method == "GET":
         request.session['page_from'] = request.META.get('HTTP_REFERER', '/')
     item = WorkPlan.objects.get(id=pk)
-    foreign_keys = [
-        'model_name',
-        'beginning_balance',
-        'pharmacy_records',
-        'unit_supplied',
-        'positive_adjustments',
-        'unit_issued',
-        'negative_adjustment',
-        'expired_units',
-        'expired',
-        'expiry_tracking',
-        's11_form_availability',
-        's11_form_endorsed',
-        'stock_management',
-    ]
-
-    for key in foreign_keys:
-        try:
-            request.session[f'{key}_id'] = str(getattr(item, key).id)
-        except AttributeError:
-            request.session[f'{key}_id'] = None
+    #############################################################
+    # Handle foreign keys
+    #############################################################
+    foreign_key_mapping = {
+        'pharmacy_records': PharmacyRecords,
+        'delivery_notes': DeliveryNotes,
+    }
+    # Handle foreign keys
+    item = handle_foreign_keys(request, item, foreign_key_mapping)
 
     if request.method == "POST":
         form = WorkPlanForm(request.POST, instance=item)
@@ -2278,53 +2462,25 @@ def update_workplan(request, pk):
         if form.is_valid():
             instance = form.save(commit=False)
             instance.progress = (instance.complete_date - today).days
-            foreign_key_mapping = {
-                'model_name': TableNames,
-                'beginning_balance': BeginningBalance,
-                'pharmacy_records': PharmacyRecords,
-                'unit_supplied': UnitSupplied,
-                'positive_adjustments': PositiveAdjustments,
-                'unit_issued': UnitIssued,
-                'negative_adjustment': NegativeAdjustment,
-                'expired_units': ExpiredUnits,
-                'expired': Expired,
-                'expiry_tracking': ExpiryTracking,
-                's11_form_availability': S11FormAvailability,
-                's11_form_endorsed': S11FormEndorsed,
-                'stock_management': StockManagement
-            }
-
-            for key, model_class in foreign_key_mapping.items():
-                # Retrieve the model ID from the session for the current key
-                model_id = request.session.get(f"{key}_id")
-                try:
-                    if model_id:
-                        # If the model ID exists, retrieve the corresponding foreign object from the model class
-                        # using get_or_create, and assign it to the instance's field
-                        foreign_obj, created = model_class.objects.get_or_create(id=str(model_id))
-                        setattr(instance, key, foreign_obj)
-                    else:
-                        # If the model ID is None, set the instance's field to None
-                        setattr(instance, key, None)
-                except (ValidationError, KeyError):
-                    # If any validation error or key error occurs, set the instance's field to None
-                    setattr(instance, key, None)
+            #############################################################
+            # Handle foreign keys
+            #############################################################
+            instance = handle_foreign_keys(request, instance, foreign_key_mapping)
 
             instance.save()
-
-            messages.success(request, "peter:::::::::::::Record updated successfully!")
+            messages.success(request, "Record updated successfully!")
             # Set the initial values for the forms
             quarter_form_initial = {'quarter': item.quarter_year.quarter_year}
             year_form_initial = {'year': item.quarter_year.year}
             facility_form_initial = {"name": item.facility_name.name}
             # Redirect to the inventory view with the initial values for the forms
-            url = reverse('show_work_plan')
+            url = reverse('pharmacy_show_work_plan')
             url = f'{url}?quarter_form={quarter_form_initial}&year_form={year_form_initial}&facility_form={facility_form_initial}'
             return redirect(url)
     else:
         form = WorkPlanForm(instance=item)
     context = {
-        "form": form,
+        "form": form, "fetched_object": item,
         "title": "Update Workplan",
     }
     return render(request, 'pharmacy/update workplan.html', context)

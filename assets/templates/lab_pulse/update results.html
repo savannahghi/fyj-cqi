@@ -31,21 +31,21 @@
                         <div class="mb-3 mt-3 row justify-content-between">
                             {% if cd4_total_remaining == 0 %}
                                 <div class="col-4">
-                                    <a href="#" class="btn btn-success flicker-button" role="button">
+                                    <a href="#" class="btn btn-sm btn-success flicker-button" role="button">
                                         CD4 REAGENTS ARE OUT OF STOCKS.
                                     </a>
                                 </div>
                             {% endif %}
                             {% if tb_lam_total_remaining == 0 %}
                                 <div class="col-4">
-                                    <a href="#" class="btn btn-success flicker-button" role="button">
+                                    <a href="#" class="btn btn-sm btn-success flicker-button" role="button">
                                         LF TB LAM REAGENTS ARE OUT OF STOCKS
                                     </a>
                                 </div>
                             {% endif %}
                             {% if crag_total_remaining == 0 %}
                                 <div class="col-4">
-                                    <a href="#" class="btn btn-success flicker-button" role="button">
+                                    <a href="#" class="btn btn-sm btn-success flicker-button" role="button">
                                         SERUM CRAG REAGENTS ARE OUT OF STOCKS
                                     </a>
                                 </div>
@@ -116,7 +116,7 @@
                                 </div>
                             {% endif %}
                             <div class="col-md-3 mt-2 pt-3">
-                                <input class="btn btn-success mt-1" type="submit" value="Submit">
+                                <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                             </div>
                         </div>
                     </form>
@@ -131,7 +131,7 @@
                             {{ form.mfl_code|as_crispy_field }}
                         </div>
                         <div class="col-md-2 mt-2 pt-3">
-                            <input class="btn btn-success mt-1" type="submit" value="Submit">
+                            <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                         </div>
                     </form>
                 {% elif title == "Update Commodities" %}

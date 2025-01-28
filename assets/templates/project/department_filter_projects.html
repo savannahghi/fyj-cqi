@@ -28,12 +28,12 @@
             {% else %}
                 <h6 >{{ number_of_projects_created }} {{ title }} QI projects</h6>
             {% endif %}
-            <a href="{% url 'dashboard' %}" class="btn btn-primary">Dashboard</a>
-            <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-primary">All projects</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-primary">Dashboard</a>
+            <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-sm btn-primary">All projects</a>
             {% if request.user.is_superuser %}
-                    <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                    <a href="{% url 'add_project' %}" class="btn btn-sm btn-secondary">Add QI PROJECT</a>
                       {% else %}
-                    <a href="{% url 'choose_project_level' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                    <a href="{% url 'choose_project_level' %}" class="btn btn-sm btn-secondary">Add QI PROJECT</a>
                   {% endif %}
         </div>
     {% if difference %}
@@ -41,7 +41,7 @@
         {% if pro_perfomance_trial %}
             <div class="container">
                 <div class="d-flex justify-content-evenly mt-3">
-                    <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
+                    <a class="btn btn-sm btn-danger" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
                         View QI projects not tracked
                     </a>
                 </div>
@@ -69,7 +69,7 @@
         {% else%}
             <div class="container">
                 <div class="d-flex justify-content-evenly mt-3">
-                    <a class="btn btn-danger" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
+                    <a class="btn btn-sm btn-danger" data-bs-toggle="collapse" href="#collapseExampleTwo" role="button" aria-expanded="false" aria-controls="collapseExampleTwo">
                     View QI projects not tracked
                     </a>
                 </div>
@@ -107,25 +107,25 @@
                                         <div class="container">
                                             <div class="col">
                                                 {% if qi.facility_name %}
-                                                    <a href="{% url 'facility_filter_project' qi.facility_name %}" class="btn btn-primary text-sm-start" style="font-size: xx-small">FACILITY: {{ qi.facility_name }}</a>
+                                                    <a href="{% url 'facility_filter_project' qi.facility_name %}" class="btn btn-sm btn-primary text-sm-start" style="font-size: xx-small">FACILITY: {{ qi.facility_name }}</a>
                                                     <br>
-                                                    <a href="{% url 'single_project' qi.id %}" class="btn btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
+                                                    <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
                                                 {% elif qi.sub_county %}
-                                                     <a href="{% url 'facility_filter_project' qi.sub_county %}" class="btn btn-primary text-sm-start" style="font-size: xx-small">SUB COUNTY: {{ qi.sub_county }}</a>
+                                                     <a href="{% url 'facility_filter_project' qi.sub_county %}" class="btn btn-sm btn-primary text-sm-start" style="font-size: xx-small">SUB COUNTY: {{ qi.sub_county }}</a>
                                                     <br>
-                                                    <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
+                                                    <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-sm btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
                                                 {% elif qi.program %}
-                                                     <a href="{% url 'facility_filter_project' qi.program %}" class="btn btn-primary text-sm-start" style="font-size: xx-small">PROGRAM: {{ qi.program }}</a>
+                                                     <a href="{% url 'facility_filter_project' qi.program %}" class="btn btn-sm btn-primary text-sm-start" style="font-size: xx-small">PROGRAM: {{ qi.program }}</a>
                                                     <br>
-                                                    <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
+                                                    <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-sm btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
                                                 {% elif qi.county %}
-                                                     <a href="{% url 'facility_filter_project' qi.county %}" class="btn btn-primary text-sm-start" style="font-size: xx-small">COUNTY: {{ qi.county }}</a>
+                                                     <a href="{% url 'facility_filter_project' qi.county %}" class="btn btn-sm btn-primary text-sm-start" style="font-size: xx-small">COUNTY: {{ qi.county }}</a>
                                                     <br>
-                                                    <a href="{% url 'single_project_county' qi.id %}" class="btn btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
+                                                    <a href="{% url 'single_project_county' qi.id %}" class="btn btn-sm btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
                                                 {% elif qi.hub %}
-                                                     <a href="{% url 'facility_filter_project' qi.hub %}" class="btn btn-primary text-sm-start" style="font-size: xx-small">HUB: {{ qi.hub }}</a>
+                                                     <a href="{% url 'facility_filter_project' qi.hub %}" class="btn btn-sm btn-primary text-sm-start" style="font-size: xx-small">HUB: {{ qi.hub }}</a>
                                                     <br>
-                                                    <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
+                                                    <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-sm btn-success mt-1 text-sm-start" style="font-size: xx-small">PROJECT: {{ qi.project_title }}</a>
                                                 {% endif %}
                                             <div>
                                                 {{ values|safe }}
@@ -135,24 +135,24 @@
                                         </div>
                                         <div class="d-flex justify-content-between mb-2" >
                                             {% if qi.facility_name %}
-                                                    <a href="{% url 'single_project' qi.id %}" class="btn btn-primary" style="font-size: xx-small">View project</a>
+                                                    <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-primary" style="font-size: xx-small">View project</a>
                                                 {% elif qi.sub_county %}
-                                                    <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-primary" style="font-size: xx-small">View project</a>
+                                                    <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-sm btn-primary" style="font-size: xx-small">View project</a>
                                                 {% elif qi.program %}
-                                                    <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-primary" style="font-size: xx-small">View project</a>
+                                                    <a href="{% url 'single_project_subcounty' qi.id %}" class="btn btn-sm btn-primary" style="font-size: xx-small">View project</a>
                                                 {% elif qi.county %}
-                                                    <a href="{% url 'single_project_county' qi.id %}" class="btn btn-primary" style="font-size: xx-small">View project</a>
+                                                    <a href="{% url 'single_project_county' qi.id %}" class="btn btn-sm btn-primary" style="font-size: xx-small">View project</a>
                                                 {% elif qi.hub %}
-                                                    <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-primary" style="font-size: xx-small">View project</a>
+                                                    <a href="{% url 'single_project_hub' qi.id %}" class="btn btn-sm btn-primary" style="font-size: xx-small">View project</a>
                                                 {% endif %}
-{#                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-primary" style="font-size: xx-small">View project</a>#}
-                                            <a href="{% url 'qicreator_filter_project' qi.created_by.username %}" class="btn btn-secondary" style="font-size: xx-small">Created by : {{ qi.created_by.username }}</a>
+{#                                            <a href="{% url 'single_project' qi.id %}" class="btn btn-sm btn-primary" style="font-size: xx-small">View project</a>#}
+                                            <a href="{% url 'qicreator_filter_project' qi.created_by.username %}" class="btn btn-sm btn-secondary" style="font-size: xx-small">Created by : {{ qi.created_by.username }}</a>
                                             {% if qi.county.county_name %}
-                                                <a href="{% url 'county_filter_project' qi.county.county_name %}" class="btn btn-secondary mt-1" style="font-size: xx-small">County : {{ qi.county.county_name }}</a>
+                                                <a href="{% url 'county_filter_project' qi.county.county_name %}" class="btn btn-sm btn-secondary mt-1" style="font-size: xx-small">County : {{ qi.county.county_name }}</a>
                                                 {% endif %}
                                         </div>
                                             {% if qi.sub_county.sub_counties %}
-                                            <a href="{% url 'sub_county_filter_project' qi.sub_county.sub_counties %}" class="btn btn-secondary" style="font-size: xx-small">Sub-county : {{ qi.sub_county.sub_counties }}</a>
+                                            <a href="{% url 'sub_county_filter_project' qi.sub_county.sub_counties %}" class="btn btn-sm btn-secondary" style="font-size: xx-small">Sub-county : {{ qi.sub_county.sub_counties }}</a>
                                                 {% endif %}
                                     </div>
                                 </div>

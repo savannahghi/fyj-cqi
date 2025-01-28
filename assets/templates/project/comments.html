@@ -24,18 +24,18 @@
                     Initiatives that they are implementing.</h5>
             {% endif %}
             <div class="d-flex justify-content-evenly">
-                <a class="btn btn-outline-success btn-sm {% if request.path == comments %} active{% endif %}"
+                <a class="btn btn-sm btn-outline-success btn-sm {% if request.path == comments %} active{% endif %}"
                    href="{% url 'comments' %}">ALL COMMENTS</a>
-                <a class="btn btn-outline-secondary btn-sm {% if request.path == comments_with_response %} active{% endif %}"
+                <a class="btn btn-sm btn-outline-secondary btn-sm {% if request.path == comments_with_response %} active{% endif %}"
                    href="{% url 'comments_with_response' %}">COMMENTS WITH RESPONSES</a>
-                <a class="btn btn-outline-danger btn-sm {% if request.path == comments_no_response %} active{% endif %}"
+                <a class="btn btn-sm btn-outline-danger btn-sm {% if request.path == comments_no_response %} active{% endif %}"
                    href="{% url 'comments_no_response' %}">COMMENTS WITHOUT RESPONSES</a>
             </div>
             <div class="collapse" id="collapseExample">
                 <form action="" method="POST">
                     {% csrf_token %}
                     {{ form|crispy }}
-                    <input type="submit" class="btn btn-success">
+                    <input type="submit" class="btn btn-sm btn-success">
                 </form>
             </div>
             <div class="row row-cols-1 row-cols-md-3 g-4 mt-2 col-md-12">
@@ -88,7 +88,7 @@
                                         {% if user.is_authenticated %}
                                             {% if user.id == comment.commented_by.id %}
                                                 {% if comment.id not in all_responses %}
-                                                    <a class="btn btn-info btn-sm"
+                                                    <a class="btn btn-sm btn-info btn-sm"
                                                        href="{% url 'update_comments' comment.id %}">Edit</a>
                                                 {% endif %}
                                             {% endif %}

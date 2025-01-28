@@ -93,12 +93,12 @@
                         </div>
                     </div>
                     <div class="d-flex justify-content-evenly">
-                        <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-primary">All
+                        <a href="{% url 'facilities_landing_page' project_type='facility' %}" class="btn btn-sm btn-primary">All
                             projects</a>
                         {% if request.user.is_superuser %}
-                            <a href="{% url 'add_project' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                            <a href="{% url 'add_project' %}" class="btn btn-sm btn-secondary">Add QI PROJECT</a>
                         {% else %}
-                            <a href="{% url 'choose_project_level' %}" class="btn btn-secondary">Add QI PROJECT</a>
+                            <a href="{% url 'choose_project_level' %}" class="btn btn-sm btn-secondary">Add QI PROJECT</a>
                         {% endif %}
                     </div>
 
@@ -117,14 +117,15 @@
             <h4 class="d-flex justify-content-evenly">BEST PERFORMING CQI PROJECTS</h4>
             <p class="d-flex justify-content-evenly">These QI Projects are categorized best based on percentage achieved
                 during their last update</p>
-            <div class="d-flex justify-content-evenly">
+{#            <div class="d-flex justify-content-evenly">#}
+            <div class="d-flex gap-2">
 
                 {#            {% for department in testedChange_current %}#}
                 {% for department in qi_mans.Department.unique %}
                     <!-- Loop over unique values in df column -->
                     <!-- django template show only distinct value -->
-                    {#                {% ifchanged %}<a href="{% url 'department_filter_project' department.cqi.project_category %}" class="btn btn-success" role="button">{{ department.cqi.project_category }}</a>{% endifchanged %}#}
-                    <a href="{% url 'department_filter_project' department %}" class="btn btn-success"
+                    {#                {% ifchanged %}<a href="{% url 'department_filter_project' department.cqi.project_category %}" class="btn btn-sm btn-success" role="button">{{ department.cqi.project_category }}</a>{% endifchanged %}#}
+                    <a href="{% url 'department_filter_project' department %}" class="btn btn-sm btn-sm btn-success"
                        role="button">{{ department }}</a>
                 {% endfor %}
 
@@ -138,7 +139,7 @@
                 </div>
 
                 <div class="col-md-2 mt-2 pt-3">
-                    <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+                    <input class="btn btn-sm btn-success mt-1" type="submit" name="submit_data" value="Submit">
                 </div>
 
             </div>
@@ -172,7 +173,7 @@
                             <td>
                                 {% if  forloop.counter == 5 %}
                                     <a style="font-size: xx-small" href="{% url 'department_filter_project' cell %}"
-                                       class="btn btn-success btn-sm" role="button">{{ cell }}</a>
+                                       class="btn btn-sm btn-success btn-sm" role="button">{{ cell }}</a>
                                 {% else %}
                                     {{ cell }}
                                 {% endif %}

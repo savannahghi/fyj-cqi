@@ -15,7 +15,7 @@
                         {% for message in messages %}
                             {% if "dqa indicator" in message|lower %}
                                 <div class="mb-3">
-                                    <a href="{% url 'add_data_verification' %}" class="btn btn-success flicker-button"
+                                    <a href="{% url 'add_data_verification' %}" class="btn btn-sm btn-success flicker-button"
                                        role="button"> ADD FACILITY DQA DATA
                                     </a>
                                 </div>
@@ -64,7 +64,7 @@
                 {{ facility_form.name|as_crispy_field }}
             </div>
             <div class="col-md-2 mt-2 pt-3">
-                <input class="btn btn-success mt-1" type="submit" name="submit_data" value="Submit">
+                <input class="btn btn-sm btn-success mt-1" type="submit" name="submit_data" value="Submit">
             </div>
         </form>
 
@@ -967,7 +967,7 @@
                         {% else %}
                             {% if not data.hide_update_button or request.user.is_superuser %}
                                 <td class="text-center">
-                                    <a href="{% url 'update_data_verification' data.id %}" class="btn btn-info"
+                                    <a href="{% url 'update_data_verification' data.id %}" class="btn btn-sm btn-info"
                                        role="button" id="update-btn-{{ data.id }}">Update</a>
                                 </td>
                             {% endif %}

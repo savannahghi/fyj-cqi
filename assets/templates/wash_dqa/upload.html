@@ -31,7 +31,7 @@
            <div class="col-md-4 mt-2 pr-5">
             {{ form.hide_button_time|as_crispy_field }}
         </div>
-          <button type="submit" class="btn btn-primary mt-4">Upload</button>
+          <button type="submit" class="btn btn-sm btn-primary mt-4">Upload</button>
           </form>
 {% else %}
     <form method="post" enctype="multipart/form-data">
@@ -43,7 +43,7 @@
           <label class="custom-file-label" for="fileInput">Choose file</label>
         </div>
       </div>
-      <button type="submit" class="btn btn-primary mt-4">Upload</button>
+      <button type="submit" class="btn btn-sm btn-primary mt-4">Upload</button>
     </form>
       {% endif %}
 

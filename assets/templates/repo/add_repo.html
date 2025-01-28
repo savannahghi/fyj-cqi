@@ -14,11 +14,11 @@
                     {% endif %}
                 </div>
                 <div class="d-flex justify-content-between mb-5">
-                    <a href="{% url 'create-venue' %}" class="btn btn-success" role="button">ADD/UPDATE VENUE</a>
-                    <a href="{% url 'create-author' %}" class="btn btn-success" role="button">ADD/UPDATE AUTHOR</a>
-                    <a href="{% url 'create-category' %}" class="btn btn-success" role="button">ADD/UPDATE CATEGORY</a>
-                    <a href="{% url 'create-journal' %}" class="btn btn-success" role="button">ADD/UPDATE JOURNAL</a>
-                    <a href="{% url 'create-conference' %}" class="btn btn-success" role="button">ADD/UPDATE
+                    <a href="{% url 'create-venue' %}" class="btn btn-sm btn-success" role="button">ADD/UPDATE VENUE</a>
+                    <a href="{% url 'create-author' %}" class="btn btn-sm btn-success" role="button">ADD/UPDATE AUTHOR</a>
+                    <a href="{% url 'create-category' %}" class="btn btn-sm btn-success" role="button">ADD/UPDATE CATEGORY</a>
+                    <a href="{% url 'create-journal' %}" class="btn btn-sm btn-success" role="button">ADD/UPDATE JOURNAL</a>
+                    <a href="{% url 'create-conference' %}" class="btn btn-sm btn-success" role="button">ADD/UPDATE
                         CONFERENCE</a>
                 </div>
                 {% if "Update" in title %}
@@ -52,7 +52,7 @@
                 </div>
                 <hr>
                 {% if "Update" not in title %}
-                    <input class="btn btn-primary mt-1" type="button" onclick="resetForm()" value="Reset Form">
+                    <input class="btn btn-sm btn-primary mt-1" type="button" onclick="resetForm()" value="Reset Form">
                 {% endif %}
                 <div class="col-md-3 mt-4 pt-2">
                     {{ form.data_started|as_crispy_field }}
@@ -105,7 +105,7 @@
                     {{ form.keywords|as_crispy_field }}
                 </div>
                 <div class="col-md-3 mt-4 pt-2">
-                    <input class="btn btn-success mt-1" type="submit" value="Submit">
+                    <input class="btn btn-sm btn-success mt-1" type="submit" value="Submit">
                 </div>
                 {% if form.errors %}
                     <div class="alert alert-danger" role="alert">

